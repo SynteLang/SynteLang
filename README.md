@@ -20,14 +20,14 @@ A list of operators is given below.
 Lists of operations may be composed into functions with multiple arguments.  
 The function syntax is = function [ " " operand \[ "," operand ] [ "," operand ] ] .  
 
-Protect your hearing when listening to a system capable of more than 85dB SPL  
+Protect your hearing when listening to any audio on a system capable of more than 85dB SPL  
 
 **Motivation:**  
 >Fun  
 
 **Features:**  
 >Audio synthesis √  
-Wav playback √
+Wav playback √  
 Mouse control √  
 Telemetry / code display √  
 Finite recursion with enumeration ◊  
@@ -54,6 +54,9 @@ This document has been written to be accessible to the widest audience as a deli
 Syntə is designed to be both capable as a serious sonic tool and a good entry point for beginners, although inevitably there is a tradeoff and so some patience and learning may be required if you are starting from scratch.
 
 The ◊ symbol indicates a sentence or section that may need updating in future.
+
+Note on synthesis and levels:  
+The design of Syntə has from inception included sufficient control of sound levels as a core aim. The open possibilities of Syntə are deliberately constrained in two main ways. A limiter is built-in to the sound engine, which controls levels on a frequency dependent basis. Also, listings can use the `mix` function to set a reasonable level based on simple heuristics that follow a siimilar principle to the limiter. The upper limit of potential hearing damage is defined by the capabilities of your sound playback system - the amplifier(s) and speakers; however, we have applied our best efforts to ensure loud frequencies do not leave Syntə. More details below in the Sound Engine section.
 
 
 -------------------------------------------------------------------------------------
@@ -640,6 +643,25 @@ will result in
 	in 0.666666666...  
 being added to the listing 
 
+## Type system
+This is a fancy term for inputting numerical values with a unit of measurement. If you tell someone a duration you might say: "it will take three hours", you don't just say "it will take three". In a similar way Syntə expects to be told what the number you have input means. A number can be a frequency expressed in Hertz, A bpm (beats per minute), a time in seconds or milliseconds, or a decibel level (negative numbers reduce signal level, postive increases). For example:
+
+	440hz	<= this is the approximate frequency of the note A
+
+	135bpm  <= a typical house music tempo
+
+	10s		<= ten seconds, equivalent to 0.1hz
+
+	50ms	<= 50 milliseconds, equivalent to 20hz - the lowest audible frequency
+
+	6db		<= double the magnitude (by multiplying the signal)
+	-6db	<= halve the magnitude (by multiplying the signal)
+
+Internally all these numbers are converted to a unitless number within Syntə which is typically between zero and one, except in the case of 6db which is 2, 12db is 4 etc. The calculation to covert frequencies is:
+	input / sample rate
+And for seconds is:
+	1 / ( input * sample rate )
+
 ## Signals
 
 Signals are the way of passing values around outside of the main flow through the necklace. Signals which are named and not just numbers can be referred to as registers, because they *register* a value. Usually the default value of a signal is 0. If you want it to begin as 1, add ' to the name. So `a` becomes `'a`. Likewise you can use the double quotaion mark " to have a default value of one half. If you want to be able to overwrite the value of a signal with `out` (more than once in a necklace), which is not normally possible, you can add ^ to the name. So `a` becomes `^a`. You can use both of these special symbols, but the circumflex ^ must come first or it will be ignored.
@@ -682,24 +704,24 @@ The ability to make functions like this makes the language *extensible*, which m
 ## info.go and listing.go
 info.go is intended to run alongside Syntə to display useful information and error messages. The layout is as follows:
 ```
-Syntə info *press enter to exit*				0s			<-- elapsed running time in seconds
+Syntə info *press enter to exit*			0s		<-- elapsed running time in seconds
 ╭───────────────────────────────────────────────────╮
 
-								Load: 0.00					<-- If load approaches 1, glitches or dropouts may occur in the audio
+							Load: 0.00				<-- If load approaches 1, glitches or dropouts may occur in the audio
 
 
 
 
 
-															<-- info and error messages will appear here
+														<-- info and error messages will appear here
 
 
 
 
 
-															<-- list of active registers in current listing input will appear here
-		0.00	|||||||					|					<-- peak audio meter, will display 'GR' if limiting takes place on the output.
-      Mouse-X: 0.0000			Mouse-Y: 0.0000				<-- value of mouse X and Y
+														<-- list of active registers in current listing input will appear here
+		0.00	|||||||				|				<-- peak audio meter, will display 'GR' if limiting takes place on the output.
+      Mouse-X: 0.0000		Mouse-Y: 0.0000			<-- value of mouse X and Y
 ╰───────────────────────────────────────────────────╯
 ```
 
@@ -741,8 +763,10 @@ The terms 'listing' and 'necklace' are interchangeable. Necklace also illustrate
 All values in the sound engine are represented by 64-bit floating point numbers which have a nominal range within Syntə of between -1 and 1 inclusive. At the end of each cycle of the sound engine this is converted to a 32 bit number to be sent to the soundcard. Within a listing a value can be anywhere in the range of the 64-bit float (approx ±1.8x10^308 with an precision of about 15 decimal places.) These numbers will be limited or clipped to ±1 before audio conversion.  
 The samples from each listing are added together and when there are more than four listings the sum is divided by the number of listings for unity gain. For 1, 2, 3, or 4 listings the sun is always divided by four. The result is then passed through a high-pass filter before the limiter. This is to remove any DC offsets, which means a consistent average signal other than 0, or another way to think of it is attentuating (reducing) frequencies below 4.6Hz. If my calculations are correct, any DC signal will fade below -120dB after half a second.  
 The limiter reduces the level of audio above a peak value of 1 to avoid the possibility of clipping which would produce distortion. The detection algorithm of the limiter is more sensitive to higher frequencies, it expects audio to have a spectrum approximately equivalent to 'pink noise'.
-Between the limiter and the clipping stage before conversion, what is known as dither is applied to the signal. This is a tiny amount of noise to avoid rounding errors, but is probably overkill. before the dither any envelopes associated with pausing or exiting are applied. These reduce the chances of pops or clicks.  
-The whole main loop of the sound engine is timed to produce the 'load' value that shows how much work it is doing to create each sample for the soundcard. See info display section above.  
+The density distribution of pink noise is a good general approximation to expected frequency levels in audio (*Barrow, 1995*). The `mix` function also uses this as a guiding principle in setting a sensible level. Some adjustment may be required; however, the limiter will always kick in if internal levels are exceeded.
+Because of the frequency dependent nature of the limiter detection, gain reduction may occur before the info display shows a high VU level. This is normal and you can adjust listings via the `level` operator to prevent higher frequencies from dominating the playback.
+Between the limiter and the clipping stage before conversion, what is known as dither is applied to the signal. This is a tiny amount of noise to avoid rounding errors, but is probably overkill. Before the dither any envelopes associated with pausing or exiting are applied. These reduce the chances of pops or clicks.  
+The whole main loop of the sound engine has a timer to produce the 'load' value that shows how much work it is doing to create each sample for the soundcard. See info display section above.  
 
 ---
 

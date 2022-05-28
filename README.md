@@ -18,7 +18,7 @@ A list of operators is given below.
 Lists of operations may be composed into functions with multiple arguments.  
 The function syntax is = function [ " " operand \[ "," operand ] [ "," operand ] ] .  
 
-Protect your hearing when listening to any audio on a system capable of more than 85dB SPL  
+Protect your hearing when listening to *any* audio on a system capable of more than 85dB SPL  
 
 **Motivation:**  
 >Fun  

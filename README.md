@@ -1,6 +1,6 @@
 27/05/2022	document based on version 0.10 of Syntə 
 
-#◌
+# ◌
 
 ## Syntə is an audio live coding environment
 
@@ -56,7 +56,7 @@ Syntə is designed to be both capable as a serious sonic tool and a good entry p
 The ◊ symbol indicates a sentence or section that may need updating in future.
 
 Note on synthesis and levels:  
-The design of Syntə has from inception included sufficient control of sound levels as a core aim. The open possibilities of Syntə are deliberately constrained in two main ways. A limiter is built-in to the sound engine, which controls levels on a frequency dependent basis. Also, listings can use the `mix` function to set a reasonable level based on simple heuristics that follow a siimilar principle to the limiter. The upper limit of potential hearing damage is defined by the capabilities of your sound playback system - the amplifier(s) and speakers; however, we have applied our best efforts to ensure loud frequencies do not leave Syntə. More details below in the Sound Engine section.
+The design of Syntə has from inception included sufficient control of sound levels as a core aim. The open possibilities of Syntə are deliberately constrained in two main ways. A limiter is built-in to the sound engine, which controls levels on a frequency dependent basis. Also, listings can use the `mix` function to set a reasonable level based on simple heuristics that follow a siimilar principle to the limiter. The upper limit of potential hearing damage is defined by the capabilities of your sound playback system - the amplifier(s) and speakers; however, we have applied our best efforts to ensure loud frequencies do not leave Syntə. More details in the Sound Engine section below.
 
 
 -------------------------------------------------------------------------------------

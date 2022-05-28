@@ -1,4 +1,4 @@
-//go:build linux && amd64
+//go:build freebsd && amd64
 
 /*
 	Syntə is an audio live coding environment
@@ -732,20 +732,19 @@ start:
 					msg("%s%sindex out of range%s", red, italic, reset)
 					continue
 				}
-				mute[n] = 0                       // wintermute
-				time.Sleep(51 * time.Millisecond) // wait for envelope to complete
-				transfer.Listing[n] = listing{{Op: "deleted"}}
-				dispListings[n] = listing{{Op: "deleted"}}
 				if display.Paused {
 					for i := range mute { // restore mutes
 						mute[i] = paused[i]
 					}
 					paused = []float64{}
-					time.Sleep(51 * time.Millisecond) // wait for mutes
 					<-pause
 					display.Paused = false
 					msg("\t%splay resumed...%s", italic, reset)
 				}
+				mute[n] = 0                       // wintermute
+				time.Sleep(51 * time.Millisecond) // wait for envelope to complete
+				transfer.Listing[n] = listing{{Op: "deleted"}}
+				dispListings[n] = listing{{Op: "deleted"}}
 				transmit <- true
 				<-accepted
 				if !save(*code, "displaylisting.json") {
@@ -753,6 +752,8 @@ start:
 						italic, reset, italic, reset)
 				}
 				if op[:1] == "." && len(newListing) > 0 {
+					dispListing = append(dispListing, listing{{Op: "mix"}}...)
+					newListing = append(newListing, listing{{Op: "setmix", Opd: "^freq"}}...) // hacky
 					op, opd, operands[0] = "out", "dac", "dac"
 					break
 				}
@@ -882,6 +883,8 @@ start:
 				mute[i] = 1 - mute[i]
 				display.Mute[i] = mute[i] == 0
 				if op[:1] == "." && len(newListing) > 0 {
+					dispListing = append(dispListing, listing{{Op: "mix"}}...)
+					newListing = append(newListing, listing{{Op: "setmix", Opd: "^freq"}}...) // hacky
 					op, opd, operands[0] = "out", "dac", "dac"
 					break
 				}
@@ -924,14 +927,22 @@ start:
 					display.Mute[i] = false
 				}
 				if op[:1] == "." && len(newListing) > 0 {
+					dispListing = append(dispListing, listing{{Op: "mix"}}...)
+					newListing = append(newListing, listing{{Op: "setmix", Opd: "^freq"}}...) // hacky
 					op, opd, operands[0] = "out", "dac", "dac"
 					break
 				}
 				continue
 			case "release":
 				v, _ := strconv.ParseFloat(operands[0], 64) // error already checked in parseType()
+				if v < 1.041e-6 { // ~20s
+					v = 1.041e-6
+				}
+				if v > 4.2e-3 { // ~5ms
+					v = 4.2e-3
+				}
 				release = Pow(8000, -v)
-				msg("%slimiter release set to:%s %v", italic, reset, opd)
+				msg("%slimiter release set to:%s %.fms", italic, reset, 1000/(v*SampleRate))
 				continue
 			case "unmute": // should be in modes?
 				if len(transfer.Listing) == 0 {
@@ -994,7 +1005,9 @@ start:
 				continue
 			}
 			// elipsis in append because listing is a slice
-			dispListing = append(dispListing, listing{{Op: op, Opd: opd}}...)
+			if len(dispListing) == 0 || dispListing[len(dispListing)-1].Op != "mix" { // also hacky
+				dispListing = append(dispListing, listing{{Op: op, Opd: opd}}...)
+			}
 			if len(operands) == 0 { // for zero-operand functions
 				operands = []string{""}
 			}

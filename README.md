@@ -727,7 +727,7 @@ listing.go displays the currently running necklaces. Any that are muted will sho
 ## Hot tips
 
 + use `slew 150` to smoothen a signal used for modulating volume with `mul`
-+ trim samples of music to be an exact number of bars (look for repetion in the wavform of around ~2 seconds)
++ trim samples of music to be an exact number of bars (look for repetition in the wavform of around ~2 seconds)
 + use the "!" type to use a number outside of the expected range if you need to. This is not a factorial operation
 + had a moment of inspiration and can't remember what you did? All listings accepted by the sound engine are saved by timestamp to the recordings folder in json format
 + other tips tba... ◊  
@@ -774,7 +774,7 @@ While for now the work is unlicensed, it is safe to assume that:
 
 + Using, modifying, or distributing the software in binary or source code form for commercial purposes will never be permitted.  
 
-Suggestions, including improvements to the code are welcome. We are unable to accept code contributions directly until the project has been licenced.  
+Suggestions, including improvements to the code are welcome. We are unable to accept code contributions directly until the project has been licensed. Currently it looks likely that a GPL or MIT license will be selected when the time comes.  
 If you would like to fork the code for more radical changes then we wholeheartly suggest you instead write a unique live coding platform from scratch. The file is of an order of only a thousand lines of code after all, and the learning experience will be invaluable to you.  
 
 ### Influences and other live-coding environments

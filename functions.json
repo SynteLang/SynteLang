@@ -1,0 +1,1362 @@
+{
+	"T2": [
+		{
+			"Op": "out",
+			"Opd": "a"
+		},
+		{
+			"Op": "mul",
+			"Opd": "a"
+		},
+		{
+			"Op": "mul",
+			"Opd": "2"
+		},
+		{
+			"Op": "+",
+			"Opd": "-1"
+		},
+		{
+			"Op": "mul",
+			"Opd": "@"
+		}
+	],
+	"cv2a": [
+		{
+			"Op": "mul",
+			"Opd": "2"
+		},
+		{
+			"Op": "+",
+			"Opd": "-1"
+		},
+		{
+			"Op": "clip",
+			"Opd": "1"
+		}
+	],
+	"decay": [
+		{
+			"Op": "out",
+			"Opd": "a"
+		},
+		{
+			"Op": "gt",
+			"Opd": "1"
+		},
+		{
+			"Op": "mul",
+			"Opd": "b"
+		},
+		{
+			"Op": "out",
+			"Opd": "c"
+		},
+		{
+			"Op": "in",
+			"Opd": "a"
+		},
+		{
+			"Op": "lt",
+			"Opd": "0"
+		},
+		{
+			"Op": "out",
+			"Opd": "b"
+		},
+		{
+			"Op": "in",
+			"Opd": "d"
+		},
+		{
+			"Op": "mul",
+			"Opd": "@"
+		},
+		{
+			"Op": "+",
+			"Opd": "c"
+		},
+		{
+			"Op": "clip",
+			"Opd": "0"
+		},
+		{
+			"Op": "out",
+			"Opd": "d"
+		}
+	],
+	"dial": [
+		{
+			"Op": "in",
+			"Opd": "0.16666666666666666"
+		},
+		{
+			"Op": "out",
+			"Opd": "^freq"
+		},
+		{
+			"Op": "+",
+			"Opd": "a"
+		},
+		{
+			"Op": "mod",
+			"Opd": "1"
+		},
+		{
+			"Op": "out",
+			"Opd": "a"
+		},
+		{
+			"Op": "lt",
+			"Opd": "0.3333333333333333"
+		},
+		{
+			"Op": "out",
+			"Opd": "b"
+		},
+		{
+			"Op": "in",
+			"Opd": "480"
+		},
+		{
+			"Op": "out",
+			"Opd": "^freq"
+		},
+		{
+			"Op": "+",
+			"Opd": "a0"
+		},
+		{
+			"Op": "mod",
+			"Opd": "1"
+		},
+		{
+			"Op": "out",
+			"Opd": "a0"
+		},
+		{
+			"Op": "sine",
+			"Opd": ""
+		},
+		{
+			"Op": "out",
+			"Opd": "c"
+		},
+		{
+			"Op": "in",
+			"Opd": "440"
+		},
+		{
+			"Op": "out",
+			"Opd": "^freq"
+		},
+		{
+			"Op": "+",
+			"Opd": "a1"
+		},
+		{
+			"Op": "mod",
+			"Opd": "1"
+		},
+		{
+			"Op": "out",
+			"Opd": "a1"
+		},
+		{
+			"Op": "sine",
+			"Opd": ""
+		},
+		{
+			"Op": "+",
+			"Opd": "c"
+		},
+		{
+			"Op": "mul",
+			"Opd": "b"
+		},
+		{
+			"Op": "mul",
+			"Opd": "0.01"
+		},
+		{
+			"Op": "tanh",
+			"Opd": ""
+		},
+		{
+			"Op": "mul",
+			"Opd": "100"
+		},
+		{
+			"Op": "out",
+			"Opd": "dac"
+		}
+	],
+	"dirac": [
+		{
+			"Op": "out",
+			"Opd": "a"
+		},
+		{
+			"Op": "gt",
+			"Opd": "1"
+		},
+		{
+			"Op": "mul",
+			"Opd": "b"
+		},
+		{
+			"Op": "push",
+			"Opd": ""
+		},
+		{
+			"Op": "in",
+			"Opd": "a"
+		},
+		{
+			"Op": "lt",
+			"Opd": "0"
+		},
+		{
+			"Op": "out",
+			"Opd": "b"
+		},
+		{
+			"Op": "pop",
+			"Opd": ""
+		}
+	],
+	"dist": [
+		{
+			"Op": "mul",
+			"Opd": "@"
+		},
+		{
+			"Op": "tanh",
+			"Opd": ""
+		}
+	],
+	"euclid": [
+		{
+			"Op": "out",
+			"Opd": "t"
+		},
+		{
+			"Op": "mul",
+			"Opd": "@1"
+		},
+		{
+			"Op": "out",
+			"Opd": "^freq"
+		},
+		{
+			"Op": "+",
+			"Opd": "a"
+		},
+		{
+			"Op": "mod",
+			"Opd": "1"
+		},
+		{
+			"Op": "out",
+			"Opd": "a"
+		},
+		{
+			"Op": "mul",
+			"Opd": "2"
+		},
+		{
+			"Op": "+",
+			"Opd": "-1"
+		},
+		{
+			"Op": "out",
+			"Opd": "gt"
+		},
+		{
+			"Op": "in",
+			"Opd": "@"
+		},
+		{
+			"Op": "+",
+			"Opd": "-0.5"
+		},
+		{
+			"Op": "/",
+			"Opd": "@1"
+		},
+		{
+			"Op": "out",
+			"Opd": "width"
+		},
+		{
+			"Op": "in",
+			"Opd": "t"
+		},
+		{
+			"Op": "mul",
+			"Opd": "@"
+		},
+		{
+			"Op": "out",
+			"Opd": "^freq"
+		},
+		{
+			"Op": "+",
+			"Opd": "a0"
+		},
+		{
+			"Op": "\u003csync",
+			"Opd": "@2"
+		},
+		{
+			"Op": "mod",
+			"Opd": "1"
+		},
+		{
+			"Op": "out",
+			"Opd": "a0"
+		},
+		{
+			"Op": "lt",
+			"Opd": "width"
+		},
+		{
+			"Op": "push",
+			"Opd": ""
+		},
+		{
+			"Op": "in",
+			"Opd": "gt"
+		},
+		{
+			"Op": "out",
+			"Opd": "a1"
+		},
+		{
+			"Op": "lt",
+			"Opd": "0"
+		},
+		{
+			"Op": "out",
+			"Opd": "b"
+		},
+		{
+			"Op": "in",
+			"Opd": "c"
+		},
+		{
+			"Op": "gt",
+			"Opd": "0"
+		},
+		{
+			"Op": "mul",
+			"Opd": "b"
+		},
+		{
+			"Op": "push",
+			"Opd": ""
+		},
+		{
+			"Op": "in",
+			"Opd": "a1"
+		},
+		{
+			"Op": "out",
+			"Opd": "c"
+		},
+		{
+			"Op": "pop",
+			"Opd": ""
+		},
+		{
+			"Op": "out",
+			"Opd": "sh"
+		},
+		{
+			"Op": "pop",
+			"Opd": ""
+		},
+		{
+			"Op": "mul",
+			"Opd": "sh"
+		},
+		{
+			"Op": "out",
+			"Opd": "a2"
+		},
+		{
+			"Op": "in",
+			"Opd": "sh"
+		},
+		{
+			"Op": "mul",
+			"Opd": "-1"
+		},
+		{
+			"Op": "+",
+			"Opd": "1"
+		},
+		{
+			"Op": "mul",
+			"Opd": "b0"
+		},
+		{
+			"Op": "+",
+			"Opd": "a2"
+		},
+		{
+			"Op": "out",
+			"Opd": "b0"
+		}
+	],
+	"exp": [
+		{
+			"Op": "base",
+			"Opd": "E"
+		},
+		{
+			"Op": "+",
+			"Opd": "-1"
+		},
+		{
+			"Op": "mul",
+			"Opd": "E-1"
+		}
+	],
+	"filt": [
+		{
+			"Op": "out",
+			"Opd": "d"
+		},
+		{
+			"Op": "in",
+			"Opd": "@"
+		},
+		{
+			"Op": "f2c",
+			"Opd": ""
+		},
+		{
+			"Op": "out",
+			"Opd": "c"
+		},
+		{
+			"Op": "mul",
+			"Opd": "d"
+		},
+		{
+			"Op": "out",
+			"Opd": "a"
+		},
+		{
+			"Op": "in",
+			"Opd": "1"
+		},
+		{
+			"Op": "sub",
+			"Opd": "c"
+		},
+		{
+			"Op": "mul",
+			"Opd": "b"
+		},
+		{
+			"Op": "+",
+			"Opd": "a"
+		},
+		{
+			"Op": "out",
+			"Opd": "b"
+		}
+	],
+	"flip": [
+		{
+			"Op": "mul",
+			"Opd": "-1"
+		},
+		{
+			"Op": "+",
+			"Opd": "1"
+		}
+	],
+	"fmix": [
+		{
+			"Op": "mul",
+			"Opd": "'level"
+		},
+		{
+			"Op": "+",
+			"Opd": "@insert"
+		},
+		{
+			"Op": "mul",
+			"Opd": "@"
+		},
+		{
+			"Op": "out",
+			"Opd": "a"
+		},
+		{
+			"Op": "in",
+			"Opd": "0.9"
+		},
+		{
+			"Op": "mul",
+			"Opd": "'b"
+		},
+		{
+			"Op": "out",
+			"Opd": "'b"
+		},
+		{
+			"Op": "mul",
+			"Opd": "0.25"
+		},
+		{
+			"Op": "+",
+			"Opd": "0.000025"
+		},
+		{
+			"Op": "out",
+			"Opd": "c"
+		},
+		{
+			"Op": "in",
+			"Opd": "^freq"
+		},
+		{
+			"Op": "mul",
+			"Opd": "c"
+		},
+		{
+			"Op": "out",
+			"Opd": "a0"
+		},
+		{
+			"Op": "in",
+			"Opd": "c"
+		},
+		{
+			"Op": "mul",
+			"Opd": "-1"
+		},
+		{
+			"Op": "+",
+			"Opd": "1"
+		},
+		{
+			"Op": "mul",
+			"Opd": "b"
+		},
+		{
+			"Op": "+",
+			"Opd": "a0"
+		},
+		{
+			"Op": "out",
+			"Opd": "b"
+		},
+		{
+			"Op": "mul",
+			"Opd": "c"
+		},
+		{
+			"Op": "out",
+			"Opd": "a1"
+		},
+		{
+			"Op": "in",
+			"Opd": "c"
+		},
+		{
+			"Op": "mul",
+			"Opd": "-1"
+		},
+		{
+			"Op": "+",
+			"Opd": "1"
+		},
+		{
+			"Op": "mul",
+			"Opd": "b0"
+		},
+		{
+			"Op": "+",
+			"Opd": "a1"
+		},
+		{
+			"Op": "out",
+			"Opd": "b0"
+		},
+		{
+			"Op": "mul",
+			"Opd": "c"
+		},
+		{
+			"Op": "out",
+			"Opd": "a2"
+		},
+		{
+			"Op": "in",
+			"Opd": "c"
+		},
+		{
+			"Op": "mul",
+			"Opd": "-1"
+		},
+		{
+			"Op": "+",
+			"Opd": "1"
+		},
+		{
+			"Op": "mul",
+			"Opd": "b1"
+		},
+		{
+			"Op": "+",
+			"Opd": "a2"
+		},
+		{
+			"Op": "out",
+			"Opd": "b1"
+		},
+		{
+			"Op": "pow",
+			"Opd": "-1"
+		},
+		{
+			"Op": "mul",
+			"Opd": "35"
+		},
+		{
+			"Op": "mul",
+			"Opd": "a"
+		},
+		{
+			"Op": "tanh",
+			"Opd": ""
+		},
+		{
+			"Op": "out",
+			"Opd": "dac"
+		}
+	],
+	"half": [
+		{
+			"Op": "out",
+			"Opd": "a"
+		},
+		{
+			"Op": "in",
+			"Opd": "@"
+		},
+		{
+			"Op": "pow",
+			"Opd": "-1"
+		},
+		{
+			"Op": "mul",
+			"Opd": "ln2"
+		},
+		{
+			"Op": "mul",
+			"Opd": "-1"
+		},
+		{
+			"Op": "base",
+			"Opd": "E"
+		},
+		{
+			"Op": "out",
+			"Opd": "b"
+		},
+		{
+			"Op": "in",
+			"Opd": "'c"
+		},
+		{
+			"Op": "mul",
+			"Opd": "b"
+		},
+		{
+			"Op": "+",
+			"Opd": "a"
+		},
+		{
+			"Op": "clip",
+			"Opd": "0"
+		},
+		{
+			"Op": "out",
+			"Opd": "'c"
+		}
+	],
+	"heat": [
+		{
+			"Op": "mul",
+			"Opd": "c"
+		},
+		{
+			"Op": "tanh",
+			"Opd": ""
+		},
+		{
+			"Op": "push",
+			"Opd": ""
+		},
+		{
+			"Op": "abs",
+			"Opd": ""
+		},
+		{
+			"Op": "mul",
+			"Opd": "0.001"
+		},
+		{
+			"Op": "out",
+			"Opd": "a"
+		},
+		{
+			"Op": "in",
+			"Opd": "0.001"
+		},
+		{
+			"Op": "mul",
+			"Opd": "-1"
+		},
+		{
+			"Op": "+",
+			"Opd": "1"
+		},
+		{
+			"Op": "mul",
+			"Opd": "b"
+		},
+		{
+			"Op": "+",
+			"Opd": "a"
+		},
+		{
+			"Op": "out",
+			"Opd": "b"
+		},
+		{
+			"Op": "mul",
+			"Opd": "@"
+		},
+		{
+			"Op": "pow",
+			"Opd": "-1"
+		},
+		{
+			"Op": "out",
+			"Opd": "c"
+		},
+		{
+			"Op": "pop",
+			"Opd": ""
+		}
+	],
+	"inv": [
+		{
+			"Op": "pow",
+			"Opd": "-1"
+		}
+	],
+	"lmap": [
+		{
+			"Op": "out",
+			"Opd": "a"
+		},
+		{
+			"Op": "lt",
+			"Opd": "0"
+		},
+		{
+			"Op": "out",
+			"Opd": "b"
+		},
+		{
+			"Op": "in",
+			"Opd": "c"
+		},
+		{
+			"Op": "gt",
+			"Opd": "0"
+		},
+		{
+			"Op": "mul",
+			"Opd": "b"
+		},
+		{
+			"Op": "push",
+			"Opd": ""
+		},
+		{
+			"Op": "in",
+			"Opd": "a"
+		},
+		{
+			"Op": "out",
+			"Opd": "c"
+		},
+		{
+			"Op": "pop",
+			"Opd": ""
+		},
+		{
+			"Op": "out",
+			"Opd": "a0"
+		},
+		{
+			"Op": "mul",
+			"Opd": "@"
+		},
+		{
+			"Op": "out",
+			"Opd": "^r"
+		},
+		{
+			"Op": "lt",
+			"Opd": "0"
+		},
+		{
+			"Op": "+",
+			"Opd": "^r"
+		},
+		{
+			"Op": "out",
+			"Opd": "^r"
+		},
+		{
+			"Op": "in",
+			"Opd": "a0"
+		},
+		{
+			"Op": "mul",
+			"Opd": "^\"x"
+		},
+		{
+			"Op": "mul",
+			"Opd": "-1"
+		},
+		{
+			"Op": "+",
+			"Opd": "1"
+		},
+		{
+			"Op": "mul",
+			"Opd": "^\"x"
+		},
+		{
+			"Op": "mul",
+			"Opd": "^r"
+		},
+		{
+			"Op": "clip",
+			"Opd": "0.999"
+		},
+		{
+			"Op": "out",
+			"Opd": "^\"x"
+		}
+	],
+	"mix": [
+		{
+			"Op": "setmix",
+			"Opd": "^freq"
+		},
+		{
+			"Op": "out",
+			"Opd": "dac"
+		}
+	],
+	"once": [
+		{
+			"Op": "+",
+			"Opd": "a"
+		},
+		{
+			"Op": "clip",
+			"Opd": "0"
+		},
+		{
+			"Op": "mul",
+			"Opd": "@"
+		},
+		{
+			"Op": "out",
+			"Opd": "a"
+		}
+	],
+	"osc": [
+		{
+			"Op": "out",
+			"Opd": "^freq"
+		},
+		{
+			"Op": "+",
+			"Opd": "a"
+		},
+		{
+			"Op": "mod",
+			"Opd": "1"
+		},
+		{
+			"Op": "out",
+			"Opd": "a"
+		}
+	],
+	"posc": [
+		{
+			"Op": "out",
+			"Opd": "^freq"
+		},
+		{
+			"Op": "+",
+			"Opd": "a"
+		},
+		{
+			"Op": "\u003csync",
+			"Opd": "@"
+		},
+		{
+			"Op": "+",
+			"Opd": "z"
+		},
+		{
+			"Op": "mod",
+			"Opd": "1"
+		},
+		{
+			"Op": "out",
+			"Opd": "a"
+		}
+	],
+	"pulse": [
+		{
+			"Op": "out",
+			"Opd": "^freq"
+		},
+		{
+			"Op": "+",
+			"Opd": "a"
+		},
+		{
+			"Op": "mod",
+			"Opd": "1"
+		},
+		{
+			"Op": "out",
+			"Opd": "a"
+		},
+		{
+			"Op": "lt",
+			"Opd": "@"
+		}
+	],
+	"ramp": [
+		{
+			"Op": "out",
+			"Opd": "^freq"
+		},
+		{
+			"Op": "+",
+			"Opd": "a"
+		},
+		{
+			"Op": "mod",
+			"Opd": "1"
+		},
+		{
+			"Op": "out",
+			"Opd": "a"
+		},
+		{
+			"Op": "mul",
+			"Opd": "2"
+		},
+		{
+			"Op": "+",
+			"Opd": "-1"
+		}
+	],
+	"range": [
+		{
+			"Op": "out",
+			"Opd": "a"
+		},
+		{
+			"Op": "in",
+			"Opd": "@1"
+		},
+		{
+			"Op": "sub",
+			"Opd": "@"
+		},
+		{
+			"Op": "mul",
+			"Opd": "a"
+		},
+		{
+			"Op": "+",
+			"Opd": "@1"
+		}
+	],
+	"reverb": [
+		{
+			"Op": "+",
+			"Opd": "a"
+		},
+		{
+			"Op": "tape",
+			"Opd": "1"
+		},
+		{
+			"Op": "tap",
+			"Opd": "0.2965"
+		},
+		{
+			"Op": "mul",
+			"Opd": "0.6"
+		},
+		{
+			"Op": "+tap",
+			"Opd": "0.1832"
+		},
+		{
+			"Op": "mul",
+			"Opd": "0.6"
+		},
+		{
+			"Op": "+tap",
+			"Opd": "0.1133"
+		},
+		{
+			"Op": "mul",
+			"Opd": "0.6"
+		},
+		{
+			"Op": "+tap",
+			"Opd": "0.07"
+		},
+		{
+			"Op": "mul",
+			"Opd": "0.27"
+		},
+		{
+			"Op": "out",
+			"Opd": "a"
+		}
+	],
+	"s/h": [
+		{
+			"Op": "push",
+			"Opd": ""
+		},
+		{
+			"Op": "in",
+			"Opd": "@"
+		},
+		{
+			"Op": "lt",
+			"Opd": "0"
+		},
+		{
+			"Op": "out",
+			"Opd": "b"
+		},
+		{
+			"Op": "in",
+			"Opd": "c"
+		},
+		{
+			"Op": "gt",
+			"Opd": "0"
+		},
+		{
+			"Op": "mul",
+			"Opd": "b"
+		},
+		{
+			"Op": "push",
+			"Opd": ""
+		},
+		{
+			"Op": "in",
+			"Opd": "@"
+		},
+		{
+			"Op": "out",
+			"Opd": "c"
+		},
+		{
+			"Op": "pop",
+			"Opd": ""
+		},
+		{
+			"Op": "out",
+			"Opd": "sh"
+		},
+		{
+			"Op": "pop",
+			"Opd": ""
+		},
+		{
+			"Op": "mul",
+			"Opd": "sh"
+		},
+		{
+			"Op": "out",
+			"Opd": "a"
+		},
+		{
+			"Op": "in",
+			"Opd": "1"
+		},
+		{
+			"Op": "sub",
+			"Opd": "sh"
+		},
+		{
+			"Op": "mul",
+			"Opd": "b0"
+		},
+		{
+			"Op": "+",
+			"Opd": "a"
+		},
+		{
+			"Op": "out",
+			"Opd": "b0"
+		}
+	],
+	"saw": [
+		{
+			"Op": "out",
+			"Opd": "^freq"
+		},
+		{
+			"Op": "+",
+			"Opd": "a"
+		},
+		{
+			"Op": "mod",
+			"Opd": "1"
+		},
+		{
+			"Op": "out",
+			"Opd": "a"
+		},
+		{
+			"Op": "mul",
+			"Opd": "-2"
+		},
+		{
+			"Op": "+",
+			"Opd": "1"
+		}
+	],
+	"sino": [
+		{
+			"Op": "out",
+			"Opd": "^freq"
+		},
+		{
+			"Op": "+",
+			"Opd": "a"
+		},
+		{
+			"Op": "mod",
+			"Opd": "1"
+		},
+		{
+			"Op": "out",
+			"Opd": "a"
+		},
+		{
+			"Op": "sine",
+			"Opd": ""
+		}
+	],
+	"slew": [
+		{
+			"Op": "out",
+			"Opd": "a"
+		},
+		{
+			"Op": "gt",
+			"Opd": "c"
+		},
+		{
+			"Op": "mul",
+			"Opd": "2"
+		},
+		{
+			"Op": "sub",
+			"Opd": "1"
+		},
+		{
+			"Op": "mul",
+			"Opd": "@"
+		},
+		{
+			"Op": "+",
+			"Opd": "c"
+		},
+		{
+			"Op": "clip",
+			"Opd": "a"
+		},
+		{
+			"Op": "out",
+			"Opd": "c"
+		}
+	],
+	"sync": [
+		{
+			"Op": "+",
+			"Opd": "-0.5"
+		},
+		{
+			"Op": "\u003esync",
+			"Opd": ""
+		},
+		{
+			"Op": "+",
+			"Opd": "0.5"
+		}
+	],
+	"test": [
+		{
+			"Op": "in",
+			"Opd": "@"
+		},
+		{
+			"Op": "out",
+			"Opd": "^freq"
+		},
+		{
+			"Op": "+",
+			"Opd": "a"
+		},
+		{
+			"Op": "mod",
+			"Opd": "1"
+		},
+		{
+			"Op": "out",
+			"Opd": "a"
+		},
+		{
+			"Op": "sine",
+			"Opd": ""
+		},
+		{
+			"Op": "out",
+			"Opd": "dac"
+		}
+	],
+	"tri": [
+		{
+			"Op": "mul",
+			"Opd": "2"
+		},
+		{
+			"Op": "+",
+			"Opd": "-1"
+		},
+		{
+			"Op": "abs",
+			"Opd": ""
+		}
+	],
+	"vary": [
+		{
+			"Op": "out",
+			"Opd": "b"
+		},
+		{
+			"Op": "in",
+			"Opd": "acc"
+		},
+		{
+			"Op": "+",
+			"Opd": "hys"
+		},
+		{
+			"Op": "lt",
+			"Opd": "Epsilon"
+		},
+		{
+			"Op": "mul",
+			"Opd": "@"
+		},
+		{
+			"Op": "+",
+			"Opd": "1"
+		},
+		{
+			"Op": "out",
+			"Opd": "hys"
+		},
+		{
+			"Op": "mul",
+			"Opd": "-1"
+		},
+		{
+			"Op": "mul",
+			"Opd": "b"
+		},
+		{
+			"Op": "+",
+			"Opd": "acc"
+		},
+		{
+			"Op": "out",
+			"Opd": "acc"
+		}
+	],
+	"zx": [
+		{
+			"Op": "out",
+			"Opd": "a"
+		},
+		{
+			"Op": "lt",
+			"Opd": "0"
+		},
+		{
+			"Op": "out",
+			"Opd": "b"
+		},
+		{
+			"Op": "in",
+			"Opd": "c"
+		},
+		{
+			"Op": "gt",
+			"Opd": "0"
+		},
+		{
+			"Op": "mul",
+			"Opd": "b"
+		},
+		{
+			"Op": "push",
+			"Opd": ""
+		},
+		{
+			"Op": "in",
+			"Opd": "a"
+		},
+		{
+			"Op": "out",
+			"Opd": "c"
+		},
+		{
+			"Op": "pop",
+			"Opd": ""
+		}
+	]
+}

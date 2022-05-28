@@ -701,24 +701,24 @@ The ability to make functions like this makes the language *extensible*, which m
 ## info.go and listing.go
 info.go is intended to run alongside Syntə to display useful information and error messages. The layout is as follows:
 ```
-Syntə info *press enter to exit*		0s		<-- elapsed running time in seconds
+Syntə info *press enter to exit*                0s      <-- elapsed running time in seconds
 ╭───────────────────────────────────────────────────╮
 
-						Load: 0.00				<-- If load approaches 1, glitches or dropouts may occur in the audio
+                                    Load: 0.00          <-- If load approaches 1, glitches or dropouts may occur in the audio
 
 
 
 
 
-												<-- info and error messages will appear here
+                                                        <-- info and error messages will appear here
 
 
 
 
 
-												<-- list of active registers in current listing input will appear here
-		0.00	|||||||			|				<-- peak audio meter, approx 35dB of range, will display 'GR' if limiting takes place on the output.
-      Mouse-X: 0.0000		Mouse-Y: 0.0000		<-- value of mouse X and Y
+
+        0.00    |||||||             |                   <-- peak audio meter, approx 35dB of range, will display 'GR' if limiting takes place on the output.
+      Mouse-X: 0.0000		Mouse-Y: 0.0000             <-- value of mouse X and Y
 ╰───────────────────────────────────────────────────╯
 ```
 

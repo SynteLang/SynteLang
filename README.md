@@ -76,15 +76,15 @@ The source code is as yet unlicensed so be wary of distributing or hosting the c
 Create or navigate to a directory (folder) containing the following files:  
 
 >	
-	synte.go  
+	synte.0.10.go  
 	info.go  
 	listing.go  
 	functions.json  
 	functions.go (optional) 
-	an empty directory named 'recordings'   
-	a directory named 'wavs' containing wav files (optional)
+	an empty directory named 'recordings'  (can contain README.md) 
+	a directory named 'wavs' containing wav files (optional, can contain README.md)
 
-Open a terminal and type 'go run synte.go' to begin. ◊ Open another terminal and run info.go similarly. This will display useful information and feedback as you input and run code.  
+Open a terminal and type 'go run synte.0.10.go' to begin. ◊ Open another terminal and run info.go similarly. This will display useful information and feedback as you input and run code, if you run this before synte.go it will display details of any loaded wavs. 
 Open another terminal and run listing.go to view currently running code, this will also show mute status in italics. You may wish to arrange these using a tiling window manager, terminal multiplexer, or equivalent.
 
 You will be prompted to write your first syntə listing, a program that will make sounds.  
@@ -518,7 +518,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |List of commands (won't appear in listing)|			|																|
 |	]		|		no 		|  		end function definition                                 |
 |	:		|   	yes		|   	perform command: exit, erase, play, pause, fon, foff|
-|	fade	|		yes		|		changes fade out time after exit. Default is 325e-3 (unit is seconds, maximum 100)
+|	fade	|		yes		|		changes fade out time after exit. Default is 325e-3 (unit is seconds, maximum 104s)
 |	del		|		yes		|		delete an entire compliled and running listing numbered by operand
 |	index	|		yes		|		access index of listing
 |	mute 	|		yes		|		mute  or un-mute listing at index given by operand. Muting won't affect sync operations sent by a listing
@@ -701,24 +701,24 @@ The ability to make functions like this makes the language *extensible*, which m
 ## info.go and listing.go
 info.go is intended to run alongside Syntə to display useful information and error messages. The layout is as follows:
 ```
-Syntə info *press enter to exit*			0s		<-- elapsed running time in seconds
+Syntə info *press enter to exit*		0s		<-- elapsed running time in seconds
 ╭───────────────────────────────────────────────────╮
 
-							Load: 0.00				<-- If load approaches 1, glitches or dropouts may occur in the audio
+						Load: 0.00				<-- If load approaches 1, glitches or dropouts may occur in the audio
 
 
 
 
 
-														<-- info and error messages will appear here
+												<-- info and error messages will appear here
 
 
 
 
 
-														<-- list of active registers in current listing input will appear here
-		0.00	|||||||				|				<-- peak audio meter, will display 'GR' if limiting takes place on the output.
-      Mouse-X: 0.0000		Mouse-Y: 0.0000			<-- value of mouse X and Y
+												<-- list of active registers in current listing input will appear here
+		0.00	|||||||			|				<-- peak audio meter, approx 35dB of range, will display 'GR' if limiting takes place on the output.
+      Mouse-X: 0.0000		Mouse-Y: 0.0000		<-- value of mouse X and Y
 ╰───────────────────────────────────────────────────╯
 ```
 

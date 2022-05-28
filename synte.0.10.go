@@ -203,7 +203,7 @@ var (
 var ( // misc
 	SampleRate float64
 	TLlen      int
-	fade       float64 = Pow(1e-4, 1/(50e-3*SAMPLE_RATE)) // 50ms
+	fade       float64 = Pow(1e-4, 1/(325e-3*SAMPLE_RATE)) // 100ms
 	protected  bool    = true
 	release    float64 = Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
 )
@@ -781,13 +781,13 @@ start:
 					continue
 				}
 				fade = num.Ber
-				if fade > 1.0/2400 {
-					fade = 1.0 / 2400
+				if fade > 1.0/4800 { // minimum fade time
+					fade = 1.0 / 4800
 				}
-				if fade < 2e-7 {
+				if fade < 2e-7 { // maximum fade time
 					fade = 2e-7
 				}
-				msg("%sfade set to%s %gs", italic, reset, 1/(fade*SampleRate))
+				msg("%sfade set to%s %.3fs", italic, reset, 1/(fade*SampleRate))
 				fade = Pow(1e-4, fade) // approx -80dB in t=fade
 				continue
 			case "pop":
@@ -1747,7 +1747,7 @@ func SoundEngine(w *bufio.Writer) {
 			x2560 = dac
 			hpf160 = (hpf160 + dac - x160) * 0.97948
 			x160 = dac
-			det = Abs(8*hpf2560 + 2*hpf160 + dac/2)
+			det = Abs(16*hpf2560 + 4*hpf160 + dac)
 			if det > l {
 				l = det
 				h = release
@@ -1774,13 +1774,13 @@ func SoundEngine(w *bufio.Writer) {
 			dac = -1
 			display.Clip = true
 		}
-		if abs := Abs(dac); abs > peak {
+		if abs := Abs(dac); abs > peak { // peak detect
 			peak = abs
-		} // peak detect
-		peak -= 8e-5
+		}
+		peak -= 8e-5 // meter ballistics
 		if peak < 0 {
 			peak = 0
-		} // meter ballistics
+		}
 		display.Vu = peak
 		dac *= CONV_FACTOR                             // convert
 		rate = (time.Since(lastTime)*699 + rate) / 700 //weighted average

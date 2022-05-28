@@ -1410,7 +1410,7 @@ func mouseRead() {
 
 func infodisplay() {
 	file := "infodisplay.json"
-	disp, rr := os.Open(file)
+	disp, rr := os.Create(file)
 	if e(rr) {
 		p("error opening '"+file+"':", rr)
 		p("unable to display info display, make sure 'infodisplay.json' is in folder")

@@ -82,7 +82,6 @@ Create or navigate to a directory (folder) containing the following files:
 	functions.json  
 	functions.go (optional) 
 	an empty directory named 'recordings'   
-	an empty file named 'displaylisting.json' ◊ (only empty on first use) 
 	a directory named 'wavs' containing wav files (optional)
 
 Open a terminal and type 'go run synte.go' to begin. ◊ Open another terminal and run info.go similarly. This will display useful information and feedback as you input and run code.  

@@ -1,0 +1,24 @@
+[
+	[
+		{
+			"Op": "in",
+			"Opd": "1"
+		},
+		{
+			"Op": "set½",
+			"Opd": "^freq"
+		},
+		{
+			"Op": "noise",
+			"Opd": ""
+		},
+		{
+			"Op": "setmix",
+			"Opd": "^freq"
+		},
+		{
+			"Op": "out",
+			"Opd": "dac"
+		}
+	]
+]

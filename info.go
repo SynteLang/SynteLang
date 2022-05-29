@@ -104,7 +104,7 @@ func main() {
 			minLoad := 0.035
 			load = math.Max(load, minLoad)
 			load = (load - minLoad) / (1 - minLoad)
-			if load > 0.75 {
+			if load > 0.9 {
 				loadColour = red
 			}
 			L := fmt.Sprintf("%s%0.2f%s", loadColour, load, reset)

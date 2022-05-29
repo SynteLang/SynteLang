@@ -302,8 +302,38 @@ The bpm could be interpreted as quarter notes at 120bpm, because 8 / 4 = 2 and 2
 	sino
 	mix
 
-This sequence will play a descending series of quarter notes spaced by an octave.
+This sequence will play a descending series of quarter notes spaced by an octave. Alternatively you can split the functinality into multiple concurrent listings:
+>
+	in 135bpm
+	posc 0
+	lt 0.5
+	base 2
+	mul 330hz
+	osc
+	sine
+	mix
 
+	in 135bpm
+	mul 1/2
+	posc 0.25
+	lt 0.3
+	slew 150hz
+	mul 1/2
+	base 2
+	mul 440hz
+	osc
+	sine
+	mix
+
+	in 135bpm
+	mul 2
+	posc 0
+	lt 0.5
+	base 2
+	mul 220hz
+	osc
+	sine
+	mix
 
 **Wobble bass**
 >
@@ -554,7 +584,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	T2		|		yes		|		implements Chebyshev polynomial of the first kind. In plain english this means it will double the frequency of anything passed through it. Operand applies a level control, use 1 to pass through
 |	zx		|		no		|		detects negative-going zero-crossing of input. A preceeding `ramp` will generate a single pulse of 1 at the end of its cycle.
 |	lmap	|		yes		|		implements the Logistic Map. Iterates on zero-crossing of the input. Operand is the r value, suggested between 3 and 5. Preceed with `ramp` and follow with `cv2a` for audio output
-|	euclid	|		3		|		outputs euclidean rhythms at the frequency given by input as a series of pulses. Eg. for (3,8) = "X..X..X." the X will be 1 and the rests 0
+|	euclid	|		3		|		outputs euclidean rhythms at the frequency given by input as a series of pulses. Eg. output for (3,8) = "X..X..X." the X will be 1 and the rests 0
 |	exp		|		no		|		converts interval [0,1] to exponential.
 |	dial	|		no		|		plays uk telephone dialling tone
 |	dirac	|		no		|		outputs a single sample pulse when input goes from 0 to 1. Will trigger on first run of listing if input is 1

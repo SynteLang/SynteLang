@@ -106,69 +106,73 @@ const (
 	cyan    = "\x1b[36m"
 )
 
-var operators = map[string]bool{
+type ops struct {
+	Opd bool
+	N   int
+}
+
+var operators = map[string]ops{ // would be nice if switch indexes could be generated from a common root
 	// bool indicates if operand used
-	"in":    true,
-	"out":   true,
-	"out+":  true,
-	"+":     true,
-	"sine":  false,
-	"mod":   true,
-	"gt":    true,
-	"lt":    true,
-	"mul":   true,
-	"abs":   false,
-	"tanh":  false,
-	"clip":  true,
-	"noise": false,
-	"pow":   true,
-	"base":  true,
-	"push":  false,
-	"pop":   false,
-	"tape":  true,
-	"tap":   true,
-	"+tap":  true,
-	"f2c":   false,
-	"erase": true,
-	"index": false, // change to signal?
-	//	"count":	false,
-	"degrade": true,
-	//	"tempo":	true,
-	//	"pitch":	true,
-	"wav":   true,
-	"8bit":  true,
-	"x":     true, // alias of mul
-	"<sync": true,
-	">sync": false,
-	//  "nsync":  true,
-	"level":  true,
-	"*":      true, // alias of mul
-	"from":   true,
-	"sgn":    false,
-	".>sync": false,
-	//	".nsync": true,
-	"/":      true,
-	"sub":    true,
-	"setmix": true,
-	"print":  false,
-	".level": true,
+	"in":    ops{true, 4},
+	"out":   ops{true, 2},
+	"out+":  ops{true, 3},
+	"+":     ops{true, 1},
+	"sine":  ops{false, 5},
+	"mod":   ops{true, 6},
+	"gt":    ops{true, 7},
+	"lt":    ops{true, 8},
+	"mul":   ops{true, 9},
+	"abs":   ops{false, 10},
+	"tanh":  ops{false, 11},
+	"clip":  ops{true, 14},
+	"noise": ops{false, 15},
+	"pow":   ops{true, 12},
+	"base":  ops{true, 13},
+	"push":  ops{false, 16},
+	"pop":   ops{false, 17},
+	"tape":  ops{true, 18},
+	"tap":   ops{true, 19},
+	"+tap":  ops{true, 20},
+	"f2c":   ops{false, 21},
+	"index": ops{false, 24}, // change to signal?
+	"degrade": ops{true, 37},
+	"wav":   ops{true, 22},
+	"8bit":  ops{true, 23},
+	"x":     ops{true, 9}, // alias of mul
+	"<sync": ops{true, 25},
+	">sync": ops{false, 26},
+	//  "nsync":  true, 27},
+	"level":  ops{true, 28},
+	"*":      ops{true, 9}, // alias of mul
+	"from":   ops{true, 29},
+	"sgn":    ops{false, 30},
+	".>sync": ops{false, 26},
+	//	".nsync": true, 0},
+	"/":      ops{true, 32},
+	"sub":    ops{true, 33},
+	"setmix": ops{true, 34},
+	"print":  ops{false, 35},
+	".level": ops{true, 28},
+	"\\":      ops{true, 36},
+	"set½":		ops{true, 38},
 
 	// specials
-	"]":    false,
-	":":    true,
-	"fade": true,
-	"del":  true,
-	//	"propa":	true,
-	//	"jl0":		true,
-	//	"self":		true,
-	"mute":    true,
-	"solo":    true,
-	"release": true,
-	"unmute":  false,
-	".mute":   true,
-	".del":    true,
-	".solo":   true,
-	"//":      true, // comments
+	"]":    ops{false, 0},
+	":":    ops{true, 0},
+	"fade": ops{true, 0},
+	"del":  ops{true, 0},
+	//	"propa":	ops{true, 0},
+	//	"jl0":		ops{true, 0},
+	//	"self":		ops{true, 0},
+	"erase": ops{true, 0},
+	"mute":    ops{true, 0},
+	"solo":    ops{true, 0},
+	"release": ops{true, 0},
+	"unmute":  ops{false, 0},
+	".mute":   ops{true, 0},
+	".del":    ops{true, 0},
+	".solo":   ops{true, 0},
+	"//":      ops{true, 0}, // comments
 }
 
 // listing is a slice of { operator, index and operand }
@@ -176,6 +180,7 @@ type listing []struct {
 	Op  string
 	Opd string
 	N   int `json:"-"`
+	Opn int `json:"-"`
 }
 
 // 'global' transfer variable
@@ -380,12 +385,15 @@ func main() {
 				hasOpd = true
 			}
 		}
-		operators[k] = hasOpd
+		o := operators[k]
+		o.Opd = hasOpd
+		operators[k] = o
 	}
 	var funcsave bool
 	dispListings := []listing{}
 	code := &dispListings
 	paused := []float64{}
+	//soloed := []float64{}
 
 start:
 	for { // main loop
@@ -445,7 +453,7 @@ start:
 			_, f := funcs[op]
 			var operands = []string{}
 			r := op[:1] == "!" // to overwrite no-operand function, reconsider notation
-			if op2, in := operators[op]; (in && op2) || (!in && !f) || r {
+			if op2, in := operators[op]; (in && op2.Opd) || (!in && !f) || r {
 				if r { // hack to overwrite no-operand functions
 					op = op[1:]
 				}
@@ -769,7 +777,9 @@ start:
 						hasOpd = true
 					}
 				}
-				operators[newListing[st].Op] = hasOpd
+				o := operators[newListing[st].Op]
+				o.Opd = hasOpd
+				operators[newListing[st].Op] = o
 				funcs[newListing[st].Op] = newListing[st+1:]
 				dispListing = append(dispListing, listing{{Op: op, Opd: opd}}...)
 				msg("%sfunction assigned to:%s %s", italic, reset, newListing[st].Op)
@@ -914,6 +924,10 @@ start:
 					msg("%s%soperand not an integer:%s %v", red, italic, reset, rr)
 					continue
 				}
+				// if !s
+				// save mutes to soloed
+				// else
+				// revert mutes
 				i %= len(transfer.Listing) + 1 // +1 to allow solo of current listing input when sent
 				if i < 0 {
 					i = -i
@@ -938,8 +952,8 @@ start:
 				if v < 1.041e-6 { // ~20s
 					v = 1.041e-6
 				}
-				if v > 4.2e-3 { // ~5ms
-					v = 4.2e-3
+				if v > 1.04e-3 { // ~5ms
+					v = 1.04e-3
 				}
 				release = Pow(8000, -v)
 				msg("%slimiter release set to:%s %.fms", italic, reset, 1000/(v*SampleRate))
@@ -1054,14 +1068,14 @@ start:
 			for ii, o := range newListing {
 				if o.Opd == k {
 					o.N = i
-					newListing[ii] = o
 				}
 				for i, pre := range reserved {
 					if o.Opd == pre {
 						o.N = i // shadowed
-						newListing[ii] = o
 					}
 				}
+				o.Opn = operators[o.Op].N
+				newListing[ii] = o
 			}
 			i++
 		}
@@ -1545,52 +1559,54 @@ func SoundEngine(w *bufio.Writer) {
 			sigs[i][8] = mouse.Right
 			sigs[i][9] = mouse.Middle
 			for _, o := range list {
-				if r != r { // test for NaN
-					r = 0
-					info <- "Nan"
-				}
-				switch o.Op { //change string to int?
-				case "+":
+				//if r != r { // test for NaN
+				//	r = 0
+				//	info <- "NaN"
+				//}
+				switch o.Opn {
+				case 0:
+					// nop
+				case 1: //"+":
 					r += sigs[i][o.N]
-				case "out":
+				case 2: //"out":
 					sigs[i][o.N] = r
-				case "out+":
+				case 3: //"out+":
 					sigs[i][o.N] += r
-				case "in":
+				case 4: //"in":
 					r = sigs[i][o.N]
-				case "sine":
+				case 5: //"sine":
 					r = Sin(2 * Pi * r)
-				case "mod":
+				case 6: //"mod":
 					r = Mod(r, sigs[i][o.N])
-				case "gt":
+				case 7: //"gt":
 					if r >= sigs[i][o.N] {
 						r = 1
 					} else {
 						r = 0
 					}
-				case "lt":
+				case 8: //"lt":
 					if r <= sigs[i][o.N] {
 						r = 1
 					} else {
 						r = 0
 					}
-				case "mul", "x", "*":
+				case 9: //"mul", "x", "*":
 					r *= sigs[i][o.N]
-				case "abs":
+				case 10: //"abs":
 					r = Abs(r)
-				case "tanh":
+				case 11: //"tanh":
 					r = Tanh(r)
-				case "pow":
+				case 12: //"pow":
 					if r == 0 && Signbit(sigs[i][o.N]) {
 						r = Copysign(1e-308, r) // inverse is within upper range of float
 					}
 					r = Pow(r, sigs[i][o.N])
-				case "base":
+				case 13: //"base":
 					r = Pow(sigs[i][o.N], r)
 					if IsInf(r, 0) { // infinity to '93
 						r = Nextafter(r, 0)
 					}
-				case "clip":
+				case 14: //"clip":
 					switch {
 					case sigs[i][o.N] == 0:
 						if r > 1 {
@@ -1614,29 +1630,29 @@ func SoundEngine(w *bufio.Writer) {
 							r = -sigs[i][o.N]
 						}
 					}
-				case "noise":
+				case 15: //"noise":
 					no.ise() // roll a fresh one
 					r *= (2*(float64(no)/MaxUint) - 1)
-				case "push":
+				case 16: //"push":
 					stacks[i] = append(stacks[i], r)
-				case "pop":
+				case 17: //"pop":
 					r = stacks[i][len(stacks[i])-1]
 					stacks[i] = stacks[i][:len(stacks[i])-1]
-				case "tape":
+				case 18: //"tape":
 					tapes[i][n%TLlen] = r
 					sigs[i][o.N] = Abs(sigs[i][o.N])
 					r = tapes[i][int(float64(n%TLlen)*sigs[i][o.N])%TLlen]
 					// add lpf with sigs[i][o.N] as coefficient?
-				case "tap":
+				case 19: //"tap":
 					sigs[i][o.N] = Abs(1 - sigs[i][o.N])
 					r = tapes[i][(n+int(TAPE_LENGTH/(sigs[i][o.N])))%TLlen]
-				case "+tap":
+				case 20: //"+tap":
 					sigs[i][o.N] = Abs(1 - sigs[i][o.N])
 					r += tapes[i][(n+int(SampleRate*TAPE_LENGTH*(sigs[i][o.N])))%TLlen]
-				case "f2c":
+				case 21: //"f2c":
 					r = Abs(r)
 					r = 1 / (1 + 1/(2*Pi*r))
-				case "degrade": // needs more work
+				case 37: //"degrade": // needs more work
 					no.ise()
 					ii = (int(no >> 60)) % (len(listings) - 1)
 					index := (int(no >> 59)) % (len(sigs[ii]) - 1)
@@ -1647,18 +1663,18 @@ func SoundEngine(w *bufio.Writer) {
 					r += sigs[i][o.N] * sigs[ii][index]
 					//if ii< 0 { index*= -1 }
 					//if index< 0 { index*= -1 }
-				case "wav":
+				case 22: //"wav":
 					r = Abs(r)
 					r *= WAV_LENGTH
 					r = wavs[int(sigs[i][o.N])][int(r)%len(wavs[int(sigs[i][o.N])])]
-				case "8bit":
+				case 23: //"8bit":
 					r = float64(int8(r*sigs[i][o.N]*MaxInt8)) / (MaxInt8 * sigs[i][o.N])
-				case "index":
+				case 24: //"index":
 					r = float64(i) // * sigs[i][o.N]
-				case "<sync":
+				case 25: //"<sync":
 					r *= s * (1 - sync[i])
 					r += (1 - s) * sync[i] * sigs[i][o.N] // phase offset
-				case ">sync", ".>sync":
+				case 26: //">sync", ".>sync":
 					switch {
 					case r <= 0 && s == 1 && !syncInhibit[i]:
 						s = 0
@@ -1668,7 +1684,7 @@ func SoundEngine(w *bufio.Writer) {
 					case r > 0:
 						syncInhibit[i] = false
 					}
-				/*case "nsync", ".nsync":
+				/*case 27: "nsync", ".nsync":
 				ii = int(sigs[i][o.N])
 				switch {
 				case r <= 0 && sync[ii] == 0 && !syncInhibit[ii]:
@@ -1679,22 +1695,22 @@ func SoundEngine(w *bufio.Writer) {
 				case r > 0:
 					syncInhibit[ii] = false
 				}*/
-				case "level", ".level":
+				case 28: //"level", ".level":
 					level[int(sigs[i][o.N])] = r
-				case "from":
+				case 29: //"from":
 					r = sigs[int(sigs[i][o.N])][0]
-				case "sgn":
+				case 30: //"sgn":
 					r = float64(Float64bits(r)>>63)*2 - 1
-				case "deleted":
+				case 31: //"deleted":
 					sigs[i][0] = 0
-				case "/":
+				case 32: //"/":
 					if sigs[i][o.N] == 0 {
 						sigs[i][o.N] = Copysign(1e-308, sigs[i][o.N])
 					}
 					r /= sigs[i][o.N]
-				case "sub":
+				case 33: //"sub":
 					r -= sigs[i][o.N]
-				case "setmix":
+				case 34: //"setmix":
 					a := Abs(sigs[i][o.N]) + 1e-6
 					d := Log2(a / peakfreq[i])
 					if d > 1 {
@@ -1709,20 +1725,26 @@ func SoundEngine(w *bufio.Writer) {
 						//msg("l: %d mix set @ %.3f", i, peakfreq[i]*SampleRate) // debug
 					}
 					r *= Min(1, 9/(Sqrt(peakfreq[i]*SampleRate)+4.5))
-				case "print":
+				case 35: //"print":
 					if n%16384 == int(no>>51) && !exit { // dubious exit guard
 						info <- sf("listing %d: %.3f", i, r)
 					}
-				case "set½": // for internal use
+				case 38: //"set½": // for internal use
 					sigs[i][o.N] = 0.5
+				case 36: //"\\":
+					if r == 0 {
+						r = Copysign(1e-308, r)
+					}
+					r = sigs[i][o.N] / r
 				default:
 					// nop, r = r
 				}
 			}
 			//info <- sf("%v\r", sigs[i][0]) // slo-mo debug, will cause long exit! Use ctrl-c
-			if sigs[i][0] != sigs[i][0] {
+			if sigs[i][0] != sigs[i][0] { // test for NaN
 				sigs[i][0] = 0
-			} // test for NaN
+				info <- "NaN"
+			}
 			if IsInf(sigs[i][0], 0) { // infinity to '93
 				if n%24000 == 0 {
 					info <- sf("%v overflow", sigs[i][0])
@@ -1747,9 +1769,9 @@ func SoundEngine(w *bufio.Writer) {
 			x2560 = dac
 			hpf160 = (hpf160 + dac - x160) * 0.97948
 			x160 = dac
-			det = Abs(16*hpf2560 + 4*hpf160 + dac)
+			det = Abs(16*hpf2560 + 4*hpf160 + dac)/1.2
 			if det > l {
-				l = det
+				l = det // MC
 				h = release
 			}
 			dac /= l
@@ -1783,7 +1805,7 @@ func SoundEngine(w *bufio.Writer) {
 		}
 		display.Vu = peak
 		dac *= CONV_FACTOR                             // convert
-		rate = (time.Since(lastTime)*699 + rate) / 700 //weighted average
+		rate = (rate*6999 + time.Since(lastTime)) / 7000 //weighted average
 		binary.Write(w, binary.LittleEndian, int32(dac))
 		//binary.Write(w, binary.LittleEndian, int16(dac)) // for Linux
 		lastTime = time.Now()

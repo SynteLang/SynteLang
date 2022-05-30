@@ -428,7 +428,9 @@ start:
 			p("> Rate:", SampleRate, "Hz")
 			fmt.Printf("\n%sSynt\u0259%s running...\n\n", cyan, reset)
 			fmt.Printf("Protect your hearing above 85dB SPL\n\n")
-			fmt.Printf(" %swavs:%s %s\n\n", italic, reset, wavNames)
+			if len(wavNames) > 0 {
+				fmt.Printf(" %swavs:%s %s\n\n", italic, reset, wavNames)
+			}
 			fmt.Printf("\n%s%d%s:", cyan, len(dispListings), reset)
 			for i, o := range dispListing {
 				switch dispListing[i].Op {

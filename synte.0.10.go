@@ -74,8 +74,9 @@ const (
 	SNDCTL_DSP_SETFMT = IOC_INOUT | (0x04&((1<<13)-1))<<16 | 0x50<<8 | 0x05
 	//	SNDCTL_DSP_SETFMT	= 0xC0045005
 	// Format in Little Endian
-	AFMT_S32_LE = 0x00001000
-	AFMT_S16_LE = 0x00000010 // for Linux
+	AFMT_S32_LE  = 0x00001000 // use only if supported by soundcard and driver
+	AFMT_S16_LE  = 0x00000010
+	SELECTED_FMT = AFMT_S16_LE
 	// Format in Big Endian
 	//AFMT_S32_BE = 0x00002000
 	// for Stereo
@@ -84,8 +85,8 @@ const (
 	//	SNDCTL_DSP_SPEED	= IOC_INOUT |(0x04 & ((1 << 13)-1))<<16 | 0x50 << 8 | 0x02
 	SNDCTL_DSP_SPEED = 0xC0045002
 	SAMPLE_RATE      = 48000 //hertz
-	CONV_FACTOR      = MaxInt32
-	//CONV_FACTOR	 = MaxInt16 // for Linux
+	//CONV_FACTOR      = MaxInt32
+	CONV_FACTOR = MaxInt16
 
 	WAV_TIME    = 4 //seconds
 	WAV_LENGTH  = WAV_TIME * SAMPLE_RATE
@@ -113,34 +114,34 @@ type ops struct {
 
 var operators = map[string]ops{ // would be nice if switch indexes could be generated from a common root
 	// bool indicates if operand used
-	"in":    ops{true, 4},
-	"out":   ops{true, 2},
-	"out+":  ops{true, 3},
-	"+":     ops{true, 1},
-	"sine":  ops{false, 5},
-	"mod":   ops{true, 6},
-	"gt":    ops{true, 7},
-	"lt":    ops{true, 8},
-	"mul":   ops{true, 9},
-	"abs":   ops{false, 10},
-	"tanh":  ops{false, 11},
-	"clip":  ops{true, 14},
-	"noise": ops{false, 15},
-	"pow":   ops{true, 12},
-	"base":  ops{true, 13},
-	"push":  ops{false, 16},
-	"pop":   ops{false, 17},
-	"tape":  ops{true, 18},
-	"tap":   ops{true, 19},
-	"+tap":  ops{true, 20},
-	"f2c":   ops{false, 21},
-	"index": ops{false, 24}, // change to signal?
+	"in":      ops{true, 4},
+	"out":     ops{true, 2},
+	"out+":    ops{true, 3},
+	"+":       ops{true, 1},
+	"sine":    ops{false, 5},
+	"mod":     ops{true, 6},
+	"gt":      ops{true, 7},
+	"lt":      ops{true, 8},
+	"mul":     ops{true, 9},
+	"abs":     ops{false, 10},
+	"tanh":    ops{false, 11},
+	"clip":    ops{true, 14},
+	"noise":   ops{false, 15},
+	"pow":     ops{true, 12},
+	"base":    ops{true, 13},
+	"push":    ops{false, 16},
+	"pop":     ops{false, 17},
+	"tape":    ops{true, 18},
+	"tap":     ops{true, 19},
+	"+tap":    ops{true, 20},
+	"f2c":     ops{false, 21},
+	"index":   ops{false, 24}, // change to signal?
 	"degrade": ops{true, 37},
-	"wav":   ops{true, 22},
-	"8bit":  ops{true, 23},
-	"x":     ops{true, 9}, // alias of mul
-	"<sync": ops{true, 25},
-	">sync": ops{false, 26},
+	"wav":     ops{true, 22},
+	"8bit":    ops{true, 23},
+	"x":       ops{true, 9}, // alias of mul
+	"<sync":   ops{true, 25},
+	">sync":   ops{false, 26},
 	//  "nsync":  true, 27},
 	"level":  ops{true, 28},
 	"*":      ops{true, 9}, // alias of mul
@@ -153,8 +154,8 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"setmix": ops{true, 34},
 	"print":  ops{false, 35},
 	".level": ops{true, 28},
-	"\\":      ops{true, 36},
-	"set½":		ops{true, 38},
+	"\\":     ops{true, 36},
+	"set½":   ops{true, 38},
 
 	// specials
 	"]":    ops{false, 0},
@@ -164,7 +165,7 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	//	"propa":	ops{true, 0},
 	//	"jl0":		ops{true, 0},
 	//	"self":		ops{true, 0},
-	"erase": ops{true, 0},
+	"erase":   ops{true, 0},
 	"mute":    ops{true, 0},
 	"solo":    ops{true, 0},
 	"release": ops{true, 0},
@@ -208,7 +209,7 @@ var (
 var ( // misc
 	SampleRate float64
 	TLlen      int
-	fade       float64 = Pow(1e-4, 1/(325e-3*SAMPLE_RATE)) // 100ms
+	fade       float64 = Pow(1e-4, 1/(275e-3*SAMPLE_RATE)) // 275ms
 	protected  bool    = true
 	release    float64 = Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
 )
@@ -285,8 +286,7 @@ func main() {
 
 	// set bit format
 	var req uint32 = SNDCTL_DSP_SETFMT
-	var data uint32 = AFMT_S32_LE
-	//var data uint32 = AFMT_S16_LE // for Linux
+	var data uint32 = SELECTED_FMT
 	_, _, ern := syscall.Syscall(
 		syscall.SYS_IOCTL,
 		uintptr(f.Fd()),
@@ -297,8 +297,17 @@ func main() {
 		fmt.Println("set format:", ern)
 		time.Sleep(time.Second)
 	}
-	format := data / 128
-	//format := data // for Linux
+	var format uint32
+	if data != SELECTED_FMT {
+		p("Incorrect bit format! Change requested format in file")
+		os.Exit(1)
+	}
+	switch {
+	case data == AFMT_S32_LE:
+		format = 32
+	case data == AFMT_S16_LE:
+		format = 16
+	}
 
 	// set sample rate
 	req = SNDCTL_DSP_SPEED
@@ -364,10 +373,10 @@ func main() {
 	//signals slice with reserved signals
 	reserved := []string{ // order is important
 		"dac",
-		"",      // nil signal for unused operand
-		"α",     // cvflt coeff, no longer in use
-		"sync",  // remove
-		"", // tempo, deprecated
+		"",     // nil signal for unused operand
+		"α",    // cvflt coeff, no longer in use
+		"sync", // remove
+		"",     // tempo, deprecated
 		"mousex",
 		"mousey",
 		"butt1",
@@ -949,7 +958,7 @@ start:
 				continue
 			case "release":
 				v, _ := strconv.ParseFloat(operands[0], 64) // error already checked in parseType()
-				if v < 1.041e-6 { // ~20s
+				if v < 1.041e-6 {                           // ~20s
 					v = 1.041e-6
 				}
 				if v > 1.04e-3 { // ~5ms
@@ -997,7 +1006,7 @@ start:
 				}
 				operands[0] = opd
 			case "noise": // set ^freq for `mix` function
-				newListing = append(newListing, listing{{Op:"set½", Opd:"^freq"}}...)
+				newListing = append(newListing, listing{{Op: "set½", Opd: "^freq"}}...)
 			}
 
 			if opd == "[" { // function definition
@@ -1769,7 +1778,7 @@ func SoundEngine(w *bufio.Writer) {
 			x2560 = dac
 			hpf160 = (hpf160 + dac - x160) * 0.97948
 			x160 = dac
-			det = Abs(16*hpf2560 + 4*hpf160 + dac)/1.2
+			det = Abs(16*hpf2560+4*hpf160+dac) / 1.2
 			if det > l {
 				l = det // MC
 				h = release
@@ -1804,10 +1813,10 @@ func SoundEngine(w *bufio.Writer) {
 			peak = 0
 		}
 		display.Vu = peak
-		dac *= CONV_FACTOR                             // convert
+		dac *= CONV_FACTOR                               // convert
 		rate = (rate*6999 + time.Since(lastTime)) / 7000 //weighted average
-		binary.Write(w, binary.LittleEndian, int32(dac))
-		//binary.Write(w, binary.LittleEndian, int16(dac)) // for Linux
+		//binary.Write(w, binary.LittleEndian, int32(dac)) // 32bit write
+		binary.Write(w, binary.LittleEndian, int16(dac))
 		lastTime = time.Now()
 		display.Load = rate
 		dac = 0

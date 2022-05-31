@@ -123,7 +123,6 @@ A name represents a signal, Signals are used to store or share values using the 
 You can only output to one unique signal, but you can input multiple times from the same signal.  
 Think of it as a confluence of rivers flowing into one another to reach the sea. Many inputs, one output.  
 If you want to send two values to the same signal, either add them or combine them in other ways using operators first.    
-A signal name that isn't visible if it is within a function in the necklace will still count as a duplicate. For this reason a list of signals is displayed in the terminal running info.go . Most signals within functions are labelled a, b or c so try the next letter of the alphabet instead.
 
 Some operators and functions do not need an operand, simply press enter after the name.
 
@@ -184,21 +183,21 @@ Guitar → fx pedal → amplifier
 
 This is the equivalent to a necklace in syntə, for example something like:
 
-frequency → osc → filt → out dac
+frequency → osc → filt → mix
 
-But in this case syntə is the guitar and the guitarist too. So in code `in 330, osc, osc, out dac` would be a frequency controlling the frequency of another oscillator.
+But in this case syntə is the guitar and the guitarist too. So in code `in 330, osc, osc, mix` would be a frequency controlling the frequency of another oscillator.
 In this case the frequency of the second oscillator will only change from 0 to 1, so we can:
 
-`in 330hz, osc, mul f, osc, out dac`
+`in 330hz, osc, mul f, osc, mix`
 
 where f is now the maximum frequency we span to. You can use a number such as 200 instead, or feed in a value by sending to f from somewhere else. The listing display indicates where a result is passed down the chain by a curly arrow on the left. The operators `in`, `pop`, and `tap` break the chain and start a with value which is either the operand, the top of the stack, or the specified delay tap, respectively.
 
 If we examine the guitarist example more closely , we realise that the fx pedal will likely contain modulators such as LFOs, along with filters, wave shapers etc.
 So we can extend our analogous model to something like:
 
-`in 2.5, osc, inv, out b, tri, out c, in 330hz, osc, mul b, filt c, mix`
+`in 2.5hz, osc, inv, out a, tri, out c, in 330hz, osc, mul a, filt c, mix`
 
-Notice that the first oscillator is now generating a 2.5 hertz low frequency modulation. It is inverted before being send to b, and then shaped into a triangle wave and send to c. The second osc now operates at a fixed frequency of 330 hertz and is multiplied by b (acting like a VCA to control the volume) and filtered by c before being mixed and send to the output.
+Notice that the first oscillator is now generating a 2.5 hertz low frequency modulation. It is inverted before being send to a, and then shaped into a triangle wave and send to c. The second osc now operates at a fixed frequency of 330 hertz and is multiplied by a (acting like a VCA to control the volume) and filtered by c before being mixed and send to the output.
 
 Which leads us to 
 
@@ -208,7 +207,7 @@ To assist in writing necklaces of operations here are some useful heuristics/sug
 
 - Low to high. Start from low frequencies (less than 20 hertz) for modulation and combine them and/or outputting to signals with `out` for later use, before progressing to high (audible) frequencies.  
 
-- name each signal by the next available letter of the alphabet. Added functions will contain signals that are numbered to avoid conflicts, these are displayed in the `info.go` terminal so you can avoid them. ◊  Another approach, which is good for beginners is semantic naming, which is a clever way of saying to give a name that describes what the value represents - what it *means*. For example: OscPitch, modulatorA, lfo, env1 etc.
+- name each signal by the next available letter of the alphabet. Another approach, which is good for beginners is semantic naming, which is a clever way of saying to give a name that describes what the value represents - what it *means*. For example: OscPitch, modulatorA, lfo, env1 etc.
 
 - if you realise that you need to add in further modulation or adjust values, you can use `push` to break the necklace and then `pop` to resume later.
 
@@ -224,23 +223,21 @@ Add two or three separate listings of this code for a relaxing beach experience.
 	+ 0.05hz
 	osc
 	tri
-	out b
+	out a
 	noise
-	filt b
+	filt a
 	mix
-
-The first `out` register is named `b` because `a` is already in use within the `osc` function
 
 **Kick and hihat**
 >
 	in 2hz (or 120bpm)
 	posc
 	inv
-	out b
+	out a
 	mul 55hz
 	osc
 	sine
-	mul b
+	mul a
 	mul 3
 	tanh
 	mix
@@ -266,10 +263,10 @@ Here the clip operator is used to shape the VCA envelope of the hi-hat and the l
 >
 	in 3.5hz
 	ramp
-	out b
+	out a
 	in 8hz
 	osc
-	s/h b
+	s/h a
 	mul 3.5
 	mul 8
 	mod 3
@@ -296,7 +293,7 @@ The bpm could be interpreted as quarter notes at 120bpm, because 8 / 4 = 2 and 2
 	out+ pitch
 	in tempo
 	pulse 3/4
-	\+ pitch
+	+ pitch
 	base 2
 	mul 330hz
 	sino
@@ -340,14 +337,14 @@ This sequence will play a descending series of quarter notes spaced by an octave
 	in 135bpm
 	osc
 	tri
-	out b
+	out a
 	in 55
 	osc
 	sine
 	mul 5
 	tanh
-	mul b
-	filt b
+	mul a
+	filt a
 	mix
 
 **Siren** (note similarity to wobble)
@@ -369,11 +366,11 @@ This sequence will play a descending series of quarter notes spaced by an octave
 	mul 8
 	osc
 	gt 0.5
-	out b
+	out a
 	in 5
 	osc
 	gt 0.9
-	mul b
+	mul a
 	noise
 	mix
 
@@ -405,11 +402,11 @@ The `mousex` register supplies the relative X co-ordinate motion transmittted by
 	osc
 	mul 0.25/50
 	mul 0.9
-	out b
+	out a
 	in wavR
 	mul 0.1
 	osc
-	+ b
+	+ a
 	wav [name of wav file]
 	out dac
 
@@ -420,11 +417,11 @@ The values 0.9 and 0.1 should sum to 1 to maintain original pitch. 0.25 is the f
 	in 0.3
 	osc
 	lt 1/20
-	out b
+	out a
 	in 440hz
 	osc
 	sine
-	mul b
+	mul a
 	+ c
 	push
 	tape 1
@@ -446,7 +443,7 @@ The reverb begins at the `+ c` line. the output is pushed onto the stack before 
 	inv
 	base E
 	+ -1
-	out b
+	out a
 	in 280hz
 	osc
 	sine
@@ -454,7 +451,7 @@ The reverb begins at the `+ c` line. the output is pushed onto the stack before 
 	+ 105hz
 	osc
 	sine
-	mul b
+	mul a
 	mix
 
 Here, we use the `base` operator to shape the inverted ramp wave from osc into an exponential decay to control the amplitude of the bell. Feeding the output of the second `osc` into a third one results in FM synthesis, that is the output of one oscillator controls or modulates the frequency of the next.
@@ -464,17 +461,17 @@ Here, we use the `base` operator to shape the inverted ramp wave from osc into a
 	in 1/6
 	osc
 	lt 1/3
-	out b
+	out a
 	in 480hz
 	sino
 	out c
 	in 440hz
 	sino
 	+ c
-	mul b
+	mul a
 	mix
 
-Although not perticularly musical, this simple necklace illustrates mixing two signals and gating them (turning on and off) with a third signal which is a pulse wave. The `pulse` function can be used instead to gate a signal by a variable width. `slew 150` could be added before `out b` to smoothen the pulse for a less clicky sound.
+Although not perticularly musical, this simple necklace illustrates mixing two signals and gating them (turning on and off) with a third signal which is a pulse wave. The `pulse` function can be used instead to gate a signal by a variable width. `slew 150` could be added before `out a` to smoothen the pulse for a less clicky sound.
 
 **Euclidean Rhythm**
 >
@@ -581,7 +578,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	ramp	|		no		|		like `osc` but with an output suitable for audio, i.e. spans -1 to 1
 |	posc	|		yes		|		like `osc` but will retrigger on a sync pulse. Operand sets phase offset
 |	slew	|		yes		|		slew generator. Swings to the input at a rate given by operand. Try 150hz to reduce clicks on vca signals ( i.e. multiplying audio values)
-|	T2		|		yes		|		implements Chebyshev polynomial of the first kind. In plain english this means it will double the frequency of anything passed through it. Operand applies a level control, use 1 to pass through
+|	T2		|		no		|		implements Chebyshev polynomial of the first kind. In plain english this means it will double the frequency of anything passed through it
 |	zx		|		no		|		detects negative-going zero-crossing of input. A preceeding `ramp` will generate a single pulse of 1 at the end of its cycle.
 |	lmap	|		yes		|		implements the Logistic Map. Iterates on zero-crossing of the input. Operand is the r value, suggested between 3 and 5. Preceed with `ramp` and follow with `cv2a` for audio output
 |	euclid	|		3		|		outputs euclidean rhythms at the frequency given by input as a series of pulses. Eg. output for (3,8) = "X..X..X." the X will be 1 and the rests 0
@@ -654,7 +651,7 @@ wavR is a pre-defined constant which gives the playback speed for a sample recor
 	out dac
 
 
-By design only the first 4 seconds of any wav file will be loaded. Two reasons for this are fast-loading times and to encourage creativity. You can manually edit any wav file in a free program such as Audacity to ensure the part you want to play if within the first 4 seconds, ideally starting at the beginning of the sample. Samples less then 4 seconds long are fine.
+By design only the first 4 seconds of any wav file will be loaded. Two reasons for this are fast-loading times and to encourage creativity. You can manually edit any wav file in a free program such as Audacity to ensure the part you want to play is within the first 4 seconds, ideally starting at the beginning of the sample. Samples less then 4 seconds long are fine.
 
 Later on, the intention is to provide more flexibility in synchronising other necklaces to wav files using `len<wavname>` signals. There is still plenty to be done in testing and possibly reworking parts of sample playback. ◊  
 
@@ -662,7 +659,7 @@ Later on, the intention is to provide more flexibility in synchronising other ne
 Each listing has a tape loop available which is accessed by the `tape` operator. The tape loop is a rolling buffer of 1 second in length. The output of `tape` is the 'record head', which is the input delayed by one second. For other delay times the loop can be accessed by the tap operator, where the fractional part of the operand sets the delay time. For example an operand of value 2.3 will give a tap at 300 milliseconds (0.3s). Multiple `tap` operators can be used. The use of multiple `tape` operators is undefined.
 
 ## Arithmetic operations
-An operand may be added in a listing of the form a/b or axb where a and b are valid numbers and the result is divison and multiplication respectively. For example: typing  
+An operand may be added in a listing of the form a/b or a\*b where a and b are valid numbers and the result is divison and multiplication respectively. For example: typing  
 >
 	in 2/3  
 will result in  
@@ -673,28 +670,28 @@ being added to the listing
 ## Type system
 This is a fancy term for inputting numerical values with a unit of measurement. If you tell someone a duration you might say: "it will take three hours", you don't just say "it will take three". In a similar way Syntə expects to be told what the number you have input means. A number can be a frequency expressed in Hertz, A bpm (beats per minute), a time in seconds or milliseconds, or a decibel level (negative numbers reduce signal level, postive increases). For example:
 
-	440hz	<= this is the approximate frequency of the note A
+	440hz   <= this is the approximate frequency of the note A
 
 	135bpm  <= a typical house music tempo
 
-	10s		<= ten seconds, equivalent to 0.1hz
+	10s     <= ten seconds, equivalent to 0.1hz
 
-	50ms	<= 50 milliseconds, equivalent to 20hz - the lowest audible frequency
+	50ms    <= 50 milliseconds, equivalent to 20hz - the lowest audible frequency
 
-	6db		<= double the magnitude (by multiplying the signal)
-	-6db	<= halve the magnitude (by multiplying the signal)
+	6db     <= double the magnitude (by multiplying the signal)
+	-6db    <= halve the magnitude (by multiplying the signal)
 
-Internally all these numbers are converted to a unitless number within Syntə which is typically between zero and one, except in the case of 6db which is 2, 12db is 4 etc. The calculation to covert frequencies is:
-	input / sample rate
-And for seconds is:
-	1 / ( input * sample rate )
+Internally all these numbers are converted to a unitless number within Syntə which is typically between zero and one, except in the case of 6db which is 2, 12db is 4 etc. The calculation to convert frequencies is:  
+	input / sample rate  
+And for seconds is:  
+	1 / ( input \* sample rate )  
 
 ## Signals
 
 Signals are the way of passing values around outside of the main flow through the necklace. Signals which are named and not just numbers can be referred to as registers, because they *register* a value. Usually the default value of a signal is 0. If you want it to begin as 1, add ' to the name. So `a` becomes `'a`. Likewise you can use the double quotaion mark " to have a default value of one half. If you want to be able to overwrite the value of a signal with `out` (more than once in a necklace), which is not normally possible, you can add ^ to the name. So `a` becomes `^a`. You can use both of these special symbols, but the circumflex ^ must come first or it will be ignored.
 
 ## Channels ◊  
-At present the output is in mono. Stereo output should be possible and is intended to be implemented in future. This will probably be via `out L` or `out R`, while `out dac` sends to bothleft and right channels. Please feel free to badger the author if you are keen for this to happen. 
+At present the output is in mono. Stereo output should be possible and is intended to be implemented in future. This will probably be via `out L` or `out R`, while `out dac` sends to both left and right channels. Please feel free to badger the author if you are keen for this to happen. 
 
 ## Synchronisation ◊  
 By default (and by design) when a listing is sent to the sound engine it starts immediately. The synchronisation operators `>sync` and `\<sync` can be used to co-ordinate listings to play in time with one another. First, for a rhythmic element use the phase synchronised oscillator `posc` instead of osc. This contains a `\<sync` operation which will reset the waveform when it receives a sync pulse. The `posc` operator requires a number betweeen 0 and 1 to offset the phase, you can use 0 to start with and experiment later. For reference 0.5 would result in a phase shift of 180°, 1 would be 360° etc. To send a sync pulse you can use `>sync` to synchronise all listings containing a `posc` or `nsync` to synchronise just one. For `>sync` you can either:

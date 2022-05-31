@@ -100,11 +100,11 @@ func main() {
 			}
 
 			loadColour := ""
-			load := float64(display.Load) / (1e9 / display.SR)
-			minLoad := 0.035
-			load = math.Max(load, minLoad)
-			load = (load - minLoad) / (1 - minLoad)
-			if load > 0.9 {
+			load := 0.0
+			if display.List > 0 {
+				load = float64(display.Load) / (1e9 / display.SR)
+			}
+			if load > 0.8 {
 				loadColour = red
 			}
 			L := fmt.Sprintf("%s%0.2f%s", loadColour, load, reset)

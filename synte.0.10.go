@@ -401,7 +401,7 @@ func main() {
 	var funcsave bool
 	dispListings := []listing{}
 	code := &dispListings
-	paused := []float64{}
+	priorMutes := []float64{}
 	//soloed := []float64{}
 
 start:
@@ -422,6 +422,7 @@ start:
 		var hasTape bool
 
 	input:
+		// this loop is due to be refactored. Likely type parsing will happen at end and include expression evaluation
 		for { // input loop
 			fmt.Printf("\033[H\033[2J") // this clears prior error messages!
 			p("> Format:", format, "bit")
@@ -484,6 +485,7 @@ start:
 					continue
 				}
 				for i, opd := range operands { // opd is shadowed
+					// future: evaluate multiple operands in function case below only
 					wav := wmap[opd] // wavs can start with a number
 					if len(opd) == 0 {
 						msg("%s%sblank in expression %d ignored%s", red, italic, i+1, reset)
@@ -565,7 +567,7 @@ start:
 				case "pause":
 					if started && !display.Paused {
 						for i, m := range mute { // save mutes
-							paused = append(paused, m)
+							priorMutes = append(priorMutes, m)
 							mute[i] = 0
 						}
 						time.Sleep(51 * time.Millisecond) // wait for mutes
@@ -578,9 +580,9 @@ start:
 				case "play":
 					if display.Paused {
 						for i := range mute { // restore mutes
-							mute[i] = paused[i]
+							mute[i] = priorMutes[i]
 						}
-						paused = []float64{}
+						priorMutes = []float64{}
 						time.Sleep(51 * time.Millisecond) // wait for mutes
 						<-pause
 						display.Paused = false
@@ -613,7 +615,8 @@ start:
 					mute = mute[:len(mute)-1]
 					display.Mute = display.Mute[:len(display.Mute)-1]
 					level = level[:len(level)-1]
-					display.List = len(transfer.Listing)
+					//display.List = len(transfer.Listing)
+					display.List--
 					transmit <- true
 					<-accepted
 					msg("\tSound Engine restarted")
@@ -753,9 +756,9 @@ start:
 				}
 				if display.Paused {
 					for i := range mute { // restore mutes
-						mute[i] = paused[i]
+						mute[i] = priorMutes[i]
 					}
-					paused = []float64{}
+					priorMutes = []float64{}
 					<-pause
 					display.Paused = false
 					msg("\t%splay resumed...%s", italic, reset)
@@ -764,6 +767,7 @@ start:
 				time.Sleep(51 * time.Millisecond) // wait for envelope to complete
 				transfer.Listing[n] = listing{{Op: "deleted"}}
 				dispListings[n] = listing{{Op: "deleted"}}
+				display.List--
 				transmit <- true
 				<-accepted
 				if !save(*code, "displaylisting.json") {
@@ -1009,6 +1013,8 @@ start:
 				operands[0] = opd
 			case "noise": // set ^freq for `mix` function
 				newListing = append(newListing, listing{{Op: "set½", Opd: "^freq"}}...)
+			default:
+				// parse other types (refactor change)
 			}
 
 			if opd == "[" { // function definition
@@ -1094,9 +1100,9 @@ start:
 		dispListings = append(dispListings, dispListing)
 		if display.Paused {
 			for i := range mute { // restore mutes
-				mute[i] = paused[i]
+				mute[i] = priorMutes[i]
 			}
-			paused = []float64{}
+			priorMutes = []float64{}
 			time.Sleep(51 * time.Millisecond) // wait for mutes
 			<-pause
 			display.Paused = false
@@ -1108,7 +1114,8 @@ start:
 		mute = append(mute, 1)
 		display.Mute = append(display.Mute, false)
 		level = append(level, 1)
-		display.List = len(transfer.Listing)
+		//display.List = len(transfer.Listing)
+		display.List++
 		transmit <- true
 		<-accepted
 		if !started {
@@ -1148,6 +1155,7 @@ start:
 
 func parseType(expr, op string) (n float64, b bool) {
 	//func parseType(expr, op string) (y func(), b bool) { // possible upgrade
+	// or expression evaluated here instead
 	switch op { // ignore for following operators
 	case "mute", ".mute", "del", ".del", "solo", ".solo", "level", ".level", "from":
 		return 0, true
@@ -1762,9 +1770,9 @@ func SoundEngine(w *bufio.Writer) {
 				}
 				sigs[i][0] = 0
 			}
-			m[i] = (m[i]*69 + mute[i]) / 70  // anti-click filter @ ~100Hz
-			lv[i] = (lv[i]*7 + level[i]) / 8 // @ 1273Hz
-			dac += sigs[i][0] * m[i] * m[i] * lv[i]
+			m[i] = (m[i]*69 + mute[i]) / 70         // anti-click filter @ ~110Hz
+			lv[i] = (lv[i]*7 + level[i]) / 8        // @ 1273Hz
+			dac += sigs[i][0] * m[i] * m[i] * lv[i] // mute transition is quadratic
 		}
 		if n := len(listings); n > 4 {
 			dac /= float64(n)

@@ -269,7 +269,7 @@ you exceed these limits:
 
 func main() {
 	for i := 0; i < 45; i++ { // to preserve extant std out
-		fmt.Printf("\n")
+		pf("\n")
 	}
 	record := true
 	// open audio output (everything is a file...)
@@ -294,7 +294,7 @@ func main() {
 		uintptr(unsafe.Pointer(&data)),
 	)
 	if ern != 0 {
-		fmt.Println("set format:", ern)
+		p("set format:", ern)
 		time.Sleep(time.Second)
 	}
 	var format uint32
@@ -319,7 +319,7 @@ func main() {
 		uintptr(unsafe.Pointer(&data)),
 	)
 	if ern != 0 {
-		fmt.Println("set rate:", ern)
+		p("set rate:", ern)
 		time.Sleep(time.Second)
 	}
 	SampleRate = float64(data)
@@ -402,7 +402,7 @@ func main() {
 	dispListings := []listing{}
 	code := &dispListings
 	priorMutes := []float64{}
-	//soloed := []float64{}
+	solo := map[int]bool{}
 
 start:
 	for { // main loop
@@ -424,39 +424,39 @@ start:
 	input:
 		// this loop is due to be refactored. Likely type parsing will happen at end and include expression evaluation
 		for { // input loop
-			fmt.Printf("\033[H\033[2J") // this clears prior error messages!
+			pf("\033[H\033[2J") // this clears prior error messages!
 			p("> Format:", format, "bit")
 			p("> Rate:", SampleRate, "Hz")
-			fmt.Printf("\n%sSynt\u0259%s running...\n\n", cyan, reset)
-			fmt.Printf("Protect your hearing above 85dB SPL\n\n")
+			pf("\n%sSynt\u0259%s running...\n\n", cyan, reset)
+			pf("Protect your hearing above 85dB SPL\n\n")
 			if len(wavNames) > 0 {
-				fmt.Printf(" %swavs:%s %s\n\n", italic, reset, wavNames)
+				pf(" %swavs:%s %s\n\n", italic, reset, wavNames)
 			}
-			fmt.Printf("\n%s%d%s:", cyan, len(dispListings), reset)
+			pf("\n%s%d%s:", cyan, len(dispListings), reset)
 			for i, o := range dispListing {
 				switch dispListing[i].Op {
 				case "in", "pop", "tap", "index", "]":
-					fmt.Printf("\t  %s%s %s%s\n", yellow, o.Op, o.Opd, reset)
+					pf("\t  %s%s %s%s\n", yellow, o.Op, o.Opd, reset)
 				default:
 					_, f := funcs[dispListing[i].Op]
 					//_, r := sg[dispListing[i].Op] // colour for predefined
 					switch {
 					case f:
-						fmt.Printf("\t\u21AA %s%s %s%s\n", magenta, o.Op, o.Opd, reset)
+						pf("\t\u21AA %s%s %s%s\n", magenta, o.Op, o.Opd, reset)
 					//case r:
-					//	fmt.Printf("\t\u21AA %s%s %s%s\n", cyan, o.Op, o.Opd, reset)
+					//	pf("\t\u21AA %s%s %s%s\n", cyan, o.Op, o.Opd, reset)
 					default:
-						fmt.Printf("\t\u21AA %s%s %s%s\n", yellow, o.Op, o.Opd, reset)
+						pf("\t\u21AA %s%s %s%s\n", yellow, o.Op, o.Opd, reset)
 					}
 				}
 			}
 			s := bufio.NewScanner(os.Stdin)
 			s.Split(bufio.ScanWords)
 			op, opd := "", ""
-			fmt.Printf("\t  ")
-			fmt.Printf("%s", yellow)
+			pf("\t  ")
+			pf("%s", yellow)
 			s.Scan()
-			fmt.Printf("%s", reset)
+			pf("%s", reset)
 			op = s.Text()
 			if op == "func!" || op == "deleted" {
 				msg("%s%soperator not permitted%s", red, italic, reset)
@@ -469,10 +469,10 @@ start:
 				if r { // hack to overwrite no-operand functions
 					op = op[1:]
 				}
-				fmt.Printf("%s", yellow)
+				pf("%s", yellow)
 				s.Scan()
 				opd = s.Text()
-				fmt.Printf("%s", reset)
+				pf("%s", reset)
 				if !in && !f && opd != "[" {
 					//if not defining a new function, must be extant operator or function
 					msg("%s%soperator or function doesn't exist, create with \"[\" operand%s", red, italic, reset)
@@ -534,7 +534,7 @@ start:
 			case ":": //mode setting
 				switch opd {
 				case "exit":
-					p("exiting...")
+					p("\nexiting...")
 					if display.Paused {
 						for i := range mute {
 							mute[i] = 0
@@ -544,9 +544,14 @@ start:
 						<-pause
 					}
 					exit = true
+					// clear info display on exit
 					if started {
 						<-stop
 					}
+					p("Stopped")
+					d := Disp{}
+					d = Disp{Info: "clear"}
+					save(d, "infodisplay.json")
 					if funcsave {
 						if !save(funcs, "functions.json") {
 							msg("functions not saved!")
@@ -566,8 +571,7 @@ start:
 					continue
 				case "pause":
 					if started && !display.Paused {
-						for i, m := range mute { // save mutes
-							priorMutes = append(priorMutes, m)
+						for i := range mute { // save mutes
 							mute[i] = 0
 						}
 						time.Sleep(51 * time.Millisecond) // wait for mutes
@@ -582,11 +586,9 @@ start:
 						for i := range mute { // restore mutes
 							mute[i] = priorMutes[i]
 						}
-						priorMutes = []float64{}
 						time.Sleep(51 * time.Millisecond) // wait for mutes
 						<-pause
 						display.Paused = false
-						msg("\t%splay resumed...%s", italic, reset)
 					}
 					continue
 				case "unprotected":
@@ -615,7 +617,6 @@ start:
 					mute = mute[:len(mute)-1]
 					display.Mute = display.Mute[:len(display.Mute)-1]
 					level = level[:len(level)-1]
-					//display.List = len(transfer.Listing)
 					display.List--
 					transmit <- true
 					<-accepted
@@ -758,7 +759,6 @@ start:
 					for i := range mute { // restore mutes
 						mute[i] = priorMutes[i]
 					}
-					priorMutes = []float64{}
 					<-pause
 					display.Paused = false
 					msg("\t%splay resumed...%s", italic, reset)
@@ -907,6 +907,7 @@ start:
 				}
 				mute[i] = 1 - mute[i]
 				display.Mute[i] = mute[i] == 0
+				priorMutes[i] = mute[i]
 				if op[:1] == "." && len(newListing) > 0 {
 					dispListing = append(dispListing, listing{{Op: "mix"}}...)
 					newListing = append(newListing, listing{{Op: "setmix", Opd: "^freq"}}...) // hacky
@@ -939,21 +940,28 @@ start:
 					msg("%s%soperand not an integer:%s %v", red, italic, reset, rr)
 					continue
 				}
-				// if !s
-				// save mutes to soloed
-				// else
-				// revert mutes
+				// apply modulus to i for programmatic arguments
 				i %= len(transfer.Listing) + 1 // +1 to allow solo of current listing input when sent
 				if i < 0 {
 					i = -i
 				}
-				for i := range mute {
-					mute[i] = 0
-					display.Mute[i] = true
-				}
-				if i < len(transfer.Listing) {
-					mute[i] = 1
-					display.Mute[i] = false
+				if solo[i] {
+					for i := range mute { // i is shadowed
+						mute[i] = priorMutes[i]
+						display.Mute[i] = mute[i] == 0
+						solo[i] = false
+					}
+				} else {
+					for i := range mute { // i is shadowed
+						priorMutes[i] = mute[i]
+						mute[i] = 0
+						display.Mute[i] = true
+					}
+					if i < len(transfer.Listing) { // only solo extant listings, new will be unmuted
+						mute[i] = 1
+						display.Mute[i] = false
+					}
+					solo[i] = true
 				}
 				if op[:1] == "." && len(newListing) > 0 {
 					dispListing = append(dispListing, listing{{Op: "mix"}}...)
@@ -1102,7 +1110,6 @@ start:
 			for i := range mute { // restore mutes
 				mute[i] = priorMutes[i]
 			}
-			priorMutes = []float64{}
 			time.Sleep(51 * time.Millisecond) // wait for mutes
 			<-pause
 			display.Paused = false
@@ -1112,9 +1119,9 @@ start:
 		transfer.Listing = append(transfer.Listing, newListing)
 		transfer.Signals = append(transfer.Signals, sig)
 		mute = append(mute, 1)
+		priorMutes = append(priorMutes, 1)
 		display.Mute = append(display.Mute, false)
 		level = append(level, 1)
-		//display.List = len(transfer.Listing)
 		display.List++
 		transmit <- true
 		<-accepted
@@ -1263,7 +1270,7 @@ func decodeWavs() (wavs, bool) {
 		}
 	}
 	if len(filelist) == 0 {
-		info <- "no wav files found"
+		msg("no wav files found")
 		return nil, false
 	}
 	pf("%sProcessing wavs...%s", italic, reset)
@@ -1428,7 +1435,7 @@ func mouseRead() {
 			}
 		}
 		if e(rr) {
-			fmt.Printf("%serror reading %s: %v\r", reset, file, rr)
+			pf("%serror reading %s: %v\r", reset, file, rr)
 			msg("error reading mouse data")
 			return
 		}
@@ -1443,14 +1450,6 @@ func mouseRead() {
 
 func infodisplay() {
 	file := "infodisplay.json"
-	disp, rr := os.Create(file)
-	if e(rr) {
-		p("error opening '"+file+"':", rr)
-		p("unable to display info display, make sure 'infodisplay.json' is in folder")
-		return
-	}
-	defer disp.Close()
-	d := bufio.NewReader(disp)
 	n := 0
 	for {
 		display.Protect = protected
@@ -1464,13 +1463,11 @@ func infodisplay() {
 			// passthrough
 		}
 		if !save(display, file) {
-			fmt.Printf("%sinfo display not updated, check file %s%s%s exists%s\n",
-				italic, reset, d, italic, reset)
+			pf("%sinfo display not updated, check file %s%s%s exists%s\n",
+				italic, reset, file, italic, reset)
 			time.Sleep(2 * time.Second)
 		}
 		if exit { //display doesn't run during fade out
-			display = Disp{List: -1}
-			save(display, file)
 			break
 		}
 		time.Sleep(38627 * time.Microsecond) // coarse loop timing
@@ -1545,7 +1542,6 @@ func SoundEngine(w *bufio.Writer) {
 		select {
 		case <-pause:
 			p = true
-			info <- sf("\t%spaused...%s", italic, reset)
 		case <-transmit:
 			listings = make([]listing, len(transfer.Listing))
 			copy(listings, transfer.Listing)
@@ -1770,7 +1766,7 @@ func SoundEngine(w *bufio.Writer) {
 				}
 				sigs[i][0] = 0
 			}
-			m[i] = (m[i]*69 + mute[i]) / 70         // anti-click filter @ ~110Hz
+			m[i] = (m[i]*39 + mute[i]) / 40         // anti-click filter @ ~110Hz
 			lv[i] = (lv[i]*7 + level[i]) / 8        // @ 1273Hz
 			dac += sigs[i][0] * m[i] * m[i] * lv[i] // mute transition is quadratic
 		}
@@ -1848,13 +1844,6 @@ func SoundEngine(w *bufio.Writer) {
 		n++
 	}
 	w.Flush()
-	fmt.Println("Stopped")
-	loadColour := ""
-	load := float64(rate) / (1e9 / SampleRate)
-	if load > 0.75 {
-		loadColour = red
-	}
-	fmt.Printf("%sload: %0.3f%s cycles: %d\n", loadColour, load, reset, n)
 	close(stop)
 }
 

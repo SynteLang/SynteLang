@@ -550,7 +550,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	index	|		yes		|		access index of listing
 |	mute 	|		yes		|		mute  or un-mute listing at index given by operand. Muting won't affect sync operations sent by a listing
 |	unmute 	|		no		|		un-mute all muted listings
-|	solo	|		yes		|		solo listing at index given by operand. Solo-ing the same listing twice will have no effect
+|	solo	|		yes		|		solo listing at index given by operand (all other listings are muted). Solo-ing the same listing twice will reinstate prior mutes, including if a previous solo state
 |	release	|		yes		|		set the release constant of the built in limiter. The limiter VCA envelope will decay by approximately 70dB in the operand time given in milliseconds. Default is 1s. Times of less than ~200ms may result in audible distortion or pumping. Times greater than ~2s will have a slow response to a decrease in level. The limiter has absolute peak detection (non-interpolated) and the attack (onset) is instantaneous. The decay curve is not stricly exponential as it has a slow onset to avoid distortion. Any listings that are much louder than the others will bring down the volume of all listings.  
 |	.mute 	|		yes		|		equivalent to `mute` except will insert 'out dac' to launch listing
 |	.del 	|		yes		|		equivalent to `del` except will insert 'out dac' to launch listing. Used in effect to replace a listing

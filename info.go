@@ -63,7 +63,7 @@ func main() {
 	var exit bool
 	stop := make(chan struct{})
 
-	go func() {
+	go func() { // anonymous to include above variables in scope
 		for {
 			Json, err := os.ReadFile(file)
 			err2 := json.Unmarshal(Json, &display)
@@ -119,12 +119,12 @@ func main() {
 					messages[i].Content = ""
 				}
 			}
-			for i, m := range messages {
+			/*for i, m := range messages {
 				if time.Since(m.Added) > (60*time.Duration(i)+60)*time.Second {
 					m.Content = ""
 				}
 				messages[i] = m
-			}
+			}*/
 			if !display.Protect && display.List > 0 {
 				if display.Clip {
 					unprotected = fmt.Sprintf("%sUnprotected%s", invert, reset)

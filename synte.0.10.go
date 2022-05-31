@@ -276,7 +276,7 @@ func main() {
 	file := "/dev/dsp"
 	f, rr := os.OpenFile(file, os.O_WRONLY, 0644)
 	if e(rr) {
-		p("Error opening '"+file+"':", rr)
+		p(rr)
 		p("soundcard not available, shutting down...")
 		time.Sleep(3 * time.Second)
 		os.Exit(0)
@@ -544,13 +544,12 @@ start:
 						<-pause
 					}
 					exit = true
-					// clear info display on exit
 					if started {
 						<-stop
 					}
 					p("Stopped")
 					d := Disp{}
-					d = Disp{Info: "clear"}
+					d = Disp{Info: "clear"} // clear info display on exit
 					save(d, "infodisplay.json")
 					if funcsave {
 						if !save(funcs, "functions.json") {
@@ -812,7 +811,7 @@ start:
 				if fade < 2e-7 { // maximum fade time
 					fade = 2e-7
 				}
-				msg("%sfade set to%s %.3fs", italic, reset, 1/(fade*SampleRate))
+				msg("%sfade set to%s %.3gs", italic, reset, 1/(fade*SampleRate))
 				fade = Pow(1e-4, fade) // approx -80dB in t=fade
 				continue
 			case "pop":
@@ -1387,7 +1386,7 @@ func decodeWavs() (wavs, bool) {
 		if channels == 1 {
 			c = "mono  "
 		}
-		msg("%s\t%s  SR: %6d  bits: %v  %.3fs", file, c, SR, bits, t)
+		msg("%s\t%s  SR: %6d  bits: %v  %.3gs", file, c, SR, bits, t)
 	}
 	if len(w) == 0 {
 		return nil, false
@@ -1561,7 +1560,7 @@ func SoundEngine(w *bufio.Writer) {
 		}
 
 		if n%15127 == 0 { // arbitrary interval all-zeros protection for lfsr
-			no |= 1 << 27
+			no ^= 1 << 27
 		}
 
 		for i, list := range listings {
@@ -1574,10 +1573,6 @@ func SoundEngine(w *bufio.Writer) {
 			sigs[i][8] = mouse.Right
 			sigs[i][9] = mouse.Middle
 			for _, o := range list {
-				//if r != r { // test for NaN
-				//	r = 0
-				//	info <- "NaN"
-				//}
 				switch o.Opn {
 				case 0:
 					// nop
@@ -1737,15 +1732,14 @@ func SoundEngine(w *bufio.Writer) {
 					peakfreq[i] += a * (d * 40.0 / SampleRate)
 					if Abs(d) < 0.01 {
 						peakfreq[i] = a
-						//msg("l: %d mix set @ %.3f", i, peakfreq[i]*SampleRate) // debug
 					}
 					r *= Min(1, 9/(Sqrt(peakfreq[i]*SampleRate)+4.5))
 				case 35: //"print":
 					if n%16384 == int(no>>51) && !exit { // dubious exit guard
-						info <- sf("listing %d: %.3f", i, r)
+						info <- sf("listing %d: %.3g", i, r)
 					}
 				case 38: //"set½": // for internal use
-					sigs[i][o.N] = 0.5
+					sigs[i][o.N] = 0.015
 				case 36: //"\\":
 					if r == 0 {
 						r = Copysign(1e-308, r)
@@ -1784,7 +1778,7 @@ func SoundEngine(w *bufio.Writer) {
 			x2560 = dac
 			hpf160 = (hpf160 + dac - x160) * 0.97948
 			x160 = dac
-			det = Abs(16*hpf2560+4*hpf160+dac) / 1.2
+			det = Abs(16*hpf2560+4*hpf160+dac) / 2
 			if det > l {
 				l = det // MC
 				h = release

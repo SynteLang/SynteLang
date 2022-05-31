@@ -741,6 +741,128 @@
 			"Opd": "a"
 		}
 	],
+	"pink": [
+		{
+			"Op": "out",
+			"Opd": "n"
+		},
+		{
+			"Op": "out",
+			"Opd": "d.filt0"
+		},
+		{
+			"Op": "in",
+			"Opd": "0.0010416666666666667"
+		},
+		{
+			"Op": "f2c",
+			"Opd": ""
+		},
+		{
+			"Op": "out",
+			"Opd": "c.filt0"
+		},
+		{
+			"Op": "mul",
+			"Opd": "d.filt0"
+		},
+		{
+			"Op": "out",
+			"Opd": "a.filt0"
+		},
+		{
+			"Op": "in",
+			"Opd": "1"
+		},
+		{
+			"Op": "sub",
+			"Opd": "c.filt0"
+		},
+		{
+			"Op": "mul",
+			"Opd": "b.filt0"
+		},
+		{
+			"Op": "+",
+			"Opd": "a.filt0"
+		},
+		{
+			"Op": "out",
+			"Opd": "b.filt0"
+		},
+		{
+			"Op": "out",
+			"Opd": "p"
+		},
+		{
+			"Op": "in",
+			"Opd": "n"
+		},
+		{
+			"Op": "mul",
+			"Opd": "0.25"
+		},
+		{
+			"Op": "out",
+			"Opd": "d.filt1"
+		},
+		{
+			"Op": "in",
+			"Opd": "0.03125"
+		},
+		{
+			"Op": "f2c",
+			"Opd": ""
+		},
+		{
+			"Op": "out",
+			"Opd": "c.filt1"
+		},
+		{
+			"Op": "mul",
+			"Opd": "d.filt1"
+		},
+		{
+			"Op": "out",
+			"Opd": "a.filt1"
+		},
+		{
+			"Op": "in",
+			"Opd": "1"
+		},
+		{
+			"Op": "sub",
+			"Opd": "c.filt1"
+		},
+		{
+			"Op": "mul",
+			"Opd": "b.filt1"
+		},
+		{
+			"Op": "+",
+			"Opd": "a.filt1"
+		},
+		{
+			"Op": "out",
+			"Opd": "b.filt1"
+		},
+		{
+			"Op": "out+",
+			"Opd": "p"
+		},
+		{
+			"Op": "in",
+			"Opd": "n"
+		},
+		{
+			"Op": "mul",
+			"Opd": "0.0625"
+		},
+		{
+			"Op": "+",
+			"Opd": "p"
+		}
+	],
 	"posc": [
 		{
 			"Op": "out",

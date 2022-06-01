@@ -59,14 +59,11 @@ The design of Syntə has from inception included sufficient control of sound lev
 
 -------------------------------------------------------------------------------------
 
-
-## How to use syntə
-
-Other sections of this document:
-
 + [Examples](#eg)  
 + [Reference](#ref)
 + [Details](#det)
+
+## How to use syntə
 
 **Requirements:**  
 >Computer with a soundcard (internal or external)  

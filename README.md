@@ -63,6 +63,7 @@ The design of Syntə has from inception included sufficient control of sound lev
 + [Reference](#ref)
 + [Details](#det)
 
+<a name="top"></a>
 ## How to use syntə
 
 **Requirements:**  
@@ -806,7 +807,7 @@ While for now the work is unlicensed, it is safe to assume that:
 
 + Using, modifying, or distributing the software in binary or source code form for commercial purposes will never be permitted.  
 
-Suggestions, including improvements to the code are welcome. We are unable to accept code contributions directly until the project has been licensed. Currently it looks likely that a GPL or MIT license will be selected when the time comes.  
+Suggestions, including improvements to the code are welcome. We are unable to accept code contributions directly until the project has been licensed. Currently it looks likely that a GPL, MIT or Sustainable Use licence will be selected when the time comes.  
 If you would like to fork the code for more radical changes then we wholeheartly suggest you instead write a unique live coding platform from scratch. The file is of an order of only a thousand lines of code after all, and the learning experience will be invaluable to you.  
 
 ### Influences and other live-coding environments
@@ -848,3 +849,6 @@ fractal synthesis (not implemented yet)
 finite recursion (not implemented yet)  
 mute and solo
 
+---
+
+[Back to top](#top)

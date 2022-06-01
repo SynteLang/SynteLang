@@ -268,6 +268,7 @@ you exceed these limits:
 `
 
 func main() {
+	save([]listing{listing{{Op: advisory}}}, "displaylisting.json")
 	for i := 0; i < 45; i++ { // to preserve extant std out
 		pf("\n")
 	}
@@ -1756,7 +1757,7 @@ func SoundEngine(w *bufio.Writer) {
 			}
 			if IsInf(sigs[i][0], 0) { // infinity to '93
 				if n%24000 == 0 {
-					info <- sf("%v overflow", sigs[i][0])
+					info <- sf("%d: %v overflow", i, sigs[i][0])
 				}
 				sigs[i][0] = 0
 			}

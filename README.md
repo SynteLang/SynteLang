@@ -533,7 +533,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	pitch	|		yes   	|		(not implimented yet) ◊  
 |	wav		|		yes   	|		will play the corresponding sample of a loaded WAV file given by the operand. Expects an input in range [0, 1], values outside this range will wrap around this interval. See section below for more information
 |	8bit	|		yes   	|		quantises input to 8 bits of resolution (255 possible values). The Operand scales the input/output. 0 < input < 1 will have bigger quantisation steps and vice versa for input > 1.
-|	level	|		yes   	|		changes the output level of the listing at the index given by operand. The preceeding input sets the level. Level will persist after deletion. Capable of modulation up to 1200Hz, but because of this sudden large changes in level may produce clicks.
+|	level	|		yes   	|		changes the output level of the listing at the index given by operand. The preceeding input sets the level. Level will persist after deletion. Capable of modulation up to 1200Hz, but because of this sudden large changes in level may produce clicks. Operation not affected by mute
 |	x		|		yes   	|		alias of `mul`
 |	*		|		yes   	|		alias of `x`
 |	from	|		yes   	|		receives output of listing given by operand. If that listing is subsequently deleted it will receive from the one that takes its place. If the operand is greater than the number of listings it will wrap round (modulous)
@@ -542,7 +542,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	\		|		yes   	|		output = operand / input
 |	sub		|		yes   	|		subtracts the operand from the input
 |	setmix 	| 		yes		|		used internally for mix function
-|	.level	|		yes   	|		equivalent to `level` except will end input and launch listing
+|	.level	|		yes   	|		equivalent to `level` except will end input and launch listing. Operation not affected by mute
 |	print	|		no   	|		prints value of input to info display and passes through unchanged to next operation. Timing is a random point within an interval every 341.⅓ms
 |	       	| 		       	|
 |	propa	|		yes  	|		used in conjuction with `index`, adds multiple listings at once (not implimented yet) ◊  

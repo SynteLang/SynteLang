@@ -66,7 +66,9 @@ import (
 
 // constants for setting format and rate of OSS interface
 // these values are from 'sys/sys/soundcard.h' on freebsd13.0
-// works for Linux ALSA driver in 16bit mode - must change Sound Engine first!
+// currently set to 16bit - must change Sound Engine if you attempt any other format!
+// currently set to stereo - use `sudo sysctl dev.pcm.X.bitperfect=1` or timings will be wrong,
+// where X is the output found in `cat /dev/sndstat`
 const (
 	// set output only
 	IOC_INOUT = 0xC0000000
@@ -80,7 +82,7 @@ const (
 	// Format in Big Endian
 	//AFMT_S32_BE = 0x00002000
 	// for Stereo
-	//	SNDCTL_DSP_CHANNELS = 0xC0045003
+	SNDCTL_DSP_CHANNELS = 0xC0045003
 	// set Sample Rate, specific rate defined below
 	//	SNDCTL_DSP_SPEED	= IOC_INOUT |(0x04 & ((1 << 13)-1))<<16 | 0x50 << 8 | 0x02
 	SNDCTL_DSP_SPEED = 0xC0045002
@@ -323,6 +325,10 @@ func main() {
 		p("set rate:", ern)
 		time.Sleep(time.Second)
 	}
+	if data != SAMPLE_RATE {
+		p("--requested sample rate not accepted--\n")
+		time.Sleep(500 * time.Millisecond)
+	}
 	SampleRate = float64(data)
 	display.SR = SampleRate
 
@@ -541,7 +547,7 @@ start:
 							mute[i] = 0
 							display.Mute[i] = true
 						}
-						time.Sleep(51 * time.Millisecond)
+						time.Sleep(75 * time.Millisecond)
 						<-pause
 					}
 					exit = true
@@ -574,7 +580,7 @@ start:
 						for i := range mute { // save mutes
 							mute[i] = 0
 						}
-						time.Sleep(51 * time.Millisecond) // wait for mutes
+						time.Sleep(75 * time.Millisecond) // wait for mutes
 						pause <- true
 						display.Paused = true
 					} else if !started {
@@ -667,7 +673,7 @@ start:
 				function := make(listing, len(funcs[name]))
 				copy(function, funcs[name])
 				n := 0
-				for _, o := range dispListing {
+				for _, o := range dispListing { // count prior instances of function
 					if o.Op == name {
 						n++
 					}
@@ -691,10 +697,10 @@ start:
 					if _, rr = strconv.ParseFloat(o.Opd, 64); !e(rr) {
 						continue
 					}
+					function[i].Opd += s // rename signal
 					if o.Op == "out" {
-						out[o.Opd] = struct{}{}
+						out[function[i].Opd] = struct{}{}
 					}
-					function[i].Opd += s
 
 				}
 				for i, o := range function {
@@ -1817,7 +1823,8 @@ func SoundEngine(w *bufio.Writer) {
 		dac *= CONV_FACTOR                               // convert
 		rate = (rate*6999 + time.Since(lastTime)) / 7000 //weighted average
 		//binary.Write(w, binary.LittleEndian, int32(dac)) // 32bit write
-		binary.Write(w, binary.LittleEndian, int16(dac))
+		binary.Write(w, binary.LittleEndian, int16(dac)) // left
+		binary.Write(w, binary.LittleEndian, int16(dac)) // right
 		lastTime = time.Now()
 		display.Load = rate
 		dac = 0

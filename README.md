@@ -62,6 +62,11 @@ The design of Syntə has from inception included sufficient control of sound lev
 
 ## How to use syntə
 
+	Other sections of this document:
+		+ [Examples](#eg)  
+		+ [Reference](#ref)
+		+ [Details](#det)
+
 **Requirements:**  
 >Computer with a soundcard (internal or external)  
 >OSS sound driver (FreeBSD) ◊  
@@ -211,6 +216,7 @@ To assist in writing necklaces of operations here are some useful heuristics/sug
 
 - if you realise that you need to add in further modulation or adjust values, you can use `push` to break the necklace and then `pop` to resume later.
 
+<a name="eg"></a>
 ## Examples ◊
 
 To help get your creative juices flowing, try typing in these example necklaces of operations:
@@ -309,7 +315,7 @@ This sequence will play a descending series of quarter notes spaced by an octave
 	osc
 	sine
 	mix
-
+>
 	in 135bpm
 	mul 1/2
 	posc 0.25
@@ -321,7 +327,7 @@ This sequence will play a descending series of quarter notes spaced by an octave
 	osc
 	sine
 	mix
-
+>
 	in 135bpm
 	mul 2
 	posc 0
@@ -486,6 +492,7 @@ Functions can have up to three operands separated by commas with no spaces. Refe
 
 ---
 
+<a name="ref"></a>
 ## Reference
 
 The notation [a,b] is a closed interval, which means the numbers between a and b, including a and b.
@@ -613,8 +620,8 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	butt3	|		value of right mouse button, 0 or 1	|
 
 ___
-
-## Exposition
+<a name="det"></a>
+## Exposition  
 Although theoretically possible, syntə is not primarily designed for making 'normal' music. A suggested use is the composition of waves, frequencies, shapes and combinations thereof to express a feeling or to dance to.  
 The ideal aspect of syntə is using the full power of a modern compute to produce musical structures that would otherwise be difficult to materialise. The simple building blocks help gain insight into the workings and provide almost orthogonal flexibility. (If something is orthogonal it means the smallest number of parts to realise the full possibilities of a concept space.)  
 Syntə enables detailed specification of sounds because it is built from small atomic operations. This gives a lot of freedom, which in turn requires some learning and practice. If you are new to synthesis you will need to learn that to, the program itself won't teach you. However, in the opinion of the author the concepts and maths of audio are a delight to uncover and play with. Most of the time simple arithmetic is all that is required for a deeper understanding. Take small steps and be surprised at what you achieve in time.  

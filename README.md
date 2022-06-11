@@ -43,6 +43,9 @@ Built-in synchronisation operators √
 **Author:** Dan Arves  
 >Available for workshops, talks and performances: synte@proton.me  
 
+**YouTube**
+>[SyntəLangChannel](`https://www.youtube.com/channel/UCRj9_B6P9T0bQSwCL3yOkyw)  
+
 This work and associated code is not currently licensed  
 © 2022  
 

@@ -448,6 +448,40 @@ func main() {
 	priorMutes := []float64{}
 	solo := map[int]bool{}
 
+	go func() { // watchdog, anonymous to use variables in scope
+		for {
+			select {
+			case <-stop:
+				if exit {
+					break
+				}
+				msg("%ssound engine crashed... removing last listing%s", italic, reset)
+				stop = make(chan struct{})
+				go SoundEngine(w) // , format)
+				transfer.Listing = transfer.Listing[:len(transfer.Listing)-1]
+				transfer.Signals = transfer.Signals[:len(transfer.Signals)-1]
+				mute = mute[:len(mute)-1]
+				display.Mute = display.Mute[:len(display.Mute)-1]
+				level = level[:len(level)-1]
+				display.List--
+				dispListings = dispListings[:len(dispListings)-1]
+				if !save(*code, "displaylisting.json") {
+					msg("%slisting display not updated, check %s'displaylisting.json'%s exists%s",
+						italic, reset, italic, reset)
+				}
+				transmit <- true
+				<-accepted
+				msg("\tSound Engine restarted")
+			default:
+				// nop
+			}
+			if exit {
+				break
+			}
+			time.Sleep(25 * time.Millisecond) // coarse loop timing
+		}
+	}()
+
 start:
 	for { // main loop
 		newListing := listing{}
@@ -489,7 +523,7 @@ start:
 			p("> Format:", format, "bit")
 			p("> Output:", channels)
 			p("> Rate:", SampleRate, "Hz")
-			pf("\n%sSynt\u0259%s running...\n", cyan, reset)
+			pf("\n%sSyntə%s running...\n", cyan, reset)
 			pf("Protect your hearing above 85dB SPL\n\n")
 			if len(wavNames) > 0 {
 				pf(" %swavs:%s %s\n\n", italic, reset, wavNames)
@@ -674,25 +708,6 @@ start:
 						msg("%slisting display not updated, check %s'displaylisting.json'%s exists%s",
 							italic, reset, italic, reset)
 					}
-					continue
-				case "restart":
-					stop = make(chan struct{})
-					go SoundEngine(w) // , format)
-					transfer.Listing = transfer.Listing[:len(transfer.Listing)-1]
-					transfer.Signals = transfer.Signals[:len(transfer.Signals)-1]
-					mute = mute[:len(mute)-1]
-					display.Mute = display.Mute[:len(display.Mute)-1]
-					level = level[:len(level)-1]
-					display.List--
-					dispListings = dispListings[:len(dispListings)-1]
-					if !save(*code, "displaylisting.json") {
-						msg("%slisting display not updated, check %s'displaylisting.json'%s exists%s",
-							italic, reset, italic, reset)
-					}
-					transmit <- true
-					<-accepted
-					msg("clear")
-					msg("\tSound Engine restarted")
 					continue
 				default:
 					msg("%s%sunrecognised mode%s", red, italic, reset)
@@ -1546,23 +1561,6 @@ func infodisplay() {
 		display.Protect = protected
 
 		select {
-		/*case <-stop: // restart sound engine if stopped
-		if exit { break }
-		stop = make(chan struct{})
-		file := "/dev/dsp"
-		f, _ := os.OpenFile(file, os.O_WRONLY, 0644)
-		defer f.Close()
-		w := bufio.NewWriter(f)
-		go SoundEngine(w)
-		transfer.Listing = transfer.Listing[:len(transfer.Listing)-1]
-		transfer.Signals = transfer.Signals[:len(transfer.Signals)-1]
-		mute = mute[:len(mute)-1]
-		display.Mute = display.Mute[:len(display.Mute)-1]
-		level = level[:len(level)-1]
-		display.List--
-		transmit <- true
-		<-accepted
-		display.Info = "\tSound Engine restarted"*/
 		case infoString := <-info:
 			display.Info = infoString
 		case carryOn <- true: // semaphore: received
@@ -1652,7 +1650,8 @@ func SoundEngine(w *bufio.Writer) { // , bits int)
 			}
 			msg("clear")
 			msg("stack trace: %s", debug.Stack())
-			msg("%v, %stype `: restart`%s", p, red, reset)
+			msg("%v", p)
+			//msg("%v, %stype `: restart`%s", p, red, reset)
 		}
 	}()
 
@@ -1781,6 +1780,7 @@ func SoundEngine(w *bufio.Writer) { // , bits int)
 					no.ise() // roll a fresh one
 					r *= (2*(float64(no)/MaxUint) - 1)
 					//if r > 0.9999 { panic("test") }
+					//time.Sleep(5*time.Microsecond)
 				case 16: // "push"
 					stacks[i] = append(stacks[i], r)
 				case 17: // "pop"
@@ -1900,6 +1900,9 @@ func SoundEngine(w *bufio.Writer) { // , bits int)
 				}
 				sigs[i][0] = 0
 			}
+			sigs[i][0] /= 10
+			sigs[i][0] = Tanh(sigs[i][0])
+			sigs[i][0] *= 10
 			m[i] = (m[i]*39 + mute[i]) / 40         // anti-click filter @ ~110Hz
 			lv[i] = (lv[i]*7 + level[i]) / 8        // @ 1273Hz
 			dac += sigs[i][0] * m[i] * m[i] * lv[i] // mute transition is quadratic
@@ -1955,6 +1958,9 @@ func SoundEngine(w *bufio.Writer) { // , bits int)
 		display.Vu = peak
 		dac *= CONV_FACTOR                               // convert
 		rate = (rate*6999 + time.Since(lastTime)) / 7000 //weighted average
+		if float64(rate) > 1e9/SampleRate {
+			panic("Sound Engine overloaded")
+		}
 		//binary.Write(w, binary.LittleEndian, int32(dac)) // 32bit write
 		dac0 = dac
 		binary.Write(w, binary.LittleEndian, int16(dac0)) // left

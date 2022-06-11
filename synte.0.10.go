@@ -86,6 +86,7 @@ const (
 	SNDCTL_DSP_CHANNELS = 0xC0045003
 	STEREO              = 1
 	MONO                = 0
+	CHANNELS            = STEREO // will halve pitches/frequencies/tempos if mono!
 	// set Sample Rate, specific rate defined below
 	//	SNDCTL_DSP_SPEED	= IOC_INOUT |(0x04 & ((1 << 13)-1))<<16 | 0x50 << 8 | 0x02
 	SNDCTL_DSP_SPEED = 0xC0045002
@@ -320,6 +321,32 @@ func main() {
 	}
 
 	// set channels here, stereo or mono
+	req = SNDCTL_DSP_CHANNELS
+	data = CHANNELS
+	_, _, ern = syscall.Syscall(
+		syscall.SYS_IOCTL,
+		uintptr(f.Fd()),
+		uintptr(req),
+		uintptr(unsafe.Pointer(&data)),
+	)
+	if ern != 0 {
+		p("channels error") // do something else here
+		time.Sleep(time.Second)
+	}
+	if data != CHANNELS {
+		p("--requested channels not accepted--\n")
+		p("--frequency accuracy may be affected!--\n") // covered in future upgrade
+		time.Sleep(500 * time.Millisecond)
+	}
+	channels := ""
+	switch data {
+	case STEREO:
+		channels = "stereo"
+	case MONO:
+		channels = "mono"
+	default:
+		// report error
+	}
 
 	// set sample rate
 	req = SNDCTL_DSP_SPEED
@@ -458,6 +485,7 @@ start:
 		for { // input loop
 			pf("\033[H\033[2J") // this clears prior error messages!
 			p("> Format:", format, "bit")
+			p("> Output:", channels)
 			p("> Rate:", SampleRate, "Hz")
 			pf("\n%sSynt\u0259%s running...\n\n", cyan, reset)
 			pf("Protect your hearing above 85dB SPL\n\n")
@@ -557,6 +585,10 @@ start:
 					}
 				}
 			}
+			if op == "pulse" && (opd == "0" || opd == "1") { // handle special case
+				msg("%s%sextremely narrow pulse - no oscillation%s", italic, red, reset)
+				continue
+			}
 			name := ""
 			if f && opd != "[" { // because syntax swap
 				name = op
@@ -642,6 +674,7 @@ start:
 					}
 					continue
 				case "restart":
+					stop = make(chan struct{})
 					go SoundEngine(w) // , format)
 					transfer.Listing = transfer.Listing[:len(transfer.Listing)-1]
 					transfer.Signals = transfer.Signals[:len(transfer.Signals)-1]
@@ -649,8 +682,14 @@ start:
 					display.Mute = display.Mute[:len(display.Mute)-1]
 					level = level[:len(level)-1]
 					display.List--
+					dispListings = dispListings[:len(dispListings)-1]
+					if !save(*code, "displaylisting.json") {
+						msg("%slisting display not updated, check %s'displaylisting.json'%s exists%s",
+							italic, reset, italic, reset)
+					}
 					transmit <- true
 					<-accepted
+					msg("clear")
 					msg("\tSound Engine restarted")
 					continue
 				default:
@@ -659,6 +698,9 @@ start:
 				}
 			case "in":
 				if len(newListing) == 0 {
+					break
+				}
+				if dispListing[len(dispListing)-1].Opd == "[" {
 					break
 				}
 				switch dispListing[len(dispListing)-1].Op {
@@ -672,17 +714,14 @@ start:
 					msg("%s%sno out before in, necklace broken%s", red, italic, reset)
 					continue
 				}
-			case "out", "out+":
-				if num.Is {
-					msg("%s%soutput to number not permitted%s", red, italic, reset)
-					continue
-				}
-				fallthrough
 			case "out":
 				_, in := out[opd]
 				switch {
 				case opd == "dac" && fIn:
 					msg("%s%soutput to dac not possible within function%s", red, italic, reset)
+					continue
+				case num.Is:
+					msg("%s%soutput to number not permitted%s", red, italic, reset)
 					continue
 				case in && opd[:1] != "^" && opd != "dac":
 					msg("%s%sduplicate output to signal, c'est interdit%s", red, italic, reset)
@@ -693,6 +732,10 @@ start:
 				}
 				out[opd] = struct{}{}
 			case "out+":
+				if num.Is {
+					msg("%s%soutput to number not permitted%s", red, italic, reset)
+					continue
+				}
 				if opd == "dac" {
 					msg("%s%scan't use dac with out+%s", red, italic, reset)
 					continue
@@ -714,9 +757,9 @@ start:
 					if o.Opd == "dac" {
 						continue
 					}
-					//if _, r := sg[o.Opd]; r {
-					//	continue
-					//}
+					if _, r := sg[o.Opd]; r {
+						continue
+					}
 					switch o.Opd[:1] {
 					case "^", "@":
 						continue
@@ -1501,6 +1544,23 @@ func infodisplay() {
 		display.Protect = protected
 
 		select {
+		/*case <-stop: // restart sound engine if stopped
+		if exit { break }
+		stop = make(chan struct{})
+		file := "/dev/dsp"
+		f, _ := os.OpenFile(file, os.O_WRONLY, 0644)
+		defer f.Close()
+		w := bufio.NewWriter(f)
+		go SoundEngine(w)
+		transfer.Listing = transfer.Listing[:len(transfer.Listing)-1]
+		transfer.Signals = transfer.Signals[:len(transfer.Signals)-1]
+		mute = mute[:len(mute)-1]
+		display.Mute = display.Mute[:len(display.Mute)-1]
+		level = level[:len(level)-1]
+		display.List--
+		transmit <- true
+		<-accepted
+		display.Info = "\tSound Engine restarted"*/
 		case infoString := <-info:
 			display.Info = infoString
 		case carryOn <- true: // semaphore: received
@@ -1533,14 +1593,6 @@ func infodisplay() {
 func SoundEngine(w *bufio.Writer) { // , bits int)
 	defer close(stop)
 	defer w.Flush()
-	// this doesn't work if placed in main: ¯\_(ツ)_/¯
-	defer save([]listing{listing{{Op: advisory}}}, "displaylisting.json")
-	defer func() { // fail gracefully
-		if p := recover(); p != nil {
-			msg("stack trace: %s", debug.Stack())
-			msg("%v, %stype `: restart`%s", p, red, reset)
-		}
-	}()
 	/*
 		output := func(f float64) { return binary.Write(w, binary.LittleEndian, int16(f))
 		switch bits {
@@ -1562,41 +1614,62 @@ func SoundEngine(w *bufio.Writer) { // , bits int)
 	tapes := make([][]float64, 0, 26)
 
 	var (
-		no       noise   = noise(time.Now().UnixNano())
-		r        float64        // result
-		l, h     float64 = 1, 2 // limiter, hold
-		dac      float64        // output
-		env      float64 = 1    // for exit envelope
-		peak     float64        // vu meter
-		dither   float64
-		n        int                                 // loop counter
+		no     noise   = noise(time.Now().UnixNano())
+		r      float64        // result
+		l, h   float64 = 1, 2 // limiter, hold
+		dac    float64        // output
+		dac0   float64        // formatted output
+		env    float64 = 1    // for exit envelope
+		peak   float64        // vu meter
+		dither float64
+		n      int // loop counter
+
 		rate     time.Duration = time.Duration(7292) // loop timer, initialised to approximate resting rate
 		lastTime time.Time     = time.Now()
-		s        float64       = 1                               //sync=0
-		p        bool                                            // play/pause
-		ii       int                                             // sync intermediate
-		penv     float64       = Pow(1e-4, 1/(SampleRate*50e-3)) // approx -80dB in 50ms
-		mx, my   float64                                         // mouse smooth intermediates
-		hpf, x   float64                                         // DC-blocking high pass filter
+		s        float64       = 1 //sync=0
+		p        bool              // play/pause
+		ii       int               // sync intermediate
+
+		penv float64 = Pow(1e-4, 1/(SampleRate*50e-3)) // approx -80dB in 50ms
+
+		mx, my float64 // mouse smooth intermediates
+		hpf, x float64 // DC-blocking high pass filter
 		hpf2560, x2560,
 		hpf160, x160,
 		det float64 // limiter detection
 	)
 	no *= 77777777777 // force overflow
+	defer func() {    // fail gracefully
+		if p := recover(); p != nil {
+			//if p := recover(); p == "test" {
+			fade := Pow(1e-4, 1/(SampleRate*50e-3)) // approx -80dB in 50ms
+			for i := 2400; i >= 0; i-- {
+				dac0 *= fade
+				binary.Write(w, binary.LittleEndian, int16(dac0)) // left
+				binary.Write(w, binary.LittleEndian, int16(dac0)) // right
+			}
+			msg("clear")
+			msg("stack trace: %s", debug.Stack())
+			msg("%v, %stype `: restart`%s", p, red, reset)
+		}
+	}()
 
 	<-transmit // load first listing and start SoundEngine
 	listings = transfer.Listing
 	sigs = transfer.Signals
 	wavs = transfer.Wavs
 	tape := make([]float64, TLlen)
-	tapes = append(tapes, tape)
+	tapes = make([][]float64, len(transfer.Listing))
+	for i := range tapes { // i is shadowed
+		tapes[i] = tape
+	}
 	accepted <- true
-	sync := make([]float64, 1)
-	syncInhibit := make([]bool, 1, 27) // inhibitions
-	peakfreq := make([]float64, 1, 28) // peak frequency for setlevel
+	sync := make([]float64, len(transfer.Listing))
+	syncInhibit := make([]bool, len(transfer.Listing), 27) // inhibitions
+	peakfreq := make([]float64, len(transfer.Listing), 28) // peak frequency for setlevel
 	peakfreq[0] = 20 / SampleRate
-	m := make([]float64, 1, 29)  // filter intermediate for mute
-	lv := make([]float64, 1, 29) // filter intermediate for mute
+	m := make([]float64, len(transfer.Listing), 29)  // filter intermediate for mute
+	lv := make([]float64, len(transfer.Listing), 29) // filter intermediate for mute
 
 	lastTime = time.Now()
 	for {
@@ -1638,47 +1711,47 @@ func SoundEngine(w *bufio.Writer) { // , bits int)
 				switch o.Opn {
 				case 0:
 					// nop
-				case 1: //"+":
+				case 1: // "+"
 					r += sigs[i][o.N]
-				case 2: //"out":
+				case 2: // "out"
 					sigs[i][o.N] = r
-				case 3: //"out+":
+				case 3: // "out+"
 					sigs[i][o.N] += r
-				case 4: //"in":
+				case 4: // "in"
 					r = sigs[i][o.N]
-				case 5: //"sine":
+				case 5: // "sine"
 					r = Sin(2 * Pi * r)
-				case 6: //"mod":
+				case 6: // "mod"
 					r = Mod(r, sigs[i][o.N])
-				case 7: //"gt":
+				case 7: // "gt"
 					if r >= sigs[i][o.N] {
 						r = 1
 					} else {
 						r = 0
 					}
-				case 8: //"lt":
+				case 8: // "lt"
 					if r <= sigs[i][o.N] {
 						r = 1
 					} else {
 						r = 0
 					}
-				case 9: //"mul", "x", "*":
+				case 9: // "mul", "x", "*":
 					r *= sigs[i][o.N]
-				case 10: //"abs":
+				case 10: // "abs"
 					r = Abs(r)
-				case 11: //"tanh":
+				case 11: // "tanh"
 					r = Tanh(r)
-				case 12: //"pow":
+				case 12: // "pow"
 					if r == 0 && Signbit(sigs[i][o.N]) {
 						r = Copysign(1e-308, r) // inverse is within upper range of float
 					}
 					r = Pow(r, sigs[i][o.N])
-				case 13: //"base":
+				case 13: // "base"
 					r = Pow(sigs[i][o.N], r)
 					if IsInf(r, 0) { // infinity to '93
 						r = Nextafter(r, 0)
 					}
-				case 14: //"clip":
+				case 14: // "clip"
 					switch {
 					case sigs[i][o.N] == 0:
 						if r > 1 {
@@ -1702,29 +1775,30 @@ func SoundEngine(w *bufio.Writer) { // , bits int)
 							r = -sigs[i][o.N]
 						}
 					}
-				case 15: //"noise":
+				case 15: // "noise"
 					no.ise() // roll a fresh one
 					r *= (2*(float64(no)/MaxUint) - 1)
-				case 16: //"push":
+					//if r > 0.9999 { panic("test") }
+				case 16: // "push"
 					stacks[i] = append(stacks[i], r)
-				case 17: //"pop":
+				case 17: // "pop"
 					r = stacks[i][len(stacks[i])-1]
 					stacks[i] = stacks[i][:len(stacks[i])-1]
-				case 18: //"tape":
+				case 18: // "tape"
 					tapes[i][n%TLlen] = r
 					sigs[i][o.N] = Abs(sigs[i][o.N])
 					r = tapes[i][int(float64(n%TLlen)*sigs[i][o.N])%TLlen]
 					// add lpf with sigs[i][o.N] as coefficient?
-				case 19: //"tap":
+				case 19: // "tap"
 					sigs[i][o.N] = Abs(1 - sigs[i][o.N])
 					r = tapes[i][(n+int(TAPE_LENGTH/(sigs[i][o.N])))%TLlen]
-				case 20: //"+tap":
+				case 20: // "+tap"
 					sigs[i][o.N] = Abs(1 - sigs[i][o.N])
 					r += tapes[i][(n+int(SampleRate*TAPE_LENGTH*(sigs[i][o.N])))%TLlen]
-				case 21: //"f2c":
+				case 21: // "f2c"
 					r = Abs(r)
 					r = 1 / (1 + 1/(2*Pi*r))
-				case 37: //"degrade": // needs more work
+				case 37: // "degrade" // needs more work
 					no.ise()
 					ii = (int(no >> 60)) % (len(listings) - 1)
 					index := (int(no >> 59)) % (len(sigs[ii]) - 1)
@@ -1735,18 +1809,18 @@ func SoundEngine(w *bufio.Writer) { // , bits int)
 					r += sigs[i][o.N] * sigs[ii][index]
 					//if ii< 0 { index*= -1 }
 					//if index< 0 { index*= -1 }
-				case 22: //"wav":
+				case 22: // "wav"
 					r = Abs(r)
 					r *= WAV_LENGTH
 					r = wavs[int(sigs[i][o.N])][int(r)%len(wavs[int(sigs[i][o.N])])]
-				case 23: //"8bit":
+				case 23: // "8bit"
 					r = float64(int8(r*sigs[i][o.N]*MaxInt8)) / (MaxInt8 * sigs[i][o.N])
-				case 24: //"index":
+				case 24: // "index"
 					r = float64(i) // * sigs[i][o.N]
-				case 25: //"<sync":
+				case 25: // "<sync"
 					r *= s                      //* (1 - sync[i])
 					r += (1 - s) * sigs[i][o.N] //* sync[i]  phase offset
-				case 26: //">sync", ".>sync":
+				case 26: // ">sync", ".>sync"
 					switch {
 					case r <= 0 && s == 1 && !syncInhibit[i]:
 						s = 0
@@ -1757,7 +1831,8 @@ func SoundEngine(w *bufio.Writer) { // , bits int)
 					case r > 0:
 						syncInhibit[i] = false
 					}
-				/*case 27: "nsync", ".nsync":
+					r = 0
+				/*case 27: // "nsync", ".nsync"
 				ii = int(sigs[i][o.N])
 				switch {
 				case r <= 0 && sync[ii] == 0 && !syncInhibit[ii]:
@@ -1768,22 +1843,22 @@ func SoundEngine(w *bufio.Writer) { // , bits int)
 				case r > 0:
 					syncInhibit[ii] = false
 				}*/
-				case 28: //"level", ".level":
+				case 28: // "level", ".level"
 					level[int(sigs[i][o.N])] = r
-				case 29: //"from":
+				case 29: // "from"
 					r = sigs[int(sigs[i][o.N])][0]
-				case 30: //"sgn":
+				case 30: // "sgn"
 					r = float64(Float64bits(r)>>63)*2 - 1
-				case 31: //"deleted":
+				case 31: // "deleted"
 					sigs[i][0] = 0
-				case 32: //"/":
+				case 32: // "/"
 					if sigs[i][o.N] == 0 {
 						sigs[i][o.N] = Copysign(1e-308, sigs[i][o.N])
 					}
 					r /= sigs[i][o.N]
-				case 33: //"sub":
+				case 33: // "sub"
 					r -= sigs[i][o.N]
-				case 34: //"setmix":
+				case 34: // "setmix"
 					a := Abs(sigs[i][o.N]) + 1e-6
 					d := Log2(a / peakfreq[i])
 					if d > 1 {
@@ -1797,13 +1872,13 @@ func SoundEngine(w *bufio.Writer) { // , bits int)
 						peakfreq[i] = a
 					}
 					r *= Min(1, 9/(Sqrt(peakfreq[i]*SampleRate)+4.5))
-				case 35: //"print":
+				case 35: // "print"
 					if n%16384 == int(no>>51) && !exit { // dubious exit guard
 						info <- sf("listing %d: %.3g", i, r)
 					}
-				case 38: //"set½": // for internal use
+				case 38: // "set½" // for internal use
 					sigs[i][o.N] = 0.015
-				case 36: //"\\":
+				case 36: // "\\"
 					if r == 0 {
 						r = Copysign(1e-308, r)
 					}
@@ -1879,8 +1954,9 @@ func SoundEngine(w *bufio.Writer) { // , bits int)
 		dac *= CONV_FACTOR                               // convert
 		rate = (rate*6999 + time.Since(lastTime)) / 7000 //weighted average
 		//binary.Write(w, binary.LittleEndian, int32(dac)) // 32bit write
-		binary.Write(w, binary.LittleEndian, int16(dac)) // left
-		binary.Write(w, binary.LittleEndian, int16(dac)) // right
+		dac0 = dac
+		binary.Write(w, binary.LittleEndian, int16(dac0)) // left
+		binary.Write(w, binary.LittleEndian, int16(dac0)) // right
 		lastTime = time.Now()
 		display.Load = rate
 		dac = 0
@@ -1888,6 +1964,7 @@ func SoundEngine(w *bufio.Writer) { // , bits int)
 		if exit {
 			env *= fade
 			if env < 1e-4 {
+				save([]listing{listing{{Op: advisory}}}, "displaylisting.json")
 				break
 			}
 		} else if p {

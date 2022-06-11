@@ -518,7 +518,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	pow		|		yes		|		result is operand raised to the power of input
 |	base	|		yes		|		result is input raised to the power of operand
 |	\<sync	|		yes		|		receive sync pulse which zeros whatever is passed through. Operand adds phase offset on pulse
-|	\>sync	|		yes		|		send one sync pulse to all listings when input ≤ 0. Latches off until input > 0. More than one instance will result in undefined behaviour ◊
+|	\>sync	|		yes		|		send one sync pulse to all listings when input ≤ 0. Latches off until input > 0. Output to next operation is zero
 |	.>sync	|		yes		|		equivalent to >sync but will end listing and transfer, like `out dac`
 |	nsync	|		yes		|		(not implemented) send one sync pulse to the listing whose index is given by the operand, triggered similarly to \>sync
 |	.nsync	|		yes		|		(not implemented) equivalent to nsync but will end listing and transfer, like `out dac`
@@ -589,8 +589,8 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	zx		|		no		|		detects negative-going zero-crossing of input. A preceeding `ramp` will generate a single pulse of 1 at the end of its cycle.
 |	lmap	|		yes		|		implements the Logistic Map. Iterates on zero-crossing of the input. Operand is the r value, suggested between 3 and 5. Preceed with `ramp` and follow with `cv2a` for audio output
 |	euclid	|		3		|		outputs euclidean rhythms at the frequency given by input as a series of pulses. Eg. output for (3,8) = "X..X..X." the X will be 1 and the rests 0
-|	exp		|		no		|		converts interval [0,1] to exponential.
-|	dial	|		no		|		plays uk telephone dialling tone
+|	exp		|		no		|		converts interval [0,1] to exponential. Operand is the number of times one is halved for an input of zero, eg. three would be ½ x ½ x ½ = ⅛, the greater the number the steeper the curve
+|	dial	|		no		|		plays uk telephone ringing tone
 |	dirac	|		no		|		outputs a single sample pulse when input goes from 0 to 1. Will trigger on first run of listing if input is 1
 |	range	|		2		|		spreads input from 0 to ±1 across a range of values from the first operand to the second. Eg. `range 220hz,440hz`. If the second operand is smaller the range will be negative.
 |	bd909	|		2		|		unfinished '909' kick drum. first operand is decay and second is pitch.  

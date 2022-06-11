@@ -81,6 +81,156 @@
 			"Opd": "d"
 		}
 	],
+	"dial": [
+		{
+			"Op": "in",
+			"Opd": "0.009375"
+		},
+		{
+			"Op": "out",
+			"Opd": "^freq"
+		},
+		{
+			"Op": "+",
+			"Opd": "a.sino0"
+		},
+		{
+			"Op": "mod",
+			"Opd": "1"
+		},
+		{
+			"Op": "out",
+			"Opd": "a.sino0"
+		},
+		{
+			"Op": "sine",
+			"Opd": ""
+		},
+		{
+			"Op": "out",
+			"Opd": "tone"
+		},
+		{
+			"Op": "in",
+			"Opd": "0.008333333333333333"
+		},
+		{
+			"Op": "out",
+			"Opd": "^freq"
+		},
+		{
+			"Op": "+",
+			"Opd": "a.sino1"
+		},
+		{
+			"Op": "mod",
+			"Opd": "1"
+		},
+		{
+			"Op": "out",
+			"Opd": "a.sino1"
+		},
+		{
+			"Op": "sine",
+			"Opd": ""
+		},
+		{
+			"Op": "out+",
+			"Opd": "tone"
+		},
+		{
+			"Op": "in",
+			"Opd": "6.944444444444445e-06"
+		},
+		{
+			"Op": "out",
+			"Opd": "^freq"
+		},
+		{
+			"Op": "+",
+			"Opd": "a.pulse0"
+		},
+		{
+			"Op": "mod",
+			"Opd": "1"
+		},
+		{
+			"Op": "out",
+			"Opd": "a.pulse0"
+		},
+		{
+			"Op": "lt",
+			"Opd": "0.3333333333333333"
+		},
+		{
+			"Op": "out",
+			"Opd": "vca"
+		},
+		{
+			"Op": "in",
+			"Opd": "3.472222222222222e-05"
+		},
+		{
+			"Op": "out",
+			"Opd": "^freq"
+		},
+		{
+			"Op": "+",
+			"Opd": "a.pulse1"
+		},
+		{
+			"Op": "mod",
+			"Opd": "1"
+		},
+		{
+			"Op": "out",
+			"Opd": "a.pulse1"
+		},
+		{
+			"Op": "lt",
+			"Opd": "0.6666666666666666"
+		},
+		{
+			"Op": "mul",
+			"Opd": "vca"
+		},
+		{
+			"Op": "out",
+			"Opd": "a.slew0"
+		},
+		{
+			"Op": "gt",
+			"Opd": "c.slew0"
+		},
+		{
+			"Op": "mul",
+			"Opd": "2"
+		},
+		{
+			"Op": "sub",
+			"Opd": "1"
+		},
+		{
+			"Op": "mul",
+			"Opd": "0.004166666666666667"
+		},
+		{
+			"Op": "+",
+			"Opd": "c.slew0"
+		},
+		{
+			"Op": "clip",
+			"Opd": "a.slew0"
+		},
+		{
+			"Op": "out",
+			"Opd": "c.slew0"
+		},
+		{
+			"Op": "mul",
+			"Opd": "tone"
+		}
+	],
 	"dirac": [
 		{
 			"Op": "out",
@@ -301,16 +451,20 @@
 	],
 	"exp": [
 		{
-			"Op": "base",
-			"Opd": "E"
-		},
-		{
-			"Op": "+",
-			"Opd": "-1"
+			"Op": "sub",
+			"Opd": "1"
 		},
 		{
 			"Op": "mul",
-			"Opd": "E-1"
+			"Opd": "ln2"
+		},
+		{
+			"Op": "mul",
+			"Opd": "@"
+		},
+		{
+			"Op": "base",
+			"Opd": "E"
 		}
 	],
 	"filt": [

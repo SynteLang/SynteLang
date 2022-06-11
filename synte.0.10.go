@@ -79,6 +79,7 @@ const (
 	// Format in Little Endian
 	AFMT_S32_LE  = 0x00001000 // use only if supported by soundcard and driver
 	AFMT_S16_LE  = 0x00000010
+	AFMT_S8      = 0x00000040
 	SELECTED_FMT = AFMT_S16_LE
 	// Format in Big Endian
 	//AFMT_S32_BE = 0x00002000
@@ -310,9 +311,11 @@ func main() {
 	}
 	format := 16
 	switch {
+	case data == AFMT_S16_LE:
+		break
 	case data == AFMT_S32_LE:
 		format = 32
-	case data == AFMT_S16_LE:
+	case data == AFMT_S8:
 		format = 8
 	default:
 		// error!

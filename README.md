@@ -75,7 +75,7 @@ The design of Syntə has from inception included sufficient control of sound lev
 >Go programming language installed ◊  
 >Desire to learn about audio synthesis  
 
-Linux and ALSA driver will work with some simple modifications, use the 'synte.linux.go' file if available.  
+Linux and ALSA driver should work without modifications, but latest commits may not be tested.
 It is not known at present what the performance will be on other systems. ◊ The terminal emulator that has been used for development and testing is Alacritty. It works well on cool-retro-term. You may experience flickering in some terminal emulators due to the incomplete UI.
 
 The source code is as yet unlicensed so be wary of distributing or hosting the code, as-is, compiled, modified or otherwise. ◊

@@ -2,10 +2,8 @@
 
 /*
 	Syntə is an audio live coding environment
-
 	The name is pronounced 'sinter', which means to create something by
 	fusing many tiny elements together under intense heat
-
 	The input syntax is in EBNF = operator [ " " operand ] .
 	Where an operand can be a ( name = letter { letter | digit } ) | ( number = float [ type ] ["/" float [type] ) .
 	A letter is defined as any UTF-8 character excluding + - . 0 1 2 3 4 5 6 7 8 9
@@ -14,12 +12,9 @@
 	A list of operators is given below.
 	Lists of operations may be composed into functions with multiple arguments.
 	The function syntax is = function [ operand ] "," [ operand ] "," [ operand ] .
-
 	Protect your hearing when listening to a system capable of more than 85dB SPL
-
 	Motivation:
 		Fun
-
 	Features:
 		Audio synthesis √
 		Wav playback √
@@ -33,13 +28,10 @@
 		Frequency scaling √
 		Predefined functions and operators √
 		Flexible synchronisation of co-running listings √
-
 	Author: Dan Arves
 	Available for workshops, talks and performances: dancehazard@gmail.com
-
 	This work is not currently licensed
 	© 2022
-
 */
 
 // Go code in this file not suitable for reference or didactic purposes
@@ -259,18 +251,15 @@ type wavs []struct {
 type sample []float64
 
 const advisory = `
-Protect your hearing if listening to audio on a system capable of
+Protect your hearing when listening to any audio on a system capable of
 more than 85dB SPL
-
 You will experience permanent and irrevocable hearing damage if
 you exceed these limits:
-
 		 85dB SPL	8 hours			eg. Lorry
 		 91dB SPL	2 hours			eg. Lawnmower
 		 97dB SPL	30 minutes		
 		103dB SPL	7 minutes		eg. Drill
 		112dB SPL	< 1 minute		eg. Typical Club Sound System
-
 	SPL = Sound Pressure Level (A-weighted)
 `
 
@@ -490,7 +479,7 @@ start:
 			p("> Format:", format, "bit")
 			p("> Output:", channels)
 			p("> Rate:", SampleRate, "Hz")
-			pf("\n%sSynt\u0259%s running...\n\n", cyan, reset)
+			pf("\n%sSynt\u0259%s running...\n", cyan, reset)
 			pf("Protect your hearing above 85dB SPL\n\n")
 			if len(wavNames) > 0 {
 				pf(" %swavs:%s %s\n\n", italic, reset, wavNames)

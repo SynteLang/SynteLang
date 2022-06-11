@@ -43,8 +43,8 @@ Built-in synchronisation operators √
 **Author:** Dan Arves  
 >Available for workshops, talks and performances: synte@proton.me  
 
-**YouTube**
-> [SyntəLangChannel](https://www.youtube.com/channel/UCRj9_B6P9T0bQSwCL3yOkyw)  
+**YouTube:**
+> [Syntə Lang Channel](https://www.youtube.com/channel/UCRj9_B6P9T0bQSwCL3yOkyw)  
 
 This work and associated code is not currently licensed  
 © 2022  
@@ -592,7 +592,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	zx		|		no		|		detects negative-going zero-crossing of input. A preceeding `ramp` will generate a single pulse of 1 at the end of its cycle.
 |	lmap	|		yes		|		implements the Logistic Map. Iterates on zero-crossing of the input. Operand is the r value, suggested between 3 and 5. Preceed with `ramp` and follow with `cv2a` for audio output
 |	euclid	|		3		|		outputs euclidean rhythms at the frequency given by input as a series of pulses. Eg. output for (3,8) = "X..X..X." the X will be 1 and the rests 0
-|	exp		|		no		|		converts interval [0,1] to exponential. Operand is the number of times one is halved for an input of zero, eg. three would be ½ x ½ x ½ = ⅛, the greater the number the steeper the curve
+|	exp		|		no		|		converts linear ramps on interval [0,1] to exponential. Operand is the number of times one is halved for an input of zero, eg. three would be ½ x ½ x ½ = ⅛, the greater the number the steeper the curve
 |	dial	|		no		|		plays uk telephone ringing tone
 |	dirac	|		no		|		outputs a single sample pulse when input goes from 0 to 1. Will trigger on first run of listing if input is 1
 |	range	|		2		|		spreads input from 0 to ±1 across a range of values from the first operand to the second. Eg. `range 220hz,440hz`. If the second operand is smaller the range will be negative.

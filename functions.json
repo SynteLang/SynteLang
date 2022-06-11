@@ -229,6 +229,10 @@
 		{
 			"Op": "mul",
 			"Opd": "tone"
+		},
+		{
+			"Op": "out",
+			"Opd": "dac"
 		}
 	],
 	"dirac": [

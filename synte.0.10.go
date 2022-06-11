@@ -455,7 +455,7 @@ func main() {
 				if exit {
 					break
 				}
-				msg("%ssound engine crashed... removing last listing%s", italic, reset)
+				msg("%ssound engine halted... removing last listing%s", italic, reset)
 				stop = make(chan struct{})
 				go SoundEngine(w) // , format)
 				transfer.Listing = transfer.Listing[:len(transfer.Listing)-1]
@@ -709,6 +709,34 @@ start:
 							italic, reset, italic, reset)
 					}
 					continue
+				/*case "restart":
+				if !started {
+					continue
+				}
+				select {
+				case <-stop:
+					stop = make(chan struct{})
+				default:
+					msg("nothing to restart")
+					continue
+				}
+				msg("%s...removing last listing%s", italic, reset)
+				go SoundEngine(w) // , format)
+				transfer.Listing = transfer.Listing[:len(transfer.Listing)-1]
+				transfer.Signals = transfer.Signals[:len(transfer.Signals)-1]
+				mute = mute[:len(mute)-1]
+				display.Mute = display.Mute[:len(display.Mute)-1]
+				level = level[:len(level)-1]
+				display.List--
+				dispListings = dispListings[:len(dispListings)-1]
+				if !save(*code, "displaylisting.json") {
+					msg("%slisting display not updated, check %s'displaylisting.json'%s exists%s",
+						italic, reset, italic, reset)
+				}
+				transmit <- true
+				<-accepted
+				msg("\tSound Engine restarted")
+				continue*/
 				default:
 					msg("%s%sunrecognised mode%s", red, italic, reset)
 					continue
@@ -1648,10 +1676,8 @@ func SoundEngine(w *bufio.Writer) { // , bits int)
 				binary.Write(w, binary.LittleEndian, int16(dac0)) // left
 				binary.Write(w, binary.LittleEndian, int16(dac0)) // right
 			}
-			msg("clear")
 			msg("stack trace: %s", debug.Stack())
 			msg("%v", p)
-			//msg("%v, %stype `: restart`%s", p, red, reset)
 		}
 	}()
 
@@ -1787,16 +1813,19 @@ func SoundEngine(w *bufio.Writer) { // , bits int)
 					r = stacks[i][len(stacks[i])-1]
 					stacks[i] = stacks[i][:len(stacks[i])-1]
 				case 18: // "tape"
-					tapes[i][n%TLlen] = r
+					tapes[i][n%TLlen] = (r + tapes[i][(n-1)%TLlen]) / 2
 					sigs[i][o.N] = Abs(sigs[i][o.N])
 					r = tapes[i][int(float64(n%TLlen)*sigs[i][o.N])%TLlen]
 					// add lpf with sigs[i][o.N] as coefficient?
 				case 19: // "tap"
 					sigs[i][o.N] = Abs(1 - sigs[i][o.N])
 					r = tapes[i][(n+int(TAPE_LENGTH/(sigs[i][o.N])))%TLlen]
+					r = Sin(r)
 				case 20: // "+tap"
 					sigs[i][o.N] = Abs(1 - sigs[i][o.N])
-					r += tapes[i][(n+int(SampleRate*TAPE_LENGTH*(sigs[i][o.N])))%TLlen]
+					//r += tapes[i][(n+int(SampleRate*TAPE_LENGTH*(sigs[i][o.N])))%TLlen]
+					r += tapes[i][(n+int(TAPE_LENGTH/(sigs[i][o.N])))%TLlen]
+					r = Sin(r)
 				case 21: // "f2c"
 					r = Abs(r)
 					r = 1 / (1 + 1/(2*Pi*r))
@@ -1895,14 +1924,12 @@ func SoundEngine(w *bufio.Writer) { // , bits int)
 				info <- "NaN"
 			}
 			if IsInf(sigs[i][0], 0) { // infinity to '93
-				if n%24000 == 0 {
-					info <- sf("%d: %v overflow", i, sigs[i][0])
-				}
+				//if n%24000 == 0 {
+				//	info <- sf("%d: %v overflow", i, sigs[i][0])
+				//}
+				panic(sf("%d: %v overflow", i, sigs[i][0]))
 				sigs[i][0] = 0
 			}
-			sigs[i][0] /= 10
-			sigs[i][0] = Tanh(sigs[i][0])
-			sigs[i][0] *= 10
 			m[i] = (m[i]*39 + mute[i]) / 40         // anti-click filter @ ~110Hz
 			lv[i] = (lv[i]*7 + level[i]) / 8        // @ 1273Hz
 			dac += sigs[i][0] * m[i] * m[i] * lv[i] // mute transition is quadratic

@@ -56,6 +56,7 @@ import (
 	"io"
 	. "math" // don't do this!
 	"os"
+	"runtime"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -83,6 +84,8 @@ const (
 	//AFMT_S32_BE = 0x00002000
 	// for Stereo
 	SNDCTL_DSP_CHANNELS = 0xC0045003
+	STEREO              = 1
+	MONO                = 0
 	// set Sample Rate, specific rate defined below
 	//	SNDCTL_DSP_SPEED	= IOC_INOUT |(0x04 & ((1 << 13)-1))<<16 | 0x50 << 8 | 0x02
 	SNDCTL_DSP_SPEED = 0xC0045002
@@ -300,17 +303,23 @@ func main() {
 		p("set format:", ern)
 		time.Sleep(time.Second)
 	}
-	var format uint32
-	if data != SELECTED_FMT {
+	if data != SELECTED_FMT { // handle error in switch below instead
 		p("Incorrect bit format! Change requested format in file")
 		os.Exit(1)
 	}
+	format := 16
 	switch {
 	case data == AFMT_S32_LE:
 		format = 32
 	case data == AFMT_S16_LE:
-		format = 16
+		format = 8
+	default:
+		// error!
+		p("\n--Incompatible bit format! Change requested format in file--\n")
+		os.Exit(1)
 	}
+
+	// set channels here, stereo or mono
 
 	// set sample rate
 	req = SNDCTL_DSP_SPEED
@@ -322,7 +331,7 @@ func main() {
 		uintptr(unsafe.Pointer(&data)),
 	)
 	if ern != 0 {
-		p("set rate:", ern)
+		p("set rate:", ern) // do something else here
 		time.Sleep(time.Second)
 	}
 	if data != SAMPLE_RATE {
@@ -333,7 +342,7 @@ func main() {
 	display.SR = SampleRate
 
 	// sound engine
-	go SoundEngine(w)
+	go SoundEngine(w) // , format)
 	// mouse values
 	go mouseRead()
 
@@ -356,8 +365,7 @@ func main() {
 		"ln2":      Ln2,
 		"ln3":      Log(3),
 		"ln5":      Log(5),
-		"E":        E, // e
-		"E-1":      1 / (E - 1),
+		"E":        E,   // e
 		"Pi":       Pi,  // π
 		"Phi":      Phi, // φ
 		"invSR":    1 / SampleRate,
@@ -380,10 +388,10 @@ func main() {
 	//signals slice with reserved signals
 	reserved := []string{ // order is important
 		"dac",
-		"",     // nil signal for unused operand
-		"α",    // cvflt coeff, no longer in use
-		"sync", // remove
-		"",     // tempo, deprecated
+		"", // nil signal for unused operand
+		"", // not in use
+		"", // not in use
+		"", // not in use
 		"mousex",
 		"mousey",
 		"butt1",
@@ -416,6 +424,23 @@ start:
 		newListing := listing{}
 		dispListing := listing{}
 		sig = make([]float64, len(reserved), 30) // capacity is nominal
+		sg = map[string]float64{                 // reset sg map because used by function add
+			"ln2":      Ln2,
+			"ln3":      Log(3),
+			"ln5":      Log(5),
+			"E":        E,   // e
+			"Pi":       Pi,  // π
+			"Phi":      Phi, // φ
+			"invSR":    1 / SampleRate,
+			"SR":       SampleRate,
+			"Epsilon":  SmallestNonzeroFloat64, // ε, epsilon
+			"wavR":     1.0 / WAV_LENGTH,
+			"semitone": Pow(2, 1.0/12),
+		}
+		for i, w := range wavSlice {
+			sg[w.Name] = float64(i)
+			sg["len"+w.Name] = float64(len(w.Data) - 1)
+		}
 		out := map[string]struct{}{}
 		for _, v := range reserved {
 			out[v] = struct{}{}
@@ -617,7 +642,7 @@ start:
 					}
 					continue
 				case "restart":
-					go SoundEngine(w)
+					go SoundEngine(w) // , format)
 					transfer.Listing = transfer.Listing[:len(transfer.Listing)-1]
 					transfer.Signals = transfer.Signals[:len(transfer.Signals)-1]
 					mute = mute[:len(mute)-1]
@@ -647,14 +672,17 @@ start:
 					msg("%s%sno out before in, necklace broken%s", red, italic, reset)
 					continue
 				}
+			case "out", "out+":
+				if num.Is {
+					msg("%s%soutput to number not permitted%s", red, italic, reset)
+					continue
+				}
+				fallthrough
 			case "out":
 				_, in := out[opd]
 				switch {
 				case opd == "dac" && fIn:
 					msg("%s%soutput to dac not possible within function%s", red, italic, reset)
-					continue
-				case num.Is:
-					msg("%s%soutput to number not permitted%s", red, italic, reset)
 					continue
 				case in && opd[:1] != "^" && opd != "dac":
 					msg("%s%sduplicate output to signal, c'est interdit%s", red, italic, reset)
@@ -679,7 +707,6 @@ start:
 					}
 				}
 				s := sf(".%s%d", name, n)
-				m := 0
 				for i, o := range function {
 					if len(o.Opd) == 0 {
 						continue
@@ -687,9 +714,9 @@ start:
 					if o.Opd == "dac" {
 						continue
 					}
-					if _, r := sg[o.Opd]; r {
-						continue
-					}
+					//if _, r := sg[o.Opd]; r {
+					//	continue
+					//}
 					switch o.Opd[:1] {
 					case "^", "@":
 						continue
@@ -698,11 +725,13 @@ start:
 						continue
 					}
 					function[i].Opd += s // rename signal
+					//msg("reg assigned: %s", function[i].Opd)
 					if o.Op == "out" {
 						out[function[i].Opd] = struct{}{}
 					}
 
 				}
+				m := 0
 				for i, o := range function {
 					switch o.Opd {
 					case "@":
@@ -1250,7 +1279,10 @@ func parseType(expr, op string) (n float64, b bool) {
 	return n, true
 }
 
-// decodeWavs is a somewhat hacky implementation that works for now. A maximum of WAV_LENGTH samples are sent to the main routine. All files are currently converted from stereo to mono. Differing sample rates are not currently converted. Header is assumed to be 44 bytes.
+// decodeWavs is a somewhat hacky implementation that works for now.
+// A maximum of WAV_LENGTH samples are sent to the main routine.
+// All files are currently converted from stereo to mono.
+// Differing sample rates are not currently converted. Header is assumed to be 44 bytes.
 func decodeWavs() (wavs, bool) {
 	var filelist []string
 	var w wavs
@@ -1403,8 +1435,16 @@ func decodeWavs() (wavs, bool) {
 
 // quick and basic decode of mouse bytes
 func mouseRead() {
-	file := "/dev/bpsm0"
-	//file := "/dev/input/mice" // for Linux
+	file := ""
+	switch runtime.GOOS {
+	case "freebsd":
+		file = "/dev/bpsm0"
+	case "linux":
+		file = "/dev/input/mice"
+	default:
+		msg("mouse not supported")
+		return
+	}
 	mf, rr := os.Open(file)
 	if e(rr) {
 		p("error opening '"+file+"':", rr)
@@ -1490,7 +1530,9 @@ func infodisplay() {
 // It is also freewheeling, it won't block on the action of any other goroutinue, only on IO, namely writing to soundcard
 // The latency and jitter of the audio output is entirely dependent on the soundcard and its OS driver,
 // except where the calculations don't complete in time under heavy load and the soundcard driver buffer underuns.
-func SoundEngine(w *bufio.Writer) {
+func SoundEngine(w *bufio.Writer) { // , bits int)
+	defer close(stop)
+	defer w.Flush()
 	// this doesn't work if placed in main: ¯\_(ツ)_/¯
 	defer save([]listing{listing{{Op: advisory}}}, "displaylisting.json")
 	defer func() { // fail gracefully
@@ -1499,6 +1541,19 @@ func SoundEngine(w *bufio.Writer) {
 			msg("%v, %stype `: restart`%s", p, red, reset)
 		}
 	}()
+	/*
+		output := func(f float64) { return binary.Write(w, binary.LittleEndian, int16(f))
+		switch bits {
+		case 8:
+			output = func(f float64) { return binary.Write(w, binary.LittleEndian, int8(f)) }
+		case 32:
+			output = func(f float64) { return binary.Write(w, binary.LittleEndian, int32(f)) }
+		default:
+			// error!
+			msg("unable to write to soundcard!")
+			return
+		}
+		}*/
 	// intialise capacities upfront
 	listings := make([]listing, 0, 24)
 	sigs := make([][]float64, 0, 23)
@@ -1689,15 +1744,16 @@ func SoundEngine(w *bufio.Writer) {
 				case 24: //"index":
 					r = float64(i) // * sigs[i][o.N]
 				case 25: //"<sync":
-					r *= s * (1 - sync[i])
-					r += (1 - s) * sync[i] * sigs[i][o.N] // phase offset
+					r *= s                      //* (1 - sync[i])
+					r += (1 - s) * sigs[i][o.N] //* sync[i]  phase offset
 				case 26: //">sync", ".>sync":
 					switch {
 					case r <= 0 && s == 1 && !syncInhibit[i]:
 						s = 0
 						syncInhibit[i] = true
-					case s == 0: // single sample pulse
+					case s == 0 && syncInhibit[i]: // single sample pulse
 						s = 1
+						//fallthrough
 					case r > 0:
 						syncInhibit[i] = false
 					}
@@ -1845,8 +1901,6 @@ func SoundEngine(w *bufio.Writer) {
 		}
 		n++
 	}
-	w.Flush()
-	close(stop)
 }
 
 func (n *noise) ise() {

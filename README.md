@@ -199,7 +199,7 @@ where f is now the maximum frequency we span to. You can use a number such as 20
 If we examine the guitarist example more closely , we realise that the fx pedal will likely contain modulators such as LFOs, along with filters, wave shapers etc.
 So we can extend our analogous model to something like:
 
-`in 2.5hz, osc, inv, out a, tri, out c, in 330hz, osc, mul a, filt c, mix`
+`in 2.5hz, osc, flip, out a, tri, out c, in 330hz, osc, mul a, filt c, mix`
 
 Notice that the first oscillator is now generating a 2.5 hertz low frequency modulation. It is inverted before being send to a, and then shaped into a triangle wave and send to c. The second osc now operates at a fixed frequency of 330 hertz and is multiplied by a (acting like a VCA to control the volume) and filtered by c before being mixed and send to the output.
 
@@ -236,8 +236,10 @@ Add two or three separate listings of this code for a relaxing beach experience.
 **Kick and hihat**
 >
 	in 2hz (or 120bpm)
-	posc
-	inv
+	posc 0
+	mul 8
+	clip 0
+	flip
 	out a
 	mul 55hz
 	osc
@@ -251,7 +253,7 @@ The kick will play on every beat. For once per bar of four beats use `in 120bpm,
 >
 	in 4hz
 	posc 0.5
-	inv
+	flip
 	+ -1.5
 	clip
 	+ 1
@@ -445,7 +447,7 @@ The reverb begins at the `+ c` line. the output is pushed onto the stack before 
 >
 	in 0.5
 	osc
-	inv
+	flip
 	base E
 	+ -1
 	out a
@@ -511,7 +513,6 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	mul		|		yes		|		multiply operator
 |	abs		|		no		|		absolute value, all inputs become positive (removes negative sign)
 |	tanh	|		no		|		hyperbolic tangent, useful for 'soft clipping'
-|	cvflt	|		yes		|		filter at fixed frequency of 100 hertz, requires unique register for internal calculation
 |	clip	|		no		|		restrict input between symmetrical thresholds ±operand value. 0 is a special case resulting in thresholds of 0 and 1
 |	noise	|		no		|		result is a pseudo-random series of numbers in range ( [-1, 1] * input )
 |	pow		|		yes		|		result is operand raised to the power of input
@@ -599,7 +600,6 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |   ln3		|       "		"			 3		|
 |	ln5     |       " 		"			 5		|  
 |	E		|		the mathematical constant e	|  
-|	E-1		|		1/(E-1), useful in `base E,+ -1, mul E-1` 				|  
 |	Pi		|		π, ratio of diameter to circumference of an ideal circle |        					|  
 |	Phi		|		φ, the golden ratio ≈ (1+√5)/2 		|  
 |	invSR	|		1 / SampleRate   			|  
@@ -636,7 +636,7 @@ Any wav files placed in a folder named `wavs` will be loaded on startup. They ne
 	wav [name of wav file indicated above listings]  
 	out dac  
 
-In the necklace above `in` sets the frequency of playback which is passed to osc to generate a rising ramp wave at that frequency. This 'scans' through the sample using the wav operator. Another way to look at it is that the output of osc, which repeats every 4 seconds, is 'shaped' into a sample waveform by `wav`. Any number between 0 and 1 will play the corresponding value of the sample at that point. Eg. 0.1 will play the sample at 400ms in. A continuous stream of values from `osc` will play the entire wav file. A decreasing series of numbers produced by, for example, `osc, inv` will play the sample backwards. `inv` flips the values of osc upside-down so the count down instead of up.  
+In the necklace above `in` sets the frequency of playback which is passed to osc to generate a rising ramp wave at that frequency. This 'scans' through the sample using the wav operator. Another way to look at it is that the output of osc, which repeats every 4 seconds, is 'shaped' into a sample waveform by `wav`. Any number between 0 and 1 will play the corresponding value of the sample at that point. Eg. 0.1 will play the sample at 400ms in. A continuous stream of values from `osc` will play the entire wav file. A decreasing series of numbers produced by, for example, `osc, flip` will play the sample backwards. `flip` turns the values of osc upside-down so they count down instead of up.  
 Different frequencies fed to `osc` will change the speed of playback and adding a fixed number will offset the starting point of playback. So  
 >
 	in wavR  

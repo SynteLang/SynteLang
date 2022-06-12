@@ -4,7 +4,7 @@
 
 The name is pronounced '*sinter*', which means to create something by
 fusing many tiny elements together under intense heat.  
-It is also a portmanteau of 'synth' and 'byte', which is a reference to the stream of bytes that are generated and sent to the soundcard by Syntə  
+It is also a portmanteau of 'synth' and 'byte', which is a reference to the stream of bytes that are generated and sent to the soundcard by Syntə.  
 
 The input syntax is in EBNF:
 	operator [ " " operand ]  
@@ -74,9 +74,10 @@ The design of Syntə has from inception included sufficient control of sound lev
 >OSS sound driver (FreeBSD) ◊  
 >Go programming language installed ◊  
 >Desire to learn about audio synthesis  
+>Unicode support
 
-Linux and ALSA driver should work without modifications, but latest commits may not be tested.
-It is not known at present what the performance will be on other systems. ◊ The terminal emulator that has been used for development and testing is Alacritty. It works well on cool-retro-term. You may experience flickering in some terminal emulators due to the incomplete UI.
+Linux with ALSA driver should work without modifications, but latest commits may not be tested.  
+It is not known at present what the performance will be on other systems. ◊ The terminal emulator that has been used for development and testing is Alacritty. It works well on cool-retro-term. You may experience flickering in some terminal emulators due to the incomplete UI.  
 
 The source code is as yet unlicensed so be wary of distributing or hosting the code, as-is, compiled, modified or otherwise. ◊
 
@@ -586,8 +587,8 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	once	|		no		|		like `osc` but only completes one cycle. Operand will set upper limit and will reset when 0. Use 1 for one-off ramp
 |	pulse	|		yes		|		pulse generator with duty cycle (pulse width) set by operand. Output is between 0 and 1, follow by cv2a for audio out
 |	ramp	|		no		|		like `osc` but with an output suitable for audio, i.e. spans -1 to 1
-|	posc	|		yes		|		like `osc` but will retrigger on a sync pulse. Operand sets phase offset
-|	slew	|		yes		|		slew generator. Swings to the input at a rate given by operand. Try 150hz to reduce clicks on vca signals ( i.e. multiplying audio values)
+|	posc	|		yes		|		like `osc` but will retrigger on a sync pulse. Operand sets phase offset. Can also use `out z` to control the phase independently of sync.
+|	slew	|		yes		|		slew generator. Swings to the input at a rate given by operand. Try 150hz to reduce clicks on vca signals ( i.e. when multiplying audio values). If slewing to a number other than zero from a greater number the jump will be immediate. ◊
 |	T2		|		no		|		implements Chebyshev polynomial of the first kind. In plain english this means it will double the frequency of anything passed through it
 |	zx		|		no		|		detects negative-going zero-crossing of input. A preceeding `ramp` will generate a single pulse of 1 at the end of its cycle.
 |	lmap	|		yes		|		implements the Logistic Map. Iterates on zero-crossing of the input. Operand is the r value, suggested between 3 and 5. Preceed with `ramp` and follow with `cv2a` for audio output
@@ -620,6 +621,12 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	butt1	|		value of left mouse button, 0 or 1	|
 |	butt2	|		value of centre mouse button, 0 or 1	|
 |	butt3	|		value of right mouse button, 0 or 1	|
+
+`.` is a special operand. If you have typed in something by accident for the operator simply type like so:
+
+	jlimistakehkj .
+
+and the line will be ignored, without giving an error message.
 
 ___
 <a name="det"></a>

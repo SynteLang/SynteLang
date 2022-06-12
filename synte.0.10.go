@@ -569,6 +569,9 @@ start:
 				s.Scan()
 				opd = s.Text()
 				pf("%s", reset)
+				if opd == "." {
+					continue
+				}
 				if !in && !f && opd != "[" {
 					//if not defining a new function, must be extant operator or function
 					msg("%s%soperator or function doesn't exist, create with \"[\" operand%s", red, italic, reset)
@@ -709,34 +712,6 @@ start:
 							italic, reset, italic, reset)
 					}
 					continue
-				/*case "restart":
-				if !started {
-					continue
-				}
-				select {
-				case <-stop:
-					stop = make(chan struct{})
-				default:
-					msg("nothing to restart")
-					continue
-				}
-				msg("%s...removing last listing%s", italic, reset)
-				go SoundEngine(w) // , format)
-				transfer.Listing = transfer.Listing[:len(transfer.Listing)-1]
-				transfer.Signals = transfer.Signals[:len(transfer.Signals)-1]
-				mute = mute[:len(mute)-1]
-				display.Mute = display.Mute[:len(display.Mute)-1]
-				level = level[:len(level)-1]
-				display.List--
-				dispListings = dispListings[:len(dispListings)-1]
-				if !save(*code, "displaylisting.json") {
-					msg("%slisting display not updated, check %s'displaylisting.json'%s exists%s",
-						italic, reset, italic, reset)
-				}
-				transmit <- true
-				<-accepted
-				msg("\tSound Engine restarted")
-				continue*/
 				default:
 					msg("%s%sunrecognised mode%s", red, italic, reset)
 					continue
@@ -864,7 +839,9 @@ start:
 				}
 				dispListing = append(dispListing, listing{{Op: name, Opd: opd}}...) // only display name
 				newListing = append(newListing, function...)
-				if o := newListing[len(newListing)-1]; o.Op == "out" && o.Opd == "dac" {
+				msg("")
+				msg(" √")
+				if o := newListing[len(newListing)-1]; o.Op == "out" && o.Opd == "dac" && !fIn {
 					break input
 				}
 				continue
@@ -1115,6 +1092,9 @@ start:
 				}
 				continue
 			case "tap", "index":
+				if dispListing[len(dispListing)-1].Opd == "[" {
+					break
+				}
 				switch newListing[len(newListing)-1].Op {
 				case "out", "push", "tape", ">sync":
 					break
@@ -1161,7 +1141,7 @@ start:
 				msg("%suse @ for operand signal%s", italic, reset)
 			}
 			// check operator exists, must be after mode commands above.
-			_, f = funcs[op]
+			_, f = funcs[op]                                     // unnecessary?
 			if _, ok := operators[op]; !ok && opd != "[" && !f { // f is shadowed
 				msg("%s%soperator not defined%s", red, italic, reset)
 				continue
@@ -1175,7 +1155,10 @@ start:
 			}
 			if op != "]" {
 				newListing = append(newListing, listing{{Op: op, Opd: operands[0]}}...)
+				msg("")
+				msg(" √")
 			}
+
 			if (op == "out" && opd == "dac") ||
 				op == ".>sync" || op == ".nsync" || op == ".level" {
 				info <- "clear"
@@ -1263,6 +1246,7 @@ start:
 			msg("%slisting display not updated, check file %s'displaylisting.json'%s exists%s",
 				italic, reset, italic, reset)
 		}
+		msg("clear")
 		/*
 			stats := new(debug.GCStats)
 			debug.ReadGCStats(stats)
@@ -1806,7 +1790,7 @@ func SoundEngine(w *bufio.Writer) { // , bits int)
 					no.ise() // roll a fresh one
 					r *= (2*(float64(no)/MaxUint) - 1)
 					//if r > 0.9999 { panic("test") }
-					//time.Sleep(5*time.Microsecond)
+					//time.Sleep(5*time.Microsecond) // for testing
 				case 16: // "push"
 					stacks[i] = append(stacks[i], r)
 				case 17: // "pop"
@@ -1929,6 +1913,11 @@ func SoundEngine(w *bufio.Writer) { // , bits int)
 				//}
 				panic(sf("%d: %v overflow", i, sigs[i][0]))
 				sigs[i][0] = 0
+			}
+			if protected { // prevents listings from ducking limiter >18dB, increases distortion
+				sigs[i][0] /= 8
+				sigs[i][0] = Tanh(sigs[i][0])
+				sigs[i][0] *= 8
 			}
 			m[i] = (m[i]*39 + mute[i]) / 40         // anti-click filter @ ~110Hz
 			lv[i] = (lv[i]*7 + level[i]) / 8        // @ 1273Hz

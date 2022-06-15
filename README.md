@@ -46,7 +46,7 @@ Built-in synchronisation operators √
 **YouTube:**
 > [Syntə Lang Channel](https://www.youtube.com/channel/UCRj9_B6P9T0bQSwCL3yOkyw)  
 
-This work and associated code is not currently licensed  
+This work and associated code is licensed for non-commercial use, see associated `licence.md` file
 © 2022  
 
 For now this document also serves as an (incomplete) specification of the syntə language and may be viewed as a paper on the topic.
@@ -588,7 +588,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	pulse	|		yes		|		pulse generator with duty cycle (pulse width) set by operand. Output is between 0 and 1, follow by cv2a for audio out
 |	ramp	|		no		|		like `osc` but with an output suitable for audio, i.e. spans -1 to 1
 |	posc	|		yes		|		like `osc` but will retrigger on a sync pulse. Operand sets phase offset. Can also use `out z` to control the phase independently of sync.
-|	slew	|		yes		|		slew generator. Swings to the input at a rate given by operand. Try 150hz to reduce clicks on vca signals ( i.e. when multiplying audio values). If slewing to a number other than zero from a greater number the jump will be immediate. ◊
+|	slew	|		yes		|		slew generator. Swings to the input at a rate given by operand. Intended for pulses/square waves. Try 150hz to reduce clicks on vca signals ( i.e. when multiplying audio values). If slewing to a number greater than zero and less than previous input the jump will be immediate. If the signal immediately crosses zero from positive to negative it will slew as expected. May be updated for a cleaner implementation in future. 
 |	T2		|		no		|		implements Chebyshev polynomial of the first kind. In plain english this means it will double the frequency of anything passed through it
 |	zx		|		no		|		detects negative-going zero-crossing of input. A preceeding `ramp` will generate a single pulse of 1 at the end of its cycle.
 |	lmap	|		yes		|		implements the Logistic Map. Iterates on zero-crossing of the input. Operand is the r value, suggested between 3 and 5. Preceed with `ramp` and follow with `cv2a` for audio output
@@ -703,8 +703,10 @@ And for seconds is:
 	1 / ( input \* sample rate )  
 
 ## Signals
-
 Signals are the way of passing values around outside of the main flow through the necklace. Signals which are named and not just numbers can be referred to as registers, because they *register* a value. Usually the default value of a signal is 0. If you want it to begin as 1, add ' to the name. So `a` becomes `'a`. Likewise you can use the double quotaion mark " to have a default value of one half. If you want to be able to overwrite the value of a signal with `out` (more than once in a necklace), which is not normally possible, you can add ^ to the name. So `a` becomes `^a`. You can use both of these special symbols, but the circumflex ^ must come first or it will be ignored.
+
+## CV and audio signal ranges
+Varying numbers intended for output to the soundcard usually span the range [-1,+1]. CV, or control voltage, which are used to control other parts of the signal chain and not produce sound directly typically span the range [0,1]. For instance the output of `ramp`, `saw` and `sine` which are intended to produce frequencies at audible rates (20 - 20,000Hz) all go between ±1, whereas `osc` which can be used to control a vca or the pitch of another oscillator spans between zero and 1. To make `osc` suitable for direct audio output you can use the cv2a function, which is exactly what `ramp` does. CV signals are generally slower and more rounded than audio signals. The `flip` function can be used to turn a CV upside-down, use `mul -1` to do the same for an audio signal (essentially what `saw` does). However, `flip` is much more commonly used.
 
 ## Channels ◊  
 At present the output is in mono. Stereo output should be possible and is intended to be implemented in future. This will probably be via `out L` or `out R`, while `out dac` sends to both left and right channels. Please feel free to badger the author if you are keen for this to happen. 
@@ -811,14 +813,18 @@ The whole main loop of the sound engine has a timer to produce the 'load' value 
 ---
 
 ### A note on licensing
-While for now the work is unlicensed, it is safe to assume that:  
+The work in this file and all others in this repository is now licenced. See the licence.md file for details.  
 
-+ Running the software in person (not via a network) for the purposes of perfromance or education is unlikely to lead to any negative consequences.  
+TL;DR -  
 
-+ Using, modifying, or distributing the software in binary or source code form for commercial purposes will never be permitted.  
++ Running the software in person (not via a network) for the purposes of performance or education won't lead to any negative consequences.  
 
-Suggestions, including improvements to the code are welcome. We are unable to accept code contributions directly until the project has been licensed. Currently it looks likely that a GPL, MIT or Sustainable Use licence will be selected when the time comes.  
-If you would like to fork the code for more radical changes then we wholeheartly suggest you instead write a unique live coding platform from scratch. The file is of an order of only a thousand lines of code after all, and the learning experience will be invaluable to you.  
++ Using, modifying, or distributing the software in binary or source code form for commercial purposes is not permitted.  
+
+This semi-permissive licence has been chosen to reflect the fact that this implementation is a prototype only and has no commercial value.  
+Suggestions, including improvements to the code are welcome.  
+If you would like to fork the code for more radical changes then we wholeheartly suggest you instead write a unique live coding platform from scratch. The file is of an order of only a thousand lines of code after all, and the learning experience will be invaluable to you.   
+Please get in touch if you have further questions.  
 
 ### Influences and other live-coding environments
 The term live-coding is generally taken to mean on-the-fly composition of algorithmically generated audio or graphical artifacts using software.  

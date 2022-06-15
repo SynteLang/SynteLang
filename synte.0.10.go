@@ -162,6 +162,7 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	".level": ops{true, 28},
 	"\\":     ops{true, 36},
 	"set½":   ops{true, 38},
+	"-":      ops{true, 33}, // alias of sub
 
 	// specials
 	"]":    ops{false, 0},

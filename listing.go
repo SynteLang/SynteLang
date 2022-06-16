@@ -43,7 +43,6 @@ func main() {
 
 	go func() {
 		for {
-			fmt.Printf("\033[H\033[2J")
 			Json, err := os.ReadFile(file)
 			err2 := json.Unmarshal(Json, &listing)
 			if err != nil {
@@ -65,6 +64,7 @@ func main() {
 				//fmt.Printf("error decoding %s: %v %v\n", file2, err, err2)
 				//time.Sleep(2 * time.Second)
 			}
+			fmt.Printf("\033[H\033[2J")
 			fmt.Printf("%sSyntə listings%s %spress enter to quit%s\n", cyan, reset, italic, reset)
 			fmt.Println()
 

@@ -92,7 +92,7 @@
 		},
 		{
 			"Op": "+",
-			"Opd": "a.sino0"
+			"Opd": "a0"
 		},
 		{
 			"Op": "mod",
@@ -100,7 +100,7 @@
 		},
 		{
 			"Op": "out",
-			"Opd": "a.sino0"
+			"Opd": "a0"
 		},
 		{
 			"Op": "sine",
@@ -120,7 +120,7 @@
 		},
 		{
 			"Op": "+",
-			"Opd": "a.sino1"
+			"Opd": "a1"
 		},
 		{
 			"Op": "mod",
@@ -128,7 +128,7 @@
 		},
 		{
 			"Op": "out",
-			"Opd": "a.sino1"
+			"Opd": "a1"
 		},
 		{
 			"Op": "sine",
@@ -148,7 +148,7 @@
 		},
 		{
 			"Op": "+",
-			"Opd": "a.pulse0"
+			"Opd": "a2"
 		},
 		{
 			"Op": "mod",
@@ -156,7 +156,7 @@
 		},
 		{
 			"Op": "out",
-			"Opd": "a.pulse0"
+			"Opd": "a2"
 		},
 		{
 			"Op": "lt",
@@ -176,7 +176,7 @@
 		},
 		{
 			"Op": "+",
-			"Opd": "a.pulse1"
+			"Opd": "a3"
 		},
 		{
 			"Op": "mod",
@@ -184,7 +184,7 @@
 		},
 		{
 			"Op": "out",
-			"Opd": "a.pulse1"
+			"Opd": "a3"
 		},
 		{
 			"Op": "lt",
@@ -196,11 +196,11 @@
 		},
 		{
 			"Op": "out",
-			"Opd": "a.slew0"
+			"Opd": "a4"
 		},
 		{
 			"Op": "gt",
-			"Opd": "c.slew0"
+			"Opd": "c4"
 		},
 		{
 			"Op": "mul",
@@ -216,15 +216,15 @@
 		},
 		{
 			"Op": "+",
-			"Opd": "c.slew0"
+			"Opd": "c4"
 		},
 		{
 			"Op": "clip",
-			"Opd": "a.slew0"
+			"Opd": "a4"
 		},
 		{
 			"Op": "out",
-			"Opd": "c.slew0"
+			"Opd": "c4"
 		},
 		{
 			"Op": "mul",
@@ -277,6 +277,40 @@
 		{
 			"Op": "tanh",
 			"Opd": ""
+		}
+	],
+	"down": [
+		{
+			"Op": "sub",
+			"Opd": "1"
+		},
+		{
+			"Op": "out",
+			"Opd": "a"
+		},
+		{
+			"Op": "in",
+			"Opd": "@"
+		},
+		{
+			"Op": "mul",
+			"Opd": "-1"
+		},
+		{
+			"Op": "+",
+			"Opd": "b"
+		},
+		{
+			"Op": "clip",
+			"Opd": "a"
+		},
+		{
+			"Op": "out",
+			"Opd": "b"
+		},
+		{
+			"Op": "+",
+			"Opd": "1"
 		}
 	],
 	"euclid": [
@@ -800,7 +834,7 @@
 		},
 		{
 			"Op": "out",
-			"Opd": "d.filt0"
+			"Opd": "d0"
 		},
 		{
 			"Op": "in",
@@ -812,15 +846,15 @@
 		},
 		{
 			"Op": "out",
-			"Opd": "c.filt0"
+			"Opd": "c0"
 		},
 		{
 			"Op": "mul",
-			"Opd": "d.filt0"
+			"Opd": "d0"
 		},
 		{
 			"Op": "out",
-			"Opd": "a.filt0"
+			"Opd": "a0"
 		},
 		{
 			"Op": "in",
@@ -828,19 +862,19 @@
 		},
 		{
 			"Op": "sub",
-			"Opd": "c.filt0"
+			"Opd": "c0"
 		},
 		{
 			"Op": "mul",
-			"Opd": "b.filt0"
+			"Opd": "b0"
 		},
 		{
 			"Op": "+",
-			"Opd": "a.filt0"
+			"Opd": "a0"
 		},
 		{
 			"Op": "out",
-			"Opd": "b.filt0"
+			"Opd": "b0"
 		},
 		{
 			"Op": "out",
@@ -856,7 +890,7 @@
 		},
 		{
 			"Op": "out",
-			"Opd": "d.filt1"
+			"Opd": "d1"
 		},
 		{
 			"Op": "in",
@@ -868,15 +902,15 @@
 		},
 		{
 			"Op": "out",
-			"Opd": "c.filt1"
+			"Opd": "c1"
 		},
 		{
 			"Op": "mul",
-			"Opd": "d.filt1"
+			"Opd": "d1"
 		},
 		{
 			"Op": "out",
-			"Opd": "a.filt1"
+			"Opd": "a1"
 		},
 		{
 			"Op": "in",
@@ -884,19 +918,19 @@
 		},
 		{
 			"Op": "sub",
-			"Opd": "c.filt1"
+			"Opd": "c1"
 		},
 		{
 			"Op": "mul",
-			"Opd": "b.filt1"
+			"Opd": "b1"
 		},
 		{
 			"Op": "+",
-			"Opd": "a.filt1"
+			"Opd": "a1"
 		},
 		{
 			"Op": "out",
-			"Opd": "b.filt1"
+			"Opd": "b1"
 		},
 		{
 			"Op": "out+",
@@ -1008,7 +1042,7 @@
 		},
 		{
 			"Op": "+",
-			"Opd": "@1"
+			"Opd": "@"
 		}
 	],
 	"reverb": [

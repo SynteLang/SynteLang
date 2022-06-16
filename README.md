@@ -244,13 +244,11 @@ Add two or three separate listings of this code for a relaxing beach experience.
 	mul 8
 	clip 0
 	flip
-	out a
-	mul 55hz
+	mul 85hz
 	osc
 	sine
-	mul a
-	mul 3
 	tanh
+	filt 200hz
 	mix
 
 The kick will play on every beat. For once per bar of four beats use `in 120bpm, / 4` before `posc`
@@ -575,7 +573,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	saw		|		no		|		saw wave, descending ramp
 |	mix		|		yes		|		output adjusted level to soundcard and end listing
 |	s/h		|		yes		|		samples and holds input when operand crosses zero. Use ramp to supply operand. See 'Sample and hold melody' example above. A pulse will do track+hold, zero = track, any other number is hold.
-|	dirac	|		no		|		result is a single pulse ◊
+|	dirac	|		no		|		result is a single pulse (not fully implemented) ◊
 |	dist	|		yes		|		distortion, operand controls amount
 |	sino	|		no		|		sine wave oscillator
 |	filt	|		yes		|		6dB per octave low-pass filter. Operand is cutoff frequency in Hertz
@@ -598,6 +596,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	dirac	|		no		|		outputs a single sample pulse when input goes from 0 to 1. Will trigger on first run of listing if input is 1
 |	range	|		2		|		spreads input from 0 to ±1 across a range of values from the first operand to the second. Eg. `range 220hz,440hz`. If the second operand is smaller the range will be negative.
 |	bd909	|		2		|		unfinished '909' kick drum. first operand is decay and second is pitch.  
+|	down	|		yes		|		slews downwards for decreasing or static signals, jumps immediately to increasing signal value. Use with a narrow pulse to make a linear decay envelope.
 |           |               |
 **List of pre-defined constants**
 |	ln2		|		natural logarithm of 2    	|  
@@ -775,6 +774,7 @@ listing.go displays the currently running necklaces. Any that are muted will sho
 + trim samples of music to be an exact number of bars (look for repetition in the wavform of around ~2 seconds)
 + use the "!" type to use a number outside of the expected range if you need to. This is not a factorial operation
 + had a moment of inspiration and can't remember what you did? All listings accepted by the sound engine are saved by timestamp to the recordings folder in json format
++ pipe the output of `functions.go` through `less` using the `-r` flag, like this: `go run functions.go | less -r`. You can then search the contents using `/`, refer to `man less` 
 + other tips tba... ◊  
 
 ## Performing with Syntə
@@ -815,7 +815,7 @@ The whole main loop of the sound engine has a timer to produce the 'load' value 
 ### A note on licensing
 The work in this file and all others in this repository is now licenced. See the licence.md file for details.  
 
-TL;DR -  
+**TL;DR**  
 
 + Running the software in person (not via a network) for the purposes of performance or education won't lead to any negative consequences.  
 
@@ -823,7 +823,7 @@ TL;DR -
 
 This semi-permissive licence has been chosen to reflect the fact that this implementation is a prototype only and has no commercial value.  
 Suggestions, including improvements to the code are welcome.  
-If you would like to fork the code for more radical changes then we wholeheartly suggest you instead write a unique live coding platform from scratch. The file is of an order of only a thousand lines of code after all, and the learning experience will be invaluable to you.   
+If you would like to fork the code for more radical changes then we wholeheartly suggest you instead write a unique live coding platform from scratch. The file is of an order of only two thousand lines of code after all, and the learning experience will be invaluable to you.   
 Please get in touch if you have further questions.  
 
 ### Influences and other live-coding environments

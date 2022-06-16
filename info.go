@@ -192,7 +192,7 @@ func main() {
 				blue, reset, display.MouseY,
 			)
 
-			time.Sleep(49 * time.Millisecond)
+			time.Sleep(20 * time.Millisecond)
 			if exit {
 				close(stop)
 				break

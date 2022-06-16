@@ -369,40 +369,22 @@ func main() {
 	SampleRate = float64(data)
 	display.SR = SampleRate
 
-	// sound engine
 	go SoundEngine(w, format)
-	// mouse values
-	go mouseRead()
-
 	go infodisplay()
-	info <- "clear"
-	<-carryOn
+	msg("clear")
+	go mouseRead()
 
 	// process wav
 	var wavsLoaded bool
 	var wavSlice wavs
 	wavNames := ""
 	if wavSlice, wavsLoaded = decodeWavs(); !wavsLoaded {
-		info <- "no wavs loaded"
-		<-carryOn
+		msg("no wavs loaded")
 	}
-	info <- ""
+	msg("")
 
 	// signals map with predefined constants, mutable
-	sg := map[string]float64{
-		"ln2":      Ln2,
-		"ln3":      Log(3),
-		"ln5":      Log(5),
-		"E":        E,   // e
-		"Pi":       Pi,  // π
-		"Phi":      Phi, // φ
-		"invSR":    1 / SampleRate,
-		"SR":       SampleRate,
-		"Epsilon":  SmallestNonzeroFloat64, // ε, epsilon
-		"wavR":     1.0 / WAV_LENGTH,
-		"semitone": Pow(2, 1.0/12),
-		//"+inf":	MaxFloat64, // not actual ∞ or +Inf, which would blat the sound engine
-	}
+	sg := map[string]float64{}
 	transfer.Wavs = make([][]float64, 0, len(wavSlice))
 	wmap := map[string]bool{}
 	for i, w := range wavSlice {
@@ -675,8 +657,7 @@ start:
 					protected = !protected
 					continue
 				case "clear":
-					info <- "clear"
-					<-carryOn
+					msg("clear")
 					continue
 				case "verbose":
 					switch code {
@@ -787,7 +768,8 @@ start:
 
 				}
 				for i, opd := range operands { // opd is shadowed
-					wav := wmap[opd]                                           // wavs can start with a number
+					// wavs can start with a number
+					wav := wmap[opd]
 					if strings.ContainsAny(opd[:1], "+-.0123456789") && !wav { // process number or fraction
 						n, b := parseType(opd, "")
 						if !b {
@@ -1163,8 +1145,7 @@ start:
 			}
 			if (op == "out" && opd == "dac") ||
 				op == ".>sync" || op == ".nsync" || op == ".level" {
-				info <- "clear"
-				<-carryOn
+				msg("clear")
 				break
 			}
 		}
@@ -1601,7 +1582,7 @@ func infodisplay() {
 				italic, reset, file, italic, reset)
 			time.Sleep(2 * time.Second)
 		}
-		if exit { //display doesn't run during fade out
+		if exit { // display doesn't run during fade out
 			break
 		}
 		time.Sleep(20 * time.Millisecond) // coarse loop timing
@@ -1631,14 +1612,13 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		output = func(w *bufio.Writer, f float64) {
 			binary.Write(w, binary.LittleEndian, int8(f))
 		}
+	case 16:
+		// already assigned
 	case 32:
 		output = func(w *bufio.Writer, f float64) {
 			binary.Write(w, binary.LittleEndian, int32(f))
 		}
-	case 16:
-		// already assigned
 	default:
-		// error!
 		msg("unable to write to soundcard!")
 		return
 	}
@@ -1652,12 +1632,13 @@ func SoundEngine(w *bufio.Writer, bits int) {
 	const hroom = (CONV_FACTOR - 1.0) / CONV_FACTOR // headroom for positive dither
 	var (
 		no     noise   = noise(time.Now().UnixNano())
-		r      float64        // result
-		l, h   float64 = 1, 2 // limiter, hold
-		dac    float64        // output
-		dac0   float64        // formatted output
-		env    float64 = 1    // for exit envelope
-		peak   float64        // vu meter
+		r      float64                                   // result
+		l, h   float64 = 1, 2                            // limiter, hold
+		dac    float64                                   // output
+		dac0   float64                                   // formatted output
+		env    float64 = 1                               // for exit envelope
+		penv   float64 = Pow(1e-4, 1/(SampleRate*50e-3)) // approx -80dB in 50ms
+		peak   float64                                   // vu meter
 		dither float64
 		n      int // loop counter
 
@@ -1666,8 +1647,6 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		s        float64       = 1 //sync=0
 		p        bool              // play/pause
 		ii       int               // sync intermediate
-
-		penv float64 = Pow(1e-4, 1/(SampleRate*50e-3)) // approx -80dB in 50ms
 
 		mx, my float64 // mouse smooth intermediates
 		hpf, x float64 // DC-blocking high pass filter

@@ -91,14 +91,14 @@ const (
 	//	SNDCTL_DSP_SPEED	= IOC_INOUT |(0x04 & ((1 << 13)-1))<<16 | 0x50 << 8 | 0x02
 	SNDCTL_DSP_SPEED = 0xC0045002
 	SAMPLE_RATE      = 48000 //hertz
-	//CONV_FACTOR      = MaxInt32
-	CONV_FACTOR = MaxInt16
 
 	WAV_TIME    = 4 //seconds
 	WAV_LENGTH  = WAV_TIME * SAMPLE_RATE
 	TAPE_LENGTH = 1 //seconds
 	MAX_WAVS    = 12
 )
+
+var convFactor = float64(MaxInt16)
 
 // terminal colours, eg. sf("%stest%s test", red, reset)
 const (
@@ -137,7 +137,7 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"base":    ops{true, 13},
 	"push":    ops{false, 16},
 	"pop":     ops{false, 17},
-	"tape":    ops{true, 18},
+	"tape":    ops{false, 18},
 	"tap":     ops{true, 19},
 	"+tap":    ops{true, 20},
 	"f2c":     ops{false, 21},
@@ -163,6 +163,7 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"\\":     ops{true, 36}, // "\"
 	"set½":   ops{true, 38},
 	"-":      ops{true, 33}, // alias of sub
+	"reel":   ops{true, 39},
 
 	// specials
 	"]":    ops{false, 0},
@@ -193,7 +194,7 @@ type listing []struct {
 }
 
 // 'global' transfer variable
-var transfer struct {
+var transfer struct { // make this a slice of structs?
 	Listing []listing
 	Signals [][]float64
 	Wavs    [][]float64 //sample
@@ -222,7 +223,7 @@ var ( // misc
 	release    float64 = Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
 )
 
-type noise uint64 // move to S.E.
+type noise uint64
 
 var mouse struct {
 	X, // -255 to 255
@@ -310,10 +311,13 @@ func main() {
 	format := 16
 	switch {
 	case data == AFMT_S16_LE:
+		convFactor = MaxInt16
 		break
 	case data == AFMT_S32_LE:
+		convFactor = MaxInt32
 		format = 32
 	case data == AFMT_S8:
+		convFactor = MaxInt8
 		format = 8
 	default:
 		// error!
@@ -428,16 +432,22 @@ func main() {
 	code := &dispListings
 	priorMutes := []float64{}
 	solo := map[int]bool{}
+	unsolo := []float64{}
 
 	go func() { // watchdog, anonymous to use variables in scope
+		// assumes no panic while paused
 		for {
 			select {
 			case <-stop:
 				if exit {
+					go SoundEngine(w, format)
 					break
 				}
 				if !started {
 					continue
+				}
+				if len(transfer.Listing) < 2 {
+					msg("all listings being removed, crash imminent")
 				}
 				msg("%ssound engine halted... removing last listing%s", italic, reset)
 				stop = make(chan struct{})
@@ -445,6 +455,8 @@ func main() {
 				transfer.Listing = transfer.Listing[:len(transfer.Listing)-1]
 				transfer.Signals = transfer.Signals[:len(transfer.Signals)-1]
 				mute = mute[:len(mute)-1]
+				priorMutes = priorMutes[:len(priorMutes)-1]
+				unsolo = unsolo[:len(unsolo)-1]
 				display.Mute = display.Mute[:len(display.Mute)-1]
 				level = level[:len(level)-1]
 				display.List--
@@ -456,13 +468,14 @@ func main() {
 				transmit <- true
 				<-accepted
 				msg("\tSound Engine restarted")
+				time.Sleep(500 * time.Millisecond) // wait to stabilise
 			default:
 				// nop
 			}
 			if exit {
 				break
 			}
-			time.Sleep(25 * time.Millisecond) // coarse loop timing
+			time.Sleep(100 * time.Millisecond) // coarse loop timing
 		}
 	}()
 
@@ -483,6 +496,7 @@ start:
 			"Epsilon":  SmallestNonzeroFloat64, // ε, epsilon
 			"wavR":     1.0 / WAV_LENGTH,
 			"semitone": Pow(2, 1.0/12),
+			"Tau":      2 * Pi, // 2π
 		}
 		for i, w := range wavSlice {
 			sg[w.Name] = float64(i)
@@ -599,11 +613,6 @@ start:
 				case "exit":
 					p("\nexiting...")
 					if display.Paused {
-						for i := range mute {
-							mute[i] = 0
-							display.Mute[i] = true
-						}
-						time.Sleep(75 * time.Millisecond)
 						<-pause
 					}
 					exit = true
@@ -633,7 +642,8 @@ start:
 					continue
 				case "pause":
 					if started && !display.Paused {
-						for i := range mute { // save mutes
+						for i := range mute { // save, and mute all
+							priorMutes[i] = mute[i]
 							mute[i] = 0
 						}
 						time.Sleep(75 * time.Millisecond) // wait for mutes
@@ -644,14 +654,15 @@ start:
 					}
 					continue
 				case "play":
-					if display.Paused {
-						for i := range mute { // restore mutes
-							mute[i] = priorMutes[i]
-						}
-						time.Sleep(75 * time.Millisecond) // wait for mutes
-						<-pause
-						display.Paused = false
+					if !display.Paused {
+						continue
 					}
+					for i := range mute { // restore mutes
+						mute[i] = priorMutes[i]
+					}
+					time.Sleep(75 * time.Millisecond) // wait for mutes
+					<-pause
+					display.Paused = false
 					continue
 				case "unprotected":
 					protected = !protected
@@ -825,8 +836,6 @@ start:
 				fun++
 				dispListing = append(dispListing, listing{{Op: name, Opd: opd}}...) // only display name
 				newListing = append(newListing, function...)
-				msg("")
-				msg(" √")
 				if o := newListing[len(newListing)-1]; o.Op == "out" && o.Opd == "dac" && !fIn {
 					break input
 				}
@@ -993,7 +1002,6 @@ start:
 				}
 				mute[i] = 1 - mute[i]
 				display.Mute[i] = mute[i] == 0
-				priorMutes[i] = mute[i]
 				if op[:1] == "." && len(newListing) > 0 {
 					dispListing = append(dispListing, listing{{Op: "mix"}}...)
 					newListing = append(newListing, listing{{Op: "setmix", Opd: "^freq"}}...) // hacky
@@ -1033,13 +1041,13 @@ start:
 				}
 				if solo[i] {
 					for i := range mute { // i is shadowed
-						mute[i] = priorMutes[i]
+						mute[i] = unsolo[i]
 						display.Mute[i] = mute[i] == 0
 						solo[i] = false
 					}
 				} else {
 					for i := range mute { // i is shadowed
-						priorMutes[i] = mute[i]
+						unsolo[i] = mute[i]
 						mute[i] = 0
 						display.Mute[i] = true
 					}
@@ -1078,6 +1086,9 @@ start:
 				}
 				continue
 			case "tap", "index":
+				if len(dispListing) < 1 {
+					break
+				}
 				if dispListing[len(dispListing)-1].Opd == "[" {
 					break
 				}
@@ -1140,11 +1151,9 @@ start:
 			}
 			if op != "]" {
 				newListing = append(newListing, listing{{Op: op, Opd: operands[0]}}...)
-				msg("")
-				msg(" √")
 			}
 			if (op == "out" && opd == "dac") ||
-				op == ".>sync" || op == ".nsync" || op == ".level" {
+				op == ".>sync" || op == ".nsync" || op == ".level" || op == "//" {
 				msg("clear")
 				break
 			}
@@ -1208,6 +1217,7 @@ start:
 		transfer.Signals = append(transfer.Signals, sig)
 		mute = append(mute, 1)
 		priorMutes = append(priorMutes, 1)
+		unsolo = append(unsolo, 1)
 		display.Mute = append(display.Mute, false)
 		level = append(level, 1)
 		display.List++
@@ -1622,14 +1632,9 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		msg("unable to write to soundcard!")
 		return
 	}
-	// intialise capacities upfront
-	listings := make([]listing, 0, 24)
-	sigs := make([][]float64, 0, 23)
-	stacks := make([][]float64, 1, 21)
-	wavs := make([][]float64, 0, MAX_WAVS)
-	tapes := make([][]float64, 0, 26)
 
-	const hroom = (CONV_FACTOR - 1.0) / CONV_FACTOR // headroom for positive dither
+	const Tau = 2 * Pi
+
 	var (
 		no     noise   = noise(time.Now().UnixNano())
 		r      float64                                   // result
@@ -1645,7 +1650,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		rate     time.Duration = time.Duration(7292) // loop timer, initialised to approximate resting rate
 		lastTime time.Time     = time.Now()
 		s        float64       = 1 //sync=0
-		p        bool              // play/pause
+		p        bool              // play/pause, shadows
 		ii       int               // sync intermediate
 
 		mx, my float64 // mouse smooth intermediates
@@ -1653,26 +1658,35 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		hpf2560, x2560,
 		hpf160, x160,
 		det float64 // limiter detection
+		//invSqrt2 = 1 / Sqrt(2)
+		smR8  = 40.0 / SampleRate
+		hroom = (convFactor - 1.0) / convFactor // headroom for positive dither
 	)
 	no *= 77777777777 // force overflow
 	defer func() {    // fail gracefully
-		if p := recover(); p != nil {
-			//if p := recover(); p == "test" {
+		if p := recover(); p != nil { // p is shadowed
 			fade := Pow(1e-4, 1/(SampleRate*50e-3)) // approx -80dB in 50ms
 			for i := 2400; i >= 0; i-- {
 				dac0 *= fade
 				output(w, dac0) // left
 				output(w, dac0) // right
 			}
-			msg("stack trace: %s", debug.Stack())
+			/*if p != "Sound Engine overloaded" {
+				msg("stack trace: %s", debug.Stack())
+			}*/
 			msg("%v", p)
 		}
 	}()
 
 	<-transmit // load first listing and start SoundEngine
-	listings = transfer.Listing
-	sigs = transfer.Signals
-	wavs = transfer.Wavs
+	listings := make([]listing, len(transfer.Listing), len(transfer.Listing)+24)
+	sigs := make([][]float64, len(transfer.Signals), len(transfer.Signals)+23)
+	stacks := make([][]float64, len(transfer.Listing), len(transfer.Listing)+21)
+	wavs := make([][]float64, len(transfer.Wavs), MAX_WAVS)
+	tapes := make([][]float64, 0, 26)
+	copy(listings, transfer.Listing)
+	copy(sigs, transfer.Signals)
+	copy(wavs, transfer.Wavs)
 	tape := make([]float64, TLlen)
 	tapes = make([][]float64, len(transfer.Listing))
 	for i := range tapes { // i is shadowed
@@ -1680,11 +1694,13 @@ func SoundEngine(w *bufio.Writer, bits int) {
 	}
 	accepted <- true
 	sync := make([]float64, len(transfer.Listing))
-	syncInhibit := make([]bool, len(transfer.Listing), 27) // inhibitions
-	peakfreq := make([]float64, len(transfer.Listing), 28) // peak frequency for setlevel
-	peakfreq[0] = 20 / SampleRate
-	m := make([]float64, len(transfer.Listing), 29)  // filter intermediate for mute
-	lv := make([]float64, len(transfer.Listing), 29) // filter intermediate for mute
+	syncInhibit := make([]bool, len(transfer.Listing), len(transfer.Listing)+27) // inhibitions
+	peakfreq := make([]float64, len(transfer.Listing), len(transfer.Listing)+28) // peak frequency for setlevel
+	for i := range peakfreq {
+		peakfreq[i] = 20 / SampleRate
+	}
+	m := make([]float64, len(transfer.Listing), len(transfer.Listing)+29)  // filter intermediate for mute
+	lv := make([]float64, len(transfer.Listing), len(transfer.Listing)+30) // filter intermediate for level
 
 	lastTime = time.Now()
 	for {
@@ -1712,16 +1728,16 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		if n%15127 == 0 { // arbitrary interval all-zeros protection for lfsr
 			no ^= 1 << 27
 		}
+		mx = (mx*765 + mouse.X) / 766 // lpf @ ~10Hz
+		my = (my*765 + mouse.Y) / 766
 
 		for i, list := range listings {
 			r = 0
-			mx = (mx*765 + mouse.X) / 766 // lpf @ ~10Hz
-			my = (my*765 + mouse.Y) / 766
 			sigs[i][5] = mx
 			sigs[i][6] = my
-			sigs[i][7] = mouse.Left
-			sigs[i][8] = mouse.Right
-			sigs[i][9] = mouse.Middle
+			//sigs[i][7] = mouse.Left
+			//sigs[i][8] = mouse.Right
+			//sigs[i][9] = mouse.Middle
 			for _, o := range list {
 				switch o.Opn {
 				case 0:
@@ -1735,7 +1751,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				case 4: // "in"
 					r = sigs[i][o.N]
 				case 5: // "sine"
-					r = Sin(2 * Pi * r)
+					r = Sin(Tau * r)
 				case 6: // "mod"
 					r = Mod(r, sigs[i][o.N])
 				case 7: // "gt"
@@ -1786,21 +1802,18 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					r = stacks[i][len(stacks[i])-1]
 					stacks[i] = stacks[i][:len(stacks[i])-1]
 				case 18: // "tape"
-					tapes[i][n%TLlen] = (r + tapes[i][(n-1)%TLlen]) / 2
-					sigs[i][o.N] = Abs(sigs[i][o.N])
-					r = tapes[i][int(float64(n%TLlen)*sigs[i][o.N])%TLlen]
+					tapes[i][n%TLlen] = (r + tapes[i][(n+TLlen-1)%TLlen]) / 2
 				case 19: // "tap"
 					sigs[i][o.N] = Abs(1 - sigs[i][o.N])
 					r = tapes[i][(n+int(TAPE_LENGTH/(sigs[i][o.N])))%TLlen]
 					r = Sin(r)
 				case 20: // "+tap"
 					sigs[i][o.N] = Abs(1 - sigs[i][o.N])
-					//r += tapes[i][(n+int(SampleRate*TAPE_LENGTH*(sigs[i][o.N])))%TLlen]
 					r += tapes[i][(n+int(TAPE_LENGTH/(sigs[i][o.N])))%TLlen]
 					r = Sin(r)
 				case 21: // "f2c"
 					r = Abs(r)
-					r = 1 / (1 + 1/(2*Pi*r))
+					r = 1 / (1 + 1/(Tau*r))
 				case 37: // "degrade" // needs more work
 					no.ise()
 					ii = (int(no >> 60)) % (len(listings) - 1)
@@ -1852,7 +1865,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				case 29: // "from"
 					r = sigs[int(sigs[i][o.N])][0]
 				case 30: // "sgn"
-					r = float64(Float64bits(r)>>63)*2 - 1
+					r = float64(Float64bits(r)>>62) - 1
 				case 31: // "deleted"
 					sigs[i][0] = 0
 				case 32: // "/"
@@ -1863,25 +1876,36 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				case 33: // "sub"
 					r -= sigs[i][o.N]
 				case 34: // "setmix"
-					a := Abs(sigs[i][o.N]) + 1e-6
-					d := Log2(a / peakfreq[i])
-					d = Max(-1, Min(1, d))
-					peakfreq[i] += a * (d * 40.0 / SampleRate)
-					if Abs(d) < 0.01 {
-						peakfreq[i] = a
+					{
+						a := Abs(sigs[i][o.N]) + 1e-6
+						//d := Log2(a / peakfreq[i])
+						d := a/peakfreq[i] - 1
+						d = Max(-1, Min(1, d))
+						peakfreq[i] += a * (d * smR8)
+						if Abs(d) < 0.01 {
+							peakfreq[i] = a
+						}
 					}
-					r *= Min(1, 9/(Sqrt(peakfreq[i]*SampleRate)+4.5))
+					//r *= Min(1, 9/(Sqrt(peakfreq[i]*SampleRate)+4.5)) // true pink
+					//r *= Min(1, Pow(80/(peakfreq[i]*SampleRate+20), invSqrt2)) // compromise
+					r *= Min(1, 80/(peakfreq[i]*SampleRate+20)) // ignoring density
+					/*if n%1024 == 0 {
+						info <- sf("pf: %v", peakfreq[i])
+					}*/
 				case 35: // "print"
 					if n%16384 == int(no>>51) && !exit { // dubious exit guard
 						info <- sf("listing %d: %.3g", i, r)
 					}
 				case 38: // "set½" // for internal use
-					sigs[i][o.N] = 0.5
+					sigs[i][o.N] = 0.15
 				case 36: // "\\"
 					if r == 0 {
 						r = Copysign(1e-308, r)
 					}
 					r = sigs[i][o.N] / r
+				case 39: // reel
+					sigs[i][o.N] = Abs(sigs[i][o.N])
+					r = tapes[i][int(float64(n%TLlen)*sigs[i][o.N])%TLlen]
 				default:
 					// nop, r = r
 				}
@@ -1895,11 +1919,12 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				panic(sf("%d: %v overflow", i, sigs[i][0]))
 				sigs[i][0] = 0
 			}
-			if protected { // prevents listings from ducking limiter by >18dB, increases distortion
-				sigs[i][0] /= 8
-				sigs[i][0] = Tanh(sigs[i][0])
-				sigs[i][0] *= 8
-			}
+			/*
+				if protected { // prevents listings from ducking limiter by >18dB, increases distortion
+					sigs[i][0] /= 8
+					sigs[i][0] = Tanh(sigs[i][0])
+					sigs[i][0] *= 8
+				}*/
 			m[i] = (m[i]*383 + mute[i]) / 384 // anti-click filter @ ~20hz
 			lv[i] = (lv[i]*7 + level[i]) / 8  // @ 1273Hz
 			dac += sigs[i][0] * m[i] * lv[i]
@@ -1937,7 +1962,8 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				save([]listing{listing{{Op: advisory}}}, "displaylisting.json")
 				break
 			}
-		} else if p {
+		}
+		if p {
 			dac *= env // fade out
 			env *= penv
 			if env < 1e-4 {
@@ -1951,10 +1977,9 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		dither = float64(no) / MaxUint64
 		no.ise()
 		dither += float64(no)/MaxUint64 - 1
-		//dac *= (CONV_FACTOR - 1.0) / CONV_FACTOR // headroom for positive dither
 		dac *= hroom
-		dac += dither / CONV_FACTOR // dither dac value ±1 from xorshift lfsr
-		if dac > 1 {                // hard clip
+		dac += dither / convFactor // dither dac value ±1 from xorshift lfsr
+		if dac > 1 {               // hard clip
 			dac = 1
 			display.Clip = true
 		}
@@ -1970,16 +1995,22 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			peak = 0
 		}
 		display.Vu = peak
-		dac *= CONV_FACTOR                             // convert
-		rate = (rate*164 + time.Since(lastTime)) / 165 //weighted average
-		if float64(rate) > 1e9/SampleRate {
-			panic("Sound Engine overloaded")
+		dac *= convFactor // convert
+		//rate = (rate*1699 + time.Since(lastTime)) / 1700 //weighted average
+		rate += time.Since(lastTime)
+		if n%16384 == 0 {
+			rate /= 16384
+			if float64(rate) > 1e9/SampleRate {
+				panic("Sound Engine overloaded")
+			}
+			display.Load = rate
+			rate = 0
 		}
 		dac0 = dac      // dac0 holds output value for use when restarting
 		output(w, dac0) // left
 		output(w, dac0) // right
 		lastTime = time.Now()
-		display.Load = rate
+		//display.Load = rate
 		dac = 0
 		n++
 	}

@@ -433,7 +433,7 @@ The values 0.9 and 0.1 should sum to 1 to maintain original pitch. 0.25 is the f
 	mul a
 	+ c
 	push
-	tape 1
+	tape
 	tap 0.1
 	+tap 0.3
 	+tap 0.07
@@ -526,7 +526,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	.nsync	|		yes		|		(not implemented) equivalent to nsync but will end listing and transfer, like `out dac`
 |	push	|		no		|		move result to a stack
 |	pop		|		no		|		take most recently pushed result from stack
-|	tape	|		yes		|		record and playback from a rotating buffer, analogous to a tape loop. Operand is playback speed, record is at a constant rate. Use 1 for no change in pitch. At present can only have one instance of this operator per listing
+|	tape	|		no		|		record and playback from a rotating buffer, analogous to a tape loop.
 |	tap		|		yes		|		result drawn from tape, operand is offset in seconds/milliseconds (use types)
 |	+tap	|		yes		|		same as `tap` except added to previous result in listing
 |	f2c		|		no		|		convert frequency to filter coefficient. Numbers less than than 0 will be multiplied by -1 (sign removed, become positive)
@@ -547,6 +547,8 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	setmix 	| 		yes		|		used internally for mix function
 |	.level	|		yes   	|		equivalent to `level` except will end input and launch listing. Operation not affected by mute
 |	print	|		no   	|		prints value of input to info display and passes through unchanged to next operation. Timing is a random point within an interval every 341.⅓ms
+|	reel	|		yes   	|		output from tape at a rate determined by operand. 1 is original speed, less than one is slower and vice versa
+|	index	|		no   	|		outputs index of current listing
 |	       	| 		       	|
 |	propa	|		yes  	|		used in conjuction with `index`, adds multiple listings at once (not implimented yet) ◊  
 |	fma		|		yes  	|		fused multiply add, the result of the input multiplied by the operand is stored in a special register `fma` (not implimented yet) ◊  
@@ -596,7 +598,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	dirac	|		no		|		outputs a single sample pulse when input goes from 0 to 1. Will trigger on first run of listing if input is 1
 |	range	|		2		|		spreads input from 0 to ±1 across a range of values from the first operand to the second. Eg. `range 220hz,440hz`. If the second operand is smaller the range will be negative.
 |	bd909	|		2		|		unfinished '909' kick drum. first operand is decay and second is pitch.  
-|	down	|		yes		|		slews downwards for decreasing or static signals, jumps immediately to increasing signal value. Use with a narrow pulse to make a linear decay envelope.
+|	down	|		yes		|		slews downwards for decreasing signals, jumps immediately to increasing or static (unchanging) signal value. Use with a narrow pulse to make a linear decay envelope.
 |           |               |
 **List of pre-defined constants**
 |	ln2		|		natural logarithm of 2    	|  
@@ -671,7 +673,7 @@ By design only the first 4 seconds of any wav file will be loaded. Two reasons f
 Later on, the intention is to provide more flexibility in synchronising other necklaces to wav files using `len<wavname>` signals. There is still plenty to be done in testing and possibly reworking parts of sample playback. ◊  
 
 ## Tape loop ◊  
-Each listing has a tape loop available which is accessed by the `tape` operator. The tape loop is a rolling buffer of 1 second in length. The output of `tape` is the 'record head', which is the input delayed by one second. For other delay times the loop can be accessed by the tap operator, where the fractional part of the operand sets the delay time. For example an operand of value 2.3 will give a tap at 300 milliseconds (0.3s). Multiple `tap` operators can be used. The use of multiple `tape` operators is undefined.
+Each listing has a tape loop available which is accessed by the `tape` operator. The tape loop is a rolling buffer of 1 second in length. The loop can be accessed by the tap operator, where the fractional part of the operand sets the delay time. For example an operand of value 2.3 will give a tap at 300 milliseconds (0.3s). Multiple `tap` operators can be used. The use of multiple `tape` operators is undefined.
 
 ## Arithmetic operations
 An operand may be added in a listing of the form a/b or a\*b where a and b are valid numbers and the result is divison and multiplication respectively. For example: typing  

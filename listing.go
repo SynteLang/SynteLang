@@ -65,8 +65,8 @@ func main() {
 				//time.Sleep(2 * time.Second)
 			}
 			fmt.Printf("\033[H\033[2J")
-			fmt.Printf("%sSyntə listings%s %spress enter to quit%s\n", cyan, reset, italic, reset)
-			fmt.Println()
+			fmt.Printf("%sSyntə listings%s %spress enter to quit%s", cyan, reset, italic, reset)
+			//fmt.Println()
 
 			for i, list := range listing {
 				if len(list) < 1 {
@@ -75,7 +75,7 @@ func main() {
 				if list[0].Op == "deleted" {
 					continue
 				}
-				fmt.Printf("%d:  ", i)
+				fmt.Printf("\n%d:  ", i)
 				m, c, y := magenta, cyan, yellow
 				if len(mute) == len(listing) { // bounds check
 					if mute[i] {
@@ -95,7 +95,6 @@ func main() {
 						fmt.Printf(" %s\u22A2%s  ", y, reset)
 					}
 				}
-				fmt.Printf("\n")
 			}
 			time.Sleep(500 * time.Millisecond)
 			if exit {

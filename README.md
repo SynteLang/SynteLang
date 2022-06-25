@@ -434,9 +434,9 @@ The values 0.9 and 0.1 should sum to 1 to maintain original pitch. 0.25 is the f
 	+ c
 	push
 	tape
-	tap 0.1
-	+tap 0.3
-	+tap 0.07
+	tap 100ms
+	+tap 300ms
+	+tap 70ms
 	mul 0.25
 	filt 1200hz
 	out c

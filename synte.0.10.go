@@ -1801,18 +1801,11 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					r = stacks[i][len(stacks[i])-1]
 					stacks[i] = stacks[i][:len(stacks[i])-1]
 				case 18: // "tape"
-					tapes[i][n%TLlen] = r //(r + tapes[i][(n+TLlen-1)%TLlen]) / 2
+					tapes[i][n%TLlen] = (Sin(r) + tapes[i][(n+TLlen-1)%TLlen]) / 2
 				case 19: // "tap"
-					//sigs[i][o.N] = Abs(1 - sigs[i][o.N])
-					//t :=  Min(0, Max(TAPE_LENGTH*SampleRate, TAPE_LENGTH/sigs[i][o.N]))
-					t := int(Min(TAPE_LENGTH*SampleRate, TAPE_LENGTH/sigs[i][o.N]))
-					//r = tapes[i][(n+int(TAPE_LENGTH/(sigs[i][o.N])))%TLlen]
-					r = tapes[i][(n+TLlen-t)%TLlen]
-					r = Sin(r)
+					r = tapes[i][(n+int(Abs(TAPE_LENGTH*(SampleRate-1/sigs[i][o.N]))))%TLlen]
 				case 20: // "+tap"
-					sigs[i][o.N] = Abs(1 - sigs[i][o.N])
-					r += tapes[i][(n+int(TAPE_LENGTH/(sigs[i][o.N])))%TLlen]
-					r = Sin(r)
+					r += tapes[i][(n+int(Abs(TAPE_LENGTH*(SampleRate-1/sigs[i][o.N]))))%TLlen]
 				case 21: // "f2c"
 					r = Abs(r)
 					r = 1 / (1 + 1/(Tau*r))

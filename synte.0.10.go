@@ -1687,10 +1687,9 @@ func SoundEngine(w *bufio.Writer, bits int) {
 	copy(listings, transfer.Listing)
 	copy(sigs, transfer.Signals)
 	copy(wavs, transfer.Wavs)
-	tape := make([]float64, TLlen)
 	tapes = make([][]float64, len(transfer.Listing))
 	for i := range tapes { // i is shadowed
-		tapes[i] = tape
+		tapes[i] = make([]float64, TLlen)
 	}
 	accepted <- true
 	sync := make([]float64, len(transfer.Listing))
@@ -1715,7 +1714,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			stacks = make([][]float64, len(listings))
 			accepted <- true
 			// add additional sync inhibit and tape. Safe because transfer is always one extra listing
-			tapes = append(tapes, tape)
+			tapes = append(tapes, make([]float64, TLlen))
 			sync = append(sync, 0)
 			syncInhibit = append(syncInhibit, false)
 			peakfreq = append(peakfreq, 20/SampleRate)
@@ -1802,10 +1801,13 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					r = stacks[i][len(stacks[i])-1]
 					stacks[i] = stacks[i][:len(stacks[i])-1]
 				case 18: // "tape"
-					tapes[i][n%TLlen] = (r + tapes[i][(n+TLlen-1)%TLlen]) / 2
+					tapes[i][n%TLlen] = r //(r + tapes[i][(n+TLlen-1)%TLlen]) / 2
 				case 19: // "tap"
-					sigs[i][o.N] = Abs(1 - sigs[i][o.N])
-					r = tapes[i][(n+int(TAPE_LENGTH/(sigs[i][o.N])))%TLlen]
+					//sigs[i][o.N] = Abs(1 - sigs[i][o.N])
+					//t :=  Min(0, Max(TAPE_LENGTH*SampleRate, TAPE_LENGTH/sigs[i][o.N]))
+					t := int(Min(TAPE_LENGTH*SampleRate, TAPE_LENGTH/sigs[i][o.N]))
+					//r = tapes[i][(n+int(TAPE_LENGTH/(sigs[i][o.N])))%TLlen]
+					r = tapes[i][(n+TLlen-t)%TLlen]
 					r = Sin(r)
 				case 20: // "+tap"
 					sigs[i][o.N] = Abs(1 - sigs[i][o.N])

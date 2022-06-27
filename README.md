@@ -46,7 +46,7 @@ Built-in synchronisation operators √
 **YouTube:**
 > [Syntə Lang Channel](https://www.youtube.com/channel/UCRj9_B6P9T0bQSwCL3yOkyw)  
 
-This work and associated code is licensed for non-commercial use, see associated `licence.md` file
+This work and associated code is licensed for non-commercial use, see associated [`licence.md`](https://github.com/SynteLang/SynteLang/blob/main/licence.md)  file
 © 2022  
 
 For now this document also serves as an (incomplete) specification of the syntə language and may be viewed as a paper on the topic.

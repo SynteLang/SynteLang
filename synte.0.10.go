@@ -164,6 +164,7 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"set½":   ops{true, 38},
 	"-":      ops{true, 33}, // alias of sub
 	"reel":   ops{true, 39},
+	"all":    ops{false, 40},
 
 	// specials
 	"]":    ops{false, 0},
@@ -218,19 +219,22 @@ var (
 var ( // misc
 	SampleRate float64
 	TLlen      int
-	fade       float64 = Pow(1e-4, 1/(275e-3*SAMPLE_RATE)) // 275ms
+	fade       float64 = Pow(1e-4, 1/(175e-3*SAMPLE_RATE)) // 175ms
 	protected  bool    = true
 	release    float64 = Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
 )
 
 type noise uint64
 
-var mouse struct {
+var mouse = struct {
 	X, // -255 to 255
 	Y,
 	Left, // 0 or 1
 	Right,
 	Middle float64
+}{
+	X: 1,
+	Y: 1,
 }
 
 type Disp struct {
@@ -250,8 +254,10 @@ type Disp struct {
 }
 
 var display Disp = Disp{
-	Mode: "off",
-	SR:   48000,
+	Mode:   "off",
+	MouseX: 1,
+	MouseY: 1,
+	SR:     48000,
 }
 
 type wavs []struct {
@@ -694,6 +700,8 @@ start:
 					msg("Avg.: %v", stats.PauseTotal/time.Duration(stats.NumGC))
 					msg("Distr.: %v", stats.PauseQuantiles)
 					continue
+				case "mc":
+					// mouse curve, exp or lin
 				default:
 					msg("%s%sunrecognised mode%s", red, italic, reset)
 					continue
@@ -1262,12 +1270,14 @@ func parseType(expr, op string) (n float64, b bool) {
 			msg("erm s")
 			return 0, false
 		}
+		n = Max(1000/SampleRate, n)
 		n = 1 / ((n / 1000) * SampleRate)
 	case len(expr) > 1 && expr[len(expr)-1:] == "s":
 		if n, b = evaluateExpr(expr[:len(expr)-1]); !b {
 			msg("seven seconds away")
 			return 0, false
 		}
+		n = Max(1/SampleRate, n)
 		n = 1 / (n * SampleRate)
 	case len(expr) > 2 && expr[len(expr)-2:] == "hz":
 		if n, b = evaluateExpr(expr[:len(expr)-2]); !b {
@@ -1533,6 +1543,7 @@ func mouseRead() {
 	defer mf.Close()
 	m := bufio.NewReader(mf)
 	bytes := make([]byte, 3)
+	mx, my := 0.0, 0.0
 	for {
 		_, rr := io.ReadFull(m, bytes)
 		mouse.Left, mouse.Right, mouse.Middle = 0, 0, 0
@@ -1547,16 +1558,16 @@ func mouseRead() {
 		}
 		if bytes[1] != 0 {
 			if bytes[0]>>4&1 == 1 {
-				mouse.X += float64(int8(bytes[1]-255)) / 255
+				mx += float64(int8(bytes[1]-255)) / 255
 			} else {
-				mouse.X += float64(int8(bytes[1])) / 255
+				mx += float64(int8(bytes[1])) / 255
 			}
 		}
 		if bytes[2] != 0 {
 			if bytes[0]>>5&1 == 1 {
-				mouse.Y += float64(int8(bytes[2]-255)) / 255
+				my += float64(int8(bytes[2]-255)) / 255
 			} else {
-				mouse.Y += float64(int8(bytes[2])) / 255
+				my += float64(int8(bytes[2])) / 255
 			}
 		}
 		if e(rr) {
@@ -1567,6 +1578,8 @@ func mouseRead() {
 		if exit {
 			break
 		}
+		mouse.X = Pow(10, mx/5)
+		mouse.Y = Pow(10, my/5)
 		display.MouseX = mouse.X
 		display.MouseY = mouse.Y
 		time.Sleep(42 * time.Microsecond) // coarse loop timing
@@ -1653,8 +1666,8 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		p        bool              // play/pause, shadows
 		ii       int               // sync intermediate
 
-		mx, my float64 // mouse smooth intermediates
-		hpf, x float64 // DC-blocking high pass filter
+		mx, my float64 = 1, 1 // mouse smooth intermediates
+		hpf, x float64        // DC-blocking high pass filter
 		hpf2560, x2560,
 		hpf160, x160,
 		det float64 // limiter detection
@@ -1803,9 +1816,9 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				case 18: // "tape"
 					tapes[i][n%TLlen] = (Sin(r) + tapes[i][(n+TLlen-1)%TLlen]) / 2
 				case 19: // "tap"
-					r = tapes[i][(n+int(Abs(TAPE_LENGTH*(SampleRate-1/sigs[i][o.N]))))%TLlen]
+					r = tapes[i][(n+1+int(Abs((TAPE_LENGTH*SampleRate)-1/sigs[i][o.N])))%TLlen]
 				case 20: // "+tap"
-					r += tapes[i][(n+int(Abs(TAPE_LENGTH*(SampleRate-1/sigs[i][o.N]))))%TLlen]
+					r += tapes[i][(n+1+int(Abs((TAPE_LENGTH*SampleRate)-1/sigs[i][o.N])))%TLlen]
 				case 21: // "f2c"
 					r = Abs(r)
 					r = 1 / (1 + 1/(Tau*r))
@@ -1892,7 +1905,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 						info <- sf("listing %d: %.3g", i, r)
 					}
 				case 38: // "set½" // for internal use
-					sigs[i][o.N] = 0.15
+					sigs[i][o.N] = 0.007 //0.15
 				case 36: // "\\"
 					if r == 0 {
 						r = Copysign(1e-308, r)
@@ -1901,6 +1914,12 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				case 39: // reel
 					sigs[i][o.N] = Abs(sigs[i][o.N])
 					r = tapes[i][int(float64(n%TLlen)*sigs[i][o.N])%TLlen]
+				case 40: // all
+					for _, s := range sigs {
+						r += s[0]
+					}
+					r -= sigs[i][0]
+					r /= float64(len(sigs))
 				default:
 					// nop, r = r
 				}

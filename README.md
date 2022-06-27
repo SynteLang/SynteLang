@@ -530,7 +530,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	tap		|		yes		|		result drawn from tape, operand is offset in seconds/milliseconds (use types)
 |	+tap	|		yes		|		same as `tap` except added to previous result in listing
 |	f2c		|		no		|		convert frequency to filter coefficient. Numbers less than than 0 will be multiplied by -1 (sign removed, become positive)
-|	erase	|		yes		|		operand is number of operations to erase above the current in listing. For all use `: erase`. Currently, named signals invoked with 'out' in erased operations will be abandoned and remain unavailble, this does not affect correctness of the listing.
+|	erase	|		yes		|		operand is number of operations to erase above the current in listing. For all use `: erase`. 
 |	degrade	|		yes		|		add to a signal and draw result from a signal at random. Operand is a proportion amount. Will lead to unpredictable behaviour and eventual silence from that listing.
 |	tempo	|		yes 	|		(not implimented yet) ◊  
 |	pitch	|		yes   	|		(not implimented yet) ◊  
@@ -596,7 +596,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	exp		|		no		|		converts linear ramps on interval [0,1] to exponential. Operand is the number of times one is halved for an input of zero, eg. three would be ½ x ½ x ½ = ⅛, the greater the number the steeper the curve
 |	dial	|		no		|		plays uk telephone ringing tone
 |	dirac	|		no		|		outputs a single sample pulse when input goes from 0 to 1. Will trigger on first run of listing if input is 1
-|	range	|		2		|		spreads input from 0 to ±1 across a range of values from the first operand to the second. Eg. `range 220hz,440hz`. If the second operand is smaller the range will be negative.
+|	range	|		2		|		spreads input from 0 to ±1 across a range of values from the first operand to the second. Eg. `range 220hz,440hz`. If the second operand is smaller the range will be negative. Operands should be in order of slow to fast, eg. 2s,1s
 |	bd909	|		2		|		unfinished '909' kick drum. first operand is decay and second is pitch.  
 |	down	|		yes		|		slews downwards for decreasing signals, jumps immediately to increasing or static (unchanging) signal value. Use with a narrow pulse to make a linear decay envelope.
 |           |               |

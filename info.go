@@ -170,7 +170,7 @@ func main() {
 %s
 %s
 %s%s
-      %sMouse-X:%s %+.4f		%sMouse-Y:%s %+.4f
+      %sMouse-X:%s %.3g		%sMouse-Y:%s %.3g
 ╰───────────────────────────────────────────────────╯`,
 				paused, timer,
 				display.Mode,

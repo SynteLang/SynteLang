@@ -1578,8 +1578,10 @@ func mouseRead() {
 		if exit {
 			break
 		}
-		mouse.X = Pow(10, mx/5)
-		mouse.Y = Pow(10, my/5)
+		if !display.Paused {
+			mouse.X = Pow(10, mx/5)
+			mouse.Y = Pow(10, my/5)
+		}
 		display.MouseX = mouse.X
 		display.MouseY = mouse.Y
 		time.Sleep(42 * time.Microsecond) // coarse loop timing
@@ -1671,7 +1673,6 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		hpf2560, x2560,
 		hpf160, x160,
 		det float64 // limiter detection
-		//invSqrt2 = 1 / Sqrt(2)
 		smR8  = 40.0 / SampleRate
 		hroom = (convFactor - 1.0) / convFactor // headroom for positive dither
 	)
@@ -1684,9 +1685,6 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				output(w, dac0) // left
 				output(w, dac0) // right
 			}
-			/*if p != "Sound Engine overloaded" {
-				msg("stack trace: %s", debug.Stack())
-			}*/
 			msg("%v", p)
 		}
 	}()
@@ -1886,7 +1884,6 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				case 34: // "setmix"
 					{
 						a := Abs(sigs[i][o.N]) + 1e-6
-						//d := Log2(a / peakfreq[i])
 						d := a/peakfreq[i] - 1
 						d = Max(-1, Min(1, d))
 						peakfreq[i] += a * (d * smR8)
@@ -1894,12 +1891,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 							peakfreq[i] = a
 						}
 					}
-					//r *= Min(1, 9/(Sqrt(peakfreq[i]*SampleRate)+4.5)) // true pink
-					//r *= Min(1, Pow(80/(peakfreq[i]*SampleRate+20), invSqrt2)) // compromise
 					r *= Min(1, 80/(peakfreq[i]*SampleRate+20)) // ignoring density
-					/*if n%1024 == 0 {
-						info <- sf("pf: %v", peakfreq[i])
-					}*/
 				case 35: // "print"
 					if n%16384 == int(no>>51) && !exit { // dubious exit guard
 						info <- sf("listing %d: %.3g", i, r)
@@ -1912,14 +1904,14 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					}
 					r = sigs[i][o.N] / r
 				case 39: // reel
-					sigs[i][o.N] = Abs(sigs[i][o.N])
-					r = tapes[i][int(float64(n%TLlen)*sigs[i][o.N])%TLlen]
+					r = tapes[i][int(float64(n%TLlen)*Abs(sigs[i][o.N]))%TLlen]
 				case 40: // all
-					for _, s := range sigs {
-						r += s[0]
+					//for _, s := range sigs {
+					//r += s[0]
+					for ii := 0; ii < i; ii++ {
+						r += sigs[ii][0]
 					}
-					r -= sigs[i][0]
-					r /= float64(len(sigs))
+					//r -= sigs[i][0]
 				default:
 					// nop, r = r
 				}
@@ -1933,18 +1925,16 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				panic(sf("%d: %v overflow", i, sigs[i][0]))
 				sigs[i][0] = 0
 			}
-			/*
-				if protected { // prevents listings from ducking limiter by >18dB, increases distortion
-					sigs[i][0] /= 8
-					sigs[i][0] = Tanh(sigs[i][0])
-					sigs[i][0] *= 8
-				}*/
 			m[i] = (m[i]*383 + mute[i]) / 384 // anti-click filter @ ~20hz
 			lv[i] = (lv[i]*7 + level[i]) / 8  // @ 1273Hz
 			dac += sigs[i][0] * m[i] * lv[i]
 		}
-		if n := len(listings); n > 4 {
-			dac /= float64(n)
+		c := 0.0
+		for _, v := range m { // mix only unmuted listings
+			c += v
+		}
+		if c > 4 {
+			dac /= c
 		} else {
 			dac /= 4
 		}
@@ -2010,7 +2000,6 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		}
 		display.Vu = peak
 		dac *= convFactor // convert
-		//rate = (rate*1699 + time.Since(lastTime)) / 1700 //weighted average
 		rate += time.Since(lastTime)
 		if n%16384 == 0 {
 			rate /= 16384
@@ -2024,7 +2013,6 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		output(w, dac0) // left
 		output(w, dac0) // right
 		lastTime = time.Now()
-		//display.Load = rate
 		dac = 0
 		n++
 	}

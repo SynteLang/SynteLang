@@ -526,7 +526,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	.nsync	|		yes		|		(not implemented) equivalent to nsync but will end listing and transfer, like `out dac`
 |	push	|		no		|		move result to a stack
 |	pop		|		no		|		take most recently pushed result from stack
-|	tape	|		no		|		record and playback from a rotating buffer, analogous to a tape loop.
+|	tape	|		no		|		record and playback from a rotating buffer, analogous to a tape loop. input will clip and distortion if greater than ~1.5
 |	tap		|		yes		|		result drawn from tape, operand is offset in seconds/milliseconds (use types)
 |	+tap	|		yes		|		same as `tap` except added to previous result in listing
 |	f2c		|		no		|		convert frequency to filter coefficient. Numbers less than than 0 will be multiplied by -1 (sign removed, become positive)
@@ -549,6 +549,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	print	|		no   	|		prints value of input to info display and passes through unchanged to next operation. Timing is a random point within an interval every 341.⅓ms
 |	reel	|		yes   	|		output from tape at a rate determined by operand. 1 is original speed, less than one is slower and vice versa
 |	index	|		no   	|		outputs index of current listing
+|	//		|		yes   	|		does nothing, use to display comments. Separate words with_underscore_like_this
 |	       	| 		       	|
 |	propa	|		yes  	|		used in conjuction with `index`, adds multiple listings at once (not implimented yet) ◊  
 |	fma		|		yes  	|		fused multiply add, the result of the input multiplied by the operand is stored in a special register `fma` (not implimented yet) ◊  

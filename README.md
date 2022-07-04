@@ -88,7 +88,7 @@ Create or navigate to a directory (folder) containing the following files:
 	info.go  
 	listing.go  
 	functions.json  
-	functions.go (optional) 
+	functions.go (optional, recommended) 
 	an empty directory named 'recordings'  (can contain README.md) 
 	a directory named 'wavs' containing wav files (optional, can contain README.md)
 
@@ -526,20 +526,18 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	.nsync	|		yes		|		(not implemented) equivalent to nsync but will end listing and transfer, like `out dac`
 |	push	|		no		|		move result to a stack
 |	pop		|		no		|		take most recently pushed result from stack
-|	tape	|		no		|		record and playback from a rotating buffer, analogous to a tape loop. input will clip and distortion if greater than ~1.5
+|	tape	|		no		|		record and playback from a rotating buffer, analogous to a tape loop. Input will clip and distort if greater than ~1.5
 |	tap		|		yes		|		result drawn from tape, operand is offset in seconds/milliseconds (use types)
 |	+tap	|		yes		|		same as `tap` except added to previous result in listing
 |	f2c		|		no		|		convert frequency to filter coefficient. Numbers less than than 0 will be multiplied by -1 (sign removed, become positive)
 |	erase	|		yes		|		operand is number of operations to erase above the current in listing. For all use `: erase`. 
 |	degrade	|		yes		|		add to a signal and draw result from a signal at random. Operand is a proportion amount. Will lead to unpredictable behaviour and eventual silence from that listing.
-|	tempo	|		yes 	|		(not implimented yet) ◊  
-|	pitch	|		yes   	|		(not implimented yet) ◊  
 |	wav		|		yes   	|		will play the corresponding sample of a loaded WAV file given by the operand. Expects an input in range [0, 1], values outside this range will wrap around this interval. See section below for more information
 |	8bit	|		yes   	|		quantises input to 8 bits of resolution (255 possible values). The Operand scales the input/output. 0 < input < 1 will have bigger quantisation steps and vice versa for input > 1.
 |	level	|		yes   	|		changes the output level of the listing at the index given by operand. The preceeding input sets the level. Level will persist after deletion. Capable of modulation up to 1200Hz, but because of this sudden large changes in level may produce clicks. Operation not affected by mute
 |	x		|		yes   	|		alias of `mul`
 |	*		|		yes   	|		alias of `x`
-|	from	|		yes   	|		receives output of listing given by operand. If that listing is subsequently deleted it will receive from the one that takes its place. If the operand is greater than the number of listings it will wrap round (modulous)
+|	from	|		yes   	|		receives output of listing given by operand.  By design operand must be a number not a named signal. If the operand is greater than the number of listings it will wrap round (modulous)
 |	sgn		|		no   	|		outputs is 1 if the input is positive and -1 if negative
 |	/		|		yes   	|		subtracts the operand from the input repeatedly until zero and outputs the number of subtractions as a fraction. AKA divide. output = input / operand
 |	\		|		yes   	|		output = operand / input
@@ -549,14 +547,15 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	print	|		no   	|		prints value of input to info display and passes through unchanged to next operation. Timing is a random point within an interval every 341.⅓ms
 |	reel	|		yes   	|		output from tape at a rate determined by operand. 1 is original speed, less than one is slower and vice versa
 |	index	|		no   	|		outputs index of current listing
-|	//		|		yes   	|		does nothing, use to display comments. Separate words with_underscore_like_this
+|	//		|		yes   	|		does nothing, use to display comments. Separate words with underscores like_this_etc. Remainder of listing will be skipped
 |	       	| 		       	|
 |	propa	|		yes  	|		used in conjuction with `index`, adds multiple listings at once (not implimented yet) ◊  
 |	fma		|		yes  	|		fused multiply add, the result of the input multiplied by the operand is stored in a special register `fma` (not implimented yet) ◊  
 |	       	| 		       	|
 |List of commands (won't appear in listing)|			|																|
+|	[		|		yes		|  		begin function definition, operand is name                                 |
 |	]		|		no 		|  		end function definition                                 |
-|	:		|   	yes		|   	perform command: exit, erase, play, pause, fon, foff|
+|	:		|   	yes		|   	perform command: exit, erase, play, pause, fon, foff, clear, verbose, mc |
 |	fade	|		yes		|		changes fade out time after exit. Default is 325e-3 (unit is seconds, maximum 104s)
 |	del		|		yes		|		delete an entire compliled and running listing numbered by operand
 |	index	|		yes		|		access index of listing
@@ -567,6 +566,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	.mute 	|		yes		|		equivalent to `mute` except will insert 'out dac' to launch listing
 |	.del 	|		yes		|		equivalent to `del` except will insert 'out dac' to launch listing. Used in effect to replace a listing
 |	.solo 	|		yes		|		equivalent to `solo` except will insert 'out dac' to launch listing
+|	erase 	|		yes		|		erase preceding number of lines given by operand
 |           |
 |**List of built-in functions**|       |
 |	inv		|		no		|		invert a value between [0, 1], result equals 1/input |
@@ -586,10 +586,10 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	decay	|		yes		|		will decay away to nothing from 1. 0.9997 is approx 20s, lower is quicker decay. Resets when input goes from 0 to 1
 |	half	|		yes		|		like `decay` but accepts an operand in seconds that defines the 'half-life' of the decay. Input will override decay.
 |	once	|		no		|		like `osc` but only completes one cycle. Operand will set upper limit and will reset when 0. Use 1 for one-off ramp
-|	pulse	|		yes		|		pulse generator with duty cycle (pulse width) set by operand. Output is between 0 and 1, follow by cv2a for audio out
+|	pulse	|		yes		|		pulse generator with duty cycle (pulse width) set by operand. Output is between 0 and 1, follow by `cv2a` for audio out. `pulse 0` will give a one sample pulse
 |	ramp	|		no		|		like `osc` but with an output suitable for audio, i.e. spans -1 to 1
 |	posc	|		yes		|		like `osc` but will retrigger on a sync pulse. Operand sets phase offset. Can also use `out z` to control the phase independently of sync.
-|	slew	|		yes		|		slew generator. Swings to the input at a rate given by operand. Intended for pulses/square waves. Try 150hz to reduce clicks on vca signals ( i.e. when multiplying audio values). If slewing to a number greater than zero and less than previous input the jump will be immediate. If the signal immediately crosses zero from positive to negative it will slew as expected. May be updated for a cleaner implementation in future. 
+|	slew	|		yes		|		slew generator. Swings to the input at a rate given by operand. Intended for pulses/square waves. Try 150hz to reduce clicks on vca signals ( i.e. when multiplying audio values). If slewing to a number greater than zero and less than previous input the jump will be immediate. If the signal crosses zero from positive to negative it will slew as expected. May be updated for a cleaner implementation in future. 
 |	T2		|		no		|		implements Chebyshev polynomial of the first kind. In plain english this means it will double the frequency of anything passed through it
 |	zx		|		no		|		detects negative-going zero-crossing of input. A preceeding `ramp` will generate a single pulse of 1 at the end of its cycle.
 |	lmap	|		yes		|		implements the Logistic Map. Iterates on zero-crossing of the input. Operand is the r value, suggested between 3 and 5. Preceed with `ramp` and follow with `cv2a` for audio output
@@ -598,8 +598,8 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	dial	|		no		|		plays uk telephone ringing tone
 |	dirac	|		no		|		outputs a single sample pulse when input goes from 0 to 1. Will trigger on first run of listing if input is 1
 |	range	|		2		|		spreads input from 0 to ±1 across a range of values from the first operand to the second. Eg. `range 220hz,440hz`. If the second operand is smaller the range will be negative. Operands should be in order of slow to fast, eg. 2s,1s
-|	bd909	|		2		|		unfinished '909' kick drum. first operand is decay and second is pitch.  
-|	down	|		yes		|		slews downwards for decreasing signals, jumps immediately to increasing or static (unchanging) signal value. Use with a narrow pulse to make a linear decay envelope.
+|	bd909	|		2		|		unfinished '909' kick drum. first operand is decay and second is pitch. ◊  
+|	down	|		yes		|		slews downwards for decreasing signals, jumps immediately to an increasing or static (unchanging) signal value. Use with a narrow pulse to make a linear decay envelope.
 |           |               |
 **List of pre-defined constants**
 |	ln2		|		natural logarithm of 2    	|  
@@ -616,8 +616,8 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |			|									|
 **List of pre-defined signals**
 |	dac		|		signal represents output to soundcard. For use as `out dac` only	|
-|	tempo	|		*not implemented yet* ◊	|
-|	pitch	|		*not implemented yet* ◊	|
+|	tempo	|		signal is daisy chained between listings, can be set with `out`	|
+|	pitch	|		signal is daisy chained between listings, can be set with `out`	|
 |	mousex	|		value of mousepad X-coordinate |
 |	mousey	|		value of mousepad Y-coordinate |
 |	butt1	|		value of left mouse button, 0 or 1	|
@@ -705,7 +705,7 @@ And for seconds is:
 	1 / ( input \* sample rate )  
 
 ## Signals
-Signals are the way of passing values around outside of the main flow through the necklace. Signals which are named and not just numbers can be referred to as registers, because they *register* a value. Usually the default value of a signal is 0. If you want it to begin as 1, add ' to the name. So `a` becomes `'a`. Likewise you can use the double quotaion mark " to have a default value of one half. If you want to be able to overwrite the value of a signal with `out` (more than once in a necklace), which is not normally possible, you can add ^ to the name. So `a` becomes `^a`. You can use both of these special symbols, but the circumflex ^ must come first or it will be ignored.
+Signals are the way of passing values around outside of the main flow through the necklace. Signals which are named and not just numbers can be referred to as registers, because they *register* a value. Usually the initial value of a named signal is 0. If you want it to begin as 1, add ' to the name. So `a` becomes `'a`. Likewise you can use the double quotation mark " to have a default value of one half. If you want to be able to overwrite the value of a signal with `out` (more than once in a necklace), which is not normally possible, you can add ^ to the name. So `a` becomes `^a`. You can use both of these special symbols, but the circumflex ^ must come first or it will be ignored.
 
 ## CV and audio signal ranges
 Varying numbers intended for output to the soundcard usually span the range [-1,+1]. CV, or control voltage, which are used to control other parts of the signal chain and not produce sound directly typically span the range [0,1]. For instance the output of `ramp`, `saw` and `sine` which are intended to produce frequencies at audible rates (20 - 20,000Hz) all go between ±1, whereas `osc` which can be used to control a vca or the pitch of another oscillator spans between zero and 1. To make `osc` suitable for direct audio output you can use the cv2a function, which is exactly what `ramp` does. CV signals are generally slower and more rounded than audio signals. The `flip` function can be used to turn a CV upside-down, use `mul -1` to do the same for an audio signal (essentially what `saw` does). However, `flip` is much more commonly used.
@@ -741,9 +741,10 @@ The synchronisation is somewhat rudementary, a world away from DAW/midi sequence
 The `level` operator is used to adjust the audio level of a running listing, like so: `in 0.5 level 2` which would set listing two to half the available level, whcih is -6dB. This level-setting listing may be deleted straightaway and the level will persist once set. Although intended for basic mixing of listings, you may modulate the level at rates up to 1200Hz. This is an arbitary limit set to reduce clicks produced by immediate large changes in volume, while still allowing frequency modulation. You need to use `.level` to end a necklace.
 
 ## Adding functions
-If you find yourself reusing the same chunk of code multiple times, it is possible to define a named function which will instantiate that chunk of code. To begin, type the new name followed by `[`. Then type the listing as normal and at the end type `]` (no operand) which will complete the function add. This function won't be saved on exit but may be used as you wish during the current session. To permanently save a function which you feel will be useful in future type `: fon` before entering and it will be saved to the 'functions.json' file in the folder on exit from Syntə. To go back to ephemeral functions (useful for experimentation) type `: foff`.  
+If you find yourself reusing the same chunk of code multiple times, it is possible to define a named function which will instantiate that chunk of code. To begin, type `[` followed by the new name. Then type the listing as normal and at the end type `]` (no operand) which will complete the function add. This function won't be saved on exit but may be used as you wish during the current session. To permanently save a function which you feel will be useful in future type `: fon` before exiting and it will be saved to the 'functions.json' file in the folder on exit from Syntə. To go back to ephemeral functions (useful for experimentation) type `: foff`.  
 You may overwrite functions by typing in the same name. If the function has no operands type the "!" character before the name with no spaces to overwrite. Eg. `!blah [`  
-The ability to make functions like this makes the language *extensible*, which means you are able to extend the language beyond what is written in this document. One of the project aims is to build up a library of abstractions in this way to make performance easier for beginners. However there is a limit to this, as just typing 'music' and stopping there would be quite boring! An *abstraction* means wrapping up a bit of code into something simple to make it easier to use, for example the term 'global apartheid' is an abstraction of a system and history that involves many many processes, interconnections, organisations, trade-misinvoicing etc.
+The ability to make functions like this makes the language *extensible*, which means you are able to extend the language beyond what is written in this document. One of the project aims is to build up a library of abstractions in this way to make performance easier for beginners. However there is a limit to this, as just typing 'music' and stopping there would be quite boring!  
+An *abstraction* means wrapping up a bit of code into something simple to make it easier to use, for example the term 'global apartheid' is an abstraction of a system and history that involves many many processes, interconnections, organisations, trade-misinvoicing etc.
 
 ## info.go and listing.go
 info.go is intended to run alongside Syntə to display useful information and error messages. The layout is as follows:
@@ -751,7 +752,7 @@ info.go is intended to run alongside Syntə to display useful information and er
 Syntə info *press enter to exit*                0s      <-- elapsed running time in seconds
 ╭───────────────────────────────────────────────────╮
 
-                                    Load: 0.00          <-- If load approaches 1, glitches or dropouts may occur in the audio
+                                    Load: 0.00          <-- If the sound engine is overloaded, listings will be removed without warning
 
 
 
@@ -765,7 +766,7 @@ Syntə info *press enter to exit*                0s      <-- elapsed running tim
 
 
         0.00    |||||||             |                   <-- peak audio meter, approx 35dB of range, will display 'GR' if limiting takes place on the output.
-      Mouse-X: 0.0000		Mouse-Y: 0.0000             <-- value of mouse X and Y
+      Mouse-X: 0				Mouse-Y: 0              <-- value of mouse X and Y
 ╰───────────────────────────────────────────────────╯
 ```
 

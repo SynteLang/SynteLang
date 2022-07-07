@@ -96,6 +96,7 @@ const (
 	WAV_LENGTH  = WAV_TIME * SAMPLE_RATE
 	TAPE_LENGTH = 1 //seconds
 	MAX_WAVS    = 12
+	RMS_INT     = SAMPLE_RATE / 8
 )
 
 var convFactor = float64(MaxInt16)
@@ -165,8 +166,7 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"-":      ops{true, 33}, // alias of sub
 	"reel":   ops{true, 39},
 	"all":    ops{false, 40},
-	"zero":   ops{true, 41},
-	"into":   ops{true, 0},
+	"rms":    ops{true, 41},
 
 	// specials
 	"]":    ops{false, 0},
@@ -191,6 +191,7 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"}":       ops{false, 0},
 	"save":    ops{true, 0},
 	"ls":      ops{true, 0},
+	"into":    ops{true, 0},
 }
 
 // listing is a slice of { operator, index and operand }
@@ -227,7 +228,7 @@ var (
 var ( // misc
 	SampleRate float64
 	TLlen      int
-	fade       float64 = Pow(1e-4, 1/(175e-3*SAMPLE_RATE)) // 175ms
+	fade       float64 = Pow(1e-4, 1/(125e-3*SAMPLE_RATE)) // 175ms
 	protected  bool    = true
 	release    float64 = Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
 )
@@ -718,11 +719,10 @@ start:
 					msg("Avg.: %v", stats.PauseTotal/time.Duration(stats.NumGC))
 					msg("Distr.: %v", stats.PauseQuantiles)
 					continue
-				case "mc":
-					// mouse curve, exp or lin
+				case "mc": // mouse curve, exp or lin
 					mc = !mc
 					continue
-				case "muff":
+				case "muff": // Mute Off
 					muteSkip = !muteSkip
 					continue
 				default:
@@ -740,20 +740,33 @@ start:
 				continue
 			case "save": // change to opd is index and prompt for name.
 				n, rr := strconv.Atoi(opd)
-				if e(rr) {
-					msg("%s%soperand not an integer%s", red, italic, reset)
+				if e(rr) || n < 0 || n > len(transfer.Listing)-1 {
+					msg("%s%soperand not valid%s", red, italic, reset)
 					continue
 				}
-				msg("%sduplicate file names will be overwritten without warning%s", italic, reset)
 				pf("\tName: ")
 				f := ""
 				s.Scan()
-				f = s.Text()
+				f = "listings/" + s.Text() + ".syt"
+				files, rr := os.ReadDir("./listings/")
+				if e(rr) {
+					msg("unable to access 'listings/': %s", rr)
+					continue
+				}
+				for _, file := range files {
+					ffs := file.Name()
+					if ffs[len(ffs)-4:] != ".syt" {
+						continue
+					}
+					if ffs == f {
+						msg("duplicate name!")
+						continue input
+					}
+				}
 				content := ""
 				for _, d := range dispListings[n] {
 					content += d.Op + " " + d.Opd + "\n"
 				}
-				f = "listings/" + f + ".syt"
 				if rr := os.WriteFile(f, []byte(content), 0666); e(rr) {
 					msg("unable to save file: %v", rr)
 					continue
@@ -993,7 +1006,7 @@ start:
 					continue
 				}
 				switch newListing[len(newListing)-1].Op {
-				case "out", "push", "tape", ">sync":
+				case "out", "push", "tape", ">sync", "print":
 					break
 				case "in", "pop", "tap", "index":
 					newListing = newListing[:len(newListing)-1]
@@ -1153,7 +1166,7 @@ start:
 					break
 				}
 				switch newListing[len(newListing)-1].Op {
-				case "out", "push", "tape", ">sync":
+				case "out", "push", "tape", ">sync", "print":
 					break
 				case "in", "pop", "tap", "index":
 					newListing = newListing[:len(newListing)-1]
@@ -1245,7 +1258,7 @@ start:
 				dir := "./" + opd
 				files, rr := os.ReadDir(dir)
 				if e(rr) {
-					msg("unable to access: %s %s", file, rr)
+					msg("unable to access '%s': %s", dir, rr)
 					continue
 				}
 				ext := ""
@@ -1814,9 +1827,13 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		hpf2560, x2560,
 		hpf160, x160,
 		det float64 // limiter detection
-		smR8  = 40.0 / SampleRate
-		hroom = (convFactor - 1.0) / convFactor // headroom for positive dither
-		c     float64                           // mix factor
+		lpf50, lpf1522,
+		deemph float64 // de-emphasis
+		smR8             = 40.0 / SampleRate
+		hroom            = (convFactor - 1.0) / convFactor // headroom for positive dither
+		c                float64                           // mix factor
+		rms, rr, prevRms float64
+		RMS              [RMS_INT]float64
 	)
 	no *= 77777777777 // force overflow
 	defer func() {    // fail gracefully
@@ -2031,7 +2048,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				case 33: // "sub"
 					r -= sigs[i][o.N]
 				case 34: // "setmix"
-					{
+					{ // lexical scope
 						a := Abs(sigs[i][o.N]) + 1e-6
 						d := a/peakfreq[i] - 1
 						d = Max(-1, Min(1, d))
@@ -2061,8 +2078,18 @@ func SoundEngine(w *bufio.Writer, bits int) {
 						r += sigs[ii][0]
 					}
 					//r -= sigs[i][0]
-				case 41: // zero
-					sigs[i][o.N] = 0
+				case 41: // rms
+					r *= r
+					rms += r
+					RMS[n%RMS_INT] = r
+					rms -= RMS[(n+1)%RMS_INT]
+					rr = Sqrt(rms / RMS_INT)
+					if rr > sigs[i][o.N] {
+						r = rr
+						prevRms = rr
+					} else {
+						r = prevRms
+					}
 				default:
 					// nop, r = r
 				}
@@ -2102,12 +2129,16 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			x2560 = dac
 			hpf160 = (hpf160 + dac - x160) * 0.97948
 			x160 = dac
+			lpf50 = (lpf50*152.8 + dac) / 153.8
+			lpf1522 = (lpf1522*5 + dac) / 6
+			deemph = lpf50 + lpf1522/5.657
 			det = Abs(16*hpf2560+4*hpf160+dac) / 2
 			if det > l {
 				l = det // MC
 				h = release
 			}
 			dac /= l
+			dac += deemph
 			h /= release
 			l = (l-1)*(1/(h+1/(1-release))+release) + 1 // snubbed decay curve
 			display.GR = l > 1+3e-4

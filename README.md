@@ -433,11 +433,11 @@ The values 0.9 and 0.1 should sum to 1 to maintain original pitch. 0.25 is the f
 	mul a
 	+ c
 	push
+	mul 0.25
 	tape
 	tap 100ms
 	+tap 300ms
 	+tap 70ms
-	mul 0.25
 	filt 1200hz
 	out c
 	pop
@@ -526,7 +526,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	.nsync	|		yes		|		(not implemented) equivalent to nsync but will end listing and transfer, like `out dac`
 |	push	|		no		|		move result to a stack
 |	pop		|		no		|		take most recently pushed result from stack
-|	tape	|		no		|		record and playback from a rotating buffer, analogous to a tape loop. Input will clip and distort if greater than ~1.5
+|	tape	|		no		|		record and playback from a rotating buffer, analogous to a tape loop. Input will progressively distort and clip around ±1, this is to control the level when using feedback
 |	tap		|		yes		|		result drawn from tape, operand is offset in seconds/milliseconds (use types)
 |	+tap	|		yes		|		same as `tap` except added to previous result in listing
 |	f2c		|		no		|		convert frequency to filter coefficient. Numbers less than than 0 will be multiplied by -1 (sign removed, become positive)
@@ -548,6 +548,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	reel	|		yes   	|		output from tape at a rate determined by operand. 1 is original speed, less than one is slower and vice versa
 |	index	|		no   	|		outputs index of current listing
 |	//		|		yes   	|		does nothing, use to display comments. Separate words with underscores like_this_etc. Remainder of listing will be skipped
+|	rms		|		yes   	|		output is root mean square of input with an integration time of 125ms, if greater than the operand, otherwise holds previous value. Use `rms 0` for a plain rms value
 |	       	| 		       	|
 |	propa	|		yes  	|		used in conjuction with `index`, adds multiple listings at once (not implimented yet) ◊  
 |	fma		|		yes  	|		fused multiply add, the result of the input multiplied by the operand is stored in a special register `fma` (not implimented yet) ◊  
@@ -607,14 +608,14 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	ln5     |       " 		"			 5		|  
 |	E		|		the mathematical constant e	|  
 |	Pi		|		π, ratio of diameter to circumference of an ideal circle |        					|  
-|	Phi		|		φ, the golden ratio ≈ (1+√5)/2 		|  
+|	Phi		|		φ, the golden ratio = (1+√5)/2 		|  
 |	invSR	|		1 / SampleRate   			|  
 |	SR		|		SampleRate					|  
 |	Epsilon	|		Epsilon, smallest possible number within syntə |
 |	wavR	|		Frequency for wav playback at SampleRate, 0.25Hz at 4s sample time. Will need to be adjusted for samples with a different rate	|  
-|	semitone|		The twelfth root of 2, ratio of one semitone |  
+|	semitone|		The twelfth root of 2, ratio of one semitone interval |  
 |			|									|
-**List of pre-defined signals**
+**List of reserved signals**
 |	dac		|		signal represents output to soundcard. For use as `out dac` only	|
 |	tempo	|		signal is daisy chained between listings, can be set with `out`	|
 |	pitch	|		signal is daisy chained between listings, can be set with `out`	|

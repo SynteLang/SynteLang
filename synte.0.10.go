@@ -1802,7 +1802,10 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		return
 	}
 
-	const Tau = 2 * Pi
+	const (
+		Tau  = 2 * Pi
+		RATE = 16384 //2<<14
+	)
 
 	var (
 		no     noise   = noise(time.Now().UnixNano())
@@ -1818,17 +1821,19 @@ func SoundEngine(w *bufio.Writer, bits int) {
 
 		rate     time.Duration = time.Duration(7292) // loop timer, initialised to approximate resting rate
 		lastTime time.Time     = time.Now()
-		s        float64       = 1 //sync=0
-		p        bool              // play/pause, shadows
-		ii       int               // sync intermediate
+		rates    [RATE]time.Duration
+		t        time.Duration
+		s        float64 = 1 //sync=0
+		p        bool        // play/pause, shadows
+		ii       int         // sync intermediate
 
 		mx, my float64 = 1, 1 // mouse smooth intermediates
 		hpf, x float64        // DC-blocking high pass filter
 		hpf2560, x2560,
 		hpf160, x160,
 		det float64 // limiter detection
-		lpf50, lpf1522,
-		deemph float64 // de-emphasis
+		//lpf50, lpf1522,
+		//deemph float64 // de-emphasis
 		smR8             = 40.0 / SampleRate
 		hroom            = (convFactor - 1.0) / convFactor // headroom for positive dither
 		c                float64                           // mix factor
@@ -2059,7 +2064,8 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					}
 					r *= Min(1, 80/(peakfreq[i]*SampleRate+20)) // ignoring density
 				case 35: // "print"
-					if n%16384 == int(no>>51) && !exit { // dubious exit guard
+					//if n%16384 == int(no>>52) && !exit {
+					if n%(16384+(n>>51)) == 0 && !exit {
 						info <- sf("listing %d: %.3g", i, r)
 					}
 				case 38: // "set½" // for internal use
@@ -2070,7 +2076,8 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					}
 					r = sigs[i][o.N] / r
 				case 39: // reel
-					r = tapes[i][int(float64(n%TLlen)*Abs(sigs[i][o.N]))%TLlen]
+					//r = tapes[i][(TLlen+int(float64(n%TLlen)*Max(-1,sigs[i][o.N])))%TLlen]
+					r = tapes[i][(TLlen+int(float64(n)*sigs[i][o.N])%TLlen)%TLlen]
 				case 40: // all
 					//for _, s := range sigs {
 					//r += s[0]
@@ -2103,12 +2110,12 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				sigs[i][0] = 0
 				panic(sf("%d: %v overflow", i, sigs[i][0]))
 			}
-			if sigs[i][0] > 2 { // soft clip
+			/*if sigs[i][0] > 2 { // soft clip
 				sigs[i][0] = 2 + Tanh(sigs[i][0]-2)
 			}
 			if sigs[i][0] < -2 {
 				sigs[i][0] = Tanh(sigs[i][0]+2) - 2
-			}
+			}*/
 			m[i] = (m[i]*383 + mute[i]) / 384 // anti-click filter @ ~20hz
 			lv[i] = (lv[i]*7 + level[i]) / 8  // @ 1273Hz
 			dac += sigs[i][0] * m[i] * lv[i]
@@ -2129,16 +2136,16 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			x2560 = dac
 			hpf160 = (hpf160 + dac - x160) * 0.97948
 			x160 = dac
-			lpf50 = (lpf50*152.8 + dac) / 153.8
+			/*lpf50 = (lpf50*152.8 + dac) / 153.8
 			lpf1522 = (lpf1522*5 + dac) / 6
-			deemph = lpf50 + lpf1522/5.657
+			deemph = lpf50 + lpf1522/5.657*/
 			det = Abs(16*hpf2560+4*hpf160+dac) / 2
 			if det > l {
 				l = det // MC
 				h = release
 			}
 			dac /= l
-			dac += deemph
+			//dac += deemph
 			h /= release
 			l = (l-1)*(1/(h+1/(1-release))+release) + 1 // snubbed decay curve
 			display.GR = l > 1+3e-4
@@ -2186,14 +2193,15 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		}
 		display.Vu = peak
 		dac *= convFactor // convert
-		rate += time.Since(lastTime)
+		t = time.Since(lastTime)
+		rate += t
+		rates[n%RATE] = t // rolling average buffer
+		rate -= rates[(n+1)%RATE]
 		if n%16384 == 0 {
-			rate /= 16384
-			if float64(rate) > 1e9/SampleRate {
+			display.Load = rate / RATE
+			if float64(display.Load) > 1e9/SampleRate {
 				panic("Sound Engine overloaded")
 			}
-			display.Load = rate
-			rate = 0
 		}
 		dac0 = dac      // dac0 holds output value for use when restarting
 		output(w, dac0) // left

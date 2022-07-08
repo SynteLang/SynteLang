@@ -51,7 +51,6 @@ func main() {
 
 	timeout := 2
 	clip := ""
-	info := ""
 	unprotected := ""
 	paused := ""
 
@@ -90,7 +89,6 @@ func main() {
 			} else { // timer for continuous play
 				timer = 0
 				started = false
-				info = "\n"
 			}
 
 			if display.Mode == "on" {
@@ -119,12 +117,6 @@ func main() {
 					messages[i].Content = ""
 				}
 			}
-			/*for i, m := range messages {
-				if time.Since(m.Added) > (60*time.Duration(i)+60)*time.Second {
-					m.Content = ""
-				}
-				messages[i] = m
-			}*/
 			if !display.Protect && display.List > 0 {
 				if display.Clip {
 					unprotected = fmt.Sprintf("%sUnprotected%s", invert, reset)

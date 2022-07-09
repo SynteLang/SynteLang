@@ -771,7 +771,7 @@ start:
 					msg("unable to save file: %v", rr)
 					continue
 				}
-				msg("....%d saved to %s", n, f)
+				msg("...%d saved to %s", n, f)
 				continue
 			case "in":
 				if len(newListing) == 0 {
@@ -1832,13 +1832,14 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		hpf2560, x2560,
 		hpf160, x160,
 		det float64 // limiter detection
-		//lpf50, lpf1522,
-		//deemph float64 // de-emphasis
+		lpf50, lpf1522,
+		deemph float64 // de-emphasis
 		smR8             = 40.0 / SampleRate
 		hroom            = (convFactor - 1.0) / convFactor // headroom for positive dither
 		c                float64                           // mix factor
 		rms, rr, prevRms float64
 		RMS              [RMS_INT]float64
+		pd               int = 16384 // print dither
 	)
 	no *= 77777777777 // force overflow
 	defer func() {    // fail gracefully
@@ -2064,9 +2065,9 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					}
 					r *= Min(1, 80/(peakfreq[i]*SampleRate+20)) // ignoring density
 				case 35: // "print"
-					//if n%16384 == int(no>>52) && !exit {
-					if n%(16384+(n>>51)) == 0 && !exit {
+					if (n+pd)%(16384) == 0 && !exit {
 						info <- sf("listing %d: %.3g", i, r)
+						pd = int(no >> 61)
 					}
 				case 38: // "set½" // for internal use
 					sigs[i][o.N] = 0.033
@@ -2136,16 +2137,19 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			x2560 = dac
 			hpf160 = (hpf160 + dac - x160) * 0.97948
 			x160 = dac
-			/*lpf50 = (lpf50*152.8 + dac) / 153.8
-			lpf1522 = (lpf1522*5 + dac) / 6
-			deemph = lpf50 + lpf1522/5.657*/
-			det = Abs(16*hpf2560+4*hpf160+dac) / 2
+			{
+				d := Max(-1, Min(1, dac))
+				lpf50 = (lpf50*152.8 + d) / 153.8
+				lpf1522 = (lpf1522*5 + d) / 6
+				deemph = lpf50 + lpf1522/5.657
+			}
+			det = Abs(32*hpf2560+5.657*hpf160+dac) / 2
 			if det > l {
 				l = det // MC
 				h = release
 			}
 			dac /= l
-			//dac += deemph
+			dac += deemph
 			h /= release
 			l = (l-1)*(1/(h+1/(1-release))+release) + 1 // snubbed decay curve
 			display.GR = l > 1+3e-4

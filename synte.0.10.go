@@ -1826,7 +1826,6 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		s        float64 = 1 //sync=0
 		p        bool        // play/pause, shadows
 		ii       int         // sync intermediate
-		lt       time.Time
 
 		mx, my float64 = 1, 1 // mouse smooth intermediates
 		hpf, x float64        // DC-blocking high pass filter
@@ -2068,9 +2067,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				case 35: // "print"
 					pd++
 					if (pd)%32768 == 0 && !exit {
-						t := time.Since(lt)
-						lt = time.Now()
-						info <- sf("listing %d: %.3g\t %.3gs", i, r, t.Seconds())
+						info <- sf("listing %d: %.3g", i, r)
 						pd += int(no >> 50)
 					}
 				case 38: // "set½" // for internal use

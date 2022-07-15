@@ -544,7 +544,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	sub		|		yes   	|		subtracts the operand from the input
 |	setmix 	| 		yes		|		used internally for mix function
 |	.level	|		yes   	|		equivalent to `level` except will end input and launch listing. Operation not affected by mute
-|	print	|		no   	|		prints value of input to info display and passes through unchanged to next operation. Timing is a random point within an interval approximately 500ms
+|	print	|		no   	|		prints value of input to info display and passes through unchanged to next operation. Timing is a random point in an interval approximately 341ms to 682ms
 |	reel	|		yes   	|		output from tape at a rate determined by operand. 1 is original speed, less than one is slower and vice versa
 |	index	|		no   	|		outputs index of current listing
 |	//		|		yes   	|		does nothing, use to display comments. Separate words with underscores like_this_etc. Remainder of listing will be skipped

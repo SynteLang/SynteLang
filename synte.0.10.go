@@ -602,7 +602,10 @@ start:
 				if opd == "." {
 					continue
 				}
-				if !in && !f && op != "[" {
+				if !in && !f {
+					for s.Scan() { // empty buffer
+						s.Text()
+					}
 					//if not defining a new function, must be extant operator or function
 					msg("%s %soperator or function doesn't exist, create with \"[\" operator%s", op, italic, reset)
 					continue input
@@ -746,8 +749,10 @@ start:
 				}
 				pf("\tName: ")
 				f := ""
-				s.Scan()
-				f = "listings/" + s.Text() + ".syt"
+				for s.Scan() {
+					f += s.Text()
+				}
+				f = "listings/" + f + ".syt"
 				files, rr := os.ReadDir("./listings/")
 				if e(rr) {
 					msg("unable to access 'listings/': %s", rr)
@@ -2083,7 +2088,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				case 40: // all
 					//for _, s := range sigs {
 					//r += s[0]
-					for ii := 0; ii < i; ii++ {
+					for ii := 0; ii < i; ii++ { // only read from prior listings
 						r += sigs[ii][0]
 					}
 					//r -= sigs[i][0]
@@ -2120,7 +2125,8 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			}*/
 			m[i] = (m[i]*383 + mute[i]) / 384 // anti-click filter @ ~20hz
 			lv[i] = (lv[i]*7 + level[i]) / 8  // @ 1273Hz
-			dac += sigs[i][0] * m[i] * lv[i]
+			sigs[i][0] *= lv[i]
+			dac += sigs[i][0] * m[i]
 			c += m[i] // add mute to mix factor
 		}
 		if c > 4 {

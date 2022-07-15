@@ -1,5 +1,3 @@
-28/05/2022	this document based on version 0.10 of Syntə 
-
 ## ◌ Syntə is an audio live coding environment
 
 The name is pronounced '*sinter*', which means to create something by

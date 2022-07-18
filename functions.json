@@ -313,6 +313,36 @@
 			"Opd": "1"
 		}
 	],
+	"echo": [
+		{
+			"Op": "/",
+			"Opd": "2"
+		},
+		{
+			"Op": "tanh",
+			"Opd": ""
+		},
+		{
+			"Op": "tape",
+			"Opd": ""
+		},
+		{
+			"Op": "tap",
+			"Opd": "@"
+		},
+		{
+			"Op": "mul",
+			"Opd": "@1"
+		},
+		{
+			"Op": "out",
+			"Opd": "a.3"
+		},
+		{
+			"Op": "setmix",
+			"Opd": "^freq"
+		}
+	],
 	"end": [
 		{
 			"Op": "in",

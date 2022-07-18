@@ -603,11 +603,10 @@ start:
 					continue
 				}
 				if !in && !f {
-					for s.Scan() { // empty buffer
-						s.Text()
-					}
 					//if not defining a new function, must be extant operator or function
 					msg("%s %soperator or function doesn't exist, create with \"[\" operator%s", op, italic, reset)
+					s = bufio.NewScanner(os.Stdin) // empty scanner and return to std input
+					s.Split(bufio.ScanWords)
 					continue input
 				}
 				operands = strings.Split(opd, ",")

@@ -2116,12 +2116,12 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				sigs[i][0] = 0
 				panic(sf("%d: %v overflow", i, sigs[i][0]))
 			}
-			/*if sigs[i][0] > 2 { // soft clip
-				sigs[i][0] = 2 + Tanh(sigs[i][0]-2)
+			if sigs[i][0] > 1 { // soft clip
+				sigs[i][0] = 1 + Tanh(sigs[i][0]-1)
 			}
-			if sigs[i][0] < -2 {
-				sigs[i][0] = Tanh(sigs[i][0]+2) - 2
-			}*/
+			if sigs[i][0] < -1 {
+				sigs[i][0] = Tanh(sigs[i][0]+2) - 1
+			}
 			m[i] = (m[i]*383 + mute[i]) / 384 // anti-click filter @ ~20hz
 			lv[i] = (lv[i]*7 + level[i]) / 8  // @ 1273Hz
 			sigs[i][0] *= lv[i]

@@ -58,13 +58,13 @@ Note on synthesis and levels:
 The design of Syntə has from inception included sufficient control of sound levels as a core aim. The open possibilities of Syntə are deliberately constrained in two main ways. A limiter is built-in to the sound engine, which controls levels on a frequency dependent basis. Also, listings can use the `mix` function to set a reasonable level based on simple heuristics that follow a siimilar principle to the limiter. The upper limit of potential hearing damage is defined by the capabilities of your sound playback system - the amplifier(s) and speakers; however, we have applied our best efforts to ensure loud frequencies do not leave Syntə. More details in the Sound Engine section below.
 
 
+<a name="top"></a>
 -------------------------------------------------------------------------------------
 
 + [Examples](#eg)  
 + [Reference](#ref)
 + [Details](#det)
 
-<a name="top"></a>
 ## How to use syntə
 
 **Requirements:**  
@@ -262,7 +262,7 @@ The kick will play on every beat. For once per bar of four beats use `in 120bpm,
 
 >
 	in -1
-	>sync
+	.>sync
 
 Here the clip operator is used to shape the VCA envelope of the hi-hat and the listings are synchronised together with a phase offset.
 
@@ -599,6 +599,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	range	|		2		|		spreads input from 0 to ±1 across a range of values from the first operand to the second. Eg. `range 220hz,440hz`. If the second operand is smaller the range will be negative. Operands should be in order of slow to fast, eg. 2s,1s
 |	bd909	|		2		|		unfinished '909' kick drum. first operand is decay and second is pitch. ◊  
 |	down	|		yes		|		slews downwards for decreasing signals, jumps immediately to an increasing or static (unchanging) signal value. Use with a narrow pulse to make a linear decay envelope.
+|	echo	|		2		|		repeated echo of input using `tape` internally. First operand is repeat interval (time), second operand is loop/feeback gain, >1 is infinite repeats (may distort), 0 is no repeats and no output. Use in conjunction with `from` or mix with original input
 |           |               |
 **List of pre-defined constants**
 |	ln2		|		natural logarithm of 2    	|  

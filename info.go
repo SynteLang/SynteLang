@@ -39,7 +39,7 @@ func main() {
 		SR      float64
 		GR      bool
 	}
-	var display Disp = Disp{
+	var display = Disp{
 		SR: 48000,
 	}
 

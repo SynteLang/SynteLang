@@ -6,9 +6,9 @@ It is also a portmanteau of 'synth' and 'byte', which is a reference to the stre
 
 The input syntax is in EBNF:
 	operator [ " " operand ]  
-Where an operand can be a name or a number where:  
+An operand can be a name or a number where:  
 	name = letter { letter | digit }  
-	number = float \[ type ] \[ ( "/" | "\*" ) float [type]  
+	number = float \[ ( "/" | "\*" ) float ] [type]  
 A letter is defined as any UTF-8 character excluding + - . 0 1 2 3 4 5 6 7 8 9  
 A float matches the floating point literal in the Go language specification.  
 A type can be one of the following tokens: "hz", "s", "ms", "bpm", "!", or "db" .  
@@ -77,7 +77,7 @@ The design of Syntə has from inception included sufficient control of sound lev
 Linux with ALSA driver should work without modifications, but latest commits may not be tested.  
 It is not known at present what the performance will be on other systems. ◊ The terminal emulator that has been used for development and testing is Alacritty. It works well on cool-retro-term. You may experience flickering in some terminal emulators due to the incomplete UI.  
 
-The source code is as yet unlicensed so be wary of distributing or hosting the code, as-is, compiled, modified or otherwise. ◊
+**Getting Started**
 
 Create or navigate to a directory (folder) containing the following files:  
 
@@ -157,9 +157,9 @@ You don't need to understand all of this right away. Everyone learns at differen
 
 **Great, but what do I actually type in?**
 
-To decide what code to write, it's helpful to think about the functions or shapes that represent the sounds that you want. Or you may want to skip this next section for now and head to the examples in the next section.
+To decide what code to write, it's helpful to think about the functions or shapes that represent the sounds that you want.  
 
-Any number that increases and decreases periodically in some way will produce a an audible sound if the frequency is in the range of 20 to 20,000 hertz. (1 hertz is one cycle per second.) In practice most frequencies will be betwen around 200 to 2000 hertz. Anything below that takes quite a lot of power and size for a speaker to produce clearly and anything above that is rarely used directly (as a fundamental or root note) and will usually only appear as overtones of other lower frequencies. A discussion of overtones and harmonics is beyond the scope of this document, doing your own research will be useful for future if they are new to you.
+Any number that increases and decreases periodically in some way will produce a an audible sound if the frequency is in the range of 20 to 20,000 hertz. (1 hertz is one cycle per second.) In practice most frequencies will be betwen around 200 to 2000 hertz. Anything below that takes quite a lot of power and size for a speaker to produce clearly and anything above that is rarely used directly (as a fundamental or root note) and will usually only appear as overtones of other lower frequencies. A discussion of overtones and harmonics is beyond the scope of this document, doing your own research will be useful for future if they are new to you.  
 
 The `osc` function is actually a group of operators that are added to your listing. They are:
 
@@ -189,7 +189,7 @@ Guitar → fx pedal → amplifier
 
 This is the equivalent to a necklace in syntə, for example something like:
 
-frequency → osc → filt → mix
+frequency → osc → lpf → mix
 
 But in this case syntə is the guitar and the guitarist too. So in code `in 330, osc, osc, mix` would be a frequency controlling the frequency of another oscillator.
 In this case the frequency of the second oscillator will only change from 0 to 1, so we can:
@@ -201,7 +201,7 @@ where f is now the maximum frequency we span to. You can use a number such as 20
 If we examine the guitarist example more closely , we realise that the fx pedal will likely contain modulators such as LFOs, along with filters, wave shapers etc.
 So we can extend our analogous model to something like:
 
-`in 2.5hz, osc, flip, out a, tri, out c, in 330hz, osc, mul a, filt c, mix`
+`in 2.5hz, osc, flip, out a, tri, out c, in 330hz, osc, mul a, lpf c, mix`
 
 Notice that the first oscillator is now generating a 2.5 hertz low frequency modulation. It is inverted before being send to a, and then shaped into a triangle wave and send to c. The second osc now operates at a fixed frequency of 330 hertz and is multiplied by a (acting like a VCA to control the volume) and filtered by c before being mixed and send to the output.
 
@@ -232,7 +232,7 @@ Add two or three separate listings of this code for a relaxing beach experience.
 	tri
 	out a
 	noise
-	filt a
+	lpf a
 	mix
 
 **Kick and hihat**
@@ -246,7 +246,7 @@ Add two or three separate listings of this code for a relaxing beach experience.
 	osc
 	sine
 	tanh
-	filt 200hz
+	lpf 200hz
 	mix
 
 The kick will play on every beat. For once per bar of four beats use `in 120bpm, / 4` before `posc`
@@ -351,7 +351,7 @@ This sequence will play a descending series of quarter notes spaced by an octave
 	mul 5
 	tanh
 	mul a
-	filt a
+	lpf a
 	mix
 
 **Siren** (note similarity to wobble)
@@ -391,7 +391,7 @@ Note that the operator `gt` (greater than or equal) shapes the `osc` into a puls
 	out dac
 >
 	in mousex
-	filt 1hz
+	lpf 1hz
 	wav [name of wav file]
 	out dac
 >
@@ -432,11 +432,10 @@ The values 0.9 and 0.1 should sum to 1 to maintain original pitch. 0.25 is the f
 	+ c
 	push
 	mul 0.25
-	tape
-	tap 100ms
-	+tap 300ms
-	+tap 70ms
-	filt 1200hz
+	tape 100ms
+	tap 300ms
+	tap 70ms
+	lpf 1200hz
 	out c
 	pop
 	mix
@@ -489,7 +488,8 @@ Although not perticularly musical, this simple necklace illustrates mixing two s
 	noise  
 	mix  
 
-Functions can have up to three operands separated by commas with no spaces. Refer to the function reference below for how many each one takes. The third argument of `euclid` is the phase offset of the internal oscilators.
+Functions can have up to three operands separated by commas with no spaces. Refer to the function reference below for how many each one takes. The third argument of `euclid` is the phase offset of the internal oscilators.  
+Euclidean rhythms can also be generated by using `grid`.  
 
 ---
 
@@ -524,8 +524,8 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	.nsync	|		yes		|		(not implemented) equivalent to nsync but will end listing and transfer, like `out dac`
 |	push	|		no		|		move result to a stack
 |	pop		|		no		|		take most recently pushed result from stack
-|	tape	|		no		|		record and playback from a rotating buffer, analogous to a tape loop. Input will progressively distort and clip around ±1, this is to control the level when using feedback
-|	tap		|		yes		|		result drawn from tape, operand is offset in seconds/milliseconds (use types)
+|	tape	|		yes		|		record and playback from a rotating buffer, analogous to a tape loop. Input will progressively distort and clip around ±1, this is to control the level when using feedback. Operand is tape tap time
+|	tap		|		yes		|		result drawn from tape, operand is offset in seconds/milliseconds (use types). This operator has been combined into `tape` and is now an alias of `+tap`
 |	+tap	|		yes		|		same as `tap` except added to previous result in listing
 |	f2c		|		no		|		convert frequency to filter coefficient. Numbers less than than 0 will be multiplied by -1 (sign removed, become positive)
 |	erase	|		yes		|		operand is number of operations to erase above the current in listing. For all use `: erase`. 
@@ -543,10 +543,11 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	setmix 	| 		yes		|		used internally for mix function
 |	.level	|		yes   	|		equivalent to `level` except will end input and launch listing. Operation not affected by mute
 |	print	|		no   	|		prints value of input to info display and passes through unchanged to next operation. Timing is a random point in an interval approximately 341ms to 682ms
-|	reel	|		yes   	|		output from tape at a rate determined by operand. 1 is original speed, less than one is slower and vice versa
+|	reel	|		yes   	|		output from tape at a rate determined by operand. 1 is original speed, less than one is slower and vice versa. No interpolation so will exhibit pleasant digital artefacts with operand < 1. (deprecated)
 |	index	|		no   	|		outputs index of current listing
 |	//		|		yes   	|		does nothing, use to display comments. Separate words with underscores like_this_etc. Remainder of listing will be skipped
 |	rms		|		yes   	|		output is root mean square of input with an integration time of 125ms, if greater than the operand, otherwise holds previous value. Use `rms 0` for a plain rms value
+|	_		|		no   	|		blank operator, does nothing. Similarly the signal _ does nothing too
 |	       	| 		       	|
 |	propa	|		yes  	|		used in conjuction with `index`, adds multiple listings at once (not implimented yet) ◊  
 |	fma		|		yes  	|		fused multiply add, the result of the input multiplied by the operand is stored in a special register `fma` (not implimented yet) ◊  
@@ -556,15 +557,15 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	]		|		no 		|  		end function definition                                 |
 |	:		|   	yes		|   	perform command: exit, erase, play, pause, fon, foff, clear, verbose, mc |
 |	fade	|		yes		|		changes fade out time after exit. Default is 325e-3 (unit is seconds, maximum 104s)
-|	del		|		yes		|		delete an entire compliled and running listing numbered by operand
+|	del		|		yes		|		delete an entire compliled and running listing numbered by operand. Play will be resumed if paused
 |	index	|		yes		|		access index of listing
 |	mute 	|		yes		|		mute  or un-mute listing at index given by operand. Muting won't affect sync operations sent by a listing
 |	unmute 	|		no		|		un-mute all muted listings
 |	solo	|		yes		|		solo listing at index given by operand (all other listings are muted). Solo-ing the same listing twice will reinstate prior mutes, including if a previous solo state
 |	release	|		yes		|		set the release constant of the built in limiter. The limiter VCA envelope will decay by approximately 70dB in the operand time given in milliseconds. Default is 1s. Times of less than ~200ms may result in audible distortion or pumping. Times greater than ~2s will have a slow response to a decrease in level. The limiter has absolute peak detection (non-interpolated) and the attack (onset) is instantaneous. The decay curve is not stricly exponential as it has a slow onset to avoid distortion. Any listings that are much louder than the others will bring down the volume of all listings.  
-|	.mute 	|		yes		|		equivalent to `mute` except will insert 'out dac' to launch listing
-|	.del 	|		yes		|		equivalent to `del` except will insert 'out dac' to launch listing. Used in effect to replace a listing
-|	.solo 	|		yes		|		equivalent to `solo` except will insert 'out dac' to launch listing
+|	.mute 	|		yes		|		equivalent to `mute` except will insert 'out dac' to launch listing. Play will be resumed if paused
+|	.del 	|		yes		|		equivalent to `del` except will insert 'out dac' to launch listing. Used in effect to replace a listing, play will be resumed if paused
+|	.solo 	|		yes		|		equivalent to `solo` except will insert 'out dac' to launch listing. Play will be resumed if paused
 |	erase 	|		yes		|		erase preceding number of lines given by operand
 |           |
 |**List of built-in functions**|       |
@@ -574,11 +575,10 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	osc		|		no		|		ramp wave, (phase accumulator). Output in range [0,1]. Has DC offset of ½
 |	saw		|		no		|		saw wave, descending ramp
 |	mix		|		yes		|		output adjusted level to soundcard and end listing
-|	s/h		|		yes		|		samples and holds input when operand crosses zero. Use ramp to supply operand. See 'Sample and hold melody' example above. A pulse will do track+hold, zero = track, any other number is hold.
-|	dirac	|		no		|		result is a single pulse (not fully implemented) ◊
+|	s/h		|		yes		|		samples and holds input when operand moves greater than zero from less than or equal to zero. Use ramp or square to supply operand. See 'Sample and hold melody' example above. Feed a [0,1] pulse to lpf for track and hold
 |	dist	|		yes		|		distortion, operand controls amount
 |	sino	|		no		|		sine wave oscillator
-|	filt	|		yes		|		6dB per octave low-pass filter. Operand is cutoff frequency in Hertz
+|	lpf		|		yes		|		6dB per octave low-pass filter. Operand is cutoff frequency in Hertz. Cascade for steeper cutoff
 |	heat	|		yes		|		'bulb-element' emulator (untested) ◊  
 |	cv2a	|		no		|		convert range [0, 1] to [-1, 1]
 |	test	|		yes		|		output a sine test tone at the frequency of the given operand. Watch the volume as this is output at full scale!
@@ -598,8 +598,16 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	dirac	|		no		|		outputs a single sample pulse when input goes from 0 to 1. Will trigger on first run of listing if input is 1
 |	range	|		2		|		spreads input from 0 to ±1 across a range of values from the first operand to the second. Eg. `range 220hz,440hz`. If the second operand is smaller the range will be negative. Operands should be in order of slow to fast, eg. 2s,1s
 |	bd909	|		2		|		unfinished '909' kick drum. first operand is decay and second is pitch. ◊  
-|	down	|		yes		|		slews downwards for decreasing signals, jumps immediately to an increasing or static (unchanging) signal value. Use with a narrow pulse to make a linear decay envelope.
-|	echo	|		2		|		repeated echo of input using `tape` internally. First operand is repeat interval (time), second operand is loop/feeback gain, >1 is infinite repeats (may distort), 0 is no repeats and no output. Use in conjunction with `from` or mix with original input
+|	down	|		yes		|		slews downwards for decreasing signals, jumps immediately to an increasing or static (unchanging) signal value. Use with a narrow pulse to make a linear decay envelope. Descends at rate given by operand
+|	echo	|		2		|		repeated echo of input using `tape` internally. First operand is repeat interval (time), second operand is loop/feeback gain, >1 is infinite repeats (may distort), 0 is no repeats and no output. Use in conjunction with `from` or mix in with original input
+|	step	|		yes		|		generates a rising staircase of values with the operand number of steps within input time interval, eg `120bpm` or `2hz`. Output is between [0,1]. This implementation is not precise due to overflows (low frequencing aliasing). Uses `s/h` internally.
+|	tempo	|		yes		|		operand sets the tempo across all listings, subsequent invocations will set tempo for subsequent listings
+|	grid	|		no		|		generates a square wave at frequency of input and sends out to grid, accessible across all listings in ascending order like tempo. Can be used to gate audio using `mul`. Euclidean rhythms can be generated by `s/h`-ing other gate signals at different frequencies
+|	count	|		yes		|		generates a rising staircase of values from 1 up to and including operand. Use a square wave [0,1] as input. Uses dirac to detect edge transitions internally. Can be used with `in <tempo>, osc, lt 0.5, count n` as a more precise equivalent to `step`
+|	end		|		no		|		launches a new silent listing, useful for things like setting tempo
+|	.		|		no		|		alias of `end`
+|	hpf		|		yes		|		6dB per octave high-pass filter. Operand is cutoff frequency in Hertz
+|	alp		|		2		|		first-order all-pass delay line using `tape`. First operand is delay time, second operand is damping coefficient [0,1]
 |           |               |
 **List of pre-defined constants**
 |	ln2		|		natural logarithm of 2    	|  
@@ -623,18 +631,21 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	butt1	|		value of left mouse button, 0 or 1	|
 |	butt2	|		value of centre mouse button, 0 or 1	|
 |	butt3	|		value of right mouse button, 0 or 1	|
+|	grid	|		signal is daisy chained between listings, can be set with `out`	|
 
-`.` is a special operand. If you have typed in something by accident for the operator simply type like so:
+`_` is a special operand. If you have typed in something by accident for the operator simply type like so:
 
-	jlimistakehkj .
+	jlimistakehkj _
 
 and the line will be ignored, without giving an error message.
 
 ___
+
 <a name="det"></a>
+
 ## Exposition  
 Although theoretically possible, syntə is not primarily designed for making 'normal' music. A suggested use is the composition of waves, frequencies, shapes and combinations thereof to express a feeling or to dance to.  
-The ideal aspect of syntə is using the full power of a modern compute to produce musical structures that would otherwise be difficult to materialise. The simple building blocks help gain insight into the workings and provide almost orthogonal flexibility. (If something is orthogonal it means the smallest number of parts to realise the full possibilities of a concept space.)  
+The ideal aspect of syntə is using the full power of a modern computer to produce musical structures that would otherwise be difficult to materialise. The simple building blocks help gain insight into the workings and provide almost orthogonal flexibility. (If something is orthogonal it means the smallest number of parts to realise the full possibilities of a concept space.)  
 Syntə enables detailed specification of sounds because it is built from small atomic operations. This gives a lot of freedom, which in turn requires some learning and practice. If you are new to synthesis you will need to learn that to, the program itself won't teach you. However, in the opinion of the author the concepts and maths of audio are a delight to uncover and play with. Most of the time simple arithmetic is all that is required for a deeper understanding. Take small steps and be surprised at what you achieve in time.  
 The language is intended to expand and suppliment the existing live-coding space to offer other possibilities and benefit the ecosystem as a whole.  
 
@@ -686,7 +697,7 @@ will result in
 being added to the listing 
 
 ## Type system
-This is a fancy term for inputting numerical values with a unit of measurement. If you tell someone a duration you might say: "it will take three hours", you don't just say "it will take three". In a similar way Syntə expects to be told what the number you have input means. A number can be a frequency expressed in Hertz, A bpm (beats per minute), a time in seconds or milliseconds, or a decibel level (negative numbers reduce signal level, postive increases). For example:
+This is a fancy term for inputting numerical values with a unit of measurement. If you tell someone a duration you might say: "it will take three hours", you don't just say "it will take three". In a similar way Syntə expects to be told what the number you have input means. A number can be a frequency expressed in Hertz, A bpm (beats per minute), a time in seconds or milliseconds, or a decibel level (negative numbers reduce signal level, positive increases). For example:
 
 	440hz   <= this is the approximate frequency of the note A
 
@@ -705,10 +716,10 @@ And for seconds is:
 	1 / ( input \* sample rate )  
 
 ## Signals
-Signals are the way of passing values around outside of the main flow through the necklace. Signals which are named and not just numbers can be referred to as registers, because they *register* a value. Usually the initial value of a named signal is 0. If you want it to begin as 1, add ' to the name. So `a` becomes `'a`. Likewise you can use the double quotation mark " to have a default value of one half. If you want to be able to overwrite the value of a signal with `out` (more than once in a necklace), which is not normally possible, you can add ^ to the name. So `a` becomes `^a`. You can use both of these special symbols, but the circumflex ^ must come first or it will be ignored.
+Signals are the way of passing values around outside of the main flow through the necklace. Signals which are named and not just numbers can be referred to as registers, because they *register* a value. Usually the initial value of a named signal is 0. If you want it to begin as 1, add ' to the name. So `a` becomes `'a`. Likewise you can use the double quotation mark " to have a default value of one half. If you want to be able to overwrite the value of a signal with `out` (more than once in a necklace), which is not normally possible, you can add ^ to the name. So `a` becomes `^a`. You can use both of these special symbols with a single signal, but the circumflex ^ must come first or it will be ignored.
 
 ## CV and audio signal ranges
-Varying numbers intended for output to the soundcard usually span the range [-1,+1]. CV, or control voltage, which are used to control other parts of the signal chain and not produce sound directly typically span the range [0,1]. For instance the output of `ramp`, `saw` and `sine` which are intended to produce frequencies at audible rates (20 - 20,000Hz) all go between ±1, whereas `osc` which can be used to control a vca or the pitch of another oscillator spans between zero and 1. To make `osc` suitable for direct audio output you can use the cv2a function, which is exactly what `ramp` does. CV signals are generally slower and more rounded than audio signals. The `flip` function can be used to turn a CV upside-down, use `mul -1` to do the same for an audio signal (essentially what `saw` does). However, `flip` is much more commonly used.
+Varying numbers intended for output to the soundcard usually span the range [-1,+1]. CVs, or control voltages, which are used to control other parts of the signal chain and not produce sound directly typically span the range [0,1]. For instance the output of `ramp`, `saw` and `sine` which are intended to produce frequencies at audible rates (20 - 20,000Hz) all go between ±1, whereas `osc` which can be used to control a vca or the pitch of another oscillator spans between zero and 1. To make `osc` suitable for direct audio output you can use the cv2a function, which is exactly what `ramp` does. CV signals are generally slower and more rounded than audio signals. The `flip` function can be used to turn a CV upside-down, use `mul -1` to do the same for an audio signal (essentially what `saw` does). However, `flip` is much more commonly used.
 
 ## Channels ◊  
 At present the output is in mono. Stereo output should be possible and is intended to be implemented in future. This will probably be via `out L` or `out R`, while `out dac` sends to both left and right channels. Please feel free to badger the author if you are keen for this to happen. 
@@ -742,7 +753,7 @@ The `level` operator is used to adjust the audio level of a running listing, lik
 
 ## Adding functions
 If you find yourself reusing the same chunk of code multiple times, it is possible to define a named function which will instantiate that chunk of code. To begin, type `[` followed by the new name. Then type the listing as normal and at the end type `]` (no operand) which will complete the function add. This function won't be saved on exit but may be used as you wish during the current session. To permanently save a function which you feel will be useful in future type `: fon` before exiting and it will be saved to the 'functions.json' file in the folder on exit from Syntə. To go back to ephemeral functions (useful for experimentation) type `: foff`.  
-You may overwrite functions by typing in the same name. If the function has no operands type the "!" character before the name with no spaces to overwrite. Eg. `!blah [`  
+You may overwrite functions by typing in the same name.  
 The ability to make functions like this makes the language *extensible*, which means you are able to extend the language beyond what is written in this document. One of the project aims is to build up a library of abstractions in this way to make performance easier for beginners. However there is a limit to this, as just typing 'music' and stopping there would be quite boring!  
 An *abstraction* means wrapping up a bit of code into something simple to make it easier to use, for example the term 'global apartheid' is an abstraction of a system and history that involves many many processes, interconnections, organisations, trade-misinvoicing etc.
 
@@ -775,7 +786,7 @@ listing.go displays the currently running necklaces. Any that are muted will sho
 ## Hot tips
 
 + use `slew 150` to smoothen a signal used for modulating volume with `mul`
-+ trim samples of music to be an exact number of bars (look for repetition in the wavform of around ~2 seconds)
++ trim samples of music to be an exact number of bars (look for repetition in the waveform of around ~2 seconds)
 + use the "!" type to use a number outside of the expected range if you need to. This is not a factorial operation
 + had a moment of inspiration and can't remember what you did? All listings accepted by the sound engine are saved by timestamp to the recordings folder in json format
 + pipe the output of `functions.go` through `less` using the `-r` flag, like this: `go run functions.go | less -r`. You can then search the contents using `/`, refer to `man less` 
@@ -804,7 +815,7 @@ If the bass level fluctuates a lot at different frequencies and at different lis
 
 ## The Sound Engine
 Although it is not necessary to know how the sound engine works to perform or play with Syntə, it can be helpful to learn more about it so we'll give a brief outline here.
-When a listing is send to the sound engine an internal copy is generated and added to the sequence of listings. The sound engine takes each listing in turn from 0 onwards and runs through it once to produce the value of the next sample, then it moves on to the next listing. Once it has computed all the listings the resulting samples are summed together and sent through the built-in limiter to ensure no loud surprises and the peak loudness of the output is also sent to the info display. The resulting signal is converted to the correct format and sent to the soundcard in your computer, after which the whole process repeats.  
+When a listing is send to the sound engine an internal copy is generated and added to the sequence of listings. The sound engine takes each listing in turn from 0 onwards and runs through it once to produce the value of the next sample, then it moves on to the next listing. Once it has computed all the listings the resulting samples are summed together and sent through the built-in limiter to ensure no loud surprises and the peak amplitude of the output is also sent to the info display. The resulting signal is converted to the correct format and sent to the soundcard in your computer, after which the whole process repeats.  
 The terms 'listing' and 'necklace' are interchangeable. Necklace also illustrates the point that the listing is computed in a continuous loop. Although usually the result is computed from fresh each time, unless you use the `from` operator.  
 All values in the sound engine are represented by 64-bit floating point numbers which have a nominal range within Syntə of between -1 and 1 inclusive. At the end of each cycle of the sound engine this is converted to a 32 bit number to be sent to the soundcard. Within a listing a value can be anywhere in the range of the 64-bit float (approx ±1.8x10^308 with an precision of about 15 decimal places.) These numbers will be limited or clipped to ±1 before audio conversion.  
 The samples from each listing are added together and when there are more than four listings the sum is divided by the number of listings for unity gain. For 1, 2, 3, or 4 listings the sun is always divided by four. The result is then passed through a high-pass filter before the limiter. This is to remove any DC offsets, which means a consistent average signal other than 0, or another way to think of it is attentuating (reducing) frequencies below 4.6Hz. If my calculations are correct, any DC signal will fade below -120dB after half a second.  
@@ -812,7 +823,7 @@ The limiter reduces the level of audio above a peak value of 1 to avoid the poss
 The density distribution of pink noise is a good general approximation to expected frequency levels in audio (*Barrow, 1995*). The `mix` function also uses this as a guiding principle in setting a sensible level. Some adjustment may be required; however, the limiter will always kick in if internal levels are exceeded.
 Because of the frequency dependent nature of the limiter detection, gain reduction may occur before the info display shows a high VU level. This is normal and you can adjust listings via the `level` operator to prevent higher frequencies from dominating the playback.
 Between the limiter and the clipping stage before conversion, what is known as dither is applied to the signal. This is a tiny amount of noise to avoid rounding errors, but is probably overkill. Before the dither any envelopes associated with pausing or exiting are applied. These reduce the chances of pops or clicks.  
-The whole main loop of the sound engine has a timer to produce the 'load' value that shows how much work it is doing to create each sample for the soundcard. See info display section above.  
+The whole main loop of the sound engine has a timer to produce the 'load' value that shows how much work it is doing to create each sample for the soundcard. See info display section above. If enough listings are added and the sound engine is unable to perform all calculations in time before the next sample is due, glitches or dropouts in the output can occur. In order to avoid this if a high load is detected the last listing added will be removed automatically and the sound engine restarted.  
 
 ---
 
@@ -833,10 +844,12 @@ Please get in touch if you have further questions.
 ### Influences and other live-coding environments
 The term live-coding is generally taken to mean on-the-fly composition of algorithmically generated audio or graphical artifacts using software.  
 We recommend exploring TidalCycles and Pure Data in particular. If you are more visual/graphical oriented there are live coding languages/environments for that space too.  
-Many influences and inspirations have been drawn upon either deliberately or subconciously in the creation of Syntə. They include assembly language, Forth, the live-coding laguages mentioned above, modular synthesis, Musique concrète, Go itself (the language Syntə is implemented in) and unix-like systems in general - primarily FreeBSD which was the first OS to host Syntə, both for development and execution.  
+Many influences and inspirations have been drawn upon either deliberately or subconciously in the creation of Syntə. They include assembly language, Forth, RPN calculators, VIM, the live-coding laguages mentioned above, modular synthesis, Musique concrète, Go itself (the language Syntə is implemented in) and unix-like systems in general - primarily FreeBSD which was the first OS to host Syntə, both for development and execution.  
 
 ### Future possiblities for Syntə  
-It would be great if translations of this document and the language itself become available in future, get in touch if you can help with this. A live distro with Syntə included could be useful for users of other operating systems to boot from. A YouTube channel to stream live demonstrations/performances is planned ◊. Another possiblity for the code is integration with a terminal library such as tcell or bubbletea for a slicker UI. Also, the Sound Engine could be adapted to a 'headless' mode for use with an editor such as Atom. This option hasn't been pursued for now as it is helpful to provide immediate feedback via info.go with each operation entered. Future additions include providing for audio input and use of other sound drivers than OSS/ALSA. A browser-based interface is another option, which would make the program extremely portable. This could be as simple as redirecting stdout to a local websocket server.
+The main focus of development is building up a library of functions which provide useful and intuitive abstractions to speed up and simplify performing.  
+Work is being done to improve the rate of composition available, by enabling easier editing of listings and more modulation between them. Current roadmap includes: automated testing of the examples given in this documenti; simplification of the input parsing and compilation section of the code to improve readability and operation; further changes to the implementation of tape and reel operators; improvements to the usability of the wav operator to facilitate tempo calculations. ◊  
+It would be great if translations of this document and the language itself become available in future, get in touch if you can help with this. A live distro with Syntə included could be useful for users of other operating systems to boot from. Another possiblity for the code is integration with a terminal library such as tcell or bubbletea for a slicker UI. Also, the Sound Engine could be adapted to a 'headless' mode for use with an editor such as Atom. This option hasn't been pursued for now as it is helpful to provide immediate feedback via info.go with each operation entered. Future additions include providing for audio input and use of other sound drivers than OSS/ALSA. A browser-based interface is another option, which would make the program extremely portable. This could be as simple as redirecting stdout to a local websocket server.
 You may consider the current implementation of Syntə to be a prototype. At present most of the basic features have been taken care of, and as the language is tried out by different people, changes and adjustments that will tidy up and make performing easier may become apparent. The core aims of fun and accessibility won't change. 
 
 ### General principles of live coding performance  

@@ -40,6 +40,7 @@ func main() {
 	var exit bool
 	stop := make(chan struct{})
 	var mute []bool
+	var verbose bool
 
 	go func() {
 		for {
@@ -64,6 +65,11 @@ func main() {
 				//fmt.Printf("error decoding %s: %v %v\n", file2, err, err2)
 				//time.Sleep(2 * time.Second)
 			}
+			err2 = json.Unmarshal(d["Verbose"], &verbose)
+			if err2 != nil {
+				//fmt.Printf("error decoding %s: %v %v\n", file2, err, err2)
+				//time.Sleep(2 * time.Second)
+			}
 			fmt.Printf("\033[H\033[2J")
 			fmt.Printf("%sSyntə listings%s %spress enter to quit%s", cyan, reset, italic, reset)
 			//fmt.Println()
@@ -83,15 +89,20 @@ func main() {
 					}
 				}
 				for i, v := range list {
+					if verbose {
+						fmt.Printf(" %s%d:%s ", italic, i, reset)
+					}
 					fmt.Printf("%s%s%s ", m, v.Op, reset)
 					if opd := v.Opd; opd != "" {
 						fmt.Printf("%s%s%s ", c, opd, reset)
 					}
-					if i < len(list)-1 {
-						if l := list[i+1].Op; l == "in" || l == "pop" || l == "tap" {
-							fmt.Printf(" %s|%s  ", y, reset)
-							continue
-						}
+					if i == len(list)-1 || verbose {
+						continue
+					}
+					switch list[i+1].Op {
+					case "in", "pop", "tap", "index", "from":
+						fmt.Printf(" %s|%s  ", y, reset)
+					default:
 						fmt.Printf(" %s\u22A2%s  ", y, reset)
 					}
 				}

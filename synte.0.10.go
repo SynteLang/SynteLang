@@ -831,11 +831,17 @@ start:
 				}
 			case "out":
 				_, in := out[opd]
+				ExpSig := false
+				for i := lenReserved; i < lenReserved+lenExported; i++ {
+					if reserved[i] == opd {
+						ExpSig = true
+					}
+				}
 				switch {
 				case num.Is:
 					msg("%s%soutput to number not permitted%s", red, italic, reset)
 					continue
-				case in && opd[:1] != "^" && opd != "dac":
+				case in && opd[:1] != "^" && opd != "dac" && !ExpSig:
 					msg("%s%sduplicate output to signal, c'est interdit%s", red, italic, reset)
 					continue
 				case opd == "@":
@@ -1312,15 +1318,11 @@ start:
 					msg("%s%soperand not an integer%s", red, italic, reset)
 					continue
 				}
-				if n >= len(transfer.Listing) {
-					msg("listing doesn't exist")
-					continue
-				}
 				reload = n
 				if n < 0 {
 					n = -n
 				}
-				f := sf(".temp/%d.syt", len(transfer.Listing)-1)
+				f := sf(".temp/%d.syt", n)
 				inputF, rr := os.Open(f)
 				if e(rr) {
 					msg("%v", rr)
@@ -1444,7 +1446,7 @@ start:
 			msg("\t%splay resumed...%s", italic, reset)
 		}
 		//transfer to sound engine // or if reload int is +ve replace existing at that index
-		if reload < 0 {
+		if reload < 0 || reload > len(transfer.Listing)-1 {
 			dispListings = append(dispListings, dispListing)
 			transfer.Listing = append(transfer.Listing, newListing)
 			transfer.Signals = append(transfer.Signals, sig)

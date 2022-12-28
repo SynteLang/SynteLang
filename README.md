@@ -545,7 +545,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	print	|		no   	|		prints value of input to info display and passes through unchanged to next operation. Timing is a random point in an interval approximately 341ms to 682ms
 |	reel	|		yes   	|		output from tape at a rate determined by operand. 1 is original speed, less than one is slower and vice versa. No interpolation so will exhibit pleasant digital artefacts with operand < 1. (deprecated)
 |	index	|		no   	|		outputs index of current listing
-|	//		|		yes   	|		does nothing, use to display comments. Separate words with underscores like_this_etc. Remainder of listing will be skipped
+|	//		|		yes   	|		does nothing, use to display comments. Separate words with underscores like_this_etc. Remainder of listing will be skipped, use as a single line listing
 |	rms		|		yes   	|		output is root mean square of input with an integration time of 125ms, if greater than the operand, otherwise holds previous value. Use `rms 0` for a plain rms value
 |	_		|		no   	|		blank operator, does nothing. Similarly the signal _ does nothing too
 |	       	| 		       	|

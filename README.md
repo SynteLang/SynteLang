@@ -30,7 +30,7 @@ Finite recursion with enumeration ◊
 Anything can be connected to anything else within a listing √  
 Feedback permitted (see above) √  
 Groups of operators can be defined, named and instantiated as functions (extensible) √  
-Support for pitch control with useful constants √ ◊  
+Support for pitch control with useful constants √   
 Frequency scaling √  
 Useful predefined functions √  
 Built-in synchronisation operators √  
@@ -567,6 +567,8 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	.del 	|		yes		|		equivalent to `del` except will insert 'out dac' to launch listing. Used in effect to replace a listing, play will be resumed if paused
 |	.solo 	|		yes		|		equivalent to `solo` except will insert 'out dac' to launch listing. Play will be resumed if paused
 |	erase 	|		yes		|		erase preceding number of lines given by operand
+|	rld 	|		yes		|		reload edited listing
+|	rpl 	|		yes		|		listing at index given by operand will be replaced by current input once launched
 |           |
 |**List of built-in functions**|       |
 |	inv		|		no		|		invert a value between [0, 1], result equals 1/input |
@@ -810,6 +812,12 @@ To specifically test the bass level and evenness try:
 	out dac
 
 If the bass level fluctuates a lot at different frequencies and at different listing positions you should consider some using some bass trapping. This is beacause sound reflections between the walls will interfere and cancel out.
+
+## Editing running listings
+All currently running listings can be found in the `.temp/` folder in the root directory (main project folder). The name of the file will be the index (an non-negative integer) with the file extension .syt, eg. 0.syt , this file can be opened in any text editor. Once you have saved your edits the listing can be updated by typing `rld n` where n is the index of the listing.
+
+## Exported signals
+Up to 12 signals may be exported for input to other listings. Indicate this by capitalising the initial letter, eg. `out Env1`. This can then be used like any other signal, in the same manner as `tempo`, `pitch` and `grid`. These exported signals are daisy-chained in the same manner, so will propagate between listings in ascending order. This means that the signal will correspond to the preceeding `out`.
 
 ---
 

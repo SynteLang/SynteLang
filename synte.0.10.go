@@ -61,6 +61,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"unicode"
 	"unsafe" // :D
 )
 
@@ -91,11 +92,12 @@ const (
 	SNDCTL_DSP_SPEED = 0xC0045002
 	SAMPLE_RATE      = 48000 //hertz
 
-	WAV_TIME    = 4 //seconds
-	WAV_LENGTH  = WAV_TIME * SAMPLE_RATE
-	TAPE_LENGTH = 1 //seconds
-	MAX_WAVS    = 12
-	RMS_INT     = SAMPLE_RATE / 8
+	WAV_TIME       = 4 //seconds
+	WAV_LENGTH     = WAV_TIME * SAMPLE_RATE
+	TAPE_LENGTH    = 1 //seconds
+	MAX_WAVS       = 12
+	RMS_INT        = SAMPLE_RATE / 8
+	EXPORTED_LIMIT = 12
 )
 
 var convFactor = float64(MaxInt16)
@@ -194,8 +196,10 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"save":    ops{true, 0},
 	"ls":      ops{true, 0},
 	//	"into":    ops{true, 0},
-	"ct": ops{true, 0}, // individual clip threshold
-	"_":  ops{false, 0},
+	"ct":  ops{true, 0}, // individual clip threshold
+	"_":   ops{false, 0},
+	"rld": ops{true, 0},
+	"rpl": ops{true, 0},
 }
 
 // listing is a slice of { operator, index and operand }
@@ -213,7 +217,7 @@ var transfer struct { // make this a slice of structs?
 	Wavs    [][]float64 //sample
 }
 
-//var Sigs []int // list of exported signals to be daisy-chained
+var Sigs []int // list of exported signals to be daisy-chained
 
 // communication variables
 var (
@@ -440,12 +444,12 @@ func main() {
 		"grid",
 	}
 	// add 12 reserved signals for inter-list signals
-	// var lenReserved = len(reserved) // use this as starting point for exported signals
-	// Sigs = []int{2,3,10} // pitch,tempo,grid
-	// for i := 0; i < EXPORTED_LIMIT; i++ {
-	// 		reserved = append(reserved, sf("%d", i+lenReserved))
-	//}
-	// var lenExported int = 0
+	lenReserved := len(reserved) // use this as starting point for exported signals
+	Sigs = []int{2, 3, 10}       // pitch,tempo,grid
+	for i := 0; i < EXPORTED_LIMIT; i++ {
+		reserved = append(reserved, sf("%d", i+lenReserved))
+	}
+	var lenExported int = 0
 	var sig []float64 // local signals
 	funcs := make(map[string]listing)
 	// load functions from files and assign to funcs
@@ -556,6 +560,7 @@ start:
 			In bool
 			N  int
 		}
+		reload := -1
 
 	input:
 		for { // input loop // this could do with a comprehensive rewrite
@@ -1302,14 +1307,40 @@ start:
 				}
 				continue
 			case "rld":
-				// bounds check, |input| < len(listings)
-				// if negative load as new
-				// load running listing at |index| (listing was saved on launch to a file)
-				// set some reload int as index given
-				// on launch listing is replaced instead of adding to listings
+				n, rr := strconv.Atoi(opd)
+				if e(rr) {
+					msg("%s%soperand not an integer%s", red, italic, reset)
+					continue
+				}
+				if n >= len(transfer.Listing) {
+					msg("listing doesn't exist")
+					continue
+				}
+				reload = n
+				if n < 0 {
+					n = -n
+				}
+				f := sf(".temp/%d.syt", len(transfer.Listing)-1)
+				inputF, rr := os.Open(f)
+				if e(rr) {
+					msg("%v", rr)
+					reload = -1
+					continue
+				}
+				s = bufio.NewScanner(inputF)
+				s.Split(bufio.ScanWords)
+				continue
 			case "rpl": // ".rpl"?
-				// bounds check
-				// set reload int as index given
+				n, rr := strconv.Atoi(opd)
+				if e(rr) {
+					msg("%s%soperand not an integer%s", red, italic, reset)
+					continue
+				}
+				if n >= len(transfer.Listing) {
+					msg("listing doesn't exist")
+					continue
+				}
+				reload = n
 				// .rpl acts like .mute etc?
 				continue
 			default: // check operator exists
@@ -1321,12 +1352,22 @@ start:
 			// end of switch
 
 			// process exported signals
-			// if lenExported is > limit, throw error and continue
-			// if !isNum && initial is capital letter {
-			//		rename reserved[lenReserved+lenExported] to opd
-			//		append lenReserved+lenExported to Sigs
-			//		lenExported++
-			// }
+			alreadyIn := false
+			for _, v := range reserved {
+				if v == opd {
+					alreadyIn = true
+				}
+			}
+			if !alreadyIn && !num.Is && unicode.IsUpper([]rune(opd)[0]) {
+				if lenExported > EXPORTED_LIMIT {
+					msg("we've ran out of exported signals :(")
+					continue
+				}
+				reserved[lenReserved+lenExported] = opd
+				Sigs = append(Sigs, lenReserved+lenExported)
+				lenExported++
+				msg("%s%s added to exported signals%s", opd, italic, reset)
+			}
 
 			if len(operands) == 0 { // for zero-operand functions
 				operands = []string{""}
@@ -1393,7 +1434,6 @@ start:
 			i++
 		}
 
-		dispListings = append(dispListings, dispListing)
 		if display.Paused { // restart on launch if paused
 			for i := range mute { // restore mutes
 				mute[i] = priorMutes[i]
@@ -1404,21 +1444,38 @@ start:
 			msg("\t%splay resumed...%s", italic, reset)
 		}
 		//transfer to sound engine // or if reload int is +ve replace existing at that index
-		transfer.Listing = append(transfer.Listing, newListing)
-		transfer.Signals = append(transfer.Signals, sig)
-		mute = append(mute, 1)
-		priorMutes = append(priorMutes, 1)
-		unsolo = append(unsolo, 1)
-		display.Mute = append(display.Mute, false)
-		level = append(level, 1)
-		display.List++
+		if reload < 0 {
+			dispListings = append(dispListings, dispListing)
+			transfer.Listing = append(transfer.Listing, newListing)
+			transfer.Signals = append(transfer.Signals, sig)
+			mute = append(mute, 1)
+			priorMutes = append(priorMutes, 1)
+			unsolo = append(unsolo, 1)
+			display.Mute = append(display.Mute, false)
+			level = append(level, 1)
+			display.List++
+		} else {
+			dispListings[reload] = dispListing
+			transfer.Listing[reload] = newListing
+			transfer.Signals[reload] = sig
+		}
 		transmit <- true
 		<-accepted
 		if !started {
 			started = true
 		}
 		// save listing as <n>.syt for the reload
-
+		if reload < 0 {
+			f := sf(".temp/%d.syt", len(transfer.Listing)-1)
+			content := ""
+			for _, d := range dispListing {
+				content += d.Op + " " + d.Opd + "\n"
+			}
+			if rr := os.WriteFile(f, []byte(content), 0666); e(rr) {
+				msg("%v", rr)
+				continue
+			}
+		}
 		if record {
 			timestamp := time.Now().Format("02-01-06.15:04")
 			f := "recordings/listing." + timestamp + ".json" // shadowed
@@ -1922,12 +1979,13 @@ func SoundEngine(w *bufio.Writer, bits int) {
 	_ = dac0
 
 	<-transmit // load first listing(s) and start SoundEngine
+	// excess capacities unnecessary?
 	listings := make([]listing, len(transfer.Listing), len(transfer.Listing)+24)
 	sigs := make([][]float64, len(transfer.Signals), len(transfer.Signals)+23)
 	stacks := make([][]float64, len(transfer.Listing), len(transfer.Listing)+21)
 	wavs := make([][]float64, len(transfer.Wavs), MAX_WAVS)
 	tapes := make([][]float64, 0, 26)
-	copy(listings, transfer.Listing)
+	copy(listings, transfer.Listing) // is this pointless as refers to same underlying array anyway?
 	copy(sigs, transfer.Signals)
 	copy(wavs, transfer.Wavs)
 	tapes = make([][]float64, len(transfer.Listing))
@@ -1979,11 +2037,12 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			}
 			r = 0
 			// daisy-chains
-			//for _,ii := range Sigs {
-			sigs[i][2] = sigs[(i+len(sigs)-1)%len(sigs)][2]   // pitch
+			for _, ii := range Sigs {
+				sigs[i][ii] = sigs[(i+len(sigs)-1)%len(sigs)][ii]
+			}
+			/*sigs[i][2] = sigs[(i+len(sigs)-1)%len(sigs)][2]   // pitch
 			sigs[i][3] = sigs[(i+len(sigs)-1)%len(sigs)][3]   // tempo
-			sigs[i][10] = sigs[(i+len(sigs)-1)%len(sigs)][10] // grid
-			//}
+			sigs[i][10] = sigs[(i+len(sigs)-1)%len(sigs)][10] // grid*/
 			// mouse values
 			sigs[i][5] = mx
 			sigs[i][6] = my
@@ -2056,8 +2115,10 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					stacks[i] = stacks[i][:len(stacks[i])-1]
 				case 18: // "tape"
 					tapes[i][n%TLlen] = Tanh(r)
-					t := Min(1/sigs[i][o.N], SampleRate*TAPE_LENGTH)
-					r = tapes[i][(n+TLlen-int(t)+1)%TLlen]
+					{
+						t := Min(1/sigs[i][o.N], SampleRate*TAPE_LENGTH)
+						r = tapes[i][(n+TLlen-int(t)+1)%TLlen]
+					}
 				case 20: // "+tap", "tap"
 					r += tapes[i][(n+1+int(Abs((TAPE_LENGTH*SampleRate)-1/sigs[i][o.N])))%TLlen]
 				case 21: // "f2c"

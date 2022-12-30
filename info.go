@@ -197,5 +197,5 @@ func main() {
 		exit = true
 		<-stop
 	}
-	fmt.Printf("info display closed.")
+	fmt.Printf("info display closed.\n")
 }

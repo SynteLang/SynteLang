@@ -520,8 +520,6 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	\<sync	|		yes		|		receive sync pulse which zeros whatever is passed through. Operand adds phase offset on pulse
 |	\>sync	|		yes		|		send one sync pulse to all listings when input ≤ 0. Latches off until input > 0. Output to next operation is zero
 |	.>sync	|		yes		|		equivalent to >sync but will end listing and transfer, like `out dac`
-|	nsync	|		yes		|		(not implemented) send one sync pulse to the listing whose index is given by the operand, triggered similarly to \>sync
-|	.nsync	|		yes		|		(not implemented) equivalent to nsync but will end listing and transfer, like `out dac`
 |	push	|		no		|		move result to a stack
 |	pop		|		no		|		take most recently pushed result from stack
 |	tape	|		yes		|		record and playback from a rotating buffer, analogous to a tape loop. Input will progressively distort and clip around ±1, this is to control the level when using feedback. Operand is tape tap time
@@ -727,7 +725,7 @@ Varying numbers intended for output to the soundcard usually span the range [-1,
 At present the output is in mono. Stereo output should be possible and is intended to be implemented in future. This will probably be via `out L` or `out R`, while `out dac` sends to both left and right channels. Please feel free to badger the author if you are keen for this to happen. 
 
 ## Synchronisation ◊  
-By default (and by design) when a listing is sent to the sound engine it starts immediately. The synchronisation operators `>sync` and `\<sync` can be used to co-ordinate listings to play in time with one another. First, for a rhythmic element use the phase synchronised oscillator `posc` instead of osc. This contains a `\<sync` operation which will reset the waveform when it receives a sync pulse. The `posc` operator requires a number betweeen 0 and 1 to offset the phase, you can use 0 to start with and experiment later. For reference 0.5 would result in a phase shift of 180°, 1 would be 360° etc. To send a sync pulse you can use `>sync` to synchronise all listings containing a `posc` or `nsync` to synchronise just one. For `>sync` you can either:
+By default (and by design) when a listing is sent to the sound engine it starts immediately. The synchronisation operators `>sync` and `\<sync` can be used to co-ordinate listings to play in time with one another. First, for a rhythmic element use the phase synchronised oscillator `posc` instead of osc. This contains a `\<sync` operation which will reset the waveform when it receives a sync pulse. The `posc` operator requires a number betweeen 0 and 1 to offset the phase, you can use 0 to start with and experiment later. For reference 0.5 would result in a phase shift of 180°, 1 would be 360° etc. To send a sync pulse you can use `>sync` to synchronise all listings containing a `posc`. For `>sync` you can either:
 >
 	in -1
 	.>sync
@@ -740,11 +738,6 @@ which will send one pulse. The `.` allows `.>sync` to end a listing and send it 
 
 which will send pulses at the frequency given, in this case 1Hz. The saw function is similar to osc except the output spans between -1 and 1 which is necessary to trigger the pulse.  
 Muting a sync listing will have no effect on the synchronisation, as it is send via a separate channel.  
-
-The proposed `nsync` (not implemented) works in the same way except that it requires an operand to determine which listing to send to. Any operands given that do not correspond to the index of a listing will be wrapped, that is to say the number of listings will be subtracted until in range. For a running necklace of index 2 this will sync it once:
->
-	in -1
-	.nsync 2
 
 At present the behaviour of submitting more than one instance of `>sync` to the sound engine is undefined. This may change in future. ◊  
 The synchronisation is somewhat rudementary, a world away from DAW/midi sequencers, yet it has been designed to be raw and flexible in keeping with the Syntə philosophy. It also allows for a modicum of 'musicianship' as it is possible to submit listings in time with one another by hand (without sync) if you are that way inclined. Of course this is live coding which only intersects with music in general :)

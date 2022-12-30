@@ -120,5 +120,5 @@ func main() {
 		exit = true
 		<-stop
 	}
-	fmt.Printf("display listing closed.")
+	fmt.Printf("display listing closed.\n")
 }

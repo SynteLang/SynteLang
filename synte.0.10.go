@@ -1,4 +1,4 @@
-//go:build freebsd && amd64
+//go:build (freebsd || linux) && amd64
 
 /*
 	Syntə is an audio live coding environment
@@ -236,7 +236,7 @@ var ( // misc
 	SampleRate,
 	initialR8 float64
 	TLlen     int
-	fade      float64 = Pow(1e-4, 1/(75e-3*SAMPLE_RATE)) // 75ms
+	fade      float64 = Pow(1e-4, 1/(100e-3*SAMPLE_RATE)) // 100ms
 	protected         = true
 	release   float64 = Pow(8000, -1.0/(0.5*SAMPLE_RATE))  // 500ms
 	DS        float64 = 1                                  // down-sample, integer as float type
@@ -466,10 +466,11 @@ func main() {
 	priorMutes := []float64{}
 	solo := map[int]bool{}
 	unsolo := []float64{}
+	reload := [2]int{-1, -1}
 
 	go func() { // watchdog, anonymous to use variables in scope
 		// assumes no panic while paused
-		// This function will remove one listing and restart the sound engine
+		// This function will remove previously added listing and restart the sound engine
 		for {
 			select {
 			case <-stop:
@@ -480,25 +481,21 @@ func main() {
 				if !started {
 					continue
 				}
-				msg("%ssound engine halted... removing last listing%s", italic, reset)
+				msg("%ssound engine halted... removing previous listing%s", italic, reset)
 				stop = make(chan struct{})
+				if reload[1] < 0 || reload[1] > len(transfer.Listing)-1 {
+					reload[1] = len(transfer.Listing) - 1 // default is delete last added listing
+				}
 				go SoundEngine(w, format)
-				// these should probably all be in one slice of structs
-				transfer.Listing = transfer.Listing[:len(transfer.Listing)-1]
-				transfer.Signals = transfer.Signals[:len(transfer.Signals)-1]
-				mute = mute[:len(mute)-1]
-				priorMutes = priorMutes[:len(priorMutes)-1]
-				unsolo = unsolo[:len(unsolo)-1]
-				display.Mute = display.Mute[:len(display.Mute)-1]
-				level = level[:len(level)-1]
+				transfer.Listing[reload[1]] = listing{{Op: "deleted"}}
+				dispListings[reload[1]] = listing{{Op: "deleted"}}
 				display.List--
-				dispListings = dispListings[:len(dispListings)-1]
+				transmit <- true
+				<-accepted
 				if !save(*code, "displaylisting.json") {
 					msg("%slisting display not updated, check %s'displaylisting.json'%s exists%s",
 						italic, reset, italic, reset)
 				}
-				transmit <- true
-				<-accepted
 				msg("\tSound Engine restarted")
 				time.Sleep(500 * time.Millisecond) // wait to stabilise
 			default:
@@ -556,7 +553,7 @@ start:
 			In bool
 			N  int
 		}
-		reload := -1
+		reload[0] = -1
 
 	input:
 		for { // input loop // this could do with a comprehensive rewrite
@@ -1316,7 +1313,7 @@ start:
 					msg("%s%soperand not an integer%s", red, italic, reset)
 					continue
 				}
-				reload = n
+				reload[0] = n
 				if n < 0 {
 					n = -n
 				}
@@ -1324,7 +1321,7 @@ start:
 				inputF, rr := os.Open(f)
 				if e(rr) {
 					msg("%v", rr)
-					reload = -1
+					reload[0] = -1
 					continue
 				}
 				s = bufio.NewScanner(inputF)
@@ -1340,7 +1337,7 @@ start:
 					msg("listing doesn't exist")
 					continue
 				}
-				reload = n
+				reload[0] = n
 				// .rpl acts like .mute etc?
 				continue
 			default:
@@ -1444,7 +1441,7 @@ start:
 			msg("\t%splay resumed...%s", italic, reset)
 		}
 		//transfer to sound engine // or if reload, replace existing at that index
-		if reload < 0 || reload > len(transfer.Listing)-1 {
+		if reload[0] < 0 || reload[0] > len(transfer.Listing)-1 {
 			dispListings = append(dispListings, dispListing)
 			transfer.Listing = append(transfer.Listing, newListing)
 			transfer.Signals = append(transfer.Signals, sig)
@@ -1455,17 +1452,18 @@ start:
 			level = append(level, 1)
 			display.List++
 		} else {
-			dispListings[reload] = dispListing
-			transfer.Listing[reload] = newListing
-			transfer.Signals[reload] = sig
+			dispListings[reload[0]] = dispListing
+			transfer.Listing[reload[0]] = newListing
+			transfer.Signals[reload[0]] = sig
 		}
+		reload[1] = reload[0] // save index of previous added/reloaded listing
 		transmit <- true
 		<-accepted
 		if !started {
 			started = true
 		}
 		// save listing as <n>.syt for the reload
-		if reload < 0 {
+		if reload[0] < 0 {
 			f := sf(".temp/%d.syt", len(transfer.Listing)-1)
 			content := ""
 			for _, d := range dispListing {
@@ -1568,6 +1566,10 @@ func parseType(expr, op string) (n float64, b bool) {
 			return 0, false
 		}
 	}
+	/*if isInf(n) || n != n {
+		msg("number not useful")
+		return 0, false
+	}*/
 	return n, true
 }
 func nyquist(n float64) bool {

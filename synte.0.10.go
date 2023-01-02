@@ -1381,10 +1381,9 @@ start:
 			started = true
 		}
 		// save listing as <n>.syt for the reload
+		f := sf(".temp/%d.syt", reload[0])
 		if reload[0] < 0 {
-			f := sf(".temp/%d.syt", len(transfer.Listing)-1)
-		} else {
-			f := sf(".temp/%d.syt", reload[0])
+			f = sf(".temp/%d.syt", len(transfer.Listing)-1)
 		}
 		content := ""
 		for _, d := range dispListing {
@@ -1486,7 +1485,7 @@ func parseType(expr, op string) (n float64, b bool) {
 			return 0, false
 		}
 	}
-	if isInf(n) || n != n || n == 0 {
+	if IsInf(n, 0) || n != n {
 		msg("number not useful")
 		return 0, false
 	}

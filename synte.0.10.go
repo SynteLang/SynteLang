@@ -98,7 +98,7 @@ const (
 	MAX_WAVS       = 12
 	RMS_INT        = SAMPLE_RATE / 8
 	EXPORTED_LIMIT = 12
-	NOISE_FREQ     = 0.014
+	NOISE_FREQ     = 0.0035
 )
 
 var convFactor = float64(MaxInt16)
@@ -2108,7 +2108,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 						}
 					}
 					//r *= Min(1, 60/(peakfreq[i]*SampleRate+20)) // ignoring density
-					r *= Min(1, 60/Sqrt(peakfreq[i]*SampleRate+20))
+					r *= Min(1, Sqrt(20/(peakfreq[i]*SampleRate+20)))
 				case 35: // "print"
 					pd++ // unnecessary?
 					if (pd)%32768 == 0 && !exit {

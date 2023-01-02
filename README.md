@@ -74,12 +74,12 @@ The design of Syntə has from inception included sufficient control of sound lev
 >Desire to learn about audio synthesis  
 >Unicode support
 
-Linux with ALSA driver should work without modifications, but latest commits may not be tested.  
+Linux with ALSA driver should work without modifications, but latest commits may not be tested. You may need to install `osspd` on your Linux distribution. 
 It is not known at present what the performance will be on other systems. ◊ The terminal emulator that has been used for development and testing is Alacritty. It works well on cool-retro-term. You may experience flickering in some terminal emulators due to the incomplete UI.  
 
 **Getting Started**
 
-To download the files use Git Clone on this repo or click on the green code link above this doc on the main page of the github repository (which you are probably looking at right now) and download as a zip file.
+To download the files use Git Clone on this repo or click on the green code link above this doc on the main page of the github repository (which you are probably looking at right now) and download as a zip file. As the software is under continuous development it is a good idea to update the code regularly.  
 You should end up with a directory (folder) containing the following files:  
 
 >	

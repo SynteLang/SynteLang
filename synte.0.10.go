@@ -98,6 +98,7 @@ const (
 	MAX_WAVS       = 12
 	RMS_INT        = SAMPLE_RATE / 8
 	EXPORTED_LIMIT = 12
+	NOISE_FREQ     = 0.014
 )
 
 var convFactor = float64(MaxInt16)
@@ -528,7 +529,7 @@ start:
 			"semitone": Pow(2, 1.0/12),
 			"Tau":      2 * Pi, // 2π
 			"ln7":      Log(7),
-			"^freq":    0.014, // default frequency for setmix, suitable for noise
+			"^freq":    NOISE_FREQ, // default frequency for setmix, suitable for noise
 		}
 		for i, w := range wavSlice {
 			sg[w.Name] = float64(i)
@@ -821,7 +822,7 @@ start:
 				case num.Is:
 					msg("%s%soutput to number not permitted%s", red, italic, reset)
 					continue
-				case in && opd[:1] != "^" && opd != "dac" && !ExpSig:
+				case in && opd[:1] != "^" && opd != "dac" && !ExpSig && op != "out+":
 					msg("%s%sduplicate output to signal, c'est interdit%s", red, italic, reset)
 					continue
 				case opd == "@":
@@ -1258,6 +1259,11 @@ start:
 					break
 				}
 				continue
+			case "all":
+				if len(transfer.Listing) == 0 {
+					msg("all is meaningless in first listing")
+					continue
+				}
 			default:
 				// nop
 			}
@@ -2093,6 +2099,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				case 34: // "setmix"
 					{ // lexical scope
 						a := Abs(sigs[i][o.N]) + 1e-6
+						sigs[i][o.N] = NOISE_FREQ
 						d := a/peakfreq[i] - 1
 						d = Max(-1, Min(1, d))
 						peakfreq[i] += a * (d * smR8)
@@ -2100,7 +2107,8 @@ func SoundEngine(w *bufio.Writer, bits int) {
 							peakfreq[i] = a
 						}
 					}
-					r *= Min(1, 60/(peakfreq[i]*SampleRate+20)) // ignoring density
+					//r *= Min(1, 60/(peakfreq[i]*SampleRate+20)) // ignoring density
+					r *= Min(1, 60/Sqrt(peakfreq[i]*SampleRate+20))
 				case 35: // "print"
 					pd++ // unnecessary?
 					if (pd)%32768 == 0 && !exit {
@@ -2125,10 +2133,18 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					//if index< 0 { index*= -1 }
 				case 39: // reel // deprecated
 				case 40: // all
+					c := 0.0
 					for ii := 0; ii < i; ii++ { // only read from prior listings
+						if sigs[ii][0] == 0 { // avoid silent listings, hacky
+							continue
+						}
 						r += sigs[ii][0]
+						c++
 					}
-					r /= float64(i) - 1
+					if c < 1 {
+						c = 1
+					}
+					r /= c
 				case 41: // rms
 					r *= r
 					rms += r

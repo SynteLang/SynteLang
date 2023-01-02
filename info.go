@@ -72,8 +72,6 @@ func main() {
 				//fmt.Scanln()
 				//time.Sleep(2 * time.Second)
 			}
-			fmt.Printf("\033[H\033[2J")
-			fmt.Printf("%sSyntə info%s %spress enter to quit%s", cyan, reset, italic, reset)
 
 			if display.Paused {
 				paused = green + "paused" + reset
@@ -147,6 +145,8 @@ func main() {
 				VU += fmt.Sprintf("|")
 			}
 
+			fmt.Printf("\033[H\033[2J")
+			fmt.Printf("%sSyntə info%s %spress enter to quit%s", cyan, reset, italic, reset)
 			fmt.Printf(`		%s	%3s
 ╭───────────────────────────────────────────────────╮
 	%s		%sLoad:%s %v

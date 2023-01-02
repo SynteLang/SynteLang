@@ -530,7 +530,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	erase	|		yes		|		operand is number of operations to erase above the current in listing. For all use `: erase`. 
 |	degrade	|		yes		|		add to a signal and draw result from a signal at random. Operand is a proportion amount. Will lead to unpredictable behaviour and eventual silence from that listing.
 |	wav		|		yes   	|		will play the corresponding sample of a loaded WAV file given by the operand. Expects an input in range [0, 1], values outside this range will wrap around this interval. See section below for more information
-|	8bit	|		yes   	|		quantises input to 8 bits of resolution (255 possible values). The Operand scales the input/output. 0 < input < 1 will have bigger quantisation steps and vice versa for input > 1.
+|	8bit	|		yes   	|		quantises input to 8 bits of resolution (-128 to +127). The Operand is the size of quantisation steps. So to quantise a ±1 signal, use 127 as the operand. Alternatively, quantise to integers with an operand of 1.
 |	level	|		yes   	|		changes the output level of the listing at the index given by operand. The preceeding input sets the level. Level will persist after deletion. Capable of modulation up to 1200Hz, but because of this sudden large changes in level may produce clicks. Operation not affected by mute
 |	x		|		yes   	|		alias of `mul`
 |	*		|		yes   	|		alias of `x`

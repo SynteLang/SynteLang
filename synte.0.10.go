@@ -177,7 +177,7 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"del":     ops{true, 0},
 	"erase":   ops{true, 0},
 	"mute":    ops{true, 0},
-	"m":       ops{true, 0},
+	"m":       ops{true, 0}, // alias of mute
 	"solo":    ops{true, 0},
 	"release": ops{true, 0},
 	"unmute":  ops{false, 0},
@@ -196,6 +196,7 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"rpl":     ops{true, 0},
 	".rpl":    ops{true, 0},
 	"s":       ops{true, 0}, // alias of solo
+	"e":       ops{true, 0}, // alias of erase
 	//	"self":		ops{true, 0}, // function recursion
 }
 
@@ -243,6 +244,7 @@ var ( // misc
 	DS        float64 = 1                                  // down-sample, integer as float type
 	nyfC      float64 = 1 / (1 + 1/(2*Pi*2e4/SAMPLE_RATE)) // coefficient
 	ct        float64 = 3                                  // individual listing clip threshold
+	ext       bool    = false
 )
 
 type noise uint64
@@ -549,6 +551,7 @@ start:
 		hasTape := false
 		s := bufio.NewScanner(os.Stdin)
 		s.Split(bufio.ScanWords)
+		ext = false
 		reload[0] = -1
 
 	input:
@@ -587,10 +590,12 @@ start:
 			if !s.Scan() {
 				s = bufio.NewScanner(os.Stdin)
 				s.Split(bufio.ScanWords)
+				ext = false
 				continue
 			}
 			pf("%s", reset)
 			op = s.Text()
+			op = strings.TrimSuffix(op, ",") // to allow comma separation of tokens
 			switch op {
 			case "func!", "deleted", "_":
 				if op != "_" {
@@ -601,13 +606,16 @@ start:
 			_, f := funcs[op]
 			var operands = []string{}
 			if op2, in := operators[op]; (in && op2.Opd) || (!in && !f) {
+
 				pf("%s", yellow)
 				if !s.Scan() {
 					s = bufio.NewScanner(os.Stdin)
 					s.Split(bufio.ScanWords)
+					ext = false
 					continue
 				}
 				opd = s.Text()
+				opd = strings.TrimSuffix(opd, ",") // to allow comma separation of tokens
 				pf("%s", reset)
 				// bug fix: check for redundant operand(s) and clear scan if necessary
 				if opd == "_" {
@@ -618,6 +626,7 @@ start:
 					msg("%s %soperator or function doesn't exist, create with \"[\" operator%s", op, italic, reset)
 					s = bufio.NewScanner(os.Stdin) // empty scanner and return to std input
 					s.Split(bufio.ScanWords)
+					ext = false
 					continue input
 				}
 				operands = strings.Split(opd, ",")
@@ -772,6 +781,7 @@ start:
 				}
 				s = bufio.NewScanner(inputF)
 				s.Split(bufio.ScanWords)
+				ext = true
 				continue
 			case "save": // change to opd is index and prompt for name.
 				n, rr := strconv.Atoi(opd)
@@ -1021,7 +1031,7 @@ start:
 					continue
 				}
 				msg("%sno register is safe...%s", italic, reset)
-			case "erase":
+			case "erase", "e":
 				n, rr := strconv.Atoi(opd)
 				if e(rr) {
 					msg("%s%soperand not an integer%s", red, italic, reset)
@@ -1048,7 +1058,7 @@ start:
 				}
 				continue
 			case "wav":
-				if !wmap[opd] {
+				if !wmap[opd] && opd != "@" {
 					msg("%s%sname isn't in wav list%s", red, italic, reset)
 					continue
 				}
@@ -1239,6 +1249,7 @@ start:
 				}
 				s = bufio.NewScanner(inputF)
 				s.Split(bufio.ScanWords)
+				ext = true
 				continue
 			case "rpl", ".rpl":
 				n, rr := strconv.Atoi(opd)
@@ -1262,6 +1273,11 @@ start:
 			case "all":
 				if len(transfer.Listing) == 0 {
 					msg("all is meaningless in first listing")
+					continue
+				}
+			case "/":
+				if !num.Is {
+					msg("divide by signal forbidden :)")
 					continue
 				}
 			default:
@@ -1308,7 +1324,9 @@ start:
 			case ".out", ".>sync", ".level", "//":
 				break input
 			}
-			msg(" ")
+			if !ext {
+				msg(" ")
+			}
 
 		}
 		// end of input
@@ -1417,7 +1435,7 @@ start:
 // parseType() evaluates conversion of types
 func parseType(expr, op string) (n float64, b bool) {
 	switch op { // ignore for following operators
-	case "mute", ".mute", "del", ".del", "solo", ".solo", "level", ".level", "from", "load", "save", "m", "count":
+	case "mute", ".mute", "del", ".del", "solo", ".solo", "level", ".level", "from", "load", "save", "m", "count", "reload", "r", "rpl":
 		//, "[", "]", "{", "}":
 		return 0, true
 	default:
@@ -1491,7 +1509,7 @@ func parseType(expr, op string) (n float64, b bool) {
 			return 0, false
 		}
 	}
-	if IsInf(n, 0) || n != n {
+	if IsInf(n, 0) || n != n || n == 0 {
 		msg("number not useful")
 		return 0, false
 	}
@@ -2133,7 +2151,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					//if index< 0 { index*= -1 }
 				case 39: // reel // deprecated
 				case 40: // all
-					c := 0.0
+					c := -3.0                   // to avoid being mixed twice
 					for ii := 0; ii < i; ii++ { // only read from prior listings
 						if sigs[ii][0] == 0 { // avoid silent listings, hacky
 							continue
@@ -2182,10 +2200,10 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			dac += sigs[i][0] * m[i]
 			c += m[i] // add mute to mix factor
 		}
-		if c > 4 {
+		if c > 3 {
 			dac /= c
 		} else {
-			dac /= 4
+			dac /= 3
 		}
 		c = 0
 		hpf = (hpf + dac - x) * 0.9994 // hpf = 4.6Hz @ 48kHz SR
@@ -2320,9 +2338,23 @@ func save(data interface{}, f string) bool {
 }
 
 // for monitoring
-var p func(...interface{}) (int, error) = fmt.Println
+// var p func(...interface{}) (int, error) = fmt.Println
+func p(i ...any) { // mega hacky nullify output on re/load
+	if ext {
+		return
+	}
+	fmt.Println(i...)
+}
+
 var sf func(string, ...interface{}) string = fmt.Sprintf
-var pf func(string, ...interface{}) (int, error) = fmt.Printf
+
+// var pf func(string, ...interface{}) (int, error) = fmt.Printf
+func pf(s string, i ...interface{}) { // mega hacky nullify output on re/load
+	if ext {
+		return
+	}
+	fmt.Printf(s, i...)
+}
 
 // msg sends a formatted string to info display
 func msg(s string, i ...interface{}) {

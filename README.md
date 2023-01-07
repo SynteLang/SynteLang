@@ -146,7 +146,7 @@ In the syntə code example above, the output of the `osc` function is *shaped* b
 `dac` is a special signal name which sends the output to the soundcard of your computer. Typing `out dac` ends a listing and sends it to the sound engine to perform computations.  
 All listings end in `out dac`, so it can only be used once. `dac` stands for digital audio converter, which is the technical name for anything that takes a series of digitally represented numbers and outputs them as audio.    
 
-You will probably want to use the function `mix` which contains `out dac` and so will also end a necklace. `mix` will set the level based on the frequency of the most recent osc function to ensure output limiting doesn't take place.
+You will probably want to use the function `mix` which contains `out dac` and so will also end a necklace. `mix` will set the level based on the frequency of the most recent osc function within the listing to ensure output limiting doesn't take place (which would reduce the bass response). However, for listings that pass through using `from` it is better to use `out dac`.
 
 The `sino` function combines `osc` and `sine` so can be used in their place.
 
@@ -609,6 +609,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	.		|		no		|		alias of `end`
 |	hpf		|		yes		|		6dB per octave high-pass filter. Operand is cutoff frequency in Hertz
 |	alp		|		2		|		first-order all-pass delay line using `tape`. First operand is delay time, second operand is damping coefficient [0,1]
+|	play	|		yes		|		plays wav given by operand once when input goes from 0 to 1
 |           |               |
 **List of pre-defined constants**
 |	ln2		|		natural logarithm of 2    	|  

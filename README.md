@@ -1,3 +1,4 @@
+<TestTag>
 ## ◌ Syntə is an audio live coding environment
 
 The name is pronounced '*sinter*', which means to create something by
@@ -26,7 +27,6 @@ Protect your hearing when listening to *any* audio on a system capable of more t
 Wav playback √  
 Mouse control √  
 Telemetry / code display √  
-Finite recursion with enumeration ◊  
 Anything can be connected to anything else within a listing √  
 Feedback permitted (see above) √  
 Groups of operators can be defined, named and instantiated as functions (extensible) √  
@@ -69,7 +69,7 @@ The design of Syntə has from inception included sufficient control of sound lev
 
 **Requirements:**  
 >Computer with a soundcard (internal or external)  
->OSS sound driver (FreeBSD) ◊  
+>OSS or ALSA sound driver (FreeBSD / Linux) ◊  
 >Go programming language installed ◊  
 >Desire to learn about audio synthesis  
 >Unicode support
@@ -220,12 +220,12 @@ To assist in writing necklaces of operations here are some useful heuristics/sug
 
 <a name="eg"></a>
 ## Examples ◊
-
 To help get your creative juices flowing, try typing in these example necklaces of operations:
 
 **Surf**  
 Add two or three separate listings of this code for a relaxing beach experience.
 >
+<Test>
 	in 4hz
 	noise
 	+ 0.05hz
@@ -233,42 +233,49 @@ Add two or three separate listings of this code for a relaxing beach experience.
 	tri
 	out a
 	noise
-	lpf a
+	mul a
 	mix
+</Test>
 
 **Kick and hihat**
 >
-	in 2hz (or 120bpm)
+<Test>
+	in 2hz
 	posc 0
 	mul 8
 	clip 0
 	flip
-	mul 85hz
+	mul 165hz
 	osc
 	sine
+	mul 3
 	tanh
 	lpf 200hz
 	mix
+</Test>
 
 The kick will play on every beat. For once per bar of four beats use `in 120bpm, / 4` before `posc`
 >
-	in 4hz
+<Test>
+	in 2hz
 	posc 0.5
+	mul 4
+	clip 0
 	flip
-	+ -1.5
-	clip
-	+ 1
 	noise
 	mix
-
+</Test>
 >
+<Test>
 	in -1
 	.>sync
+</Test>
 
 Here the clip operator is used to shape the VCA envelope of the hi-hat and the listings are synchronised together with a phase offset.
 
 **Sample and hold melody**
 >
+<Test>
 	in 3.5hz
 	ramp
 	out a
@@ -281,16 +288,18 @@ Here the clip operator is used to shape the VCA envelope of the hi-hat and the l
 	mul ln3
 	mod ln2
 	base E
-	mul 440
+	mul 440hz
 	osc
 	sine
 	mix
+</Test>
 
 Here the pitch is calculated exponentially, mixing powers of 3 ≡ MOD 2 to produce a scale. You are not expected to understand this straightaway!
 The bpm could be interpreted as quarter notes at 120bpm, because 8 / 4 = 2 and 2 x 60 = 120.
 
 **Pulse sequencing**
 >
+<Test>
 	in 120bpm
 	mul 1/4
 	out tempo
@@ -306,47 +315,18 @@ The bpm could be interpreted as quarter notes at 120bpm, because 8 / 4 = 2 and 2
 	mul 330hz
 	sino
 	mix
+</Test>
 
-This sequence will play a descending series of quarter notes spaced by an octave. Alternatively you can split the functinality into multiple concurrent listings:
->
-	in 135bpm
-	posc 0
-	lt 0.5
-	base 2
-	mul 330hz
-	osc
-	sine
-	mix
->
-	in 135bpm
-	mul 1/2
-	posc 0.25
-	lt 0.3
-	slew 150hz
-	mul 1/2
-	base 2
-	mul 440hz
-	osc
-	sine
-	mix
->
-	in 135bpm
-	mul 2
-	posc 0
-	lt 0.5
-	base 2
-	mul 220hz
-	osc
-	sine
-	mix
+This sequence will play a descending series of quarter notes spaced by an octave.
 
 **Wobble bass**
 >
+<Test>
 	in 135bpm
 	osc
 	tri
 	out a
-	in 55
+	in 55hz
 	osc
 	sine
 	mul 5
@@ -354,9 +334,11 @@ This sequence will play a descending series of quarter notes spaced by an octave
 	mul a
 	lpf a
 	mix
+</Test>
 
 **Siren** (note similarity to wobble)
 >
+<Test>
 	in 0.2hz
 	osc
 	tri
@@ -367,45 +349,55 @@ This sequence will play a descending series of quarter notes spaced by an octave
 	mul 2
 	tanh
 	mix
+</Test>
 
 **Algo-rhythm**
 >
+<Test>
 	in 120bpm
 	mul 8
 	osc
 	gt 0.5
 	out a
-	in 5
+	in 5hz
 	osc
 	gt 0.9
 	mul a
 	noise
 	mix
+</Test>
 
 Note that the operator `gt` (greater than or equal) shapes the `osc` into a pulse wave where threshold is the operand and so sets the pulse width.
 
 **Basic Sample manipulations**
 >
+<Test>
 	in wavR
 	osc
 	wav [name of wav file]
 	out dac
+</Test>
 >
+<Test>
 	in mousex
-	lpf 1hz
+	lpf 0.1hz
 	wav [name of wav file]
 	out dac
+</Test>
 >
+<Test>
 	in wavR
 	osc
 	mod 0.1
 	wav [name of wav file]
 	out dac
+</Test>
 
 The `mousex` register supplies the relative X co-ordinate motion transmittted by the mouse. The second example simulates vinyl and the third controls the sample length. `out dac` is used here instead of `mix` assuming the sample is already pre-mixed.
 
 **Simple time-stretch algorithm**
 >
+<Test>
 	in 50hz
 	osc
 	mul 0.25/50
@@ -417,12 +409,14 @@ The `mousex` register supplies the relative X co-ordinate motion transmittted by
 	+ a
 	wav [name of wav file]
 	out dac
+</Test>
 
 The values 0.9 and 0.1 should sum to 1 to maintain original pitch. 0.25 is the frequency given by wavR for a sample length of 4 seconds
 
 **Basic reverb**  ◊
 >
-	in 0.3
+<Test>
+	in 0.5hz
 	osc
 	lt 1/20
 	out a
@@ -440,16 +434,18 @@ The values 0.9 and 0.1 should sum to 1 to maintain original pitch. 0.25 is the f
 	out c
 	pop
 	mix
+</Test>
 
 The reverb begins at the `+ c` line. the output is pushed onto the stack before being fed into `tape`. The feedback is from multiple taps which are attenuated by `mul 0.3` before being fed back via the register c. The listing preceding the reverb generates a 440Hz sine wave gated by a pulse every 3⅓ seconds.
 
 **FM Bell**
 >
-	in 0.5
+<Test>
+	in 0.5hz
 	osc
 	flip
 	base E
-	+ -1
+	sub 1
 	out a
 	in 280hz
 	osc
@@ -460,12 +456,14 @@ The reverb begins at the `+ c` line. the output is pushed onto the stack before 
 	sine
 	mul a
 	mix
+</Test>
 
 Here, we use the `base` operator to shape the inverted ramp wave from osc into an exponential decay to control the amplitude of the bell. Feeding the output of the second `osc` into a third one results in FM synthesis, that is the output of one oscillator controls or modulates the frequency of the next.
 
-**UK dialing tone**
+**Dialing tone**
 >
-	in 1/6
+<Test>
+	in 1/6hz
 	osc
 	lt 1/3
 	out a
@@ -477,17 +475,21 @@ Here, we use the `base` operator to shape the inverted ramp wave from osc into a
 	+ c
 	mul a
 	mix
+</Test>
 
 Although not perticularly musical, this simple necklace illustrates mixing two signals and gating them (turning on and off) with a third signal which is a pulse wave. The `pulse` function can be used instead to gate a signal by a variable width. `slew 150` could be added before `out a` to smoothen the pulse for a less clicky sound.
 
 **Euclidean Rhythm**
 >
+<Test>
 	in 120bpm  
 	mul 1/4  
 	euclid 3,8,0  
-	decay 0.999 ◊  
+	decay 0.999
 	noise  
 	mix  
+</Test>
+</TestTag>
 
 Functions can have up to three operands separated by commas with no spaces. Refer to the function reference below for how many each one takes. The third argument of `euclid` is the phase offset of the internal oscilators.  
 Euclidean rhythms can also be generated by using `grid`.  
@@ -586,7 +588,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	decay	|		yes		|		will decay away to nothing from 1. 0.9997 is approx 20s, lower is quicker decay. Resets when input goes from 0 to 1
 |	half	|		yes		|		like `decay` but accepts an operand in seconds that defines the 'half-life' of the decay. Input will override decay.
 |	once	|		no		|		like `osc` but only completes one cycle. Operand will set upper limit and will reset when 0. Use 1 for one-off ramp
-|	pulse	|		yes		|		pulse generator with duty cycle (pulse width) set by operand. Output is between 0 and 1, follow by `cv2a` for audio out. `pulse 0` will give a one sample pulse
+|	pulse	|		yes		|		pulse generator with duty cycle (pulse width) set by operand. Output is between 0 and 1, follow by `cv2a` for audio out. `pulse 0` will give a one sample pulse, any operand greater then or equal to 1 will be silent, i.e. output continuous zero
 |	ramp	|		no		|		like `osc` but with an output suitable for audio, i.e. spans -1 to 1
 |	posc	|		yes		|		like `osc` but will retrigger on a sync pulse. Operand sets phase offset. Can also use `out z` to control the phase independently of sync.
 |	slew	|		yes		|		slew generator. Swings to the input at a rate given by operand. Intended for pulses/square waves. Try 150hz to reduce clicks on vca signals ( i.e. when multiplying audio values). If slewing to a number greater than zero and less than previous input the jump will be immediate. If the signal crosses zero from positive to negative it will slew as expected. May be updated for a cleaner implementation in future. 
@@ -635,12 +637,6 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	butt3	|		value of right mouse button, 0 or 1	|
 |	grid	|		signal is daisy chained between listings, can be set with `out`	|
 
-`_` is a special operand. If you have typed in something by accident for the operator simply type like so:
-
-	jlimistakehkj _
-
-and the line will be ignored, without giving an error message.
-
 ___
 
 <a name="det"></a>
@@ -654,7 +650,7 @@ The language is intended to expand and suppliment the existing live-coding space
 Listings are asynchronous and will start immediately on submission to the sound engine. A `>sync` operation can be used to synchronise listings using `posc`, with any offset. 
 
 ## Sample Playback ◊  
-Any wav files placed in a folder named `wavs` will be loaded on startup. They need to be either 16 or 24bit resolution and either stereo or mono PCM format files. You will need to adjust the frequency of playback for wavs with non-standard sample rates. The nominal playback frequency is given by the pre-defined constant `wavR` which you can use for normal playback like so:  
+Any wav files placed in a folder named `wavs` will be loaded on startup. They need to be either 16, 24 or 32bit resolution and either stereo or mono PCM format files. You will need to adjust the frequency of playback for wavs with non-standard sample rates. The nominal playback frequency is given by the pre-defined constant `wavR` which you can use for normal playback like so:  
 >
 	in wavR  
 	osc  
@@ -670,7 +666,7 @@ Different frequencies fed to `osc` will change the speed of playback and adding 
 	wav [name]  
 	out dac  
 
-will playback starting halfway through the sample. You don't need to worry if the input value exceeds 1 as it will automatically wrap around so eg. 2.37 will become 0.37 and remain in range. As the default wav length is 4 seconds, 1 second of the wav corresponds to input of 0.25, 2s to 0.5 etc. This currently still applies to wavs shorter than 4 seconds, silence will played until the 4 seconds is up. ◊  
+will playback starting halfway through the sample. You don't need to worry if the input value exceeds 1 as it will automatically wrap around so eg. 2.37 will become 0.37 and remain in range. As the default wav length is 4 seconds, 1 second of the wav corresponds to input of 0.25, 2s to 0.5 etc.   Different rules apply for samples shorter than 4s. ◊  
 By increasing the frequency and decreasing the amplitude of osc, a shorter section of the wav will be played.  
 
 wavR is a pre-defined constant which gives the playback speed for a sample recorded at the same rate as the internal sample rate, which is typically 48kHz. To adjust to playback speed for samples recorded at a different rate simply `mul 44100/48000` for example, where the desired rate is 44.1kHz. This could be put more simply as `mul 441/480`, which is equivalent. To show this in a working necklace for clarity:
@@ -684,10 +680,10 @@ wavR is a pre-defined constant which gives the playback speed for a sample recor
 
 By design only the first 4 seconds of any wav file will be loaded. Two reasons for this are fast-loading times and to encourage creativity. You can manually edit any wav file in a free program such as Audacity to ensure the part you want to play is within the first 4 seconds, ideally starting at the beginning of the sample. Samples less then 4 seconds long are fine.
 
-Later on, the intention is to provide more flexibility in synchronising other necklaces to wav files using `len<wavname>` signals. There is still plenty to be done in testing and possibly reworking parts of sample playback. ◊  
+Later on, the intention is to provide more flexibility in synchronising other necklaces to wav files using `len<wavname>` signals. This has been partially implemented and would provide the possibility to sync to exact loop length samples. ◊  
 
 ## Tape loop ◊  
-Each listing has a tape loop available which is accessed by the `tape` operator. The tape loop is a rolling buffer of 1 second in length. The loop can be accessed by the tap operator, where the fractional part of the operand sets the delay time. For example an operand of value 2.3 will give a tap at 300 milliseconds (0.3s). Multiple `tap` operators can be used. The use of multiple `tape` operators is undefined.
+Each listing has a tape loop available which is accessed by the `tape` operator. The tape loop is a rolling buffer of 1 second in length. The operand given sets the delay time of the intial tap. The loop can be additionally accessed by the tap operator, which will sum the new tap to its input. Multiple `tap` operators can be used. The use of multiple `tape` operators is undefined. Bear in mind that for modulating tap times (eg. for chorusing/detuning) only a small amount is required, and as time is inversely proportional to frequency this leads to large modulation times. For example `in 3hz, osc, sine, mul 30s, + 100ms, out t, ... tape t ...`
 
 ## Arithmetic operations
 An operand may be added in a listing of the form a/b or a\*b where a and b are valid numbers and the result is divison and multiplication respectively. For example: typing  
@@ -717,16 +713,18 @@ Internally all these numbers are converted to a unitless number within Syntə wh
 And for seconds is:  
 	1 / ( input \* sample rate )  
 
+In future this type system may be developed further to require a specific type for input to each operator, which will be converted on-the-fly.
+
 ## Signals
 Signals are the way of passing values around outside of the main flow through the necklace. Signals which are named and not just numbers can be referred to as registers, because they *register* a value. Usually the initial value of a named signal is 0. If you want it to begin as 1, add ' to the name. So `a` becomes `'a`. Likewise you can use the double quotation mark " to have a default value of one half. If you want to be able to overwrite the value of a signal with `out` (more than once in a necklace), which is not normally possible, you can add ^ to the name. So `a` becomes `^a`. You can use both of these special symbols with a single signal, but the circumflex ^ must come first or it will be ignored.
 
 ## CV and audio signal ranges
-Varying numbers intended for output to the soundcard usually span the range [-1,+1]. CVs, or control voltages, which are used to control other parts of the signal chain and not produce sound directly typically span the range [0,1]. For instance the output of `ramp`, `saw` and `sine` which are intended to produce frequencies at audible rates (20 - 20,000Hz) all go between ±1, whereas `osc` which can be used to control a vca or the pitch of another oscillator spans between zero and 1. To make `osc` suitable for direct audio output you can use the cv2a function, which is exactly what `ramp` does. CV signals are generally slower and more rounded than audio signals. The `flip` function can be used to turn a CV upside-down, use `mul -1` to do the same for an audio signal (essentially what `saw` does). However, `flip` is much more commonly used.
+Varying numbers intended for output to the soundcard usually span the range [-1,+1]. CVs, or control voltages, which are used to control other parts of the signal chain and not produce sound directly typically span the range [0,1]. For instance the output of `ramp`, `saw` and `sine` which are intended to produce frequencies at audible rates (20 - 20,000Hz) all go between ±1, whereas `osc` which can be used to control a vca or the pitch of another oscillator spans between zero and 1. To make `osc` suitable for direct audio output you can use the cv2a function, which is exactly what `ramp` does. CV signals are generally slower and more rounded than audio signals. The `flip` function can be used to turn a CV upside-down, use `mul -1` to do the same for an audio signal (essentially what `saw` does).  
 
 ## Channels ◊  
-At present the output is in mono. Stereo output should be possible and is intended to be implemented in future. This will probably be via `out L` or `out R`, while `out dac` sends to both left and right channels. Please feel free to badger the author if you are keen for this to happen. 
+At present the output is in mono. Stereo output should be possible and is intended to be implemented in future. This may be via `out L` or `out R`, while `out dac` sends to both left and right channels. Please feel free to badger the author if you are keen for this to happen. 
 
-## Synchronisation ◊  
+## Synchronisation    
 By default (and by design) when a listing is sent to the sound engine it starts immediately. The synchronisation operators `>sync` and `\<sync` can be used to co-ordinate listings to play in time with one another. First, for a rhythmic element use the phase synchronised oscillator `posc` instead of osc. This contains a `\<sync` operation which will reset the waveform when it receives a sync pulse. The `posc` operator requires a number betweeen 0 and 1 to offset the phase, you can use 0 to start with and experiment later. For reference 0.5 would result in a phase shift of 180°, 1 would be 360° etc. To send a sync pulse you can use `>sync` to synchronise all listings containing a `posc`. For `>sync` you can either:
 >
 	in -1
@@ -741,7 +739,7 @@ which will send one pulse. The `.` allows `.>sync` to end a listing and send it 
 which will send pulses at the frequency given, in this case 1Hz. The saw function is similar to osc except the output spans between -1 and 1 which is necessary to trigger the pulse.  
 Muting a sync listing will have no effect on the synchronisation, as it is send via a separate channel.  
 
-At present the behaviour of submitting more than one instance of `>sync` to the sound engine is undefined. This may change in future. ◊  
+At present the behaviour of submitting more than one instance of `>sync` to the sound engine is undefined. ◊  
 The synchronisation is somewhat rudementary, a world away from DAW/midi sequencers, yet it has been designed to be raw and flexible in keeping with the Syntə philosophy. It also allows for a modicum of 'musicianship' as it is possible to submit listings in time with one another by hand (without sync) if you are that way inclined. Of course this is live coding which only intersects with music in general :)
 
 ## Setting levels
@@ -817,16 +815,16 @@ Up to 12 signals may be exported for input to other listings. Indicate this by c
 ---
 
 ## The Sound Engine
-Although it is not necessary to know how the sound engine works to perform or play with Syntə, it can be helpful to learn more about it so we'll give a brief outline here.
+Although it is not necessary to know how the sound engine works to perform or play with Syntə, it can be helpful to learn more about it so we'll give a brief outline here.  
 When a listing is send to the sound engine an internal copy is generated and added to the sequence of listings. The sound engine takes each listing in turn from 0 onwards and runs through it once to produce the value of the next sample, then it moves on to the next listing. Once it has computed all the listings the resulting samples are summed together and sent through the built-in limiter to ensure no loud surprises and the peak amplitude of the output is also sent to the info display. The resulting signal is converted to the correct format and sent to the soundcard in your computer, after which the whole process repeats.  
-The terms 'listing' and 'necklace' are interchangeable. Necklace also illustrates the point that the listing is computed in a continuous loop. Although usually the result is computed from fresh each time, unless you use the `from` operator.  
-All values in the sound engine are represented by 64-bit floating point numbers which have a nominal range within Syntə of between -1 and 1 inclusive. At the end of each cycle of the sound engine this is converted to a 32 bit number to be sent to the soundcard. Within a listing a value can be anywhere in the range of the 64-bit float (approx ±1.8x10^308 with an precision of about 15 decimal places.) These numbers will be limited or clipped to ±1 before audio conversion.  
-The samples from each listing are added together and when there are more than four listings the sum is divided by the number of listings for unity gain. For 1, 2, 3, or 4 listings the sun is always divided by four. The result is then passed through a high-pass filter before the limiter. This is to remove any DC offsets, which means a consistent average signal other than 0, or another way to think of it is attentuating (reducing) frequencies below 4.6Hz. If my calculations are correct, any DC signal will fade below -120dB after half a second.  
-The limiter reduces the level of audio above a peak value of 1 to avoid the possibility of clipping which would produce distortion. The detection algorithm of the limiter is more sensitive to higher frequencies, it expects audio to have a spectrum approximately equivalent to 'pink noise'.
-The density distribution of pink noise is a good general approximation to expected frequency levels in audio (*Barrow, 1995*). The `mix` function also uses this as a guiding principle in setting a sensible level. Some adjustment may be required; however, the limiter will always kick in if internal levels are exceeded.
-Because of the frequency dependent nature of the limiter detection, gain reduction may occur before the info display shows a high VU level. This is normal and you can adjust listings via the `level` operator to prevent higher frequencies from dominating the playback.
+The terms 'listing' and 'necklace' are interchangeable. Necklace also illustrates the point that the listing is computed in a continuous loop.  
+All values in the sound engine are represented by 64-bit floating point numbers which represent a nominal value within Syntə of between -1 and 1 inclusive. At the end of each cycle of the sound engine this is converted to a 32, 24 or 16 bit number to be sent to the soundcard, depending on the format it accepts. Within a listing a value can be anywhere in the range of the 64-bit float (approx ±1.8x10^308 with an precision of about 15 decimal places.) These numbers will be limited or clipped to ±1 before audio conversion.  
+The samples from each listing will clip by design if they exceed ~±2, they are then added together and when there are more than four listings the sum is divided by the number of listings for unity gain. For 1, 2, 3, or 4 listings the sun is always divided by four. The result is then passed through a high-pass filter before the limiter. This is to remove any DC offsets, which means a consistent average signal other than 0, or another way to think of it is attentuating (reducing) frequencies below 4.6Hz. If my calculations are correct, any DC signal will fade below -120dB after half a second. DC signals can still be passed between listings using `from` or Exported signals.  
+The limiter reduces the level of audio above a peak value of 1 to avoid the possibility of clipping the main output, which would produce distortion. The detection algorithm of the limiter is progressively more sensitive to higher frequencies, it expects audio to have a spectrum approximately equivalent to 'pink noise'.  
+The density distribution of pink noise is a good general approximation to expected frequency levels in audio (*Barrow, 1995*). The `mix` function also uses this as a guiding principle in setting a sensible level. Some adjustment may be required; however, the limiter will always kick in if internal levels are exceeded.  
+Because of the frequency dependent nature of the limiter detection, gain reduction may occur before the info display shows a high VU level. This is normal and you can adjust listings via the `level` operator to prevent higher frequencies from dominating the playback.  
 Between the limiter and the clipping stage before conversion, what is known as dither is applied to the signal. This is a tiny amount of noise to avoid rounding errors, but is probably overkill. Before the dither any envelopes associated with pausing or exiting are applied. These reduce the chances of pops or clicks.  
-The whole main loop of the sound engine has a timer to produce the 'load' value that shows how much work it is doing to create each sample for the soundcard. See info display section above. If enough listings are added and the sound engine is unable to perform all calculations in time before the next sample is due, glitches or dropouts in the output can occur. In order to avoid this if a high load is detected the last listing added will be removed automatically and the sound engine restarted.  
+The whole main loop of the sound engine has a timer to produce the 'load' value that shows how much work it is doing to create each sample for the soundcard. See info display section above. If enough listings are added and the sound engine is unable to perform all calculations in time before the next sample is due, glitches or dropouts in the output can occur. In order to avoid this if a high load is detected the last listing added will be removed automatically and the sound engine restarted. Something that may be implemented in future is automatic reduction of the overall sample rate under heavy load. This has been tested, however has not been found necessary so far. ◊  
 
 ---
 
@@ -882,7 +880,7 @@ mouse control
 tempo and pitch (not fully implemented yet)  
 euclidian rhythms  
 fractal synthesis (not implemented yet)  
-finite recursion (not implemented yet)  
+finite recursion (not implemented yet, probably not useful in practice)  
 mute and solo
 
 ---

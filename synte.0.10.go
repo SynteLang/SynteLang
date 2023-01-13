@@ -98,7 +98,7 @@ const (
 	MAX_WAVS       = 12
 	RMS_INT        = SAMPLE_RATE / 8
 	EXPORTED_LIMIT = 12
-	NOISE_FREQ     = 0.0035
+	NOISE_FREQ     = 0.0132 // geometric mean of audible spectrum
 )
 
 var convFactor = float64(MaxInt16)
@@ -186,11 +186,11 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	".solo":   ops{true, 0},
 	"//":      ops{true, 0}, // comments
 	"load":    ops{true, 0},
+	"ld":      ops{true, 0}, // alias of load
 	"[":       ops{true, 0},
 	"save":    ops{true, 0},
 	"ls":      ops{true, 0},
 	"ct":      ops{true, 0}, // individual clip threshold
-	"_":       ops{false, 0},
 	"rld":     ops{true, 0},
 	"r":       ops{true, 0}, // alias of rld
 	"rpl":     ops{true, 0},
@@ -243,8 +243,8 @@ var ( // misc
 	release   float64 = Pow(8000, -1.0/(0.5*SAMPLE_RATE))  // 500ms
 	DS        float64 = 1                                  // down-sample, integer as float type
 	nyfC      float64 = 1 / (1 + 1/(2*Pi*2e4/SAMPLE_RATE)) // coefficient
-	ct        float64 = 3                                  // individual listing clip threshold
-	ext       bool    = false
+	ct        float64 = 1                                  // individual listing clip threshold
+	ext       bool    = false                              // loading external listing state
 )
 
 type noise uint64
@@ -433,7 +433,6 @@ func main() {
 		"", // nil signal for unused operand
 		"pitch",
 		"tempo",
-		"*****", // into from index // deprecated
 		"mousex",
 		"mousey",
 		"butt1",
@@ -443,7 +442,7 @@ func main() {
 	}
 	// add 12 reserved signals for inter-list signals
 	lenReserved := len(reserved) // use this as starting point for exported signals
-	Sigs = []int{2, 3, 10}       // pitch,tempo,grid
+	Sigs = []int{2, 3, 9}        // pitch,tempo,grid
 	for i := 0; i < EXPORTED_LIMIT; i++ {
 		reserved = append(reserved, sf("***%d", i+lenReserved)) // placeholder
 	}
@@ -459,9 +458,7 @@ func main() {
 				hasOpd = true
 			}
 		}
-		o := operators[k]
-		o.Opd = hasOpd
-		operators[k] = o
+		operators[k] = ops{Opd: hasOpd}
 	}
 	var funcsave bool
 	dispListings := []listing{}
@@ -511,6 +508,9 @@ func main() {
 		}
 	}()
 
+	s := bufio.NewScanner(os.Stdin)
+	s.Split(bufio.ScanWords)
+	ext = false
 start:
 	for { // main loop
 		newListing := listing{}
@@ -532,6 +532,7 @@ start:
 			"Tau":      2 * Pi, // 2π
 			"ln7":      Log(7),
 			"^freq":    NOISE_FREQ, // default frequency for setmix, suitable for noise
+			"null":     0,
 		}
 		for i, w := range wavSlice {
 			sg[w.Name] = float64(i)
@@ -549,13 +550,10 @@ start:
 		st := 0      // func def start
 		fun := 0     // don't worry the fun will increase!
 		hasTape := false
-		s := bufio.NewScanner(os.Stdin)
-		s.Split(bufio.ScanWords)
-		ext = false
 		reload[0] = -1
 
 	input:
-		for { // input loop // this could do with a comprehensive rewrite
+		for { // input loop
 			var num struct {
 				Ber float64
 				Is  bool
@@ -596,17 +594,17 @@ start:
 			pf("%s", reset)
 			op = s.Text()
 			op = strings.TrimSuffix(op, ",") // to allow comma separation of tokens
-			switch op {
-			case "func!", "deleted", "_":
-				if op != "_" {
-					msg("%s%soperator not permitted%s", red, italic, reset)
-				}
+			op2, in := operators[op]
+			if !in {
+				msg("%soperator or function doesn't exist:%s %s", italic, reset, op)
+				s = bufio.NewScanner(os.Stdin) // empty scanner and return to std input
+				s.Split(bufio.ScanWords)
+				ext = false
 				continue
 			}
 			_, f := funcs[op]
 			var operands = []string{}
-			if op2, in := operators[op]; (in && op2.Opd) || (!in && !f) {
-
+			if op2.Opd { // parse second token
 				pf("%s", yellow)
 				if !s.Scan() {
 					s = bufio.NewScanner(os.Stdin)
@@ -617,44 +615,126 @@ start:
 				opd = s.Text()
 				opd = strings.TrimSuffix(opd, ",") // to allow comma separation of tokens
 				pf("%s", reset)
-				// bug fix: check for redundant operand(s) and clear scan if necessary
 				if opd == "_" {
 					continue
-				}
-				if !in && !f {
-					//if not defining a new function, must be extant operator or function
-					msg("%s %soperator or function doesn't exist, create with \"[\" operator%s", op, italic, reset)
-					s = bufio.NewScanner(os.Stdin) // empty scanner and return to std input
-					s.Split(bufio.ScanWords)
-					ext = false
-					continue input
 				}
 				operands = strings.Split(opd, ",")
 				if !f && len(operands) > 1 {
 					msg("%s%sonly functions can have multiple operands%s", red, italic, reset)
 					continue
 				}
-				if len(operands) == 1 {
-					opd = operands[0]
-					wav := wmap[opd]                                           // wavs can start with a number
-					if strings.ContainsAny(opd[:1], "+-.0123456789") && !wav { // process number or fraction
-						num.Ber, num.Is = parseType(opd, op)
-						if !num.Is {
-							// parseType will report error
-							continue input
-						}
-						operands[0] = fmt.Sprint(num.Ber)
+				wav := wmap[opd] && op == "wav" // wavs can start with a number
+				if strings.ContainsAny(opd[:1], "+-.0123456789") && !wav && !f {
+					if num.Ber, num.Is = parseType(opd, op); !num.Is {
+						continue input // parseType will report error
 					}
 				}
 			}
-			if op == "pulse" && (opd == "0" || opd == "1") { // handle special case
-				msg("%sextremely narrow pulse%s", italic, reset)
-			}
-			name := ""
+
 			if f { // parse function
-				name = op
-				op = "func!"
+				function := make(listing, len(funcs[op]))
+				copy(function, funcs[op])
+				s := sf(".%d", fun)
+				type mm struct{ at, at1, at2 bool }
+				M := mm{}
+				for i, o := range function {
+					if len(o.Opd) == 0 {
+						continue
+					}
+					switch o.Opd {
+					case "dac", "tempo", "pitch", "grid": // should be all reserved?
+						continue
+					case "@":
+						M.at = true
+					case "@1":
+						M.at1 = true
+					case "@2":
+						M.at2 = true
+					}
+					if _, r := sg[o.Opd]; r {
+						continue
+					}
+					switch o.Opd[:1] {
+					case "^", "@":
+						continue
+					}
+					if _, rr = strconv.ParseFloat(o.Opd, 64); !e(rr) {
+						continue
+					}
+					function[i].Opd += s // rename signal
+					if o.Op == "out" {
+						out[function[i].Opd] = struct{}{}
+					}
+
+				}
+				m := 0
+				switch M {
+				case mm{false, false, false}:
+					// nop
+				case mm{true, false, false}:
+					m = 1
+				case mm{true, true, false}:
+					m = 2
+				case mm{true, true, true}:
+					m = 3
+				default:
+					msg("malformed function") // probably not needed
+					continue input
+				}
+				l := len(operands)
+				if m < l {
+					switch {
+					case l-m == 1:
+						msg("%slast operand ignored%s", italic, reset)
+					case l-m > 1:
+						msg("%slast %d operands ignored%s", italic, l-m, reset)
+					}
+				}
+				if m > l {
+					switch {
+					case m == 1:
+						msg("%s%sthe function requires an operand%s", red, italic, reset)
+						continue
+					case m > 1:
+						msg("%s%sthe function requires %d operands%s", red, italic, m, reset)
+						continue
+					}
+				}
+				for i, opd := range operands { // opd shadowed
+					if operands[i] == "" {
+						msg("empty argument %d", i+1)
+						continue input
+					}
+					wav := wmap[opd] // wavs can start with a number
+					if strings.ContainsAny(opd[:1], "+-.0123456789") && !wav {
+						if _, ok := parseType(opd, ""); !ok {
+							continue input // parseType will report error
+						}
+					}
+				}
+				for i, o := range function { // could this be replaced by loading into scanner instead?
+					if len(o.Opd) == 0 {
+						continue
+					}
+					switch o.Opd {
+					case "@":
+						o.Opd = operands[0]
+					case "@1":
+						o.Opd = operands[1]
+					case "@2":
+						o.Opd = operands[2]
+					}
+					function[i] = o
+				}
+				fun++                                                             // more fun, yay
+				dispListing = append(dispListing, listing{{Op: op, Opd: opd}}...) // only display name
+				newListing = append(newListing, function...)
+				if o := newListing[len(newListing)-1]; o.Op == "out" && o.Opd == "dac" && !fIn {
+					break input
+				}
+				continue
 			}
+
 			switch op {
 			case ":": //mode setting
 				if opd == "p" { // toggle pause/play
@@ -773,7 +853,7 @@ start:
 					msg("%s%sunrecognised mode%s", red, italic, reset)
 					continue
 				}
-			case "load":
+			case "load", "ld":
 				inputF, rr := os.Open("listings/" + opd + ".syt")
 				if e(rr) {
 					msg("%v", rr)
@@ -840,100 +920,6 @@ start:
 					continue
 				}
 				out[opd] = struct{}{}
-			case "func!":
-				function := make(listing, len(funcs[name]))
-				copy(function, funcs[name])
-				s := sf(".%d", fun)
-				for i, o := range function {
-					if len(o.Opd) == 0 {
-						continue
-					}
-					switch o.Opd {
-					case "dac", "tempo", "pitch", "grid":
-						continue
-					}
-					if _, r := sg[o.Opd]; r {
-						continue
-					}
-					switch o.Opd[:1] {
-					case "^", "@":
-						continue
-					}
-					if _, rr = strconv.ParseFloat(o.Opd, 64); !e(rr) {
-						continue
-					}
-					function[i].Opd += s // rename signal
-					if o.Op == "out" {
-						out[function[i].Opd] = struct{}{}
-					}
-
-				}
-				for i, opd := range operands { // opd is shadowed
-					// wavs can start with a number
-					wav := wmap[opd]
-					if operands[i] == "" {
-						msg("empty argument %d - omit space", i+1)
-						continue
-					}
-					if strings.ContainsAny(opd[:1], "+-.0123456789") && !wav { // process number or fraction
-						n, b := parseType(opd, "") // operator is of function type
-						if !b {
-							msg("not a name or number in argument %d", i+1)
-							continue input
-						}
-						operands[i] = fmt.Sprint(n)
-					}
-				}
-				m := 0
-				for i, o := range function {
-					switch o.Opd {
-					case "@":
-						o.Opd = operands[0]
-						if m < 1 {
-							m = 1
-						}
-					case "@1":
-						if len(operands) > 1 {
-							o.Opd = operands[1]
-						}
-						if m < 2 {
-							m = 2
-						}
-					case "@2":
-						if len(operands) > 2 {
-							o.Opd = operands[2]
-						}
-						m = 3
-					}
-					function[i] = o
-				}
-				l := len(operands)
-				if m < l {
-					n := l - m
-					switch {
-					case n == 1:
-						msg("%slast operand ignored%s", italic, reset)
-					case n > 1:
-						msg("%slast %d operands ignored%s", italic, n, reset)
-					}
-				}
-				if m > l {
-					switch {
-					case m == 1:
-						msg("%s%sthe function requires an operand%s", red, italic, reset)
-						continue
-					case m > 1:
-						msg("%s%sthe function requires %d operands%s", red, italic, m, reset)
-						continue
-					}
-				}
-				fun++
-				dispListing = append(dispListing, listing{{Op: name, Opd: opd}}...) // only display name
-				newListing = append(newListing, function...)
-				if o := newListing[len(newListing)-1]; o.Op == "out" && o.Opd == "dac" && !fIn {
-					break input
-				}
-				continue
 			case "del", ".del":
 				n, rr := strconv.Atoi(opd)
 				if e(rr) {
@@ -968,7 +954,7 @@ start:
 				if op[:1] == "." && len(newListing) > 0 {
 					dispListing = append(dispListing, listing{{Op: "mix"}}...)
 					newListing = append(newListing, listing{{Op: "setmix", Opd: "^freq"}}...) // hacky
-					op, opd, operands[0] = "out", "dac", "dac"
+					op, opd = "out", "dac"
 					break
 				}
 				continue
@@ -1081,7 +1067,7 @@ start:
 				if op[:1] == "." && len(newListing) > 0 {
 					dispListing = append(dispListing, listing{{Op: "mix"}}...)
 					newListing = append(newListing, listing{{Op: "setmix", Opd: "^freq"}}...) // hacky
-					op, opd, operands[0] = "out", "dac", "dac"
+					op, opd = "out", "dac"
 					break
 				}
 				continue
@@ -1099,7 +1085,7 @@ start:
 				if i < 0 {
 					i = -i
 				}
-				operands[0] = strconv.Itoa(i)
+				opd = strconv.Itoa(i)
 			case "solo", ".solo", "s":
 				if len(transfer.Listing) == 0 {
 					msg("no running listings")
@@ -1138,7 +1124,7 @@ start:
 				if op[:1] == "." && len(newListing) > 0 {
 					dispListing = append(dispListing, listing{{Op: "mix"}}...)
 					newListing = append(newListing, listing{{Op: "setmix", Opd: "^freq"}}...) // hacky
-					op, opd, operands[0] = "out", "dac", "dac"
+					op, opd = "out", "dac"
 					break
 				}
 				continue
@@ -1178,12 +1164,17 @@ start:
 					msg("no running listings")
 					continue
 				}
-				operands[0] = opd // unnecessary?
+			case "noise":
+				newListing = append(newListing, listing{{Op: "push"}, {Op: "in", Opd: sf("%v", NOISE_FREQ)}, {Op: "out", Opd: "^freq"}, {Op: "pop"}}...)
 			case "[":
 				if _, ok := funcs[opd]; ok {
 					msg("%s%swill overwrite existing function!%s", red, italic, reset)
 				} else if _, ok := operators[opd]; ok {
 					msg("%s%sduplicate of extant operator, use another name%s", red, italic, reset)
+					continue
+				}
+				if opd == "deleted" {
+					msg("%s%sname not permitted%s", red, italic, reset)
 					continue
 				}
 				st = len(newListing) // because current input hasn't been added yet
@@ -1193,9 +1184,6 @@ start:
 			case "ls":
 				if opd == "l" {
 					opd += "istings"
-				}
-				if opd == "temp" {
-					opd = "." + opd
 				}
 				dir := "./" + opd
 				files, rr := os.ReadDir(dir)
@@ -1266,7 +1254,7 @@ start:
 				if op[:1] == "." && len(newListing) > 0 {
 					dispListing = append(dispListing, listing{{Op: "mix"}}...)
 					newListing = append(newListing, listing{{Op: "setmix", Opd: "^freq"}}...) // hacky
-					op, opd, operands[0] = "out", "dac", "dac"
+					op, opd = "out", "dac"
 					break
 				}
 				continue
@@ -1304,14 +1292,11 @@ start:
 				msg("%s%s added to exported signals%s", opd, italic, reset)
 			}
 
-			if len(operands) == 0 { // for zero-operand functions
-				operands = []string{""}
-			}
 			// add to listing
 			if len(dispListing) == 0 || op != "mix" && dispListing[len(dispListing)-1].Op != "mix" {
 				dispListing = append(dispListing, listing{{Op: op, Opd: opd}}...)
 			}
-			newListing = append(newListing, listing{{Op: op, Opd: operands[0]}}...)
+			newListing = append(newListing, listing{{Op: op, Opd: opd}}...)
 			if fIn {
 				continue
 			}
@@ -1331,27 +1316,25 @@ start:
 		}
 		// end of input
 
-		for _, o := range newListing { // assign dc signals or initial value to sg map
-			if _, ok := sg[o.Opd]; ok || len(o.Opd) == 0 {
+		for _, o := range newListing {
+			if _, in := sg[o.Opd]; in || len(o.Opd) == 0 {
 				continue
 			}
-			if n, rr := strconv.ParseFloat(o.Opd, 64); !e(rr) {
-				sg[o.Opd] = n // number assigned
-				continue
-			}
-			i := 0
-			if o.Opd[:1] == "^" {
-				i++
-			}
-			switch o.Opd[i : i+1] {
-			case "'":
-				//msg("%s %sadded as initial 1%s", o.Opd, italic, reset)
-				sg[o.Opd] = 1 // initial value
-			case "\"":
-				//msg("%s %sadded as initial 0.5%s", o.Opd, italic, reset)
-				sg[o.Opd] = 0.5 // initial value
-			default:
-				sg[o.Opd] = 0 // initial value
+			if strings.ContainsAny(o.Opd[:1], "+-.0123456789") { // wavs already in sg map
+				sg[o.Opd], _ = parseType(o.Opd, o.Op) // number assigned, error checked above
+			} else { // assign initial value
+				i := 0
+				if o.Opd[:1] == "^" {
+					i++
+				}
+				switch o.Opd[i : i+1] {
+				case "'":
+					sg[o.Opd] = 1
+				case "\"":
+					sg[o.Opd] = 0.5
+				default:
+					sg[o.Opd] = 0
+				}
 			}
 		}
 
@@ -1362,7 +1345,7 @@ start:
 				if o.Opd == k {
 					o.N = i
 				}
-				for i, pre := range reserved {
+				for i, pre := range reserved { // reserved signals are added in order
 					if o.Opd == pre {
 						o.N = i // shadowed
 					}
@@ -1435,12 +1418,14 @@ start:
 // parseType() evaluates conversion of types
 func parseType(expr, op string) (n float64, b bool) {
 	switch op { // ignore for following operators
-	case "mute", ".mute", "del", ".del", "solo", ".solo", "level", ".level", "from", "load", "save", "m", "count", "reload", "r", "rpl":
-		//, "[", "]", "{", "}":
+	case "mute", ".mute", "del", ".del", "solo", ".solo", "level", ".level", "from", "load", "save", "m", "reload", "r", "rpl", "s", "ld", "ls", "[": // this is a bit messy
 		return 0, true
 	default:
 		// process expression below
 	}
+	/*if !strings.ContainsAny(expr[:1], "+-.0123456789") {
+		return 0, true
+	}*/
 	switch {
 	case len(expr) > 1 && expr[len(expr)-1:] == "!":
 		if n, b = evaluateExpr(expr[:len(expr)-1]); !b {
@@ -1509,7 +1494,7 @@ func parseType(expr, op string) (n float64, b bool) {
 			return 0, false
 		}
 	}
-	if IsInf(n, 0) || n != n || n == 0 {
+	if IsInf(n, 0) || n != n {
 		msg("number not useful")
 		return 0, false
 	}
@@ -1818,7 +1803,7 @@ loop:
 		case <-infoff:
 			display.Info = sf("clear")
 			time.Sleep(20 * time.Millisecond) // coarse loop timing
-			display.Info = sf("%sinfo done%s", italic, reset)
+			display.Info = sf("%sSyntə closed%s", italic, reset)
 			save(display, file)
 			break loop
 		default:
@@ -1937,6 +1922,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 	for i := range tapes { // i is shadowed
 		tapes[i] = make([]float64, TLlen)
 	}
+	tf := make([]float64, 1)
 	accepted <- true
 	sync := make([]float64, len(transfer.Listing))
 	syncInhibit := make([]bool, len(transfer.Listing), len(transfer.Listing)+27) // inhibitions
@@ -1962,6 +1948,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			// add additional sync inhibit and tape. Assumes at most one listing addeded per transfer.
 			if len(transfer.Listing) > len(m) {
 				tapes = append(tapes, make([]float64, TLlen))
+				tf = append(tf, 0)
 				sync = append(sync, 0)
 				syncInhibit = append(syncInhibit, false)
 				peakfreq = append(peakfreq, 20/SampleRate)
@@ -1987,15 +1974,12 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			for _, ii := range Sigs {
 				sigs[i][ii] = sigs[(i+len(sigs)-1)%len(sigs)][ii]
 			}
-			/*sigs[i][2] = sigs[(i+len(sigs)-1)%len(sigs)][2]   // pitch
-			sigs[i][3] = sigs[(i+len(sigs)-1)%len(sigs)][3]   // tempo
-			sigs[i][10] = sigs[(i+len(sigs)-1)%len(sigs)][10] // grid*/
 			// mouse values
-			sigs[i][5] = mx
-			sigs[i][6] = my
-			//sigs[i][7] = mouse.Left
-			//sigs[i][8] = mouse.Right
-			//sigs[i][9] = mouse.Middle
+			sigs[i][4] = mx
+			sigs[i][5] = my
+			//sigs[i][6] = mouse.Left
+			//sigs[i][7] = mouse.Right
+			//sigs[i][8] = mouse.Middle
 			for op, o := range list {
 				switch o.Opn {
 				case 0:
@@ -2061,7 +2045,10 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					r = stacks[i][len(stacks[i])-1]
 					stacks[i] = stacks[i][:len(stacks[i])-1]
 				case 18: // "tape"
-					tapes[i][n%TLlen] = Tanh(r)
+					r = Max(-1, Min(1, r))  // hard clip for cleaner reverbs
+					tf[i] = (tf[i] + r) / 2 // roll off the top end
+					r = tf[i]
+					tapes[i][n%TLlen] = r
 					{
 						t := Min(1/sigs[i][o.N], SampleRate*TAPE_LENGTH)
 						r = tapes[i][(n+TLlen-int(t)+1)%TLlen]
@@ -2078,7 +2065,6 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					r *= WAV_LENGTH // needs to adapt to shorter samples
 					r = wavs[int(sigs[i][o.N])][int(r)%len(wavs[int(sigs[i][o.N])])]
 				case 23: // "8bit"
-					//r = float64(int8(r*sigs[i][o.N]*MaxInt8)) / (MaxInt8 * sigs[i][o.N])
 					r = float64(int8(r*sigs[i][o.N])) / sigs[i][o.N]
 				case 24: // "index"
 					r = float64(i) // * sigs[i][o.N]
@@ -2101,7 +2087,6 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					level[int(sigs[i][o.N])] = r
 					//r = 0
 				case 29: // "from"
-					//r = sigs[int(sigs[i][o.N])][0]
 					r = sigs[int(sigs[i][o.N])%len(sigs)][0]
 				case 30: // "sgn"
 					r = float64(Float64bits(r)>>62) - 1
@@ -2117,7 +2102,6 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				case 34: // "setmix"
 					{ // lexical scope
 						a := Abs(sigs[i][o.N]) + 1e-6
-						sigs[i][o.N] = NOISE_FREQ
 						d := a/peakfreq[i] - 1
 						d = Max(-1, Min(1, d))
 						peakfreq[i] += a * (d * smR8)
@@ -2125,8 +2109,8 @@ func SoundEngine(w *bufio.Writer, bits int) {
 							peakfreq[i] = a
 						}
 					}
-					//r *= Min(1, 60/(peakfreq[i]*SampleRate+20)) // ignoring density
-					r *= Min(1, Sqrt(20/(peakfreq[i]*SampleRate+20)))
+					r *= Min(1, 80/(peakfreq[i]*SampleRate+20)) // ignoring density
+					//r *= Min(1, Sqrt(20/(peakfreq[i]*SampleRate+20)))
 				case 35: // "print"
 					pd++ // unnecessary?
 					if (pd)%32768 == 0 && !exit {
@@ -2200,10 +2184,10 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			dac += sigs[i][0] * m[i]
 			c += m[i] // add mute to mix factor
 		}
-		if c > 3 {
+		if c > 4 {
 			dac /= c
 		} else {
-			dac /= 3
+			dac /= 4
 		}
 		c = 0
 		hpf = (hpf + dac - x) * 0.9994 // hpf = 4.6Hz @ 48kHz SR
@@ -2221,7 +2205,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				lpf1522 = (lpf1522*5 + d) / 6
 				deemph = lpf50 + lpf1522/5.657
 			}
-			det = Abs(32*hpf2560+5.657*hpf160+dac) / 2
+			det = Abs(32*hpf2560+5.657*hpf160+dac) / 3
 			if det > l {
 				l = det // MC
 				h = release

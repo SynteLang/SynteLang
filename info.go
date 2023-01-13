@@ -162,7 +162,7 @@ func main() {
 %s
 %s
 %s%s
-      %sMouse-X:%s %.3g		%sMouse-Y:%s %.3g
+      %sMouse-X:%s %.4g		%sMouse-Y:%s %.4g
 ╰───────────────────────────────────────────────────╯`,
 				paused, timer,
 				display.Mode,

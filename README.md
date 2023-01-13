@@ -1,4 +1,5 @@
 <TestTag>
+
 ## ◌ Syntə is an audio live coding environment
 
 The name is pronounced '*sinter*', which means to create something by
@@ -226,6 +227,7 @@ To help get your creative juices flowing, try typing in these example necklaces 
 Add two or three separate listings of this code for a relaxing beach experience.
 >
 <Test>
+
 	in 4hz
 	noise
 	+ 0.05hz
@@ -235,11 +237,13 @@ Add two or three separate listings of this code for a relaxing beach experience.
 	noise
 	mul a
 	mix
+
 </Test>
 
 **Kick and hihat**
 >
 <Test>
+
 	in 2hz
 	posc 0
 	mul 8
@@ -252,11 +256,13 @@ Add two or three separate listings of this code for a relaxing beach experience.
 	tanh
 	lpf 200hz
 	mix
+
 </Test>
 
 The kick will play on every beat. For once per bar of four beats use `in 120bpm, / 4` before `posc`
 >
 <Test>
+
 	in 2hz
 	posc 0.5
 	mul 4
@@ -264,11 +270,14 @@ The kick will play on every beat. For once per bar of four beats use `in 120bpm,
 	flip
 	noise
 	mix
+
 </Test>
 >
 <Test>
+
 	in -1
 	.>sync
+
 </Test>
 
 Here the clip operator is used to shape the VCA envelope of the hi-hat and the listings are synchronised together with a phase offset.
@@ -276,6 +285,7 @@ Here the clip operator is used to shape the VCA envelope of the hi-hat and the l
 **Sample and hold melody**
 >
 <Test>
+
 	in 3.5hz
 	ramp
 	out a
@@ -292,6 +302,7 @@ Here the clip operator is used to shape the VCA envelope of the hi-hat and the l
 	osc
 	sine
 	mix
+
 </Test>
 
 Here the pitch is calculated exponentially, mixing powers of 3 ≡ MOD 2 to produce a scale. You are not expected to understand this straightaway!
@@ -300,6 +311,7 @@ The bpm could be interpreted as quarter notes at 120bpm, because 8 / 4 = 2 and 2
 **Pulse sequencing**
 >
 <Test>
+
 	in 120bpm
 	mul 1/4
 	out tempo
@@ -315,6 +327,7 @@ The bpm could be interpreted as quarter notes at 120bpm, because 8 / 4 = 2 and 2
 	mul 330hz
 	sino
 	mix
+
 </Test>
 
 This sequence will play a descending series of quarter notes spaced by an octave.
@@ -322,6 +335,7 @@ This sequence will play a descending series of quarter notes spaced by an octave
 **Wobble bass**
 >
 <Test>
+
 	in 135bpm
 	osc
 	tri
@@ -334,11 +348,13 @@ This sequence will play a descending series of quarter notes spaced by an octave
 	mul a
 	lpf a
 	mix
+
 </Test>
 
 **Siren** (note similarity to wobble)
 >
 <Test>
+
 	in 0.2hz
 	osc
 	tri
@@ -349,11 +365,13 @@ This sequence will play a descending series of quarter notes spaced by an octave
 	mul 2
 	tanh
 	mix
+
 </Test>
 
 **Algo-rhythm**
 >
 <Test>
+
 	in 120bpm
 	mul 8
 	osc
@@ -365,6 +383,7 @@ This sequence will play a descending series of quarter notes spaced by an octave
 	mul a
 	noise
 	mix
+
 </Test>
 
 Note that the operator `gt` (greater than or equal) shapes the `osc` into a pulse wave where threshold is the operand and so sets the pulse width.
@@ -372,25 +391,31 @@ Note that the operator `gt` (greater than or equal) shapes the `osc` into a puls
 **Basic Sample manipulations**
 >
 <Test>
+
 	in wavR
 	osc
 	wav [name of wav file]
 	out dac
+
 </Test>
 >
 <Test>
+
 	in mousex
 	lpf 0.1hz
 	wav [name of wav file]
 	out dac
+
 </Test>
 >
 <Test>
+
 	in wavR
 	osc
 	mod 0.1
 	wav [name of wav file]
 	out dac
+
 </Test>
 
 The `mousex` register supplies the relative X co-ordinate motion transmittted by the mouse. The second example simulates vinyl and the third controls the sample length. `out dac` is used here instead of `mix` assuming the sample is already pre-mixed.
@@ -398,6 +423,7 @@ The `mousex` register supplies the relative X co-ordinate motion transmittted by
 **Simple time-stretch algorithm**
 >
 <Test>
+
 	in 50hz
 	osc
 	mul 0.25/50
@@ -409,6 +435,7 @@ The `mousex` register supplies the relative X co-ordinate motion transmittted by
 	+ a
 	wav [name of wav file]
 	out dac
+
 </Test>
 
 The values 0.9 and 0.1 should sum to 1 to maintain original pitch. 0.25 is the frequency given by wavR for a sample length of 4 seconds
@@ -416,6 +443,7 @@ The values 0.9 and 0.1 should sum to 1 to maintain original pitch. 0.25 is the f
 **Basic reverb**  ◊
 >
 <Test>
+
 	in 0.5hz
 	osc
 	lt 1/20
@@ -434,6 +462,7 @@ The values 0.9 and 0.1 should sum to 1 to maintain original pitch. 0.25 is the f
 	out c
 	pop
 	mix
+
 </Test>
 
 The reverb begins at the `+ c` line. the output is pushed onto the stack before being fed into `tape`. The feedback is from multiple taps which are attenuated by `mul 0.3` before being fed back via the register c. The listing preceding the reverb generates a 440Hz sine wave gated by a pulse every 3⅓ seconds.
@@ -441,6 +470,7 @@ The reverb begins at the `+ c` line. the output is pushed onto the stack before 
 **FM Bell**
 >
 <Test>
+
 	in 0.5hz
 	osc
 	flip
@@ -456,6 +486,7 @@ The reverb begins at the `+ c` line. the output is pushed onto the stack before 
 	sine
 	mul a
 	mix
+
 </Test>
 
 Here, we use the `base` operator to shape the inverted ramp wave from osc into an exponential decay to control the amplitude of the bell. Feeding the output of the second `osc` into a third one results in FM synthesis, that is the output of one oscillator controls or modulates the frequency of the next.
@@ -463,6 +494,7 @@ Here, we use the `base` operator to shape the inverted ramp wave from osc into a
 **Dialing tone**
 >
 <Test>
+
 	in 1/6hz
 	osc
 	lt 1/3
@@ -475,6 +507,7 @@ Here, we use the `base` operator to shape the inverted ramp wave from osc into a
 	+ c
 	mul a
 	mix
+
 </Test>
 
 Although not perticularly musical, this simple necklace illustrates mixing two signals and gating them (turning on and off) with a third signal which is a pulse wave. The `pulse` function can be used instead to gate a signal by a variable width. `slew 150` could be added before `out a` to smoothen the pulse for a less clicky sound.
@@ -482,12 +515,14 @@ Although not perticularly musical, this simple necklace illustrates mixing two s
 **Euclidean Rhythm**
 >
 <Test>
+
 	in 120bpm  
 	mul 1/4  
 	euclid 3,8,0  
 	decay 0.999
 	noise  
 	mix  
+
 </Test>
 </TestTag>
 

@@ -1977,9 +1977,9 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			// mouse values
 			sigs[i][4] = mx
 			sigs[i][5] = my
-			//sigs[i][6] = mouse.Left
-			//sigs[i][7] = mouse.Right
-			//sigs[i][8] = mouse.Middle
+			sigs[i][6] = mouse.Left
+			sigs[i][7] = mouse.Right
+			sigs[i][8] = mouse.Middle
 			for op, o := range list {
 				switch o.Opn {
 				case 0:

@@ -225,7 +225,7 @@ To help get your creative juices flowing, try typing in these example necklaces 
 
 **Surf**  
 Add two or three separate listings of this code for a relaxing beach experience.
->
+
 <Test>
 
 	in 4hz
@@ -241,7 +241,7 @@ Add two or three separate listings of this code for a relaxing beach experience.
 </Test>
 
 **Kick and hihat**
->
+
 <Test>
 
 	in 2hz
@@ -260,7 +260,7 @@ Add two or three separate listings of this code for a relaxing beach experience.
 </Test>
 
 The kick will play on every beat. For once per bar of four beats use `in 120bpm, / 4` before `posc`
->
+
 <Test>
 
 	in 2hz
@@ -272,7 +272,7 @@ The kick will play on every beat. For once per bar of four beats use `in 120bpm,
 	mix
 
 </Test>
->
+
 <Test>
 
 	in -1
@@ -283,7 +283,7 @@ The kick will play on every beat. For once per bar of four beats use `in 120bpm,
 Here the clip operator is used to shape the VCA envelope of the hi-hat and the listings are synchronised together with a phase offset.
 
 **Sample and hold melody**
->
+
 <Test>
 
 	in 3.5hz
@@ -309,7 +309,7 @@ Here the pitch is calculated exponentially, mixing powers of 3 ≡ MOD 2 to prod
 The bpm could be interpreted as quarter notes at 120bpm, because 8 / 4 = 2 and 2 x 60 = 120.
 
 **Pulse sequencing**
->
+
 <Test>
 
 	in 120bpm
@@ -333,7 +333,7 @@ The bpm could be interpreted as quarter notes at 120bpm, because 8 / 4 = 2 and 2
 This sequence will play a descending series of quarter notes spaced by an octave.
 
 **Wobble bass**
->
+
 <Test>
 
 	in 135bpm
@@ -352,7 +352,7 @@ This sequence will play a descending series of quarter notes spaced by an octave
 </Test>
 
 **Siren** (note similarity to wobble)
->
+
 <Test>
 
 	in 0.2hz
@@ -369,7 +369,7 @@ This sequence will play a descending series of quarter notes spaced by an octave
 </Test>
 
 **Algo-rhythm**
->
+
 <Test>
 
 	in 120bpm
@@ -398,7 +398,7 @@ Note that the operator `gt` (greater than or equal) shapes the `osc` into a puls
 	out dac
 
 </Test>
->
+
 <Test>
 
 	in mousex
@@ -407,7 +407,7 @@ Note that the operator `gt` (greater than or equal) shapes the `osc` into a puls
 	out dac
 
 </Test>
->
+
 <Test>
 
 	in wavR
@@ -421,7 +421,7 @@ Note that the operator `gt` (greater than or equal) shapes the `osc` into a puls
 The `mousex` register supplies the relative X co-ordinate motion transmittted by the mouse. The second example simulates vinyl and the third controls the sample length. `out dac` is used here instead of `mix` assuming the sample is already pre-mixed.
 
 **Simple time-stretch algorithm**
->
+
 <Test>
 
 	in 50hz
@@ -441,7 +441,7 @@ The `mousex` register supplies the relative X co-ordinate motion transmittted by
 The values 0.9 and 0.1 should sum to 1 to maintain original pitch. 0.25 is the frequency given by wavR for a sample length of 4 seconds
 
 **Basic reverb**  ◊
->
+
 <Test>
 
 	in 0.5hz
@@ -468,7 +468,7 @@ The values 0.9 and 0.1 should sum to 1 to maintain original pitch. 0.25 is the f
 The reverb begins at the `+ c` line. the output is pushed onto the stack before being fed into `tape`. The feedback is from multiple taps which are attenuated by `mul 0.3` before being fed back via the register c. The listing preceding the reverb generates a 440Hz sine wave gated by a pulse every 3⅓ seconds.
 
 **FM Bell**
->
+
 <Test>
 
 	in 0.5hz
@@ -492,7 +492,7 @@ The reverb begins at the `+ c` line. the output is pushed onto the stack before 
 Here, we use the `base` operator to shape the inverted ramp wave from osc into an exponential decay to control the amplitude of the bell. Feeding the output of the second `osc` into a third one results in FM synthesis, that is the output of one oscillator controls or modulates the frequency of the next.
 
 **Dialing tone**
->
+
 <Test>
 
 	in 1/6hz
@@ -513,7 +513,7 @@ Here, we use the `base` operator to shape the inverted ramp wave from osc into a
 Although not perticularly musical, this simple necklace illustrates mixing two signals and gating them (turning on and off) with a third signal which is a pulse wave. The `pulse` function can be used instead to gate a signal by a variable width. `slew 150` could be added before `out a` to smoothen the pulse for a less clicky sound.
 
 **Euclidean Rhythm**
->
+
 <Test>
 
 	in 120bpm  

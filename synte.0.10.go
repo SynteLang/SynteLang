@@ -92,9 +92,9 @@ const (
 	SNDCTL_DSP_SPEED = 0xC0045002
 	SAMPLE_RATE      = 48000 //hertz
 
-	WAV_TIME       = 4 //seconds
-	WAV_LENGTH     = WAV_TIME * SAMPLE_RATE
-	TAPE_LENGTH    = 1 //seconds
+	WAV_TIME       = 4                      //seconds
+	WAV_LENGTH     = WAV_TIME * SAMPLE_RATE // shouldn't rely on receiving correct rate from s/c
+	TAPE_LENGTH    = 1                      //seconds
 	MAX_WAVS       = 12
 	RMS_INT        = SAMPLE_RATE / 8
 	EXPORTED_LIMIT = 12
@@ -593,6 +593,9 @@ start:
 			}
 			pf("%s", reset)
 			op = s.Text()
+			if len(op) > 2 && byte(op[1]) == 91 { // hack to escape terminal characters
+				continue
+			}
 			op = strings.TrimSuffix(op, ",") // to allow comma separation of tokens
 			op2, in := operators[op]
 			if !in {
@@ -1248,7 +1251,7 @@ start:
 					msg("%s%soperand not an integer%s", red, italic, reset)
 					continue
 				}
-				if n >= len(transfer.Listing) {
+				if n >= len(transfer.Listing) { // not really necessary
 					msg("listing doesn't exist")
 					continue
 				}
@@ -1354,8 +1357,8 @@ start:
 			i++
 		}
 
-		r := reload[0] < 0 || reload[0] > len(transfer.Listing)-1
-		if r { // replace lowest numbered deleted listing, instead of append
+		// replace lowest numbered deleted listing, instead of append
+		if reload[0] < 0 || reload[0] > len(transfer.Listing)-1 {
 			for i, o := range transfer.Listing {
 				if o[0].Op == "deleted" {
 					reload[0] = i
@@ -1371,7 +1374,7 @@ start:
 			display.Paused = false
 		}
 		//transfer to sound engine // or if reload, replace existing at that index
-		if r {
+		if reload[0] < 0 || reload[0] > len(transfer.Listing)-1 {
 			dispListings = append(dispListings, dispListing)
 			transfer.Listing = append(transfer.Listing, newListing)
 			transfer.Signals = append(transfer.Signals, sig)
@@ -1397,18 +1400,20 @@ start:
 		if !started {
 			started = true
 		}
+
 		// save listing as <n>.syt for the reload
-		f := sf(".temp/%d.syt", reload[0])
 		if reload[0] < 0 {
-			f = sf(".temp/%d.syt", len(transfer.Listing)-1)
+			reload[0] = len(transfer.Listing) - 1
 		}
+		f := sf(".temp/%d.syt", reload[0]) // will overwite reloaded listing again with itself
 		content := ""
 		for _, d := range dispListing {
 			content += d.Op + " " + d.Opd + "\n"
 		}
 		if rr := os.WriteFile(f, []byte(content), 0666); e(rr) {
-			msg("%v", rr)
-			continue
+			// need .temp directory to save, once created uncomment error message below
+			//msg("%v", rr)
+			//continue
 		}
 		if record {
 			timestamp := time.Now().Format("02-01-06.15:04")

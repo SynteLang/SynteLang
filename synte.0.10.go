@@ -620,7 +620,7 @@ start:
 				}
 				operands = strings.Split(opd, ",")
 				if !f && len(operands) > 1 {
-					msg("%s%sonly functions can have multiple operands%s", red, italic, reset)
+					msg("only functions can have multiple operands")
 					continue
 				}
 				wav := wmap[opd] && op == "wav" // wavs can start with a number
@@ -693,10 +693,10 @@ start:
 				if m > l {
 					switch {
 					case m == 1:
-						msg("%s%sthe function requires an operand%s", red, italic, reset)
+						msg("%sthe function requires an operand%s", italic, reset)
 						continue
 					case m > 1:
-						msg("%s%sthe function requires %d operands%s", red, italic, m, reset)
+						msg("%sthe function requires %d operands%s", italic, m, reset)
 						continue
 					}
 				}
@@ -746,7 +746,7 @@ start:
 					}
 				}
 				switch opd {
-				case "exit":
+				case "exit", "q":
 					p("\nexiting...")
 					if display.Paused {
 						<-pause
@@ -782,7 +782,6 @@ start:
 							priorMutes[i] = mute[i]
 							mute[i] = 0
 						}
-						time.Sleep(75 * time.Millisecond) // wait for mutes
 						pause <- true
 						display.Paused = true
 					} else if !started {
@@ -796,7 +795,6 @@ start:
 					for i := range mute { // restore mutes
 						mute[i] = priorMutes[i]
 					}
-					time.Sleep(75 * time.Millisecond) // wait for mutes
 					<-pause
 					display.Paused = false
 					continue
@@ -836,7 +834,11 @@ start:
 					continue
 				case "muff": // Mute Off
 					muteSkip = !muteSkip
-					msg("mute skip = %v", muteSkip)
+					s := "no"
+					if muteSkip {
+						s = "yes"
+					}
+					msg("%smute skip:%s %v", italic, reset, s)
 					continue
 
 					/*////////////////////////////////////////////
@@ -850,7 +852,7 @@ start:
 						/*/ ///////////////////////////////////////////
 
 				default:
-					msg("%s%sunrecognised mode%s", red, italic, reset)
+					msg("%sunrecognised mode%s", italic, reset)
 					continue
 				}
 			case "load", "ld":
@@ -866,7 +868,7 @@ start:
 			case "save": // change to opd is index and prompt for name.
 				n, rr := strconv.Atoi(opd)
 				if e(rr) || n < 0 || n > len(transfer.Listing)-1 {
-					msg("%s%soperand not valid%s", red, italic, reset)
+					msg("%soperand not valid%s", italic, reset)
 					continue
 				}
 				pf("\tName: ")
@@ -910,27 +912,28 @@ start:
 				}
 				switch {
 				case num.Is:
-					msg("%s%soutput to number not permitted%s", red, italic, reset)
+					msg("%soutput to number not permitted%s", italic, reset)
 					continue
 				case in && opd[:1] != "^" && opd != "dac" && !ExpSig && op != "out+":
-					msg("%s%sduplicate output to signal, c'est interdit%s", red, italic, reset)
+					msg("%sduplicate output to signal, c'est interdit%s", italic, reset)
 					continue
 				case opd == "@":
-					msg("%s%scan't send to @, represents function operand%s", red, italic, reset)
+					msg("%scan't send to @, represents function operand%s", italic, reset)
 					continue
 				}
 				out[opd] = struct{}{}
 			case "del", ".del":
 				n, rr := strconv.Atoi(opd)
 				if e(rr) {
-					msg("%s%soperand not an integer%s", red, italic, reset)
+					msg("%soperand not an integer%s", italic, reset)
 					continue
 				}
 				if n > len(transfer.Listing)-1 || n < 0 {
-					msg("%s%sindex out of range%s", red, italic, reset)
+					msg("%sindex out of range%s", italic, reset)
 					continue
 				}
-				mute[n] = 0         // wintermute
+				mute[n] = 0 // wintermute
+				display.Mute[n] = true
 				if display.Paused { // this mute logic is not clear
 					for i := range mute { // restore mutes
 						if i != n {
@@ -939,7 +942,6 @@ start:
 					}
 					<-pause
 					display.Paused = false
-					msg("\t%splay resumed...%s", italic, reset)
 				}
 				time.Sleep(51 * time.Millisecond) // wait for envelope to complete
 				transfer.Listing[n] = listing{{Op: "deleted"}}
@@ -1078,7 +1080,7 @@ start:
 				}
 				i, rr := strconv.Atoi(opd)
 				if e(rr) {
-					msg("%s%soperand not an integer%s", red, italic, reset)
+					msg("operand not an integer")
 					continue
 				}
 				i %= len(transfer.Listing) + 1
@@ -1093,12 +1095,12 @@ start:
 				}
 				i, rr := strconv.Atoi(opd)
 				if e(rr) {
-					msg("%s%soperand not an integer%s", red, italic, reset)
+					msg("operand not an integer")
 					continue
 				}
-				i %= len(transfer.Listing) + 1 // +1 to allow solo of current listing input when sent
-				if i < 0 {
-					i = -i
+				if i < 0 || i > len(transfer.Listing) || (i == len(transfer.Listing) && op[:1] != ".") {
+					msg("operand out of range")
+					continue
 				}
 				if solo[i] {
 					for i := range mute { // i is shadowed
@@ -1119,6 +1121,7 @@ start:
 						priorMutes[i] = 1 // shonky
 						display.Mute[i] = false
 					}
+					solo = map[int]bool{} // reset solo map
 					solo[i] = true
 				}
 				if op[:1] == "." && len(newListing) > 0 {
@@ -1167,14 +1170,14 @@ start:
 			case "noise":
 				newListing = append(newListing, listing{{Op: "push"}, {Op: "in", Opd: sf("%v", NOISE_FREQ)}, {Op: "out", Opd: "^freq"}, {Op: "pop"}}...)
 			case "[":
+				if opd == "deleted" {
+					msg("%s%sname not permitted%s", red, italic, reset)
+					continue
+				}
 				if _, ok := funcs[opd]; ok {
 					msg("%s%swill overwrite existing function!%s", red, italic, reset)
 				} else if _, ok := operators[opd]; ok {
 					msg("%s%sduplicate of extant operator, use another name%s", red, italic, reset)
-					continue
-				}
-				if opd == "deleted" {
-					msg("%s%sname not permitted%s", red, italic, reset)
 					continue
 				}
 				st = len(newListing) // because current input hasn't been added yet
@@ -1261,11 +1264,6 @@ start:
 			case "all":
 				if len(transfer.Listing) == 0 {
 					msg("all is meaningless in first listing")
-					continue
-				}
-			case "/":
-				if !num.Is {
-					msg("divide by signal forbidden :)")
 					continue
 				}
 			default:
@@ -1356,17 +1354,24 @@ start:
 			i++
 		}
 
+		r := reload[0] < 0 || reload[0] > len(transfer.Listing)-1
+		if r { // replace lowest numbered deleted listing, instead of append
+			for i, o := range transfer.Listing {
+				if o[0].Op == "deleted" {
+					reload[0] = i
+					break
+				}
+			}
+		}
 		if display.Paused { // restart on launch if paused
 			for i := range mute { // restore mutes
 				mute[i] = priorMutes[i]
 			}
-			time.Sleep(51 * time.Millisecond) // wait for mutes
 			<-pause
 			display.Paused = false
-			msg("\t%splay resumed...%s", italic, reset)
 		}
 		//transfer to sound engine // or if reload, replace existing at that index
-		if reload[0] < 0 || reload[0] > len(transfer.Listing)-1 {
+		if r {
 			dispListings = append(dispListings, dispListing)
 			transfer.Listing = append(transfer.Listing, newListing)
 			transfer.Signals = append(transfer.Signals, sig)
@@ -1380,6 +1385,11 @@ start:
 			dispListings[reload[0]] = dispListing
 			transfer.Listing[reload[0]] = newListing
 			transfer.Signals[reload[0]] = sig
+			priorMutes[reload[0]] = 1
+			unsolo[reload[0]] = 1
+			mute[reload[0]] = 1
+			display.Mute[reload[0]] = false
+			level[reload[0]] = 1
 		}
 		reload[1] = reload[0] // save index of previous added/reloaded listing
 		transmit <- true
@@ -1418,7 +1428,7 @@ start:
 // parseType() evaluates conversion of types
 func parseType(expr, op string) (n float64, b bool) {
 	switch op { // ignore for following operators
-	case "mute", ".mute", "del", ".del", "solo", ".solo", "level", ".level", "from", "load", "save", "m", "reload", "r", "rpl", "s", "ld", "ls", "[": // this is a bit messy
+	case "mute", ".mute", "del", ".del", "solo", ".solo", "load", "save", "m", "reload", "r", "rpl", "s", "ld", "ls", "[": // this is a bit messy
 		return 0, true
 	default:
 		// process expression below
@@ -1489,7 +1499,7 @@ func parseType(expr, op string) (n float64, b bool) {
 		if n, b = evaluateExpr(expr); !b {
 			return 0, false
 		}
-		if Abs(n) > 20 {
+		if Abs(n) > 20 && op != "from" && op != "level" && op != ".level" {
 			msg("exceeds sensible values, do you mean %.[1]fhz, %.[1]fs, or %.[1]fbpm?", n)
 			return 0, false
 		}
@@ -1906,7 +1916,6 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			msg("%v", p)
 		}
 	}()
-	_ = dac0
 
 	<-transmit // load first listing(s) and start SoundEngine
 	// excess capacities unnecessary?
@@ -1945,7 +1954,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			copy(sigs, transfer.Signals)
 			stacks = make([][]float64, len(listings))
 			accepted <- true
-			// add additional sync inhibit and tape. Assumes at most one listing addeded per transfer.
+			// add additional sync inhibit and tape. Assumes at most one listing added per transfer.
 			if len(transfer.Listing) > len(m) {
 				tapes = append(tapes, make([]float64, TLlen))
 				tf = append(tf, 0)
@@ -2016,7 +2025,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				case 11: // "tanh"
 					r = Tanh(r)
 				case 12: // "pow"
-					if r == 0 && Signbit(sigs[i][o.N]) {
+					if Signbit(sigs[i][o.N]) && r == 0 {
 						r = Copysign(1e-308, r) // inverse is within upper range of float
 					}
 					r = Pow(r, sigs[i][o.N])
@@ -2089,13 +2098,14 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				case 29: // "from"
 					r = sigs[int(sigs[i][o.N])%len(sigs)][0]
 				case 30: // "sgn"
-					r = float64(Float64bits(r)>>62) - 1
+					r = 1 - float64(Float64bits(r)>>62)
 				case 31: // "deleted"
 					sigs[i][0] = 0
 				case 32: // "/"
 					if sigs[i][o.N] == 0 {
 						sigs[i][o.N] = Copysign(1e-308, sigs[i][o.N])
 					}
+					//r /= Max(0.1, Min(-0.1, sigs[i][o.N])) // alternative
 					r /= sigs[i][o.N]
 				case 33: // "sub"
 					r -= sigs[i][o.N]
@@ -2174,12 +2184,11 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			}
 			if sigs[i][0] > ct { // soft clip
 				sigs[i][0] = ct + Tanh(sigs[i][0]-ct)
-			}
-			if sigs[i][0] < -ct {
+			} else if sigs[i][0] < -ct {
 				sigs[i][0] = Tanh(sigs[i][0]+ct) - ct
 			}
 			m[i] = (m[i]*152 + mute[i]) / 153 // anti-click filter @ ~20hz
-			lv[i] = (lv[i]*7 + level[i]) / 8  // @ 1273Hz
+			lv[i] = (lv[i]*7 + level[i]) / 8  // @ 1091hz
 			sigs[i][0] *= lv[i]
 			dac += sigs[i][0] * m[i]
 			c += m[i] // add mute to mix factor
@@ -2205,7 +2214,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				lpf1522 = (lpf1522*5 + d) / 6
 				deemph = lpf50 + lpf1522/5.657
 			}
-			det = Abs(32*hpf2560+5.657*hpf160+dac) / 3
+			det = Abs(32*hpf2560+5.657*hpf160+dac) / 2
 			if det > l {
 				l = det // MC
 				h = release

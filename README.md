@@ -252,7 +252,7 @@ Add two or three separate listings of this code for a relaxing beach experience.
 	mul 165hz
 	osc
 	sine
-	mul 3
+	mul 2
 	tanh
 	lpf 200hz
 	mix
@@ -593,7 +593,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	]		|		no 		|  		end function definition                                 |
 |	:		|   	yes		|   	perform command: exit, erase, play, pause, fon, foff, clear, verbose, mc |
 |	fade	|		yes		|		changes fade out time after exit. Default is 325e-3 (unit is seconds, maximum 104s)
-|	del		|		yes		|		delete an entire compliled and running listing numbered by operand. Play will be resumed if paused
+|	del		|		yes		|		delete an entire compliled and running listing numbered by operand. Play will be resumed if paused. Next launched listing will be added in place of lowest numbered deleted listing
 |	index	|		yes		|		access index of listing
 |	mute 	|		yes		|		mute  or un-mute listing at index given by operand. Muting won't affect sync operations sent by a listing
 |	unmute 	|		no		|		un-mute all muted listings
@@ -611,7 +611,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	flip	|		no		|		turn a value between [0, 1] 'upside down', the input is flipped around y=½. Not suitable for negative values |
 |	tri		|		no		|		shape a value in range [0, 1] from saw/ramp to triangle. (mul 2, + -1, abs)
 |	osc		|		no		|		ramp wave, (phase accumulator). Output in range [0,1]. Has DC offset of ½
-|	saw		|		no		|		saw wave, descending ramp
+|	saw		|		no		|		saw wave, descending ramp. Output in range ±1
 |	mix		|		yes		|		output adjusted level to soundcard and end listing
 |	s/h		|		yes		|		samples and holds input when operand moves greater than zero from less than or equal to zero. Use ramp or square to supply operand. See 'Sample and hold melody' example above. Feed a [0,1] pulse to lpf for track and hold
 |	dist	|		yes		|		distortion, operand controls amount
@@ -647,6 +647,10 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	hpf		|		yes		|		6dB per octave high-pass filter. Operand is cutoff frequency in Hertz
 |	alp		|		2		|		first-order all-pass delay line using `tape`. First operand is delay time, second operand is damping coefficient [0,1]
 |	play	|		yes		|		plays wav given by operand once when input goes from 0 to 1
+|	sqr		|		no		|		square wave at audio levels, output is in range [-1,1]
+|	sq		|		no		|		square wave, equivalent to `pulse 0.5`, output is in range [0,1]
+|	xvr		|		no		|		emulates class-B crossover distortion
+|	sclp	|		no		|		soft clipping, harsher than tanh
 |           |               |
 **List of pre-defined constants**
 |	ln2		|		natural logarithm of 2    	|  

@@ -667,7 +667,9 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	fractal	|		yes		|		fractal inspired no-linear feeback mangles input in interesting ways
 |           |               |
 
-|  **List of pre-defined constants**	|		|                         |
+**List of pre-defined constants**	
+
+|  Name	|	Description		|                         |
 |-----------|---------------|-----------------------------------|
 |	ln2		|		natural logarithm of 2    	|  
 |   ln3		|       "		"			 3		|
@@ -764,7 +766,7 @@ will result in
 being added to the listing 
 
 ## Type system
-This is a fancy term for inputting numerical values with a unit of measurement. If you tell someone a duration you might say: "it will take three hours", you don't just say "it will take three". In a similar way Syntə expects to be told what the number you have input means. A number can be a frequency expressed in Hertz, A bpm (beats per minute), a time in seconds or milliseconds, or a decibel level (negative numbers reduce signal level, positive increases). For example:
+This is a fancy term for inputting numerical values with a unit of measurement. If you tell someone a duration you might say: "it will take three hours", you don't just say "it will take three". In a similar way Syntə expects to be told what the number you have input means. A number can be a frequency expressed in Hertz, a bpm (beats per minute), a time in seconds or milliseconds, or a decibel level (negative numbers reduce signal level, positive increases). For example:
 
 	440hz   <= this is the approximate frequency of the note A
 
@@ -782,7 +784,7 @@ Internally all these numbers are converted to a unitless number within Syntə wh
 And for seconds is:  
 	1 / ( input \* sample rate )  
 
-In future this type system may be developed further to require a specific type for input to each operator, which will be converted on-the-fly.
+In future this type system may be developed further to require a specific type for input to each operator, which will be converted on-the-fly. This will also enable the possibility of reducing the sample rate under heavy load, which has not been needed so far.  
 
 ## Signals
 Signals are the way of passing values around outside of the main flow through the necklace. Signals which are named and not just numbers can be referred to as registers, because they *register* a value. Usually the initial value of a named signal is 0. If you want it to begin as 1, add ' to the name. So `a` becomes `'a`. Likewise you can use the double quotation mark " to have a default value of one half. If you want to be able to overwrite the value of a signal with `out` (more than once in a necklace), which is not normally possible, you can add ^ to the name. So `a` becomes `^a`. You can use both of these special symbols with a single signal, but the circumflex ^ must come first or it will be ignored.
@@ -863,9 +865,10 @@ Info display won't display the same message sent more than once in succession.
 ## Performing with Syntə
 To prepare the audio system:
 1. Set up the equipment and verify sound from Syntə is reaching the speakers using `in 440hz, osc, sine, mul 0.1, out dac`
-2. Turn the system down to zero
+2. Turn the system volume down to zero
 3. Type `test 2000hz`
 4. Increase volume until an acceptable level
+
 You will probably need to go above this level for perfomance once you have an audience in the room and are playing full range sounds, but this gives a good starting point that you probably don't want to go too far over. Please ensure the audience has access to hearing protection if the system is capable of more than 85dBSPL.
 To specifically test the bass level and evenness try:
 >
@@ -881,7 +884,7 @@ If the bass level fluctuates a lot at different frequencies and at different lis
 
 ## Editing running listings
 All currently running listings can be found in the `.temp/` folder in the root directory (main project folder). The name of the file will be the index (a non-negative integer) with the file extension .syt, eg. `0.syt` , this file can be opened in any text editor. Once you have saved your edits the listing will be reloaded automatically on saving. It is best to do this with nothing typed in main Syntə input, as reload will be appended to current input and partially entered operations will cause confusion for the next line input once reload complete.  
-A TUI library or headless mode may replace this feature in future. No files are purged from `.temp/` on exit, so will remain indefinitely until overwritten one-by-one when each new listings is launched. ◊  
+A TUI library or headless mode may replace this feature in future. No files are purged from `.temp/` on exit, so will remain indefinitely until overwritten one-by-one when each new listing is launched. ◊  
 
 ## Exported signals
 Up to 12 signals may be exported for input to other listings. Indicate this by capitalising the initial letter, eg. `out Env1`. This can then be used like any other signal, in the same manner as `tempo`, `pitch` and `grid`. These exported signals are daisy-chained in the same manner, so will propagate between listings in ascending order. This means that the signal will correspond to the preceeding `out` in another listing.
@@ -949,12 +952,10 @@ These are, as the author understands it (opinions may differ):
 feedback and what it means  
 filtering  
 delay and reverb  
-pause/play  
 mouse control  
-tempo and pitch (not fully implemented yet)  
+tempo and pitch
 euclidian rhythms  
 fractal synthesis (not implemented yet)  
-finite recursion (not implemented yet, probably not useful in practice)  
 mute and solo
 
 ---

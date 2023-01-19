@@ -85,7 +85,7 @@ func main() {
 				}
 				timer = time.Since(start).Round(time.Second)
 			} else { // timer for continuous play
-				timer = 0
+				// timer = 0
 				started = false
 			}
 

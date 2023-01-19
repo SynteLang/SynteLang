@@ -84,13 +84,15 @@ To download the files use Git Clone on this repo or click on the green code link
 You should end up with a directory (folder) containing the following files:  
 
 >	
+	README.md (this file)
 	synte.0.10.go  
 	info.go  
 	listing.go  
 	functions.json  
 	functions.go (optional, recommended) 
-	an empty directory named 'recordings'  (can contain README.md) 
-	a directory named 'wavs' containing wav files (optional, can contain README.md)
+	an empty directory named 'recordings' (can contain a README.md) 
+	a directory named 'wavs' containing wav files (optional, can contain a README.md)
+	an empty directory named '.temp' (can contain a README.md) 
 
 Open a terminal, navigate to the directory and type 'go run synte.0.10.go' to begin. ◊ Open another terminal and run info.go similarly. This will display useful information and feedback as you input and run code, if you run this before synte.go it will display details of any loaded wavs. 
 Open another terminal and run listing.go to view currently running code, this will also show mute status in italics. You may wish to arrange these using a tiling window manager, terminal multiplexer, or equivalent.
@@ -583,17 +585,21 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	index	|		no   	|		outputs index of current listing
 |	//		|		yes   	|		does nothing, use to display comments. Separate words with underscores like_this_etc. Remainder of listing will be skipped, use as a single line listing
 |	rms		|		yes   	|		output is root mean square of input with an integration time of 125ms, if greater than the operand, otherwise holds previous value. Use `rms 0` for a plain rms value
-|	_		|		no   	|		blank operator, does nothing. Similarly the signal _ does nothing too
+|	.out	|		yes   	|		use to end silent listing, for use with signals `tempo`, `pitch`, `grid`, or Exported signals.
+|	jl0		|		yes   	|		jump if less than zero. The next n number of operations are skipped if input is less than or equal to zero, where n is given by operand.  Bear in mind that this number of skips includes all the operations within any functions within the listing. The final operation in a listing will always execute. An operand of zero is no jump. Added for fun in a vague attempt to make syntə turing-complete
 |	       	| 		       	|
 |	propa	|		yes  	|		used in conjuction with `index`, adds multiple listings at once (not implimented yet) ◊  
 |	fma		|		yes  	|		fused multiply add, the result of the input multiplied by the operand is stored in a special register `fma` (not implimented yet) ◊  
-|	       	| 		       	|
-|List of commands (won't appear in listing)|			|																|
+
+**List of commands (won't appear in listing)**
+
+|  Command	|Requires operand?| Notes                           |
+|-----------|---------------|-----------------------------------|
 |	[		|		yes		|  		begin function definition, operand is name                                 |
 |	]		|		no 		|  		end function definition                                 |
-|	:		|   	yes		|   	perform command: exit, erase, play, pause, fon, foff, clear, verbose, mc |
+|	:		|   	yes		|   	perform mode command: exit, erase, play, pause, fon, foff, clear, verbose, mc |
 |	fade	|		yes		|		changes fade out time after exit. Default is 325e-3 (unit is seconds, maximum 104s)
-|	del		|		yes		|		delete an entire compliled and running listing numbered by operand. Play will be resumed if paused. Next launched listing will be added in place of lowest numbered deleted listing
+|	del		|		yes		|		delete an entire compliled and running listing numbered by operand. Play will be resumed if paused. ◊
 |	index	|		yes		|		access index of listing
 |	mute 	|		yes		|		mute  or un-mute listing at index given by operand. Muting won't affect sync operations sent by a listing
 |	unmute 	|		no		|		un-mute all muted listings
@@ -603,10 +609,14 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	.del 	|		yes		|		equivalent to `del` except will insert 'out dac' to launch listing. Used in effect to replace a listing, play will be resumed if paused
 |	.solo 	|		yes		|		equivalent to `solo` except will insert 'out dac' to launch listing. Play will be resumed if paused
 |	erase 	|		yes		|		erase preceding number of lines given by operand
-|	rld 	|		yes		|		reload edited listing
-|	rpl 	|		yes		|		listing at index given by operand will be replaced by current input once launched
-|           |
-|**List of built-in functions**|       |
+|	rld 	|		yes		|		reload edited listing, file in `.temp/` is not updated. if index not extant, will append to listings
+|	rpl 	|		yes		|		listing at index given by operand will be replaced by current input once launched, file in `.temp/ is not updated
+|	r 		|		yes		|		alias of rld
+
+**List of built-in functions**
+
+|  Function	|Requires operand?| Notes                           |
+|-----------|---------------|-----------------------------------|
 |	inv		|		no		|		invert a value between [0, 1], result equals 1/input |
 |	flip	|		no		|		turn a value between [0, 1] 'upside down', the input is flipped around y=½. Not suitable for negative values |
 |	tri		|		no		|		shape a value in range [0, 1] from saw/ramp to triangle. (mul 2, + -1, abs)
@@ -623,36 +633,42 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	decay	|		yes		|		will decay away to nothing from 1. 0.9997 is approx 20s, lower is quicker decay. Resets when input goes from 0 to 1
 |	half	|		yes		|		like `decay` but accepts an operand in seconds that defines the 'half-life' of the decay. Input will override decay.
 |	once	|		no		|		like `osc` but only completes one cycle. Operand will set upper limit and will reset when 0. Use 1 for one-off ramp
-|	pulse	|		yes		|		pulse generator with duty cycle (pulse width) set by operand. Output is between 0 and 1, follow by `cv2a` for audio out. `pulse 0` will give a one sample pulse, any operand greater then or equal to 1 will be silent, i.e. output continuous zero
+|	pulse	|		yes		|		pulse generator with duty cycle (pulse width) set by operand. Output is between 0 and 1, follow by `cv2a` for audio out. `pulse 0` will give a one sample pulse, any operand greater than or equal to 1 will be silent, i.e. output continuous zero. `pulse 0.5` is a square wave like `sq`
 |	ramp	|		no		|		like `osc` but with an output suitable for audio, i.e. spans -1 to 1
-|	posc	|		yes		|		like `osc` but will retrigger on a sync pulse. Operand sets phase offset. Can also use `out z` to control the phase independently of sync.
+|	posc	|		yes		|		like `osc` but will retrigger on a sync pulse. Operand sets phase offset. Can also use `out ^z` to control the phase independently of sync.
 |	slew	|		yes		|		slew generator. Swings to the input at a rate given by operand. Intended for pulses/square waves. Try 150hz to reduce clicks on vca signals ( i.e. when multiplying audio values). If slewing to a number greater than zero and less than previous input the jump will be immediate. If the signal crosses zero from positive to negative it will slew as expected. May be updated for a cleaner implementation in future. 
 |	T2		|		no		|		implements Chebyshev polynomial of the first kind. In plain english this means it will double the frequency of anything passed through it
 |	zx		|		no		|		detects negative-going zero-crossing of input. A preceeding `ramp` will generate a single pulse of 1 at the end of its cycle.
-|	lmap	|		yes		|		implements the Logistic Map. Iterates on zero-crossing of the input. Operand is the r value, suggested between 3 and 5. Preceed with `ramp` and follow with `cv2a` for audio output
+|	lmap	|		yes		|		implements the Logistic Map, modified to constrain the output to range [0,1] using `mod` (to prevent divergence at high values of r). Iterates on zero-crossing of the input. Operand is the r value, suggested between 3 and 4. Preceed with `ramp` and follow with `cv2a` for audio output
 |	euclid	|		3		|		outputs euclidean rhythms at the frequency given by input as a series of pulses. Eg. output for (3,8) = "X..X..X." the X will be 1 and the rests 0
-|	exp		|		no		|		converts linear ramps on interval [0,1] to exponential. Operand is the number of times one is halved for an input of zero, eg. three would be ½ x ½ x ½ = ⅛, the greater the number the steeper the curve
+|	exp		|		no		|		converts linear ramps on interval [0,1] to exponential. Operand is the number of times one is halved for an input of zero, eg. three would be ½ x ½ x ½ = ⅛, the greater the number the steeper the curve. Typically useful to shape a descending ramp. Negative operands will double instead of halve
 |	dial	|		no		|		plays uk telephone ringing tone
 |	dirac	|		no		|		outputs a single sample pulse when input goes from 0 to 1. Will trigger on first run of listing if input is 1
 |	range	|		2		|		spreads input from 0 to ±1 across a range of values from the first operand to the second. Eg. `range 220hz,440hz`. If the second operand is smaller the range will be negative. Operands should be in order of slow to fast, eg. 2s,1s
 |	bd909	|		2		|		unfinished '909' kick drum. first operand is decay and second is pitch. ◊  
 |	down	|		yes		|		slews downwards for decreasing signals, jumps immediately to an increasing or static (unchanging) signal value. Use with a narrow pulse to make a linear decay envelope. Descends at rate given by operand
 |	echo	|		2		|		repeated echo of input using `tape` internally. First operand is repeat interval (time), second operand is loop/feeback gain, >1 is infinite repeats (may distort), 0 is no repeats and no output. Use in conjunction with `from` or mix in with original input
-|	step	|		yes		|		generates a rising staircase of values with the operand number of steps within input time interval, eg `120bpm` or `2hz`. Output is between [0,1]. This implementation is not precise due to overflows (low frequencing aliasing). Uses `s/h` internally.
+|	step	|		yes		|		generates a rising staircase of values with the operand number of steps within input time interval, eg `120bpm` or `2hz`. Output is between [0,1]. This implementation is not precise due to overflows (low frequencing aliasing). Uses `s/h` internally. Preferrable to use `osc` or `posc p` followed by `8bit n`, where p is the phase offset from sync and n is the equivalent of the `step` operand
 |	tempo	|		yes		|		operand sets the tempo across all listings, subsequent invocations will set tempo for subsequent listings
-|	grid	|		no		|		generates a square wave at frequency of input and sends out to grid, accessible across all listings in ascending order like tempo. Can be used to gate audio using `mul`. Euclidean rhythms can be generated by `s/h`-ing other gate signals at different frequencies
-|	count	|		yes		|		generates a rising staircase of values from 1 up to and including operand. Use a square wave [0,1] as input. Uses dirac to detect edge transitions internally. Can be used with `in <tempo>, osc, lt 0.5, count n` as a more precise equivalent to `step`
+|	grid	|		no		|		generates a square wave at frequency of input and sends out to grid, accessible across all listings in ascending order like tempo. The grid signal can be used to gate audio using `mul`. Euclidean rhythms can be generated by `s/h`-ing other gate signals at different frequencies
+|	count	|		yes		|		generates a rising staircase of values from 1 up to and including operand. Use a pulse or square wave [0,1] as input. Uses `dirac` to detect edge transitions internally. Can be used with `in <tempo>, osc, lt 0.5, count n` as a more precise equivalent to `step`
 |	end		|		no		|		launches a new silent listing, useful for things like setting tempo
 |	.		|		no		|		alias of `end`
 |	hpf		|		yes		|		6dB per octave high-pass filter. Operand is cutoff frequency in Hertz
 |	alp		|		2		|		first-order all-pass delay line using `tape`. First operand is delay time, second operand is damping coefficient [0,1]
+|	pink	|		no		|		approximation of pinkening filter, low pass at -3db per octave
 |	play	|		yes		|		plays wav given by operand once when input goes from 0 to 1
 |	sqr		|		no		|		square wave at audio levels, output is in range [-1,1]
 |	sq		|		no		|		square wave, equivalent to `pulse 0.5`, output is in range [0,1]
 |	xvr		|		no		|		emulates class-B crossover distortion
 |	sclp	|		no		|		soft clipping, harsher than tanh
+|	every	|		yes		|		for a pulse (or square) input [0,1], outputs a pulse ending at second rising edge of input every n input pulses, where n is the operand. Uses `count` internally
+|	intfr	|		yes		|		non-linear feedback leads to radio-inteference sounding patterns
+|	fractal	|		yes		|		fractal inspired no-linear feeback mangles input in interesting ways
 |           |               |
-**List of pre-defined constants**
+
+|  **List of pre-defined constants**	|		|                         |
+|-----------|---------------|-----------------------------------|
 |	ln2		|		natural logarithm of 2    	|  
 |   ln3		|       "		"			 3		|
 |	ln5     |       " 		"			 5		|  
@@ -667,14 +683,28 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |			|									|
 **List of reserved signals**
 |	dac		|		signal represents output to soundcard. For use as `out dac` only	|
-|	tempo	|		signal is daisy chained between listings, can be set with `out`	|
-|	pitch	|		signal is daisy chained between listings, can be set with `out`	|
+|	tempo	|		signal is daisy chained between listings, can be set with `out`. Will be zero until set by an `out` or `.out`, value will persist if this is deleted |
+|	pitch	|		acts the same as tempo	|
 |	mousex	|		value of mousepad X-coordinate |
 |	mousey	|		value of mousepad Y-coordinate |
 |	butt1	|		value of left mouse button, 0 or 1	|
 |	butt2	|		value of centre mouse button, 0 or 1	|
 |	butt3	|		value of right mouse button, 0 or 1	|
-|	grid	|		signal is daisy chained between listings, can be set with `out`	|
+|	grid	|		acts the same as tempo and pitch |
+
+**List of modes** (preceeded by `:` operator)
+|  mode	| Description                           |
+|-----------|---------------|
+| exit		| shutdown syntə
+| erase		| erase entire listing input 
+| pause		| pause playback
+| play		| resume playback
+| fon		| save newly defined functions on exit
+| foff		| resume ephemeral functions
+| clear		| clear info message display
+| verbose	| show verbose listings in listing display, type again to toggle off
+| mc		| switch mouse curve to linear (default is exponential). Toggles
+| stats		| display Go's automatic memory management pause times in info display
 
 ___
 
@@ -786,15 +816,16 @@ The synchronisation is somewhat rudementary, a world away from DAW/midi sequence
 The `level` operator is used to adjust the audio level of a running listing, like so: `in 0.5 level 2` which would set listing two to half the available level, whcih is -6dB. This level-setting listing may be deleted straightaway and the level will persist once set. Although intended for basic mixing of listings, you may modulate the level at rates up to 1200Hz. This is an arbitary limit set to reduce clicks produced by immediate large changes in volume, while still allowing frequency modulation. You need to use `.level` to end a necklace.
 
 ## Adding functions
-If you find yourself reusing the same chunk of code multiple times, it is possible to define a named function which will instantiate that chunk of code. To begin, type `[` followed by the new name. Then type the listing as normal and at the end type `]` (no operand) which will complete the function add. This function won't be saved on exit but may be used as you wish during the current session. To permanently save a function which you feel will be useful in future type `: fon` before exiting and it will be saved to the 'functions.json' file in the folder on exit from Syntə. To go back to ephemeral functions (useful for experimentation) type `: foff`.  
+If you find yourself reusing the same chunk of code multiple times, it is possible to define a named function which will instantiate that chunk of code. To begin, type `[` followed by the new name. Then type the listing as normal and at the end type `]` (no operand) which will complete the function add, the listing will then be restarted blank. This function won't be saved on exit but may be used as you wish during the current session. To permanently save a function which you feel will be useful in future type `: fon` before exiting and it will be saved to the 'functions.json' file in the folder on exit from Syntə. To go back to ephemeral functions (useful for experimentation) type `: foff`.  
 You may overwrite functions by typing in the same name.  
+N.B. No signals are exported from inside funcions except `tempo`, `pitch, and `grid`.  
 The ability to make functions like this makes the language *extensible*, which means you are able to extend the language beyond what is written in this document. One of the project aims is to build up a library of abstractions in this way to make performance easier for beginners. However there is a limit to this, as just typing 'music' and stopping there would be quite boring!  
 An *abstraction* means wrapping up a bit of code into something simple to make it easier to use, for example the term 'global apartheid' is an abstraction of a system and history that involves many many processes, interconnections, organisations, trade-misinvoicing etc.
 
 ## info.go and listing.go
-info.go is intended to run alongside Syntə to display useful information and error messages. The layout is as follows:
+`info.go` is intended to run alongside Syntə to display useful information and error messages. The layout is as follows:
 ```
-Syntə info *press enter to exit*                0s      <-- elapsed running time in seconds
+Syntə info *press enter to quit*                0s      <-- elapsed running time in seconds
 ╭───────────────────────────────────────────────────╮
 
                                     Load: 0.00          <-- If the sound engine is overloaded, listings will be removed without warning
@@ -815,20 +846,23 @@ Syntə info *press enter to exit*                0s      <-- elapsed running tim
 ╰───────────────────────────────────────────────────╯
 ```
 
-listing.go displays the currently running necklaces. Any that are muted will show in grey italics. The functions within a listing are 'unrolled', that is to say they are shown in terms of their atomic operations.
+Info display won't display the same message sent more than once in succession.  
+`listing.go` displays the currently running necklaces. Any that are muted will show in italics. In verbose mode the functions within a listing are 'unrolled', that is to say they are shown in terms of their atomic operations.
 
 ## Hot tips
 
-+ use `slew 150` to smoothen a signal used for modulating volume with `mul`
++ use `slew 150hz` or `lpf 150hz` to smoothen a signal used for modulating volume with `mul`
 + trim samples of music to be an exact number of bars (look for repetition in the waveform of around ~2 seconds)
 + use the "!" type to use a number outside of the expected range if you need to. This is not a factorial operation
 + had a moment of inspiration and can't remember what you did? All listings accepted by the sound engine are saved by timestamp to the recordings folder in json format
 + pipe the output of `functions.go` through `less` using the `-r` flag, like this: `go run functions.go | less -r`. You can then search the contents using `/`, refer to `man less` 
++ want to fade in a listing? Use `in 10s, once, level n, in 0, .mute n` where n is th index of the particular listing (that has previously been muted)
++ want a long fade out on exit? Type `fade 30s` before you type `: exit`
 + other tips tba... ◊  
 
 ## Performing with Syntə
 To prepare the audio system:
-1. Set up the equipment and verify sound from Syntə is reaching the speakers
+1. Set up the equipment and verify sound from Syntə is reaching the speakers using `in 440hz, osc, sine, mul 0.1, out dac`
 2. Turn the system down to zero
 3. Type `test 2000hz`
 4. Increase volume until an acceptable level
@@ -843,13 +877,14 @@ To specifically test the bass level and evenness try:
 	sino
 	out dac
 
-If the bass level fluctuates a lot at different frequencies and at different listing positions you should consider some using some bass trapping. This is beacause sound reflections between the walls will interfere and cancel out.
+If the bass level fluctuates a lot at different frequencies and at different listing positions you should consider some using some bass trapping. This is because sound reflections between the walls will interfere and cancel out at low frequencies.
 
 ## Editing running listings
-All currently running listings can be found in the `.temp/` folder in the root directory (main project folder). The name of the file will be the index (an non-negative integer) with the file extension .syt, eg. 0.syt , this file can be opened in any text editor. Once you have saved your edits the listing can be updated by typing `rld n` where n is the index of the listing.
+All currently running listings can be found in the `.temp/` folder in the root directory (main project folder). The name of the file will be the index (a non-negative integer) with the file extension .syt, eg. `0.syt` , this file can be opened in any text editor. Once you have saved your edits the listing will be reloaded automatically on saving. It is best to do this with nothing typed in main Syntə input, as reload will be appended to current input and partially entered operations will cause confusion for the next line input once reload complete.  
+A TUI library or headless mode may replace this feature in future. No files are purged from `.temp/` on exit, so will remain indefinitely until overwritten one-by-one when each new listings is launched. ◊  
 
 ## Exported signals
-Up to 12 signals may be exported for input to other listings. Indicate this by capitalising the initial letter, eg. `out Env1`. This can then be used like any other signal, in the same manner as `tempo`, `pitch` and `grid`. These exported signals are daisy-chained in the same manner, so will propagate between listings in ascending order. This means that the signal will correspond to the preceeding `out`.
+Up to 12 signals may be exported for input to other listings. Indicate this by capitalising the initial letter, eg. `out Env1`. This can then be used like any other signal, in the same manner as `tempo`, `pitch` and `grid`. These exported signals are daisy-chained in the same manner, so will propagate between listings in ascending order. This means that the signal will correspond to the preceeding `out` in another listing.
 
 ---
 
@@ -863,7 +898,7 @@ The limiter reduces the level of audio above a peak value of 1 to avoid the poss
 The density distribution of pink noise is a good general approximation to expected frequency levels in audio (*Barrow, 1995*). The `mix` function also uses this as a guiding principle in setting a sensible level. Some adjustment may be required; however, the limiter will always kick in if internal levels are exceeded.  
 Because of the frequency dependent nature of the limiter detection, gain reduction may occur before the info display shows a high VU level. This is normal and you can adjust listings via the `level` operator to prevent higher frequencies from dominating the playback.  
 Between the limiter and the clipping stage before conversion, what is known as dither is applied to the signal. This is a tiny amount of noise to avoid rounding errors, but is probably overkill. Before the dither any envelopes associated with pausing or exiting are applied. These reduce the chances of pops or clicks.  
-The whole main loop of the sound engine has a timer to produce the 'load' value that shows how much work it is doing to create each sample for the soundcard. See info display section above. If enough listings are added and the sound engine is unable to perform all calculations in time before the next sample is due, glitches or dropouts in the output can occur. In order to avoid this if a high load is detected the last listing added will be removed automatically and the sound engine restarted. Something that may be implemented in future is automatic reduction of the overall sample rate under heavy load. This has been tested, however has not been found necessary so far. ◊  
+The whole main loop of the sound engine has a timer to produce the 'load' value that shows how much work it is doing to create each sample for the soundcard. See info display section above. If enough listings are added and the sound engine is unable to perform all calculations in time before the next sample is due, glitches or dropouts in the output can occur. In order to avoid this if a high load is detected the listing with highest numbered index will be removed automatically and the sound engine restarted. Something that may be implemented in future is automatic reduction of the overall sample rate under heavy load. This has been tested, however has not been found necessary so far. ◊  
 
 ---
 

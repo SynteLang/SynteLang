@@ -570,7 +570,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	degrade	|		yes		|		add to a signal and draw result from a signal at random. Operand is a proportion amount. Will lead to unpredictable behaviour and eventual silence from that listing.
 |	wav		|		yes   	|		will play the corresponding sample of a loaded WAV file given by the operand. Expects an input in range [0, 1], values outside this range will wrap around this interval. See section below for more information
 |	8bit	|		yes   	|		quantises input to 8 bits of resolution (-128 to +127). The Operand is the size of quantisation steps. So to quantise a ±1 signal, use 127 as the operand. Alternatively, quantise to integers with an operand of 1.
-|	level	|		yes   	|		changes the output level of the listing at the index given by operand. The preceeding input sets the level. Level will persist after deletion. Capable of modulation up to 1200Hz, but because of this sudden large changes in level may produce clicks. Operation not affected by mute
+|	level	|		yes   	|		changes the output level of the listing at the index given by operand. The preceding input sets the level. Level will persist after deletion. Capable of modulation up to 1100Hz, but because of this sudden large changes in level may produce clicks. Operation independent of mute
 |	x		|		yes   	|		alias of `mul`
 |	*		|		yes   	|		alias of `x`
 |	from	|		yes   	|		receives output of listing given by operand.  By design operand must be a number not a named signal. If the operand is greater than the number of listings it will wrap round (modulous)
@@ -599,7 +599,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	]		|		no 		|  		end function definition                                 |
 |	:		|   	yes		|   	perform mode command: exit, erase, play, pause, fon, foff, clear, verbose, mc |
 |	fade	|		yes		|		changes fade out time after exit. Default is 325e-3 (unit is seconds, maximum 104s)
-|	del		|		yes		|		delete an entire compliled and running listing numbered by operand. Play will be resumed if paused. ◊
+|	del		|		yes		|		delete an entire compliled and running listing numbered by operand. Play will be resumed if paused. On deletion the `.temp/*.syt` file remains intact so the listing can be reloaded with `rld`
 |	index	|		yes		|		access index of listing
 |	mute 	|		yes		|		mute  or un-mute listing at index given by operand. Muting won't affect sync operations sent by a listing
 |	unmute 	|		no		|		un-mute all muted listings
@@ -609,7 +609,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	.del 	|		yes		|		equivalent to `del` except will insert 'out dac' to launch listing. Used in effect to replace a listing, play will be resumed if paused
 |	.solo 	|		yes		|		equivalent to `solo` except will insert 'out dac' to launch listing. Play will be resumed if paused
 |	erase 	|		yes		|		erase preceding number of lines given by operand
-|	rld 	|		yes		|		reload edited listing, file in `.temp/` is not updated. if index not extant, will append to listings
+|	rld 	|		yes		|		reload edited listing, file in `.temp/` is not updated. if index not extant, will append to listings, but won't overwrite that particular `.temp/` file
 |	rpl 	|		yes		|		listing at index given by operand will be replaced by current input once launched, file in `.temp/ is not updated
 |	r 		|		yes		|		alias of rld
 
@@ -638,7 +638,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	posc	|		yes		|		like `osc` but will retrigger on a sync pulse. Operand sets phase offset. Can also use `out ^z` to control the phase independently of sync.
 |	slew	|		yes		|		slew generator. Swings to the input at a rate given by operand. Intended for pulses/square waves. Try 150hz to reduce clicks on vca signals ( i.e. when multiplying audio values). If slewing to a number greater than zero and less than previous input the jump will be immediate. If the signal crosses zero from positive to negative it will slew as expected. May be updated for a cleaner implementation in future. 
 |	T2		|		no		|		implements Chebyshev polynomial of the first kind. In plain english this means it will double the frequency of anything passed through it
-|	zx		|		no		|		detects negative-going zero-crossing of input. A preceeding `ramp` will generate a single pulse of 1 at the end of its cycle.
+|	zx		|		no		|		detects negative-going zero-crossing of input. A preceding `ramp` will generate a single pulse of 1 at the end of its cycle.
 |	lmap	|		yes		|		implements the Logistic Map, modified to constrain the output to range [0,1] using `mod` (to prevent divergence at high values of r). Iterates on zero-crossing of the input. Operand is the r value, suggested between 3 and 4. Preceed with `ramp` and follow with `cv2a` for audio output
 |	euclid	|		3		|		outputs euclidean rhythms at the frequency given by input as a series of pulses. Eg. output for (3,8) = "X..X..X." the X will be 1 and the rests 0
 |	exp		|		no		|		converts linear ramps on interval [0,1] to exponential. Operand is the number of times one is halved for an input of zero, eg. three would be ½ x ½ x ½ = ⅛, the greater the number the steeper the curve. Typically useful to shape a descending ramp. Negative operands will double instead of halve
@@ -751,7 +751,7 @@ wavR is a pre-defined constant which gives the playback speed for a sample recor
 
 By design only the first 4 seconds of any wav file will be loaded. Two reasons for this are fast-loading times and to encourage creativity. You can manually edit any wav file in a free program such as Audacity to ensure the part you want to play is within the first 4 seconds, ideally starting at the beginning of the sample. Samples less then 4 seconds long are fine.
 
-Later on, the intention is to provide more flexibility in synchronising other necklaces to wav files using `len<wavname>` signals. This has been partially implemented and would provide the possibility to sync to exact loop length samples. ◊  
+Later on, the intention is to provide more flexibility in synchronising other necklaces to wav files using `l.<wavname>` signals. This has been partially implemented and would provide the possibility to sync to exact loop length samples. ◊  
 
 ## Tape loop ◊  
 Each listing has a tape loop available which is accessed by the `tape` operator. The tape loop is a rolling buffer of 1 second in length. The operand given sets the delay time of the intial tap. The loop can be additionally accessed by the tap operator, which will sum the new tap to its input. Multiple `tap` operators can be used. The use of multiple `tape` operators is undefined. Bear in mind that for modulating tap times (eg. for chorusing/detuning) only a small amount is required, and as time is inversely proportional to frequency this leads to large modulation times. For example `in 3hz, osc, sine, mul 30s, + 100ms, out t, ... tape t ...`
@@ -887,7 +887,7 @@ All currently running listings can be found in the `.temp/` folder in the root d
 A TUI library or headless mode may replace this feature in future. No files are purged from `.temp/` on exit, so will remain indefinitely until overwritten one-by-one when each new listing is launched. ◊  
 
 ## Exported signals
-Up to 12 signals may be exported for input to other listings. Indicate this by capitalising the initial letter, eg. `out Env1`. This can then be used like any other signal, in the same manner as `tempo`, `pitch` and `grid`. These exported signals are daisy-chained in the same manner, so will propagate between listings in ascending order. This means that the signal will correspond to the preceeding `out` in another listing.
+Up to 12 signals may be exported for input to other listings. Indicate this by capitalising the initial letter, eg. `out Env1`. This can then be used like any other signal, in the same manner as `tempo`, `pitch` and `grid`. These exported signals are daisy-chained in the same manner, so will propagate between listings in ascending order. This means that the signal will correspond to the preceding `out` in another listing.
 
 ---
 
@@ -902,6 +902,12 @@ The density distribution of pink noise is a good general approximation to expect
 Because of the frequency dependent nature of the limiter detection, gain reduction may occur before the info display shows a high VU level. This is normal and you can adjust listings via the `level` operator to prevent higher frequencies from dominating the playback.  
 Between the limiter and the clipping stage before conversion, what is known as dither is applied to the signal. This is a tiny amount of noise to avoid rounding errors, but is probably overkill. Before the dither any envelopes associated with pausing or exiting are applied. These reduce the chances of pops or clicks.  
 The whole main loop of the sound engine has a timer to produce the 'load' value that shows how much work it is doing to create each sample for the soundcard. See info display section above. If enough listings are added and the sound engine is unable to perform all calculations in time before the next sample is due, glitches or dropouts in the output can occur. In order to avoid this if a high load is detected the listing with highest numbered index will be removed automatically and the sound engine restarted. Something that may be implemented in future is automatic reduction of the overall sample rate under heavy load. This has been tested, however has not been found necessary so far. ◊  
+
+## A note on the Go code
+
+The code in this suite of programs differs from typical industry standards in a few keys respects. Each program is contained in one fil to make it easy for a beginner to read through the whole thing. The code isn't very encapsulated, and global variables are used for convenience. Not tests have been written for any of the functions, however the programs themselves have been rigorously tested with user input. Telemetry from the sound engine is just shoved out without regard to whether it is properly received, sacrificing programmatic correctness for speed, which is a worthwhile tradeoff in this context (as used in telemetry library prometheus).  
+While there may be a few ways the code can be better structured, for no it has been thoroughly determined to perform the desired functions without runtime errors. The possibilty of runtime errors in the sound engine generated by user input is handled by panic/recover to gracefully shutdown and restart without the preceding listing. That is not to say any errors won't be uncovered in future, this is software after all :)  
+Please add a github issue for bug reports or feature requests.
 
 ---
 

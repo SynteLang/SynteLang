@@ -38,6 +38,8 @@ func main() {
 		Mute    []bool
 		SR      float64
 		GR      bool
+		Sync    bool
+		v       bool
 	}
 	var display = Disp{
 		SR: 48000,
@@ -53,6 +55,7 @@ func main() {
 	clip := ""
 	unprotected := ""
 	paused := ""
+	sync := " "
 
 	file := "infodisplay.json"
 
@@ -63,6 +66,8 @@ func main() {
 	stop := make(chan struct{})
 
 	go func() { // anonymous to include above variables in scope
+		n := 0
+		dB := -120.0
 		for {
 			Json, err := os.ReadFile(file)
 			err2 := json.Unmarshal(Json, &display)
@@ -87,6 +92,11 @@ func main() {
 			} else { // timer for continuous play
 				// timer = 0
 				started = false
+			}
+
+			sync = " "
+			if display.Sync {
+				sync = fmt.Sprintf("%s●%s", yellow, reset)
 			}
 
 			if display.Mode == "on" {
@@ -137,9 +147,17 @@ func main() {
 			if display.GR {
 				gr = yellow + "GR" + reset
 			}
-			vu := 1 + (math.Log10(display.Vu) / 1.75)
-			VU := fmt.Sprintf("\r\t            |                   %s|%s  %s", clip, reset, gr)
-			VU += fmt.Sprintf("\r\t   %s %.3f %s  |", green, display.Vu, reset)
+			db := math.Log10(display.Vu)
+			if math.IsInf(db, -1) {
+				db = -6
+			}
+			if n%10 == 0 {
+				dB = math.Round(db * 20)
+			}
+			n++
+			vu := 1 + (db / 1.75)
+			VU := fmt.Sprintf("\r              |                       %s|%s  %s", clip, reset, gr)
+			VU += fmt.Sprintf("\r             %s%-+5.3g%s  |", green, dB, reset)
 			n := int(vu * 20)
 			for i := 0; i < n; i++ {
 				VU += fmt.Sprintf("|")
@@ -147,7 +165,7 @@ func main() {
 
 			fmt.Printf("\033[H\033[2J")
 			fmt.Printf("%sSyntə info%s %spress enter to quit%s", cyan, reset, italic, reset)
-			fmt.Printf(`		%s	%3s
+			fmt.Printf(`	%s	%s	%3s
 ╭───────────────────────────────────────────────────╮
 	%s		%sLoad:%s %v
 %s
@@ -164,7 +182,7 @@ func main() {
 %s%s
       %sMouse-X:%s %.4g		%sMouse-Y:%s %.4g
 ╰───────────────────────────────────────────────────╯`,
-				paused, timer,
+				sync, paused, timer,
 				display.Mode,
 				yellow, reset, L,
 				messages[0].Content,

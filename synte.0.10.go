@@ -203,7 +203,8 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	".rpl":    ops{yes, 0},
 	"s":       ops{yes, 0}, // alias of solo
 	"e":       ops{yes, 0}, // alias of erase
-	//	"self":		ops{yes, 0}, // function recursion
+	"apd":     ops{yes, 0},
+	"do":      ops{yes, 0},
 }
 
 // listing is a slice of { operator, index and operand }
@@ -281,6 +282,7 @@ type Disp struct {
 	Mute    []bool
 	SR      float64
 	GR      bool
+	Sync    bool
 	Verbose bool
 }
 
@@ -476,15 +478,11 @@ func main() {
 		// assumes no panic while paused
 		// This function will remove previously added listing and restart the sound engine
 		for {
+			if exit {
+				return
+			}
 			select {
 			case <-stop:
-				if exit {
-					go SoundEngine(w, format)
-					break
-				}
-				if !started {
-					continue
-				}
 				msg("%ssound engine halted... removing previous listing%s", italic, reset)
 				stop = make(chan struct{})
 				if reload[1] < 0 || reload[1] > len(transfer.Listing)-1 {
@@ -504,9 +502,6 @@ func main() {
 				time.Sleep(500 * time.Millisecond) // wait to stabilise
 			default:
 				// nop
-			}
-			if exit { // should be in default case?
-				break
 			}
 			time.Sleep(100 * time.Millisecond) // coarse loop timing
 		}
@@ -529,7 +524,7 @@ func main() {
 			tt = t
 		}
 	}()
-	go func() { // poll modified time and reload if changed
+	go func() { // poll .'temp/%d.syt' modified time and reload if changed
 		for {
 			lockLoad <- struct{}{}
 			l := len(transfer.Listing)
@@ -560,7 +555,7 @@ func main() {
 				lockLoad <- struct{}{}
 				if len(transfer.Listing) != l {
 					<-lockLoad
-					break // to remake slices
+					break // to remake stat slices
 				}
 				l = len(transfer.Listing)
 				for i := 0; i < len(transfer.Listing); i++ {
@@ -635,6 +630,7 @@ start:
 		fun := 0   // don't worry the fun will increase!
 		reload[0] = -1
 		ext = not
+		do := 0
 
 	input:
 		for { // input loop
@@ -669,15 +665,15 @@ start:
 			pf("%s", yellow)
 			op = <-tokens
 			pf("%s", reset)
-			if len(op) > 2 && byte(op[1]) == 91 { // hack to escape terminal characters
-				op = ""
+			if len(op) > 2 && byte(op[1]) == 91 || op == "_" { // hack to escape terminal characters
+				continue
 			}
 			op = strings.TrimSuffix(op, ",") // to allow comma separation of tokens
 			op2, in := operators[op]
 			if !in {
 				msg("%soperator or function doesn't exist:%s %s", italic, reset, op)
 				if ext {
-					for len(tokens) > 0 { // empty remainer of incoming tokens and abandon reload
+					for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
 						<-tokens
 					}
 					ext = not
@@ -705,6 +701,11 @@ start:
 						continue input // parseType will report error
 					}
 				}
+			}
+			for do > 0 {
+				tokens <- op
+				tokens <- opd
+				do--
 			}
 
 			if f { // parse function
@@ -848,7 +849,7 @@ start:
 						}
 					}
 					break start
-				case "erase":
+				case "erase", "e":
 					continue start
 				case "foff":
 					funcsave = not
@@ -886,7 +887,7 @@ start:
 				case "unprotected":
 					protected = !protected
 					continue
-				case "clear":
+				case "clear", "c":
 					msg("clear")
 					continue
 				case "verbose":
@@ -939,10 +940,13 @@ start:
 					msg("%sunrecognised mode%s", italic, reset)
 					continue
 				}
-			case "load", "ld", "rld", "r":
+			case "load", "ld", "rld", "r", "apd":
 				switch op {
 				case "rld", "r":
 					reload[0], _ = strconv.Atoi(opd) // no checks
+					opd = ".temp/" + opd
+				case "apd":
+					reload[0] = -1
 					opd = ".temp/" + opd
 				}
 				inputF, rr := os.Open(opd + ".syt")
@@ -1123,6 +1127,9 @@ start:
 					msg("%s%soperand not an integer%s", red, italic, reset)
 					continue
 				}
+				if n < 0 {
+					continue
+				}
 				if n > len(dispListing) {
 					msg("%s%snumber greater than length of necklace%s", red, italic, reset)
 					continue
@@ -1182,7 +1189,7 @@ start:
 					msg("operand not an integer")
 					continue
 				}
-				i %= len(transfer.Listing) + 1
+				i %= len(transfer.Listing) + 1 // modulus because operand may be a signal
 				if i < 0 {
 					i = -i
 				}
@@ -1344,6 +1351,13 @@ start:
 					msg("all is meaningless in first listing")
 					continue
 				}
+			case "do":
+				do, rr = strconv.Atoi(opd)
+				if e(rr) { // returns do as zero
+					msg("%s%soperand not an integer%s", red, italic, reset)
+				}
+				msg("%s next operation repeated%s %dx", italic, reset, do)
+				continue
 			default:
 				// nop
 			}
@@ -1432,15 +1446,6 @@ start:
 			i++
 		}
 
-		// replace lowest numbered deleted listing, instead of append // needs reload slice for fallback
-		/*if reload[0] < 0 || reload[0] > len(transfer.Listing)-1 {
-			for i, o := range transfer.Listing {
-				if o[0].Op == "deleted" {
-					reload[0] = i
-					break
-				}
-			}
-		}*/
 		if display.Paused { // restart on launch if paused
 			for i := range mute { // restore mutes
 				mute[i] = priorMutes[i]
@@ -1476,7 +1481,7 @@ start:
 			<-accepted
 			mute[reload[0]] = 1
 		}
-		if !ext {
+		if !ext && reload[0] == -1 {
 			// save listing as <n>.syt for the reload
 			f := sf(".temp/%d.syt", len(transfer.Listing)-1)
 			content := ""
@@ -1526,7 +1531,7 @@ func parseType(expr, op string) (n float64, b bool) {
 			return 0, false
 		}
 		n = 1 / ((n / 1000) * SampleRate)
-		if !nyquist(n) {
+		if !nyquist(n, expr) {
 			return 0, false
 		}
 	case len(expr) > 1 && expr[len(expr)-1:] == "s":
@@ -1534,7 +1539,7 @@ func parseType(expr, op string) (n float64, b bool) {
 			return 0, false
 		}
 		n = 1 / (n * SampleRate)
-		if !nyquist(n) {
+		if !nyquist(n, expr) {
 			return 0, false
 		}
 	case len(expr) > 2 && expr[len(expr)-2:] == "hz":
@@ -1542,7 +1547,7 @@ func parseType(expr, op string) (n float64, b bool) {
 			return 0, false
 		}
 		n /= SampleRate
-		if !nyquist(n) {
+		if !nyquist(n, expr) {
 			return 0, false
 		}
 	case len(expr) > 2 && expr[len(expr)-2:] == "db": // 0dB = 1
@@ -1593,12 +1598,12 @@ func parseType(expr, op string) (n float64, b bool) {
 	}
 	return n, true
 }
-func nyquist(n float64) bool {
+func nyquist(n float64, e string) bool {
 	ny := 2e4 / SampleRate
 	if bounds(n, ny) {
-		msg("%sinaudible frequency >20kHz%s", italic, reset)
+		msg("'%s' is an %sinaudible frequency >20kHz%s", e, italic, reset)
 		if bounds(n, 1) {
-			msg("and frequency out of range, not accepted")
+			msg(" and frequency out of range, not accepted")
 			return false
 		}
 	}
@@ -1800,7 +1805,7 @@ func decodeWavs() (wavs, bool) {
 		if channels == 1 {
 			c = "mono  "
 		}
-		msg("%s\t%s  SR: %5d  bits: %2d  %.3gs", file, c, SR, bits, t)
+		msg("%s\t%2dbit  %3gkHz  %s  %.3gs", file, bits, float64(SR)/1000, c, t)
 	}
 	if len(w) == 0 {
 		return nil, false
@@ -1879,7 +1884,8 @@ func mouseRead() {
 
 func infodisplay() {
 	file := "infodisplay.json"
-	n := 0
+	n := 1
+	s := 1
 	for {
 		display.Protect = protected
 
@@ -1907,6 +1913,11 @@ func infodisplay() {
 		if n > 10 {
 			display.Clip = not
 			n = 0
+		}
+		s++
+		if s > 20 {
+			display.Sync = not
+			s = 0
 		}
 	}
 }
@@ -1962,10 +1973,8 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		lastTime time.Time     = time.Now()
 		rates    [RATE]time.Duration
 		t        time.Duration
-		//DS       float64 = 1 // down-sample, integer as float type
-		s  float64 = 1 // sync=0
-		p  bool        // play/pause, shadows
-		ii int         // sync intermediate
+		s        float64 = 1 // sync=0
+		p        bool        // play/pause, shadows
 
 		mx, my float64 = 1, 1 // mouse smooth intermediates
 		hpf, x float64        // DC-blocking high pass filter
@@ -2008,9 +2017,10 @@ func SoundEngine(w *bufio.Writer, bits int) {
 	for i := range tapes { // i is shadowed
 		tapes[i] = make([]float64, TLlen)
 	}
-	tf := make([]float64, 1)
+	tf := make([]float64, len(transfer.Listing)+31)
+	th := make([]float64, len(transfer.Listing)+31)
+	tx := make([]float64, len(transfer.Listing)+31)
 	accepted <- yes
-	sync := make([]float64, len(transfer.Listing))
 	syncInhibit := make([]bool, len(transfer.Listing), len(transfer.Listing)+27) // inhibitions
 	peakfreq := make([]float64, len(transfer.Listing), len(transfer.Listing)+28) // peak frequency for setlevel
 	for i := range peakfreq {
@@ -2035,7 +2045,8 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			if len(transfer.Listing) > len(m) {
 				tapes = append(tapes, make([]float64, TLlen))
 				tf = append(tf, 0)
-				sync = append(sync, 0)
+				th = append(th, 0)
+				tx = append(tx, 0)
 				syncInhibit = append(syncInhibit, not)
 				peakfreq = append(peakfreq, 20/SampleRate)
 				m = append(m, 0.0)
@@ -2123,16 +2134,17 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				case 15: // "noise"
 					no.ise() // roll a fresh one
 					r *= (2*(float64(no)/MaxUint) - 1)
-					//if r > 0.9999 { panic("test") }
-					//time.Sleep(5*time.Microsecond) // for testing
+					//if r > 0.9999 { panic("test") } // for testing
 				case 16: // "push"
 					stacks[i] = append(stacks[i], r)
 				case 17: // "pop"
 					r = stacks[i][len(stacks[i])-1]
 					stacks[i] = stacks[i][:len(stacks[i])-1]
 				case 18: // "tape"
-					r = Max(-1, Min(1, r))  // hard clip for cleaner reverbs
-					tf[i] = (tf[i] + r) / 2 // roll off the top end
+					r = Max(-1, Min(1, r)) // hard clip for cleaner reverbs
+					th[i] = (th[i] + r - tx[i]) * 0.9994
+					tx[i] = r
+					tf[i] = (tf[i] + th[i]) / 2 // roll off the top end @ 7640Hz
 					r = tf[i]
 					tapes[i][n%TLlen] = r
 					t := Min(1/sigs[i][o.N], SampleRate*TAPE_LENGTH)
@@ -2146,16 +2158,17 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					r *= Tau
 					r /= (r + 1)
 				case 22: // "wav"
+					r += 1 // to allow negative input to reverse playback
 					r = Abs(r)
-					r *= WAV_LENGTH // needs to adapt to shorter samples
+					r *= float64(len(wavs[int(sigs[i][o.N])]))
 					r = wavs[int(sigs[i][o.N])][int(r)%len(wavs[int(sigs[i][o.N])])]
 				case 23: // "8bit"
 					r = float64(int8(r*sigs[i][o.N])) / sigs[i][o.N]
 				case 24: // "index"
 					r = float64(i)
 				case 25: // "<sync"
-					r *= s                      //* (1 - sync[i])
-					r += (1 - s) * sigs[i][o.N] //* sync[i]  phase offset
+					r *= s
+					r += (1 - s) * sigs[i][o.N] // phase offset
 				case 26: // ">sync", ".>sync"
 					switch {
 					case r <= 0 && s == 1 && !syncInhibit[i]:
@@ -2163,6 +2176,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 						syncInhibit[i] = yes
 					case s == 0 && syncInhibit[i]: // single sample pulse
 						s = 1
+						display.Sync = yes
 					case r > 0:
 						syncInhibit[i] = not
 					}
@@ -2173,7 +2187,6 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					}
 				case 28: // "level", ".level"
 					level[int(sigs[i][o.N])] = r
-					//r = 0
 				case 29: // "from"
 					r = sigs[int(sigs[i][o.N])%len(sigs)][0]
 				case 30: // "sgn"
@@ -2213,7 +2226,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					r = sigs[i][o.N] / r
 				case 37: // "degrade" // needs more work
 					no.ise()
-					ii = (int(no >> 60)) % (len(listings) - 1)
+					ii := (int(no >> 60)) % (len(listings) - 1)
 					index := (int(no >> 59)) % (len(sigs[ii]) - 1)
 					sigs[ii][index] += sigs[i][o.N] * r
 					no.ise()
@@ -2268,7 +2281,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			} else if sigs[i][0] < -ct {
 				sigs[i][0] = Tanh(sigs[i][0]+ct) - ct
 			}
-			m[i] = (m[i]*152 + mute[i]) / 153 // anti-click filter @ ~20hz
+			m[i] = (m[i]*152 + mute[i]) / 153 // anti-click filter @ ~50hz
 			lv[i] = (lv[i]*7 + level[i]) / 8  // @ 1091hz
 			sigs[i][0] *= lv[i]
 			dac += sigs[i][0] * m[i]
@@ -2292,7 +2305,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			{
 				d := Max(-1, Min(1, dac))
 				lpf50 = (lpf50*152.8 + d) / 153.8
-				lpf1522 = (lpf1522*5 + d) / 6
+				lpf1522 = (lpf1522*5 + d) / 6.02
 				deemph = lpf50 + lpf1522/5.657
 			}
 			det = Abs(32*hpf2560+5.657*hpf160+dac) / 2

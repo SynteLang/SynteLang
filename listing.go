@@ -83,7 +83,7 @@ func main() {
 				}
 				fmt.Printf("\n%d:  ", i)
 				m, c, y := magenta, cyan, yellow
-				if len(mute) == len(listing) { // bounds check
+				if len(mute) >= i+1 { // bounds check
 					if mute[i] {
 						m, c, y = italic, italic, italic
 					}
@@ -100,7 +100,7 @@ func main() {
 						continue
 					}
 					switch list[i+1].Op {
-					case "in", "pop", "tap", "index", "from":
+					case "in", "pop", "tap", "index", "from", "all":
 						fmt.Printf(" %s|%s  ", y, reset)
 					default:
 						fmt.Printf(" %s\u22A2%s  ", y, reset)

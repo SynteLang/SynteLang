@@ -67,7 +67,7 @@ func main() {
 
 	go func() { // anonymous to include above variables in scope
 		n := 0
-		dB := -120.0
+		dB := "     "
 		for {
 			Json, err := os.ReadFile(file)
 			err2 := json.Unmarshal(Json, &display)
@@ -152,12 +152,15 @@ func main() {
 				db = -6
 			}
 			if n%10 == 0 {
-				dB = math.Round(db * 20)
+				dB = fmt.Sprintf("%-+5.3g", math.Round(db*20))
+				if db <= -6 {
+					dB = "     "
+				}
 			}
 			n++
 			vu := 1 + (db / 1.75)
-			VU := fmt.Sprintf("\r              |                       %s|%s  %s", clip, reset, gr)
-			VU += fmt.Sprintf("\r             %s%-+5.3g%s  |", green, dB, reset)
+			VU := fmt.Sprintf("\r          |                         %s|%s  %s", clip, reset, gr)
+			VU += fmt.Sprintf("\r           %s%s%s|", green, dB, reset)
 			n := int(vu * 20)
 			for i := 0; i < n; i++ {
 				VU += fmt.Sprintf("|")

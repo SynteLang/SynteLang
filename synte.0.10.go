@@ -92,9 +92,9 @@ const (
 	SNDCTL_DSP_SPEED = 0xC0045002
 	SAMPLE_RATE      = 48000 //hertz
 
-	WAV_TIME       = 4                      //seconds
-	WAV_LENGTH     = WAV_TIME * SAMPLE_RATE // shouldn't rely on receiving correct rate from s/c
-	TAPE_LENGTH    = 1                      //seconds
+	WAV_TIME       = 4 //seconds
+	WAV_LENGTH     = WAV_TIME * SAMPLE_RATE
+	TAPE_LENGTH    = 1 //seconds
 	MAX_WAVS       = 12
 	RMS_INT        = SAMPLE_RATE / 8
 	EXPORTED_LIMIT = 12
@@ -172,8 +172,8 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"all":     ops{not, 40},
 	"rms":     ops{yes, 41},
 	".out":    ops{yes, 2}, // alias of out
+	"pan":     ops{not, 38},
 	//"":     ops{yes, 19}, // unused
-	//"":     ops{yes, 38}, // unused
 	//"":     ops{yes, 39}, // unused
 
 	// specials
@@ -205,6 +205,8 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"e":       ops{yes, 0}, // alias of erase
 	"apd":     ops{yes, 0},
 	"do":      ops{yes, 0},
+	"d":       ops{yes, 0},
+	"deleted": ops{not, 0},
 }
 
 // listing is a slice of { operator, index and operand }
@@ -239,19 +241,21 @@ var (
 	mute     []float64             // should really be in transfer struct?
 	level    []float64
 	muteSkip bool
+	ds       bool
+	restart  bool
+	reload   = -1
 )
 
 var ( // misc
-	SampleRate,
-	initialR8 float64
-	TLlen     int
-	fade      float64 = Pow(1e-4, 1/(100e-3*SAMPLE_RATE)) // 100ms
-	protected         = yes
-	release   float64 = Pow(8000, -1.0/(0.5*SAMPLE_RATE))  // 500ms
-	DS        float64 = 1                                  // down-sample, integer as float type
-	nyfC      float64 = 1 / (1 + 1/(2*Pi*2e4/SAMPLE_RATE)) // coefficient
-	ct        float64 = 1                                  // individual listing clip threshold
-	ext       bool    = not                                // loading external listing state
+	SampleRate float64
+	TLlen      int
+	fade       float64 = Pow(1e-4, 1/(100e-3*SAMPLE_RATE)) // 100ms
+	protected          = yes
+	release    float64 = Pow(8000, -1.0/(0.5*SAMPLE_RATE))  // 500ms
+	DS         int     = 1                                  // down-sample, integer as float type
+	nyfC       float64 = 1 / (1 + 1/(2*Pi*2e4/SAMPLE_RATE)) // coefficient
+	ct         float64 = 1                                  // individual listing clip threshold
+	ext        bool    = not                                // loading external listing state
 )
 
 type noise uint64
@@ -406,7 +410,6 @@ func main() {
 		time.Sleep(500 * time.Millisecond)
 	}
 	SampleRate = float64(data)
-	initialR8 = SampleRate
 	display.SR = SampleRate
 
 	go SoundEngine(w, format)
@@ -472,50 +475,77 @@ func main() {
 	priorMutes := []float64{}
 	solo := map[int]bool{}
 	unsolo := []float64{}
-	reload := [2]int{-1, -1}
+	s := bufio.NewScanner(os.Stdin)
+	s.Split(bufio.ScanWords)
+	lockLoad := make(chan struct{}, 1)
+	tokens := make(chan string, 1024)
 
 	go func() { // watchdog, anonymous to use variables in scope
-		// assumes no panic while paused
-		// This function will remove previously added listing and restart the sound engine
+		// This function will restart the sound engine and reload listings with new sample rate
+		// At present runtime errors are not handled
 		for {
 			if exit {
 				return
 			}
 			select {
 			case <-stop:
-				msg("%ssound engine halted... removing previous listing%s", italic, reset)
 				stop = make(chan struct{})
-				if reload[1] < 0 || reload[1] > len(transfer.Listing)-1 {
-					reload[1] = len(transfer.Listing) - 1 // default is delete last added listing
-				}
 				go SoundEngine(w, format)
-				transfer.Listing[reload[1]] = listing{{Op: "deleted"}}
-				dispListings[reload[1]] = listing{{Op: "deleted"}}
-				display.List--
+				sg["wavR"] = 1.0 / (WAV_TIME * SampleRate) // hack to update wav rate
+				for _, w := range wavSlice {
+					sg["l."+w.Name] = float64(len(w.Data)-1) / (WAV_TIME * SampleRate)
+				}
+				lockLoad <- struct{}{}
+				for len(tokens) > 0 { // empty incoming tokens
+					<-tokens
+				}
+				ext = yes
+				for i := 0; i < len(transfer.Listing); i++ { // preload listings into tokens buffer
+					f := sf(".temp/%d.syt", i)
+					if e(rr) {
+						msg("restart: unable to locate %d.syt", i)
+						continue
+					}
+					inputF, rr := os.Open(f)
+					if e(rr) {
+						msg("%v", rr)
+						break
+					}
+					s := bufio.NewScanner(inputF)
+					s.Split(bufio.ScanWords)
+					if transfer.Listing[i][0].Op == "deleted" { // hacky, to avoid undeleting listings
+						tokens <- "deleted"
+						tokens <- "out"
+						tokens <- "dac"
+						continue
+					}
+					for s.Scan() {
+						tokens <- s.Text()
+					}
+					inputF.Close()
+				}
+				transfer.Listing = nil
+				transfer.Signals = nil
+				dispListings = nil
+				display.List = 0
 				transmit <- yes
 				<-accepted
-				if !save(*code, "displaylisting.json") {
-					msg("%slisting display not updated, check %s'displaylisting.json'%s exists%s",
-						italic, reset, italic, reset)
-				}
-				msg("\tSound Engine restarted")
-				time.Sleep(500 * time.Millisecond) // wait to stabilise
+				restart = yes // no guarantee this will propagate before transfer
+				<-lockLoad
+				msg("%s>>> Sound Engine restarted%s", italic, reset)
+				time.Sleep(447 * time.Millisecond) // wait to stabilise
 			default:
 				// nop
 			}
-			time.Sleep(100 * time.Millisecond) // coarse loop timing
+			time.Sleep(84721 * time.Microsecond) // coarse loop timing
+			restart = not                        // assumes reload will complete within 500ms
 		}
 	}()
-
-	s := bufio.NewScanner(os.Stdin)
-	s.Split(bufio.ScanWords)
-	tokens := make(chan string, 1024)
-	lockLoad := make(chan struct{}, 1)
 
 	go func() { // scan from go routinue to allow external concurrent input
 		tt := ""
 		for {
-			s.Scan()
+			s.Scan() // blocks on stdin
 			t := s.Text()
 			tokens <- t
 			if tt == ":" && (t == "exit" || t == "q") {
@@ -524,7 +554,7 @@ func main() {
 			tt = t
 		}
 	}()
-	go func() { // poll .'temp/%d.syt' modified time and reload if changed
+	go func() { // poll '.temp/%d.syt' modified time and reload if changed
 		for {
 			lockLoad <- struct{}{}
 			l := len(transfer.Listing)
@@ -534,7 +564,7 @@ func main() {
 				f := sf(".temp/%d.syt", i)
 				st, rr := os.Stat(f)
 				if e(rr) {
-					msg("unable to locate %d.syt", i)
+					msg("reload: unable to locate %d.syt", i)
 					return
 				}
 				stat[i] = st.ModTime()
@@ -542,7 +572,7 @@ func main() {
 			}
 			<-lockLoad
 			for {
-				time.Sleep(50 * time.Millisecond)
+				time.Sleep(52360 * time.Microsecond) // coarse loop timing
 				if !started {
 					continue
 				}
@@ -572,13 +602,14 @@ func main() {
 							msg("%v", rr)
 							break
 						}
-						reload[0] = i
+						reload = i
 						s := bufio.NewScanner(inputF)
 						s.Split(bufio.ScanWords)
 						ext = yes
 						for s.Scan() {
 							tokens <- s.Text()
 						}
+						msg("%slisting reloaded:%s %d", italic, reset, i)
 						inputF.Close()
 						prevStat[i] = stat[i]
 						break
@@ -606,7 +637,7 @@ start:
 			"invSR":    1 / SampleRate,
 			"SR":       SampleRate,
 			"Epsilon":  SmallestNonzeroFloat64, // ε, epsilon
-			"wavR":     1.0 / WAV_LENGTH,
+			"wavR":     1.0 / (WAV_TIME * SampleRate),
 			"semitone": Pow(2, 1.0/12),
 			"Tau":      2 * Pi, // 2π
 			"ln7":      Log(7),
@@ -615,7 +646,7 @@ start:
 		}
 		for i, w := range wavSlice {
 			sg[w.Name] = float64(i)
-			sg["l."+w.Name] = float64(len(w.Data)-1) / WAV_LENGTH
+			sg["l."+w.Name] = float64(len(w.Data)-1) / (WAV_TIME * SampleRate)
 		}
 		out := map[string]struct{}{}
 		for _, v := range reserved {
@@ -628,12 +659,14 @@ start:
 		fIn := not // yes = inside function definition
 		st := 0    // func def start
 		fun := 0   // don't worry the fun will increase!
-		reload[0] = -1
-		ext = not
+		reload = -1
 		do := 0
 
 	input:
 		for { // input loop
+			if len(tokens) == 0 {
+				ext = not
+			}
 			var num struct {
 				Ber float64
 				Is  bool
@@ -641,14 +674,14 @@ start:
 			pf("%s\033[H\033[2J", reset) // this clears prior error messages!
 			pf(">  %dbit %2gkHz %s\n", format, SampleRate/1000, channels)
 			pf("%sSyntə%s running...\n", cyan, reset)
-			pf("Protect your hearing above 85dB SPL\n\n")
+			pf("Always protect your ears above +85dB SPL\n\n")
 			if len(wavNames) > 0 {
 				pf(" %swavs:%s %s\n\n", italic, reset, wavNames)
 			}
 			pf("\n%s%d%s:", cyan, len(dispListings), reset)
 			for i, o := range dispListing {
 				switch dispListing[i].Op {
-				case "in", "pop", "tap", "index", "]", "from":
+				case "in", "pop", "tap", "index", "[", "]", "from", "all":
 					pf("\t  %s%s %s%s\n", yellow, o.Op, o.Opd, reset)
 				default:
 					_, f := funcs[dispListing[i].Op]
@@ -660,24 +693,22 @@ start:
 					}
 				}
 			}
-			op, opd := "", ""
+			var op, opd string
 			pf("\t  ")
 			pf("%s", yellow)
 			op = <-tokens
 			pf("%s", reset)
-			if len(op) > 2 && byte(op[1]) == 91 || op == "_" { // hack to escape terminal characters
+			if (len(op) > 2 && byte(op[1]) == 91) || op == "_" { // hack to escape terminal characters
 				continue
 			}
 			op = strings.TrimSuffix(op, ",") // to allow comma separation of tokens
 			op2, in := operators[op]
 			if !in {
 				msg("%soperator or function doesn't exist:%s %s", italic, reset, op)
-				if ext {
-					for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
-						<-tokens
-					}
-					ext = not
+				for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
+					<-tokens
 				}
+				ext = not
 				continue
 			}
 			_, f := funcs[op]
@@ -702,9 +733,11 @@ start:
 					}
 				}
 			}
-			for do > 0 {
+			for do > 1 { // one already done
 				tokens <- op
-				tokens <- opd
+				if t2 := operators[op]; t2.Opd { // to avoid weird blank opds being sent
+					tokens <- opd
+				}
 				do--
 			}
 
@@ -868,6 +901,7 @@ start:
 							priorMutes[i] = mute[i]
 							mute[i] = 0
 						}
+						time.Sleep(50 * time.Millisecond)
 						pause <- yes
 						display.Paused = yes
 					} else if !started {
@@ -925,17 +959,9 @@ start:
 					}
 					msg("%smute skip:%s %v", italic, reset, s)
 					continue
-
-					/*////////////////////////////////////////////
-					case "ds":
-						DS++
-						nyfC = 1 / (1 + (DS / Pi))
-						//SampleRate = initialR8 / DS
-						//display.SR = SampleRate
-						info <- sf("sample rate divided by %.fx to %.fHz", DS, initialR8/DS)
-						continue
-						/*/ ///////////////////////////////////////////
-
+				case "ds":
+					ds = yes // not intended to be invoked while paused
+					continue
 				default:
 					msg("%sunrecognised mode%s", italic, reset)
 					continue
@@ -943,10 +969,10 @@ start:
 			case "load", "ld", "rld", "r", "apd":
 				switch op {
 				case "rld", "r":
-					reload[0], _ = strconv.Atoi(opd) // no checks
+					reload, _ = strconv.Atoi(opd) // no checks
 					opd = ".temp/" + opd
 				case "apd":
-					reload[0] = -1
+					reload = -1
 					opd = ".temp/" + opd
 				}
 				inputF, rr := os.Open(opd + ".syt")
@@ -1018,7 +1044,7 @@ start:
 					continue
 				}
 				out[opd] = struct{}{}
-			case "del", ".del":
+			case "del", ".del", "d":
 				n, rr := strconv.Atoi(opd)
 				if e(rr) {
 					msg("%soperand not an integer%s", italic, reset)
@@ -1032,17 +1058,19 @@ start:
 				display.Mute[n] = yes
 				if display.Paused { // this mute logic is not clear
 					for i := range mute { // restore mutes
-						if i != n {
-							mute[i] = priorMutes[i]
+						if i == n {
+							continue
 						}
+						mute[i] = priorMutes[i]
 					}
 					<-pause
 					display.Paused = not
 				}
-				time.Sleep(51 * time.Millisecond) // wait for envelope to complete
-				transfer.Listing[n] = listing{{Op: "deleted"}}
+				time.Sleep(50 * time.Millisecond) // wait for envelope to complete
+				transfer.Listing[n] = listing{{Op: "deleted", Opn: 31}}
+				transfer.Signals[n][0] = 0 // silence listing
 				dispListings[n] = listing{{Op: "deleted"}}
-				display.List--
+				display.List-- // abandon this?
 				transmit <- yes
 				<-accepted
 				if !save(*code, "displaylisting.json") {
@@ -1134,22 +1162,13 @@ start:
 					msg("%s%snumber greater than length of necklace%s", red, italic, reset)
 					continue
 				}
-				for ; n > 0; n-- {
-					lastOp := dispListing[len(dispListing)-1].Op
-					count := 1
-					if _, in := funcs[lastOp]; in {
-						count = len(funcs[lastOp])
-					}
-					newListing = newListing[:len(newListing)-count]
-					dispListing = dispListing[:len(dispListing)-1]
-				}
-				out = map[string]struct{}{}
-				for _, o := range newListing {
-					if o.Op == "out" {
-						out[o.Opd] = struct{}{}
+				for i := 0; i < len(dispListing)-n; i++ { // recompile
+					tokens <- dispListing[i].Op
+					if len(dispListing[i].Opd) > 0 {
+						tokens <- dispListing[i].Opd
 					}
 				}
-				continue
+				continue start
 			case "wav":
 				if !wmap[opd] && opd != "@" {
 					msg("%s%sname isn't in wav list%s", red, italic, reset)
@@ -1189,7 +1208,7 @@ start:
 					msg("operand not an integer")
 					continue
 				}
-				i %= len(transfer.Listing) + 1 // modulus because operand may be a signal
+				i %= len(transfer.Listing) + 1
 				if i < 0 {
 					i = -i
 				}
@@ -1276,10 +1295,6 @@ start:
 			case "noise":
 				newListing = append(newListing, listing{{Op: "push"}, {Op: "in", Opd: sf("%v", NOISE_FREQ)}, {Op: "out", Opd: "^freq"}, {Op: "pop"}}...)
 			case "[":
-				if opd == "deleted" {
-					msg("%s%sname not permitted%s", red, italic, reset)
-					continue
-				}
 				if _, ok := funcs[opd]; ok {
 					msg("%s%swill overwrite existing function!%s", red, italic, reset)
 				} else if _, ok := operators[opd]; ok {
@@ -1322,9 +1337,9 @@ start:
 				msg("%s", ls)
 				continue
 			case "ct":
-				if n, rr := strconv.ParseFloat(opd, 64); !e(rr) { // change to accept db type?
-					ct = Pow(10, n/20)
-					msg("%sclip threshold set to %.1g%sx", italic, ct, reset)
+				if n, ok := parseType(opd, op); ok {
+					ct = n
+					msg("%sclip threshold set to %.2g%s", italic, ct, reset)
 				}
 				continue
 			case "rpl", ".rpl":
@@ -1337,7 +1352,7 @@ start:
 					msg("listing doesn't exist")
 					continue
 				}
-				reload[0] = n
+				reload = n
 				msg("%swill replace listing %s%d%s on launch%s", italic, reset, n, italic, reset)
 				if op[:1] == "." && len(newListing) > 0 {
 					dispListing = append(dispListing, listing{{Op: "mix"}}...)
@@ -1355,8 +1370,9 @@ start:
 				do, rr = strconv.Atoi(opd)
 				if e(rr) { // returns do as zero
 					msg("%s%soperand not an integer%s", red, italic, reset)
+					continue
 				}
-				msg("%s next operation repeated%s %dx", italic, reset, do)
+				msg("%snext operation repeated%s %dx", italic, reset, do)
 				continue
 			default:
 				// nop
@@ -1455,46 +1471,44 @@ start:
 		}
 		lockLoad <- struct{}{}
 		//transfer to sound engine // or if reload, replace existing at that index
-		if reload[0] < 0 || reload[0] > len(transfer.Listing)-1 {
+		if reload < 0 || reload > len(transfer.Listing)-1 {
 			dispListings = append(dispListings, dispListing)
 			transfer.Listing = append(transfer.Listing, newListing)
 			transfer.Signals = append(transfer.Signals, sig)
-			mute = append(mute, 1)
-			priorMutes = append(priorMutes, 1)
-			unsolo = append(unsolo, 1)
-			display.Mute = append(display.Mute, not)
-			level = append(level, 1)
-			display.List++
+			if len(mute) < len(transfer.Listing) { // not if restarting
+				mute = append(mute, 1)
+				priorMutes = append(priorMutes, 1)
+				unsolo = append(unsolo, 1)
+				display.Mute = append(display.Mute, not)
+				level = append(level, 1)
+				display.List++
+			}
 			transmit <- yes
 			<-accepted
-		} else {
-			mute[reload[0]] = 0
-			time.Sleep(51 * time.Millisecond)
-			dispListings[reload[0]] = dispListing
-			transfer.Listing[reload[0]] = newListing
-			transfer.Signals[reload[0]] = sig
-			priorMutes[reload[0]] = 1
-			unsolo[reload[0]] = 1
-			display.Mute[reload[0]] = not
-			level[reload[0]] = 1
+			if !restart {
+				// save listing as <n>.syt for the reload
+				f := sf(".temp/%d.syt", len(transfer.Listing)-1)
+				content := ""
+				for _, d := range dispListing {
+					content += d.Op + " " + d.Opd + "\n"
+				}
+				if rr := os.WriteFile(f, []byte(content), 0666); e(rr) {
+					msg("%v", rr)
+				}
+			}
+		} else { // reloaded listing aren't saved to '.temp/'
+			mute[reload] = 1
+			dispListings[reload] = dispListing
+			transfer.Listing[reload] = newListing
+			transfer.Signals[reload] = sig
+			priorMutes[reload] = 1
+			unsolo[reload] = 1
+			display.Mute[reload] = not
+			level[reload] = 1
 			transmit <- yes
 			<-accepted
-			mute[reload[0]] = 1
-		}
-		if !ext && reload[0] == -1 {
-			// save listing as <n>.syt for the reload
-			f := sf(".temp/%d.syt", len(transfer.Listing)-1)
-			content := ""
-			for _, d := range dispListing {
-				content += d.Op + " " + d.Opd + "\n"
-			}
-			if rr := os.WriteFile(f, []byte(content), 0666); e(rr) {
-				msg("%v", rr)
-			}
 		}
 		<-lockLoad
-		ext = not
-		reload[1] = reload[0] // save index of previous added/reloaded listing
 		if !started {
 			started = yes
 		}
@@ -1514,7 +1528,7 @@ start:
 // parseType() evaluates conversion of types
 func parseType(expr, op string) (n float64, b bool) {
 	switch op { // ignore for following commands
-	case "mute", ".mute", "del", ".del", "solo", ".solo", "load", "save", "m", "reload", "r", "rpl", "s", "ld", "ls", "[": // this is a bit messy, we don't care what value is - commands handled in input loop
+	case "mute", ".mute", "del", ".del", "solo", ".solo", "load", "save", "m", "rld", "r", "rpl", "s", "ld", "ls", "[", "do", "apd": // this is a bit messy, we don't care what value is - commands handled in input loop
 		return 0, true
 	default:
 		// process expression below
@@ -1583,8 +1597,8 @@ func parseType(expr, op string) (n float64, b bool) {
 			return 0, false
 		}
 		switch op {
-		case "from", "level", ".level", "count":
-			// allow high values for these operators, as refer to listing indexes
+		case "from", "level", ".level", "count", "/":
+			// allow high values for these operators
 		default:
 			if Abs(n) > 20 {
 				msg("exceeds sensible values, do you mean %.[1]fhz, %.[1]fs, or %.[1]fbpm?", n)
@@ -1910,12 +1924,12 @@ func infodisplay() {
 		}
 		time.Sleep(20 * time.Millisecond) // coarse loop timing
 		n++
-		if n > 10 {
+		if n > 10 { // clip timeout
 			display.Clip = not
 			n = 0
 		}
 		s++
-		if s > 20 {
+		if s > 20 { // sync timeout
 			display.Sync = not
 			s = 0
 		}
@@ -1926,14 +1940,15 @@ func infodisplay() {
 // The code has not been optimised, beyond certain design choices such as using slices instead of maps
 // It is also freewheeling, it won't block on the action of any other goroutinue, only on IO, namely writing to soundcard
 // The latency and jitter of the audio output is entirely dependent on the soundcard and its OS driver,
-// except where the calculations don't complete in time under heavy load and the soundcard driver buffer underruns.
+// except where the calculations don't complete in time under heavy load and the soundcard driver buffer underruns. Frequency accuracy is determined by the soundcard clock and precision of float64 type
 // If the loop time exceeds the sample rate over number of samples given by RATE the Sound Engine will panic
 func SoundEngine(w *bufio.Writer, bits int) {
 	defer close(stop)
 	defer w.Flush()
 	output := func(w *bufio.Writer, f float64) {
 		if rr := binary.Write(w, binary.LittleEndian, int16(f)); e(rr) {
-			panic("writing to soundcard failed!")
+			msg("writing to soundcard failed!")
+			return
 		}
 	}
 	switch bits {
@@ -1953,8 +1968,10 @@ func SoundEngine(w *bufio.Writer, bits int) {
 	}
 
 	const (
-		Tau  = 2 * Pi
-		RATE = 2 << 14
+		Tau        = 2 * Pi
+		RATE       = 2 << 10
+		overload   = "Sound Engine overloaded"
+		recovering = "Sound Engine recovering"
 	)
 
 	var (
@@ -1974,7 +1991,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		rates    [RATE]time.Duration
 		t        time.Duration
 		s        float64 = 1 // sync=0
-		p        bool        // play/pause, shadows
+		p        bool        // play/pause, shadows func p
 
 		mx, my float64 = 1, 1 // mouse smooth intermediates
 		hpf, x float64        // DC-blocking high pass filter
@@ -1989,18 +2006,32 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		rms, rr, prevRms float64
 		RMS              [RMS_INT]float64
 		pd               int
-		nyf              float64 // nyquist filtering
+		nyfL, nyfR       float64 // nyquist filtering
+		L, R, sides      float64
 	)
 	no *= 77777777777 // force overflow
 	defer func() {    // fail gracefully
-		if p := recover(); p != nil { // p is shadowed
-			fade := Pow(1e-4, 1/(SampleRate*50e-3)) // approx -80dB in 50ms
-			for i := 2400; i >= 0; i-- {
-				dac0 *= fade
-				output(w, dac0) // left
-				output(w, dac0) // right
-			}
+		switch p := recover(); p { // p is shadowed
+		case nil:
+			return // exit normally
+		case overload, recovering:
 			msg("%v", p)
+		default:
+			msg("%v", p) // report runtime error to infodisplay
+			var buf [4096]byte
+			n := runtime.Stack(buf[:], false)
+			msg("%s", buf[:n]) // print stack trace to infodisplay
+			if reload == -1 {
+				reload = len(transfer.Listing) - 1
+			}
+			transfer.Listing[reload] = listing{{Op: "deleted", Opn: 31}} // delete listing
+			transfer.Signals[reload][0] = 0                              // silence listing
+		}
+		fade := Pow(1e-4, 1/(SampleRate*100e-3)) // approx -80dB in 100ms
+		for i := 4800; i >= 0; i-- {
+			dac0 *= fade
+			output(w, dac0) // left
+			output(w, dac0) // right
 		}
 	}()
 
@@ -2010,7 +2041,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 	stacks := make([][]float64, len(transfer.Listing), len(transfer.Listing)+21)
 	wavs := make([][]float64, len(transfer.Wavs), MAX_WAVS)
 	tapes := make([][]float64, 0, 26)
-	copy(listings, transfer.Listing) // is this pointless as refers to same underlying array anyway?
+	copy(listings, transfer.Listing)
 	copy(sigs, transfer.Signals)
 	copy(wavs, transfer.Wavs)
 	tapes = make([][]float64, len(transfer.Listing))
@@ -2020,6 +2051,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 	tf := make([]float64, len(transfer.Listing)+31)
 	th := make([]float64, len(transfer.Listing)+31)
 	tx := make([]float64, len(transfer.Listing)+31)
+	pan := make([]float64, len(transfer.Listing)+31)
 	accepted <- yes
 	syncInhibit := make([]bool, len(transfer.Listing), len(transfer.Listing)+27) // inhibitions
 	peakfreq := make([]float64, len(transfer.Listing), len(transfer.Listing)+28) // peak frequency for setlevel
@@ -2039,37 +2071,36 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			copy(listings, transfer.Listing)
 			sigs = make([][]float64, len(transfer.Signals))
 			copy(sigs, transfer.Signals)
-			stacks = make([][]float64, len(listings))
 			accepted <- yes
-			// add additional sync inhibit and tape. Assumes at most one listing added per transfer.
-			if len(transfer.Listing) > len(m) {
+			if len(transfer.Listing) > len(m) { // preserve extant tapes and mutes
 				tapes = append(tapes, make([]float64, TLlen))
+				syncInhibit = append(syncInhibit, not)
+				m = append(m, 0) // m ramps to mute value on launch
+				lv = append(lv, 1)
 				tf = append(tf, 0)
 				th = append(th, 0)
 				tx = append(tx, 0)
-				syncInhibit = append(syncInhibit, not)
+				pan = append(pan, 0)
 				peakfreq = append(peakfreq, 20/SampleRate)
-				m = append(m, 0.0)
-				lv = append(lv, 0.0)
+				stacks = append(stacks, []float64{})
 			}
 		default:
 			// play
 		}
 
-		if n%15127 == 0 { // arbitrary interval all-zeros protection for lfsr
+		if n%15127 == 0 { // arbitrary interval all-zeros protection for noise lfsr
 			no ^= 1 << 27
 		}
-		mx = (mx*765 + mouse.X) / 766 // lpf @ ~10Hz
-		my = (my*765 + mouse.Y) / 766
+		mx = (mx*764 + mouse.X) / 765 // lpf @ ~10Hz
+		my = (my*764 + mouse.Y) / 765
 
 		for i, list := range listings {
-			if muteSkip && mute[i] == 0 && m[i] < 1e-6 { // skip muted listings
-				continue
-			}
-			r = 0
 			// daisy-chains
 			for _, ii := range Sigs {
 				sigs[i][ii] = sigs[(i+len(sigs)-1)%len(sigs)][ii]
+			}
+			if (muteSkip && mute[i] == 0 && m[i] < 1e-6) || list[0].Opn == 31 { // skip muted/deleted listing
+				continue
 			}
 			// mouse values
 			sigs[i][4] = mx
@@ -2077,6 +2108,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			sigs[i][6] = mouse.Left
 			sigs[i][7] = mouse.Right
 			sigs[i][8] = mouse.Middle
+			r = 0
 			for op := 0; op < len(list); op++ {
 				o := list[op]
 				switch o.Opn {
@@ -2180,7 +2212,6 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					case r > 0:
 						syncInhibit[i] = not
 					}
-					r = 0
 				case 27: // "jl0"
 					if r <= 0 {
 						op += int(Min(sigs[i][o.N], float64(len(list)-op-2)))
@@ -2191,8 +2222,6 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					r = sigs[int(sigs[i][o.N])%len(sigs)][0]
 				case 30: // "sgn"
 					r = 1 - float64(Float64bits(r)>>62)
-				case 31: // "deleted"
-					sigs[i][0] = 0
 				case 32: // "/"
 					if sigs[i][o.N] == 0 {
 						sigs[i][o.N] = Copysign(1e-308, sigs[i][o.N])
@@ -2202,14 +2231,12 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				case 33: // "sub"
 					r -= sigs[i][o.N]
 				case 34: // "setmix"
-					{ // lexical scope
-						a := Abs(sigs[i][o.N]) + 1e-6
-						d := a/peakfreq[i] - 1
-						d = Max(-1, Min(1, d))
-						peakfreq[i] += a * (d * smR8)
-						if Abs(d) < 0.01 {
-							peakfreq[i] = a
-						}
+					a := Abs(sigs[i][o.N]) + 1e-6
+					d := a/peakfreq[i] - 1
+					d = Max(-1, Min(1, d))
+					peakfreq[i] += a * (d * smR8)
+					if Abs(d) < 0.01 {
+						peakfreq[i] = a
 					}
 					r *= Min(1, 80/(peakfreq[i]*SampleRate+20)) // ignoring density
 					//r *= Min(1, Sqrt(20/(peakfreq[i]*SampleRate+20)))
@@ -2235,8 +2262,10 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					r += sigs[i][o.N] * sigs[ii][index]
 					//if ii< 0 { index*= -1 }
 					//if index< 0 { index*= -1 }
+				case 38: // "pan"
+					pan[i] = Max(-1, Min(1, r))
 				case 39: // deprecated
-				case 40: // all
+				case 40: // "all"
 					c := -3.0                   // to avoid being mixed twice
 					for ii := 0; ii < i; ii++ { // only read from prior listings
 						if sigs[ii][0] == 0 { // avoid silent listings, hacky
@@ -2249,7 +2278,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 						c = 1
 					}
 					r /= c
-				case 41: // rms
+				case 41: // "rms"
 					r *= r
 					rms += r
 					RMS[n%RMS_INT] = r
@@ -2265,8 +2294,11 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					// nop, r = r
 				}
 			}
+			m[i] = (m[i]*764 + mute[i]) / 765 // anti-click filter @ ~10hz
+			lv[i] = (lv[i]*7 + level[i]) / 8  // @ 1091hz
+			c += m[i]                         // add mute to mix factor
 			if sigs[i][0] == 0 {
-				continue // ignore permanently silent listings
+				continue
 			}
 			if sigs[i][0] != sigs[i][0] { // test for NaN
 				sigs[i][0] = 0
@@ -2278,22 +2310,23 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			}
 			if sigs[i][0] > ct { // soft clip
 				sigs[i][0] = ct + Tanh(sigs[i][0]-ct)
+				display.Clip = yes
 			} else if sigs[i][0] < -ct {
 				sigs[i][0] = Tanh(sigs[i][0]+ct) - ct
+				display.Clip = yes
 			}
-			m[i] = (m[i]*152 + mute[i]) / 153 // anti-click filter @ ~50hz
-			lv[i] = (lv[i]*7 + level[i]) / 8  // @ 1091hz
 			sigs[i][0] *= lv[i]
-			dac += sigs[i][0] * m[i]
-			c += m[i] // add mute to mix factor
+			sigs[i][0] *= m[i]
+			sides += pan[i] * sigs[i][0] / 2
+			sigs[i][0] *= 1 - Abs(pan[i]/2)
+			dac += sigs[i][0]
 		}
-		if c > 4 {
-			dac /= c
-		} else {
-			dac /= 4
-		}
+		//dac /= 4 + c/(1+4/c) //dac /= Max(4, c)
+		c += 16 / (c + 4)
+		dac /= c
+		sides /= c
 		c = 0
-		hpf = (hpf + dac - x) * 0.9994 // hpf = 4.6Hz @ 48kHz SR
+		hpf = (hpf + dac - x) * 0.9994 // hpf ≈ 4.6Hz
 		x = dac
 		dac = hpf
 		if protected { // limiter
@@ -2314,15 +2347,15 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				h = release
 			}
 			dac /= l
+			sides /= l
 			dac += deemph
 			h /= release
 			l = (l-1)*(1/(h+1/(1-release))+release) + 1 // snubbed decay curve
 			display.GR = l > 1+3e-4
-		} else {
-			display.GR = not
 		}
 		if exit {
-			dac *= env // fade out
+			dac *= env   // fade out
+			sides *= env // fade out
 			env *= fade
 			if env < 1e-4 {
 				save([]listing{listing{{Op: advisory}}}, "displaylisting.json")
@@ -2330,7 +2363,8 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			}
 		}
 		if p {
-			dac *= env // fade out
+			dac *= env   // fade out
+			sides *= env // fade out
 			env *= penv
 			if env < 1e-4 {
 				pause <- not // blocks until `: play`
@@ -2360,39 +2394,43 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		if peak < 0 {
 			peak = 0
 		}
+		sides = Max(-1, Min(1, sides))
 		display.Vu = peak
-		dac *= convFactor // convert
+		L = (dac + sides) * convFactor
+		R = (dac - sides) * convFactor
+		//dac *= convFactor
 		t = time.Since(lastTime)
-
-		for i := 0; i < int(DS); i++ {
-			nyf = nyf + nyfC*(dac-nyf)
-			//_,_ = nyf, nyfC
-			output(w, nyf) // left
-			output(w, nyf) // right
+		for i := 0; i < DS; i++ { // write sample(s) to soundcard
+			nyfL = nyfL + nyfC*(L-nyfL)
+			nyfR = nyfR + nyfC*(R-nyfR)
+			output(w, nyfL) // left
+			output(w, nyfR) // right
 		}
 		lastTime = time.Now()
 		rate += t
 		rates[n%RATE] = t // rolling average buffer
 		rate -= rates[(n+1)%RATE]
 		if n%RATE == 0 {
-			display.Load = rate / RATE
-			if float64(display.Load)/DS > 1e9/initialR8 {
-				//DS++
-				//if DS > 3 {
-				panic("Sound Engine overloaded")
-				/*}
-				nyfC = 1 / (1 + (DS / Pi))
-				SampleRate = initialR8 / DS
+			display.Load = (display.Load + (rate / RATE)) / 2 // some smoothening
+			//display.Load = rate / RATE
+			if (float64(display.Load) > 1e9/SampleRate && SampleRate > 22050) || ds {
+				ds = not
+				DS <<= 1
+				nyfC = 1 / (1 + (float64(DS*DS) / Pi))
+				SampleRate /= 2
 				display.SR = SampleRate
-				info <- sf("sample rate divided by %.fx to %.fHz", DS, initialR8/DS)*/
+				fade = Pow(1e-4, 1/(100e-3*SampleRate)) // 100ms
+				// update release too
+				panic(overload)
+			} else if DS > 1 && float64(display.Load) < 4e8/SampleRate && n > 50000 { //holdoff for ~2secs x DS
+				DS >>= 1
+				nyfC = 1 / (1 + (float64(DS*DS) / Pi))
+				SampleRate *= 2
+				display.SR = SampleRate
+				fade = Pow(1e-4, 1/(100e-3*SampleRate)) // 100ms
+				// update release too
+				panic(recovering)
 			}
-			/*else if DS > 1 && float64(display.Load)/DS < 5e8/initialR8 {
-				DS--
-				nyfC = 1 / (1 + (DS / Pi))
-				SampleRate = initialR8 / DS
-				display.SR = SampleRate
-				info <- sf("sample rate increased to %.fHz", initialR8/DS)
-			}*/
 		}
 		dac0 = dac // dac0 holds output value for use when restarting
 		dac = 0
@@ -2425,10 +2463,7 @@ func save(data interface{}, f string) bool {
 }
 
 // for monitoring
-func p(i ...any) { // mega hacky nullify output on re/load
-	if ext {
-		return
-	}
+func p(i ...any) {
 	fmt.Println(i...)
 }
 

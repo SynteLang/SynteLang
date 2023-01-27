@@ -156,7 +156,7 @@ The `sino` function combines `osc` and `sine` so can be used in their place.
 Once you have added one listing in this way, you can add more.  
 Each listing has a number indicated at the beginning of the first line.  This is used to reference the listing for operators like `del` which silences a listing and removes all its code. Typing `: erase` removes all operations input to a listing so far and starts again from the top.
 
-You don't need to understand all of this right away. Everyone learns at different rates, and has a different learning style. Some need to experiment, some need a lot of detail, some by example etc.  In future you may be able to find a workshop to attend if that is helpful too. If you want you can skip to the examples section below to try out some listings directly.
+You don't need to understand all of this right away. Everyone learns at different rates, and has a different learning style. Some need to experiment, some need a lot of detail, some by example etc.  In future you may be able to find a workshop to attend if that is helpful too. If you want you can skip to the [Examples](#eg) section below to try out some listings directly.
 
 
 **Great, but what do I actually type in?**
@@ -573,7 +573,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	level	|		yes   	|		changes the output level of the listing at the index given by operand. The preceding input sets the level. Level will persist after deletion. Capable of modulation up to 1100Hz, but because of this sudden large changes in level may produce clicks. Operation independent of mute
 |	x		|		yes   	|		alias of `mul`
 |	*		|		yes   	|		alias of `x`
-|	from	|		yes   	|		receives output of listing given by operand.  By design operand must be a number not a named signal. If the operand is greater than the number of listings it will wrap round (modulous)
+|	from	|		yes   	|		receives mono output of listing given by operand.  By design operand must be a number not a named signal. If the operand is greater than the number of listings it will wrap round (modulous)
 |	sgn		|		no   	|		outputs is 1 if the input is positive and -1 if negative
 |	/		|		yes   	|		subtracts the operand from the input repeatedly until zero and outputs the number of subtractions as a fraction. AKA divide. output = input / operand
 |	\		|		yes   	|		output = operand / input
@@ -581,12 +581,13 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	setmix 	| 		yes		|		used internally for mix function
 |	.level	|		yes   	|		equivalent to `level` except will end input and launch listing. Operation not affected by mute
 |	print	|		no   	|		prints value of input to info display and passes through unchanged to next operation. Timing is a random point in an interval approximately 341ms to 682ms
-|	reel	|		yes   	|		output from tape at a rate determined by operand. 1 is original speed, less than one is slower and vice versa. No interpolation so will exhibit pleasant digital artefacts with operand < 1. (deprecated)
 |	index	|		no   	|		outputs index of current listing
 |	//		|		yes   	|		does nothing, use to display comments. Separate words with underscores like_this_etc. Remainder of listing will be skipped, use as a single line listing
+|	all		|		no   	|		output is sum of all preceding listings
 |	rms		|		yes   	|		output is root mean square of input with an integration time of 125ms, if greater than the operand, otherwise holds previous value. Use `rms 0` for a plain rms value
 |	.out	|		yes   	|		use to end silent listing, for use with signals `tempo`, `pitch`, `grid`, or Exported signals.
 |	jl0		|		yes   	|		jump if less than zero. The next n number of operations are skipped if input is less than or equal to zero, where n is given by operand.  Bear in mind that this number of skips includes all the operations within any functions within the listing. The final operation in a listing will always execute. An operand of zero is no jump. Added for fun in a vague attempt to make syntə turing-complete
+|	pan		|		no   	|		input (limited to ±1) sets the stereo pan of the whole listing. Positive input pans left and negative input pans right. The pan curve chosen ensures neither channel is boosted at full pan, while mono sounds remain at unity gain in both channels. This is achieved by turning down the mono channel while pan increases. Because of this a panned sound summed to mono will fluctuate in volume, so we recommend using `pan` on stereo playback systems only. That is to say for full mono compatiblity avoid `pan` altogether 
 |	       	| 		       	|
 |	propa	|		yes  	|		used in conjuction with `index`, adds multiple listings at once (not implimented yet) ◊  
 |	fma		|		yes  	|		fused multiply add, the result of the input multiplied by the operand is stored in a special register `fma` (not implimented yet) ◊  
@@ -648,7 +649,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	bd909	|		2		|		unfinished '909' kick drum. first operand is decay and second is pitch. ◊  
 |	down	|		yes		|		slews downwards for decreasing signals, jumps immediately to an increasing or static (unchanging) signal value. Use with a narrow pulse to make a linear decay envelope. Descends at rate given by operand
 |	echo	|		2		|		repeated echo of input using `tape` internally. First operand is repeat interval (time), second operand is loop/feeback gain, >1 is infinite repeats (may distort), 0 is no repeats and no output. Use in conjunction with `from` or mix in with original input
-|	step	|		yes		|		generates a rising staircase of values with the operand number of steps within input time interval, eg `120bpm` or `2hz`. Output is between [0,1]. This implementation is not precise due to overflows (low frequencing aliasing). Uses `s/h` internally. Preferrable to use `osc` or `posc p` followed by `8bit n`, where p is the phase offset from sync and n is the equivalent of the `step` operand
+|	step	|		yes		|		generates a rising staircase of values with the operand number of steps within input time interval, eg `120bpm` or `2hz`. Output is between [0,1]. This implementation is not precise due to overflows (low frequencing aliasing). Uses `s/h` internally. For precision use `osc` or `posc p` followed by `8bit n`, where p is the phase offset from sync and n is the equivalent of the `step` operand
 |	tempo	|		yes		|		operand sets the tempo across all listings, subsequent invocations will set tempo for subsequent listings
 |	grid	|		no		|		generates a square wave at frequency of input and sends out to grid, accessible across all listings in ascending order like tempo. The grid signal can be used to gate audio using `mul`. Euclidean rhythms can be generated by `s/h`-ing other gate signals at different frequencies
 |	count	|		yes		|		generates a rising staircase of values from 1 up to and including operand. Use a pulse or square wave [0,1] as input. Uses `dirac` to detect edge transitions internally. Can be used with `in <tempo>, osc, lt 0.5, count n` as a more precise equivalent to `step`
@@ -664,7 +665,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	sclp	|		no		|		soft clipping, harsher than tanh
 |	every	|		yes		|		for a pulse (or square) input [0,1], outputs a pulse ending at second rising edge of input every n input pulses, where n is the operand. Uses `count` internally
 |	intfr	|		yes		|		non-linear feedback leads to radio-inteference sounding patterns
-|	fractal	|		yes		|		fractal inspired no-linear feeback mangles input in interesting ways
+|	fractal	|		yes		|		fractal inspired non-linear feeback mangles input in interesting ways
 |           |               |
 
 **List of pre-defined constants**	
@@ -830,7 +831,7 @@ An *abstraction* means wrapping up a bit of code into something simple to make i
 Syntə info *press enter to quit*                0s      <-- elapsed running time in seconds
 ╭───────────────────────────────────────────────────╮
 
-                                    Load: 0.00          <-- If the sound engine is overloaded, listings will be removed without warning
+                                    Load: 0.00          <-- If the sound engine is overloaded, the sound engine will restart without warning
 
 
 
@@ -842,7 +843,7 @@ Syntə info *press enter to quit*                0s      <-- elapsed running tim
 
 
 
-
+																		(the top line of the audio meter will flicker red if clipping occurs internally)
         0.00    |||||||             |                   <-- peak audio meter, approx 35dB of range, will display 'GR' if limiting takes place on the output.
       Mouse-X: 0				Mouse-Y: 0              <-- value of mouse X and Y
 ╰───────────────────────────────────────────────────╯
@@ -860,6 +861,7 @@ Info display won't display the same message sent more than once in succession.
 + pipe the output of `functions.go` through `less` using the `-r` flag, like this: `go run functions.go | less -r`. You can then search the contents using `/`, refer to `man less` 
 + want to fade in a listing? Use `in 10s, once, level n, in 0, .mute n` where n is th index of the particular listing (that has previously been muted)
 + want a long fade out on exit? Type `fade 30s` before you type `: exit`
++ want to purge the .temp folder of old listings? Type `rm -v .temp/*.syt` from inside the project directory
 + other tips tba... ◊  
 
 ## Performing with Syntə
@@ -901,7 +903,7 @@ The limiter reduces the level of audio above a peak value of 1 to avoid the poss
 The density distribution of pink noise is a good general approximation to expected frequency levels in audio (*Barrow, 1995*). The `mix` function also uses this as a guiding principle in setting a sensible level. Some adjustment may be required; however, the limiter will always kick in if internal levels are exceeded.  
 Because of the frequency dependent nature of the limiter detection, gain reduction may occur before the info display shows a high VU level. This is normal and you can adjust listings via the `level` operator to prevent higher frequencies from dominating the playback.  
 Between the limiter and the clipping stage before conversion, what is known as dither is applied to the signal. This is a tiny amount of noise to avoid rounding errors, but is probably overkill. Before the dither any envelopes associated with pausing or exiting are applied. These reduce the chances of pops or clicks.  
-The whole main loop of the sound engine has a timer to produce the 'load' value that shows how much work it is doing to create each sample for the soundcard. See info display section above. If enough listings are added and the sound engine is unable to perform all calculations in time before the next sample is due, glitches or dropouts in the output can occur. In order to avoid this if a high load is detected the listing with highest numbered index will be removed automatically and the sound engine restarted. Something that may be implemented in future is automatic reduction of the overall sample rate under heavy load. This has been tested, however has not been found necessary so far. ◊  
+The whole main loop of the sound engine has a timer to produce the 'load' value that shows how much work it is doing to create each sample for the soundcard. See info display section above. If enough listings are added and the sound engine is unable to perform all calculations in time before the next sample is due, glitches or dropouts in the output can occur. In order to avoid this if a high load is detected the sample rate will be halved automatically and the sound engine restarted. The sample rate won't be halved below 11025hz. In future if type converions are added back in as part of making the language strongly typed, the sapmle rate will be able to dynamically adjust without restarting. The sound engine will also restart if a runtime or other error occurs and in this case will remove the previously added listing, as this is most likely to have caused the error. The listing will still be available in the `.temp/` directory to be amended and reloaded as desired.
 
 ## A note on the Go code
 
@@ -932,8 +934,7 @@ Many influences and inspirations have been drawn upon either deliberately or sub
 
 ### Future possiblities for Syntə  
 The main focus of development is building up a library of functions which provide useful and intuitive abstractions to speed up and simplify performing.  
-Work is being done to improve the rate of composition available, by enabling easier editing of listings and more modulation between them. Current roadmap includes: automated testing of the examples given in this documenti; simplification of the input parsing and compilation section of the code to improve readability and operation; further changes to the implementation of tape and reel operators; improvements to the usability of the wav operator to facilitate tempo calculations. ◊  
-It would be great if translations of this document and the language itself become available in future, get in touch if you can help with this. A live distro with Syntə included could be useful for users of other operating systems to boot from. Another possiblity for the code is integration with a terminal library such as tcell or bubbletea for a slicker UI. Also, the Sound Engine could be adapted to a 'headless' mode for use with an editor such as Atom. This option hasn't been pursued for now as it is helpful to provide immediate feedback via info.go with each operation entered. Future additions include providing for audio input and use of other sound drivers than OSS/ALSA. A browser-based interface is another option, which would make the program extremely portable. This could be as simple as redirecting stdout to a local websocket server.
+It would be great if translations of this document and the language itself become available in future, get in touch if you can help with this. A live distro with Syntə included could be useful for users of other operating systems to boot from. Another possiblity for the code is integration with a terminal library such as tcell or bubbletea for a slicker UI. Also, the Sound Engine could be adapted to a 'headless' mode for use with an editor such as Atom. This option hasn't been pursued for now as it is helpful to provide immediate feedback via info.go with each operation entered. Future additions include providing for audio and MIDI input and use of other sound drivers than OSS/ALSA. A browser-based interface is another option, which would make the program extremely portable. This could be as simple as redirecting stdout to a local websocket server.
 You may consider the current implementation of Syntə to be a prototype. At present most of the basic features have been taken care of, and as the language is tried out by different people, changes and adjustments that will tidy up and make performing easier may become apparent. The core aims of fun and accessibility won't change. 
 
 ### General principles of live coding performance  

@@ -100,7 +100,7 @@ func main() {
 						continue
 					}
 					switch list[i+1].Op {
-					case "in", "pop", "tap", "index", "from", "all":
+					case "in", "pop", "tap", "index", "from", "all", "ifft":
 						fmt.Printf(" %s|%s  ", y, reset)
 					default:
 						fmt.Printf(" %s\u22A2%s  ", y, reset)

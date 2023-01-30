@@ -7,7 +7,7 @@ fusing many tiny elements together under intense heat.
 It is also a portmanteau of 'synth' and 'byte', which is a reference to the stream of bytes that are generated and sent to the soundcard by Syntə.  
 
 The input syntax is in EBNF:
-	operator [ " " operand ]  
+	operator " " [ [","] operand [","] " " ]
 An operand can be a name or a number where:  
 	name = letter { letter | digit }  
 	number = float \[ ( "/" | "\*" ) float ] [type]  
@@ -98,7 +98,7 @@ Open a terminal, navigate to the directory and type 'go run synte.0.10.go' to be
 Open another terminal and run listing.go to view currently running code, this will also show mute status in italics. You may wish to arrange these using a tiling window manager, terminal multiplexer, or equivalent.
 
 You will be prompted to write your first syntə listing, a program that will make sounds.  
-The listing is input one line at a time. You must write the name of an operator or function, usually followed by a space and a number or signal name.  The number must conform to Go's float format or it will be assumed to be a name. The first character of a name cannot be a number, plus, minus or dot, to avoid confusion.  
+The listing is input one line at a time. You must write the name of an operator or function, usually followed by a space and a number or signal name. The first character of a name cannot be either a number, plus, minus or dot, to avoid confusion.  
 Some names have special meaning, such as ones beginning with the `@` or `^` characters.
 
 Press enter to complete each line.
@@ -115,7 +115,7 @@ Try this example to test everything is working ok:
 This should output a single sine tone.
 
 To exit from syntə type `: exit`  
-The `:` operator is used for commands to syntə
+The `:` operator is used for mode commands to syntə
 
 A function is a predefined list of operations that you can use in your code as if they are operators. These are indicated by a different colour once you have typed them in.
 
@@ -130,7 +130,7 @@ The result of each operation is fed to the input of the next. You can call this 
 A number represents an input value that could be used to set, for example, a frequency.  
 A number can be input as a frequency, time, or bpm or just a plain number. Eg. `in 1/3`, `in 330hz`, `in 2s`, `in 500ms`, `in 120bpm`, `mul 6db`.   
 A name represents a signal, Signals are used to store or share values using the `in` and `out` operators. Another way to think of them is as registers, like in a CPU.  
-You can only output to one unique signal, but you can input multiple times from the same signal.  
+You can only output to a unique signal once in a listing, but you can input multiple times from the same signal.  
 Think of it as a confluence of rivers flowing into one another to reach the sea. Many inputs, one output.  
 If you want to send two values to the same signal, either add them or combine them in other ways using operators first.    
 
@@ -141,29 +141,28 @@ Common operations are `+`, `mul`, `in`, `out`.
 The `osc` function outputs a ramp wave (increasing series of values up to 1, then restarts.)  
 `osc` accepts a frequency in hertz (from the preceding operation.)
 
-Most values apart from frequencies are between -1 and 1 for audio and 0 to 1 for control/modulation. This might seem like a limited range, however incredibly small fractions down to a number with over 300 zeros after the decimal place are possible. You won't need to handle such numbers, but if you want to experiment they can be input using the syntax `1e-3` which would represent one thousandth, or 3 millionths would be 3e-6 etc. You may also input a number as a fraction such as `in 1/3.14` etc. 
+Most values apart from frequencies are between -1 and 1 for audio and 0 to 1 for control/modulation. This might seem like a limited range; however, incredibly small fractions down to a number with over 300 zeros after the decimal place are possible. You won't need to handle such numbers, but if you want to experiment they can be input using the syntax `1e-3` which would represent one thousandth, or 3 millionths would be 3e-6 etc. You may also input a number as a fraction such as `in 1/3.14` etc. 
 Any values greater than 1 or less than -1 will be clipped by the output resulting in distortion. Think of this as slicing off the tops of waveforms that are too loud. Most of the time you won't need to worry about keeping within range though.
 
 In the syntə code example above, the output of the `osc` function is *shaped* by the sine operator. The sine operator does not produce a sound tone by itself.
 
 `dac` is a special signal name which sends the output to the soundcard of your computer. Typing `out dac` ends a listing and sends it to the sound engine to perform computations.  
-All listings end in `out dac`, so it can only be used once. `dac` stands for digital audio converter, which is the technical name for anything that takes a series of digitally represented numbers and outputs them as audio.    
+Most listings end in `out dac`, so it can only be used once. `dac` stands for digital audio converter, which is the technical name for anything that takes a series of digitally represented numbers and converts them into audio. A listing that generates signals for other listings but no sound directly can end with the `.out` operator, or you can also use the `.` function which sends zero to the soundcard. ◊  
 
-You will probably want to use the function `mix` which contains `out dac` and so will also end a necklace. `mix` will set the level based on the frequency of the most recent osc function within the listing to ensure output limiting doesn't take place (which would reduce the bass response). However, for listings that pass through using `from` it is better to use `out dac`.
+You will probably want to use the function `mix` which contains `out dac` and so will also end a necklace. `mix` will set the level based on the frequency of the most recent osc function within the listing to ensure output limiting doesn't take place (which may reduce the bass response). However, for listings that pass through using `from`, or play samples using `wav`, it is better to use `out dac`.
 
 The `sino` function combines `osc` and `sine` so can be used in their place.
 
 Once you have added one listing in this way, you can add more.  
-Each listing has a number indicated at the beginning of the first line.  This is used to reference the listing for operators like `del` which silences a listing and removes all its code. Typing `: erase` removes all operations input to a listing so far and starts again from the top.
+Each listing has a number indicated at the beginning of the first line.  This is used to reference the listing for operators like `del` which silences a listing and removes all its code. Typing `: erase` removes all operations input to a listing so far and starts again from the top. Once a listing has been launched it will be saved in the `.temp/` directory and will relaunch if edited and saved.  
 
-You don't need to understand all of this right away. Everyone learns at different rates, and has a different learning style. Some need to experiment, some need a lot of detail, some by example etc.  In future you may be able to find a workshop to attend if that is helpful too. If you want you can skip to the [Examples](#eg) section below to try out some listings directly.
-
+You don't need to understand all of this right away. Everyone learns at different rates, and has a different learning style. Some need to experiment, some need a lot of detail, some by example etc. In future you may be able to find a workshop to attend if that is helpful too. If you want you can skip to the [Examples](#eg) section below to try out some listings directly.  
 
 **Great, but what do I actually type in?**
 
 To decide what code to write, it's helpful to think about the functions or shapes that represent the sounds that you want.  
 
-Any number that increases and decreases periodically in some way will produce a an audible sound if the frequency is in the range of 20 to 20,000 hertz. (1 hertz is one cycle per second.) In practice most frequencies will be betwen around 200 to 2000 hertz. Anything below that takes quite a lot of power and size for a speaker to produce clearly and anything above that is rarely used directly (as a fundamental or root note) and will usually only appear as overtones of other lower frequencies. A discussion of overtones and harmonics is beyond the scope of this document, doing your own research will be useful for future if they are new to you.  
+Any number that increases and decreases periodically in some way will produce an audible sound if the frequency is in the range of 20 to 20,000 hertz. (1 hertz is one cycle per second.) In practice most frequencies will be between around 200 to 2000 hertz. Anything below that takes quite a lot of power and size for a speaker to produce clearly and anything above that is rarely used directly (as a fundamental or root note) and will usually only appear as overtones of other lower frequencies. A discussion of overtones and harmonics is beyond the scope of this document, doing your own research will be useful for future if they are new to you.  
 
 The `osc` function is actually a group of operators that are added to your listing. They are:
 
@@ -173,15 +172,15 @@ The `osc` function is actually a group of operators that are added to your listi
 	mod 1  
 	out a  
 
-`out ^freq` sends the input to a mix function (if you use one) for help in setting a sensible level.
+`out ^freq` sends the input frequency to a mix function (if you use one) for help in setting a sensible level.
 `+` adds the input to a signal called `a` .
 `mod 1` allows through any number between 0 and 1. Any numbers larger have 1 subtracted until within that range, eg. 2.3 → 0.3
 `out a` sends the result of `mod 1` to the signal `a`, this forms a loop.
 
 So `osc` is always adding to itself, yet keeping between 0 and 1.
-In ASCII it looks like: /|/|/| etc, you can see why it is called a ramp wave. In the study of digital signal processing it is known as a phase accumulator and in mathematics it is an overflowing integrator, but you don't need to know that. Another way of looking at it is that it counts up and then starts again to generate a repeating cycle. It is one of the most useful and basic functions in producing sounds. In fact, unless you do something really fiddly, nearly all of your necklaces will contain osc somewhere. (For functional programming afficionados the register in `osc` forms a closure which holds the current value of the output. Any register that is read from with `in` before writing to with `out` will form a closure, if this is allowed to change while being constrained within a certain range it will form an oscillator.)
+In ASCII it looks like: /|/|/| etc, you can see why it is called a ramp wave. In the study of digital signal processing it is known as a phase accumulator or numerically controlled oscillator and in mathematics it is an overflowing integrator, but you don't need to know that. Another way of looking at it is that it counts up and then starts again to generate a repeating cycle. It is one of the most useful and basic functions in producing sounds. In fact, unless you do something really fiddly, nearly all of your necklaces will contain osc somewhere. (For functional programming afficionados: the register in `osc` forms a closure which holds the current value of the output. Any register that is read from (with `in`) before writing to (with `out`) will form a closure, if this is allowed to change while being constrained within a certain range it will form an oscillator.)
 
-Now what happens if you want a *decreasing* wave form? i.e one that counts down instead of up. What you can do is take an `osc` and flip it upside down with `mul -1`. Now it is also negative so you can `+ 1` to shift it between 0 and 1 again. This is also what the `flip` function does. This upside down ramp can be called a sawtooth wave (although they're kind of interchangable terms.) You can also use the `saw` function which encapsulates `osc` and `flip` to save typing.   Interestingly you wouldn't be able to tell an audible difference betweeen a ramp and a sawtooth wave if output directly to your speakers, that is to say they sound the same. However for low frequency modulation, like periodically changing the volume, you would definitely tell the difference. Modulation just means changing one aspect of something else, such as the volume or filtering or pitch.
+Now what happens if you want a *decreasing* wave form? i.e one that counts down instead of up. What you can do is take an `osc` and flip it upside down with `mul -1`. Now it is also negative so you can `+ 1` to shift it to between 0 and 1 again. This is also what the `flip` function does. This upside down ramp can be called a sawtooth wave (although they're kind of interchangable terms.) Interestingly you wouldn't be able to tell an audible difference betweeen a ramp and a sawtooth wave if output directly to your speakers, that is to say they sound the same. However for low frequency modulation, like periodically changing the volume, you would definitely tell the difference. Modulation just means changing one aspect of something else, such as the volume or filtering or pitch.
 
 **Signal chains**
 
@@ -200,12 +199,12 @@ In this case the frequency of the second oscillator will only change from 0 to 1
 
 `in 330hz, osc, mul f, osc, mix`
 
-where f is now the maximum frequency we span to. You can use a number such as 200 instead, or feed in a value by sending to f from somewhere else. The listing display indicates where a result is passed down the chain by a curly arrow on the left. The operators `in`, `pop`, and `tap` break the chain and start a with value which is either the operand, the top of the stack, or the specified delay tap, respectively.
+where f is now the maximum frequency we span to. You can use a number such as 200 instead, or feed in a value by sending to f from somewhere else. The listing input display indicates where a result is passed down the chain by a curly arrow on the left. The operators `in`, `pop`, and `tap` break the chain and start a with value which is either the operand, the top of the stack, or the specified delay tap, respectively.
 
 If we examine the guitarist example more closely , we realise that the fx pedal will likely contain modulators such as LFOs, along with filters, wave shapers etc.
 So we can extend our analogous model to something like:
 
-`in 2.5hz, osc, flip, out a, tri, out c, in 330hz, osc, mul a, lpf c, mix`
+`in 2.5hz, osc, flip, out a, tri, out c, in 330hz, osc, mul a, osc, lpf c, mix`
 
 Notice that the first oscillator is now generating a 2.5 hertz low frequency modulation. It is inverted before being send to a, and then shaped into a triangle wave and send to c. The second osc now operates at a fixed frequency of 330 hertz and is multiplied by a (acting like a VCA to control the volume) and filtered by c before being mixed and send to the output.
 
@@ -613,12 +612,12 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	rld 	|		yes		|		reload edited listing, file in `.temp/` is not updated. if index not extant, will append to listings, but won't overwrite that particular `.temp/` file
 |	rpl 	|		yes		|		listing at index given by operand will be replaced by current input once launched, file in `.temp/ is not updated
 |	r 		|		yes		|		alias of rld
+|	do 		|		yes		|		repeat next operation or function n times, where n is given by the operand. Define a temporary function for this purpose if needs be
 
 **List of built-in functions**
 
 |  Function	|Requires operand?| Notes                           |
 |-----------|---------------|-----------------------------------|
-|	inv		|		no		|		invert a value between [0, 1], result equals 1/input |
 |	flip	|		no		|		turn a value between [0, 1] 'upside down', the input is flipped around y=½. Not suitable for negative values |
 |	tri		|		no		|		shape a value in range [0, 1] from saw/ramp to triangle. (mul 2, + -1, abs)
 |	osc		|		no		|		ramp wave, (phase accumulator). Output in range [0,1]. Has DC offset of ½
@@ -627,13 +626,13 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	s/h		|		yes		|		samples and holds input when operand moves greater than zero from less than or equal to zero. Use ramp or square to supply operand. See 'Sample and hold melody' example above. Feed a [0,1] pulse to lpf for track and hold
 |	dist	|		yes		|		distortion, operand controls amount
 |	sino	|		no		|		sine wave oscillator
-|	lpf		|		yes		|		6dB per octave low-pass filter. Operand is cutoff frequency in Hertz. Cascade for steeper cutoff
+|	lpf		|		yes		|		6dB per octave low-pass filter. Operand is cutoff frequency in Hertz. Cascade (repeat) for steeper cutoff
 |	heat	|		yes		|		'bulb-element' emulator (untested) ◊  
 |	cv2a	|		no		|		convert range [0, 1] to [-1, 1]
-|	test	|		yes		|		output a sine test tone at the frequency of the given operand. Watch the volume as this is output at full scale!
-|	decay	|		yes		|		will decay away to nothing from 1. 0.9997 is approx 20s, lower is quicker decay. Resets when input goes from 0 to 1
+|	test	|		yes		|		output a sine test tone at the frequency of the given operand. Output at full scale, so may be much louder than other listings and engage the limiter
+|	decay	|		yes		|		will decay away to nothing from 1. 0.9997 is approx 20s, lower is quicker decay. Resets when input goes from 0 to 1. Using `down` and `exp` usually easier
 |	half	|		yes		|		like `decay` but accepts an operand in seconds that defines the 'half-life' of the decay. Input will override decay.
-|	once	|		no		|		like `osc` but only completes one cycle. Operand will set upper limit and will reset when 0. Use 1 for one-off ramp
+|	once	|		no		|		like `osc` but only completes one cycle and output remains at 1
 |	pulse	|		yes		|		pulse generator with duty cycle (pulse width) set by operand. Output is between 0 and 1, follow by `cv2a` for audio out. `pulse 0` will give a one sample pulse, any operand greater than or equal to 1 will be silent, i.e. output continuous zero. `pulse 0.5` is a square wave like `sq`
 |	ramp	|		no		|		like `osc` but with an output suitable for audio, i.e. spans -1 to 1
 |	posc	|		yes		|		like `osc` but will retrigger on a sync pulse. Operand sets phase offset. Can also use `out ^z` to control the phase independently of sync.
@@ -665,18 +664,19 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	sclp	|		no		|		soft clipping, harsher than tanh
 |	every	|		yes		|		for a pulse (or square) input [0,1], outputs a pulse ending at second rising edge of input every n input pulses, where n is the operand. Uses `count` internally
 |	intfr	|		yes		|		non-linear feedback leads to radio-inteference sounding patterns
-|	fractal	|		yes		|		fractal inspired non-linear feeback mangles input in interesting ways
+|	fractal	|		yes		|		fractal inspired non-linear feedback mangles input in interesting ways
+|	catch	|		no		|		output is zero until first sync pulse received, input is output thereafter. Use before last operation of a listing containing `posc` for smooth launch
 |           |               |
 
 **List of pre-defined constants**	
 
-|  Name	|	Description		|                         |
-|-----------|---------------|-----------------------------------|
+|  Name	|	Description		|
+|-----------|---------------|
 |	ln2		|		natural logarithm of 2    	|  
 |   ln3		|       "		"			 3		|
 |	ln5     |       " 		"			 5		|  
 |	E		|		the mathematical constant e	|  
-|	Pi		|		π, ratio of diameter to circumference of an ideal circle |        					|  
+|	Pi		|		π, ratio of diameter to circumference of an ideal circle |
 |	Phi		|		φ, the golden ratio = (1+√5)/2 		|  
 |	invSR	|		1 / SampleRate   			|  
 |	SR		|		SampleRate					|  
@@ -696,6 +696,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	grid	|		acts the same as tempo and pitch |
 
 **List of modes** (preceeded by `:` operator)
+
 |  mode	| Description                           |
 |-----------|---------------|
 | exit		| shutdown syntə
@@ -924,13 +925,13 @@ The work in this file and all others in this repository is now licenced. See the
 
 This semi-permissive licence has been chosen to reflect the fact that this implementation is a prototype only and has no commercial value.  
 Suggestions, including improvements to the code are welcome.  
-If you would like to fork the code for more radical changes then we wholeheartly suggest you instead write a unique live coding platform from scratch. The file is of an order of only two thousand lines of code after all, and the learning experience will be invaluable to you.   
+If you would like to fork the code for more radical changes then we wholeheartly suggest you instead write a unique live coding platform from scratch. The file is of an order of only two and a half thousand lines of code after all, and the learning experience will be invaluable to you.   
 Please get in touch if you have further questions.  
 
 ### Influences and other live-coding environments
 The term live-coding is generally taken to mean on-the-fly composition of algorithmically generated audio or graphical artifacts using software.  
 We recommend exploring TidalCycles and Pure Data in particular. If you are more visual/graphical oriented there are live coding languages/environments for that space too.  
-Many influences and inspirations have been drawn upon either deliberately or subconciously in the creation of Syntə. They include assembly language, Forth, RPN calculators, VIM, the live-coding laguages mentioned above, modular synthesis, Musique concrète, Go itself (the language Syntə is implemented in) and unix-like systems in general - primarily FreeBSD which was the first OS to host Syntə, both for development and execution.  
+Many influences and inspirations have been drawn upon either deliberately or subconciously in the creation of Syntə. They include assembly language, Forth, RPN calculators, VIM, the live-coding laguages mentioned above, modular synthesis, Musique Concrète, Go itself (the language Syntə is implemented in) and unix-like systems in general - primarily FreeBSD which was the first OS to host Syntə, both for development and execution.  
 
 ### Future possiblities for Syntə  
 The main focus of development is building up a library of functions which provide useful and intuitive abstractions to speed up and simplify performing.  
@@ -961,7 +962,7 @@ filtering
 delay and reverb  
 mouse control  
 tempo and pitch
-euclidian rhythms  
+euclidian rhythms using `grid` 
 fractal synthesis (not implemented yet)  
 mute and solo
 

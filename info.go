@@ -25,7 +25,7 @@ const (
 func main() {
 
 	type Disp struct {
-		List    int
+		On      bool
 		Mode    string // func add fon/foff
 		Vu      float64
 		Clip    bool
@@ -64,6 +64,7 @@ func main() {
 	var started bool
 	var exit bool
 	stop := make(chan struct{})
+	load := 0.0
 
 	go func() { // anonymous to include above variables in scope
 		n := 0
@@ -83,7 +84,7 @@ func main() {
 			} else {
 				paused = ""
 			}
-			if display.List > 0 {
+			if display.On {
 				if !started {
 					start = time.Now()
 					started = true
@@ -106,8 +107,7 @@ func main() {
 			}
 
 			loadColour := ""
-			load := 0.0
-			if display.List > 0 {
+			if display.On && n%10 == 0 {
 				load = float64(display.Load) / (1e9 / display.SR)
 			}
 			if load > 0.9 {
@@ -125,7 +125,7 @@ func main() {
 					messages[i].Content = ""
 				}
 			}
-			if !display.Protect && display.List > 0 {
+			if !display.Protect && display.On {
 				if display.Clip {
 					unprotected = fmt.Sprintf("%sUnprotected%s", invert, reset)
 				} else {

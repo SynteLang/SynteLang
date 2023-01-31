@@ -478,8 +478,6 @@ func main() {
 	priorMutes := []float64{}
 	solo := -1
 	unsolo := []float64{}
-	s := bufio.NewScanner(os.Stdin)
-	s.Split(bufio.ScanWords)
 	lockLoad := make(chan struct{}, 1)
 	tokens := make(chan string, 1024)
 
@@ -533,7 +531,7 @@ func main() {
 				dispListings = nil
 				transmit <- yes
 				<-accepted
-				restart = yes // no guarantee this will propagate before transfer
+				restart = yes
 				<-lockLoad
 				msg("%s>>> Sound Engine restarted%s", italic, reset)
 				time.Sleep(447 * time.Millisecond) // wait to stabilise
@@ -541,11 +539,12 @@ func main() {
 				// nop
 			}
 			time.Sleep(84721 * time.Microsecond) // coarse loop timing
-			restart = not                        // assumes reload will complete within 500ms
 		}
 	}()
 
 	go func() { // scan from go routinue to allow external concurrent input
+		s := bufio.NewScanner(os.Stdin)
+		s.Split(bufio.ScanWords)
 		tt := ""
 		for {
 			s.Scan() // blocks on stdin
@@ -669,6 +668,7 @@ start:
 		for { // input loop
 			if len(tokens) == 0 {
 				ext = not
+				restart = not
 			}
 			pf("%s\033[H\033[2J", reset) // this clears prior error messages!
 			pf(">  %dbit %2gkHz %s\n", format, SampleRate/1000, channels)
@@ -2488,7 +2488,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		rate -= rates[(n+1)%RATE]
 		if n%RATE == 0 {
 			display.Load = (display.Load + (rate / RATE)) / 2 // some smoothening
-			if (float64(display.Load) > 1e9/SampleRate && SampleRate > 22050) || ds {
+			if (float64(display.Load) > 1e9/SampleRate || ds) && SampleRate > 22050 {
 				ds = not
 				DS <<= 1
 				nyfC = 1 / (1 + (float64(DS*DS) / Pi)) // coefficient is non-linear
@@ -2497,7 +2497,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				fade = Pow(1e-4, 1/(100e-3*SampleRate))    // 100ms
 				release = Pow(8000, -1.0/(0.5*SampleRate)) // 500ms
 				panic(overload)
-			} else if DS > 1 && float64(display.Load) < 4e8/SampleRate && n > 50000 { //holdoff for ~2secs x DS
+			} else if DS > 1 && float64(display.Load) < 35e7/SampleRate && n > 50000 { //holdoff for ~2secs x DS
 				DS >>= 1
 				nyfC = 1 / (1 + (float64(DS*DS) / Pi)) // coefficient is non-linear
 				SampleRate *= 2

@@ -2112,6 +2112,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				z = append(z, [N]complex128{})
 			} else if reload > -1 {
 				m[reload] = 0 // m ramps to mute value on reload
+				syncInhibit[reload] = not
 			}
 		default:
 			// play
@@ -2332,8 +2333,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					if !ffrz[i] {
 						r = ifftArray[i][n%N] + ifft2[i][(n+N2)%N]
 					} else {
-						r = (ifftArray[i][n%N] + ifftArray[i][(n+N2)%N]) // +
-						//ifftArray[i][(n+N2/2)%N] + ifftArray[i][(n+(3*N2)/2)%N])/ 2
+						r = (ifftArray[i][n%N] + ifftArray[i][(n+N2)%N])
 					}
 				case 42: // "fftrnc"
 					if n%N2 == 0 && n >= N {

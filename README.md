@@ -663,7 +663,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	every	|		yes		|		for a pulse (or square) input [0,1], outputs a pulse ending at second rising edge of input every n input pulses, where n is the operand. Uses `count` internally
 |	intfr	|		yes		|		non-linear feedback leads to radio-inteference sounding patterns
 |	fractal	|		yes		|		fractal inspired non-linear feedback mangles input in interesting ways
-|	catch	|		no		|		output is zero until first sync pulse received, input is output thereafter. Use before last operation of a listing containing `posc` for smooth launch
+|	catch	|		no		|		output is zero until first sync pulse received, input is passed through to output thereafter. Use before last operation of a listing containing `posc` for a smooth launch
 |           |               |
 
 **List of pre-defined constants**	
@@ -797,15 +797,15 @@ Varying numbers intended for output to the soundcard usually span the range [-1,
 
 ## Channels  
 Syntə produces the same audio on two channels (Left and Right) by default. Panning of a specific listing can be adjusted or modulated using the `pan` operator. The signal sent via `pan` is fed directly without any filtering - so smooth inputs are recommended. If in doubt, precede `pan` by `lpf 10hz`.  
-For those interested, the panning is facilitated by a mid-sides configuration internally. Each pan signal is passed though the limiter vca (the part that turns the sound down if too loud) but not through the limiter detection (the part that decides if the audio is too loud), thus the limiter may modulate the stereo width, but the stereo image should remain stable. As noted above, in the event you require full mono-compatibility it is best to avoid modulating the pan of any listing; however, static pans should be ok.  
+For those interested, the panning is facilitated by a mid-sides configuration internally. Each pan signal is passed though the limiter vca (the part that turns the sound down if too loud) but not through the limiter detection (the part that decides if the audio is too loud), thus the limiter may modulate the stereo width, but the stereo image should remain stable. As noted above, in the event you require full mono-compatibility it is best to avoid modulating the pan of any listing; however, static pans (eg. `in 1/2, pan 0`)should be ok.  
 
 ## Synchronisation    
-By default (and by design) when a listing is sent to the sound engine it starts immediately. The synchronisation operators `>sync` and `\<sync` can be used to co-ordinate listings to play in time with one another. First, for a rhythmic element use the phase synchronised oscillator `posc` instead of osc. This contains a `\<sync` operation which will reset the waveform when it receives a sync pulse. The `posc` operator requires a number betweeen 0 and 1 to offset the phase, you can use 0 to start with and experiment later. For reference 0.5 would result in a phase shift of 180°, 1 would be 360° etc. To send a sync pulse you can use `>sync` to synchronise all listings containing a `posc`. For `>sync` you can either:
+By default (and by design) when a listing is sent to the sound engine it starts immediately. The synchronisation operators `\>sync` and `\<sync` can be used to co-ordinate listings to play in time with one another. First, for a rhythmic element use the phase synchronised oscillator `posc` instead of osc. This contains a `\<sync` operation which will reset the waveform when it receives a sync pulse. The `posc` operator requires a number betweeen 0 and 1 to offset the phase, you can use 0 to start with and experiment later. For reference 0.5 would result in a phase shift of 180°, 1 would be 360° etc. To send a sync pulse you can use `\>sync` to synchronise all listings containing a `posc`. For `\>sync` you can either:
 >
 	in -1
 	.>sync
 
-which will send one pulse. The `.` allows `.>sync` to end a listing and send it to the sound engine. The listings containing posc will remain in sync, even if you then delete this listing. Or, for periodic syncing you can:
+which will send one pulse. The `.` allows `.\>sync` to end a listing and send it to the sound engine. The listings containing posc will remain in sync, even if you then delete this listing. Or, for periodic syncing you can:
 >
 	in 120bpm
 	ramp
@@ -814,7 +814,9 @@ which will send one pulse. The `.` allows `.>sync` to end a listing and send it 
 which will send pulses at the frequency given, in this case 1Hz. The saw function is similar to osc except the output spans between -1 and 1 which is necessary to trigger the pulse.  
 Muting a sync listing will have no effect on the synchronisation, as it is send via a separate channel.  
 
-At present the behaviour of submitting more than one instance of `>sync` to the sound engine is undefined. ◊  
+If you wish to launch a listing that only starts playing when the next `\<sync` is received, use the `catch` function prior to the last operation, eg. `catch, mix`.  But then that would spoil all the fun, wouldn't it?
+
+At present the behaviour of submitting more than one instance of `\>sync` to the sound engine is undefined. ◊  
 The synchronisation is somewhat rudementary, a world away from DAW/midi sequencers, yet it has been designed to be raw and flexible in keeping with the Syntə philosophy. It also allows for a modicum of 'musicianship' as it is possible to submit listings in time with one another by hand (without sync) if you are that way inclined. Of course this is live coding which only intersects with music in general :)
 
 ## Setting levels

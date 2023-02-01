@@ -545,8 +545,8 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	out		|		yes		|		output to signal  
 |	out+	|		yes		|		add to signal
 |	+		|		yes		|		add previous result to operand, negate operand to subtract instead eg. `+ -1`  
-|	sine	|		no		|		apply sine mathematical function  
-| 	mod		|		yes		|		modulous operator  
+|	sine	|		no		|		apply sine mathematical function. Output = sine(2·Pi·input)  
+| 	mod		|		yes		|		modulo operator. Output is the remainder on division by operand
 |	gt		|		yes		|		result is 1 if greater than or equal to operand, 0 otherwise  
 |	lt		|		yes		|		result is 1 if less than or equal to operand, 0 otherwise
 |	mul		|		yes		|		multiply operator
@@ -566,7 +566,6 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	+tap	|		yes		|		same as `tap` except added to previous result in listing
 |	f2c		|		no		|		convert frequency to filter coefficient. Numbers less than than 0 will be multiplied by -1 (sign removed, become positive)
 |	erase	|		yes		|		operand is number of operations to erase above the current in listing. For all use `: erase`. 
-|	degrade	|		yes		|		add to a signal and draw result from a signal at random. Operand is a proportion amount. Will lead to unpredictable behaviour and eventual silence from that listing.
 |	wav		|		yes   	|		will play the corresponding sample of a loaded WAV file given by the operand. Expects an input in range [0, 1], values outside this range will wrap around this interval. See section below for more information
 |	8bit	|		yes   	|		quantises input to 8 bits of resolution (-128 to +127). The Operand is the size of quantisation steps. So to quantise a ±1 signal, use 127 as the operand. Alternatively, quantise to integers with an operand of 1.
 |	level	|		yes   	|		changes the output level of the listing at the index given by operand. The preceding input sets the level. Level will persist after deletion. Capable of modulation up to 1100Hz, but because of this sudden large changes in level may produce clicks. Operation independent of mute
@@ -583,12 +582,11 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	index	|		no   	|		outputs index of current listing
 |	//		|		yes   	|		does nothing, use to display comments. Separate words with underscores like_this_etc. Remainder of listing will be skipped, use as a single line listing
 |	all		|		no   	|		output is sum of all preceding listings
-|	rms		|		yes   	|		output is root mean square of input with an integration time of 125ms, if greater than the operand, otherwise holds previous value. Use `rms 0` for a plain rms value
 |	.out	|		yes   	|		use to end silent listing, for use with signals `tempo`, `pitch`, `grid`, or Exported signals.
 |	jl0		|		yes   	|		jump if less than zero. The next n number of operations are skipped if input is less than or equal to zero, where n is given by operand.  Bear in mind that this number of skips includes all the operations within any functions within the listing. The final operation in a listing will always execute. An operand of zero is no jump. Added for fun in a vague attempt to make syntə turing-complete
-|	pan		|		no   	|		input (limited to ±1) sets the stereo pan of the whole listing. Positive input pans left and negative input pans right. The pan curve chosen ensures neither channel is boosted at full pan, while mono sounds remain at unity gain in both channels. This is achieved by turning down the mono channel while pan increases. Because of this a panned sound summed to mono will fluctuate in volume, so we recommend using `pan` on stereo playback systems only. That is to say for full mono compatiblity avoid `pan` altogether 
+|	pan		|		yes   	|		input (limited to ±1) sets the stereo pan of the listing output given by operand (similarly to `level`). Positive input pans left and negative input pans right. The pan curve chosen ensures neither channel is boosted at full pan, while mono sounds remain at unity gain in both channels. This is achieved by turning down the mono channel while pan increases. Because of this a panned sound summed to mono will fluctuate in volume, so we recommend using `pan` on stereo playback systems only. That is to say - for full mono compatiblity avoid `pan` altogether. Pan will persist after deletion
+|	--		|		yes   	|		output = operand - input. Useful for r = 1-r in particular
 |	       	| 		       	|
-|	propa	|		yes  	|		used in conjuction with `index`, adds multiple listings at once (not implimented yet) ◊  
 |	fma		|		yes  	|		fused multiply add, the result of the input multiplied by the operand is stored in a special register `fma` (not implimented yet) ◊  
 
 **List of commands (won't appear in listing)**
@@ -596,7 +594,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |  Command	|Requires operand?| Notes                           |
 |-----------|---------------|-----------------------------------|
 |	[		|		yes		|  		begin function definition, operand is name                                 |
-|	]		|		no 		|  		end function definition                                 |
+|	]		|		no 		|  		end function definition. Listing input is cleared                          |
 |	:		|   	yes		|   	perform mode command: exit, erase, play, pause, fon, foff, clear, verbose, mc |
 |	fade	|		yes		|		changes fade out time after exit. Default is 325e-3 (unit is seconds, maximum 104s)
 |	del		|		yes		|		delete an entire compliled and running listing numbered by operand. Play will be resumed if paused. On deletion the `.temp/*.syt` file remains intact so the listing can be reloaded with `rld`
@@ -623,7 +621,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	osc		|		no		|		ramp wave, (phase accumulator). Output in range [0,1]. Has DC offset of ½
 |	saw		|		no		|		saw wave, descending ramp. Output in range ±1
 |	mix		|		yes		|		output adjusted level to soundcard and end listing
-|	s/h		|		yes		|		samples and holds input when operand moves greater than zero from less than or equal to zero. Use ramp or square to supply operand. See 'Sample and hold melody' example above. Feed a [0,1] pulse to lpf for track and hold
+|	s/h		|		yes		|		samples and holds input when operand moves greater than zero from less than or equal to zero. Use ramp or square to supply operand. See 'Sample and hold melody' example above. Feed a `pulse` to operand of `lpf` for track and hold
 |	dist	|		yes		|		distortion, operand controls amount
 |	sino	|		no		|		sine wave oscillator
 |	lpf		|		yes		|		6dB per octave low-pass filter. Operand is cutoff frequency in Hertz. Cascade (repeat) for steeper cutoff
@@ -683,6 +681,9 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	Epsilon	|		Epsilon, smallest possible number within syntə |
 |	wavR	|		Frequency for wav playback at SampleRate, 0.25Hz at 4s sample time. Will need to be adjusted for samples with a different rate	|  
 |	semitone|		The twelfth root of 2, ratio of one semitone interval |  
+|	Tau		|		τ, = 2π						|  
+|	ln7		|		natural logarithm of 7		|  
+|	null	|		0							|  
 |			|									|
 **List of reserved signals**
 |	dac		|		signal represents output to soundcard. For use as `out dac` only	|

@@ -65,7 +65,7 @@ import (
 )
 
 // constants for setting format and rate of OSS interface
-// these values are from 'sys/sys/soundcard.h' on freebsd13.0
+// these values are from '/sys/sys/soundcard.h' on freebsd13.0
 // currently using `sudo sysctl dev.pcm.X.bitperfect=1`
 // where X is the output found in `cat /dev/sndstat`
 const (
@@ -88,14 +88,15 @@ const (
 	CHANNELS            = STEREO // will halve pitches/frequencies/tempos if mono!
 	// set Sample Rate, specific rate defined below
 	//	SNDCTL_DSP_SPEED	= IOC_INOUT |(0x04 & ((1 << 13)-1))<<16 | 0x50 << 8 | 0x02
-	SNDCTL_DSP_SPEED = 0xC0045002
-	SAMPLE_RATE      = 48000 //hertz
+	SNDCTL_DSP_SPEED       = 0xC0045002
+	SAMPLE_RATE            = 48000 //hertz
+	SNDCTL_DSP_SETFRAGMENT = IOC_INOUT | (0x04&((1<<13)-1))<<16 | 0x50<<8 | 0x0A
+	BUFFER_SIZE            = 10 // allow for processing elbow room
 
 	WAV_TIME       = 4 //seconds
 	WAV_LENGTH     = WAV_TIME * SAMPLE_RATE
 	TAPE_LENGTH    = 1 //seconds
 	MAX_WAVS       = 12
-	RMS_INT        = SAMPLE_RATE / 8
 	EXPORTED_LIMIT = 12
 	NOISE_FREQ     = 0.033 // 2½ times the geometric mean of audible spectrum (-8dB)
 	RUN_TIME_OUT   = 100   // seconds
@@ -128,57 +129,57 @@ type ops struct {
 
 var operators = map[string]ops{ // would be nice if switch indexes could be generated from a common root
 	// bool indicates if operand used
-	"in":      ops{yes, 4},
-	"out":     ops{yes, 2},
-	"out+":    ops{yes, 3},
-	"+":       ops{yes, 1},
-	"sine":    ops{not, 5},
-	"mod":     ops{yes, 6},
-	"gt":      ops{yes, 7},
-	"lt":      ops{yes, 8},
-	"mul":     ops{yes, 9},
-	"abs":     ops{not, 10},
-	"tanh":    ops{not, 11},
-	"clip":    ops{yes, 14},
-	"noise":   ops{not, 15},
-	"pow":     ops{yes, 12},
-	"base":    ops{yes, 13},
-	"push":    ops{not, 16},
-	"pop":     ops{not, 17},
-	"tape":    ops{yes, 18},
-	"tap":     ops{yes, 20},
-	"f2c":     ops{not, 21},
-	"index":   ops{not, 24}, // change to signal?
-	"degrade": ops{yes, 37},
-	"wav":     ops{yes, 22},
-	"8bit":    ops{yes, 23},
-	"x":       ops{yes, 9}, // alias of mul
-	"<sync":   ops{yes, 25},
-	">sync":   ops{not, 26},
-	"jl0":     ops{yes, 27}, // jump if less than zero
-	"level":   ops{yes, 28},
-	"*":       ops{yes, 9}, // alias of mul
-	"from":    ops{yes, 29},
-	"sgn":     ops{not, 30},
-	".>sync":  ops{not, 26},
-	"/":       ops{yes, 32},
-	"sub":     ops{yes, 33},
-	"setmix":  ops{yes, 34},
-	"print":   ops{not, 35},
-	".level":  ops{yes, 28},
-	"\\":      ops{yes, 36}, // "\"
-	"-":       ops{yes, 33}, // alias of sub
-	"all":     ops{not, 40},
-	"rms":     ops{yes, 41},
-	".out":    ops{yes, 2}, // alias of out
-	"pan":     ops{not, 38},
-	"fft":     ops{not, 39},
-	"ifft":    ops{not, 42},
-	"fftrnc":  ops{yes, 43},
-	"shfft":   ops{yes, 44},
-	"ffrz":    ops{yes, 45},
-	//"":      ops{yes, 19}, // unused
-	//"deleted":      ops{yes, 31}, // specified below
+	"+":      ops{yes, 1},
+	"out":    ops{yes, 2},
+	".out":   ops{yes, 2}, // alias of out
+	"out+":   ops{yes, 3},
+	"in":     ops{yes, 4},
+	"sine":   ops{not, 5},
+	"mod":    ops{yes, 6},
+	"gt":     ops{yes, 7},
+	"lt":     ops{yes, 8},
+	"mul":    ops{yes, 9},
+	"*":      ops{yes, 9}, // alias of mul
+	"x":      ops{yes, 9}, // alias of mul
+	"abs":    ops{not, 10},
+	"tanh":   ops{not, 11},
+	"pow":    ops{yes, 12},
+	"base":   ops{yes, 13},
+	"clip":   ops{yes, 14},
+	"noise":  ops{not, 15},
+	"push":   ops{not, 16},
+	"pop":    ops{not, 17},
+	"tape":   ops{yes, 18},
+	"--":     ops{yes, 19},
+	"tap":    ops{yes, 20},
+	"f2c":    ops{not, 21},
+	"wav":    ops{yes, 22},
+	"8bit":   ops{yes, 23},
+	"index":  ops{not, 24}, // change to signal?
+	"<sync":  ops{yes, 25},
+	">sync":  ops{not, 26},
+	".>sync": ops{not, 26},
+	"jl0":    ops{yes, 27}, // jump if less than zero
+	"level":  ops{yes, 28},
+	".level": ops{yes, 28},
+	"from":   ops{yes, 29},
+	"sgn":    ops{not, 30},
+	//	"deleted":      ops{yes, 31}, // specified below
+	"/":      ops{yes, 32},
+	"sub":    ops{yes, 33},
+	"-":      ops{yes, 33}, // alias of sub
+	"setmix": ops{yes, 34},
+	"print":  ops{not, 35},
+	"\\":     ops{yes, 36}, // "\"
+	//	"degrade": ops{yes, 37}, // deprecated
+	"pan":    ops{yes, 38},
+	".pan":   ops{yes, 38},
+	"all":    ops{not, 39},
+	"fft":    ops{not, 40},
+	"ifft":   ops{not, 41},
+	"fftrnc": ops{yes, 42},
+	"shfft":  ops{yes, 43},
+	"ffrz":   ops{yes, 44},
 
 	// specials
 	"]":       ops{not, 0},
@@ -225,7 +226,7 @@ type listing []struct {
 var transfer struct { // make this a slice of structs?
 	Listing []listing
 	Signals [][]float64
-	Wavs    [][]float64 //sample
+	Wavs    [][]float64 // sample
 }
 
 var Sigs []int // list of exported signals to be daisy-chained
@@ -335,9 +336,22 @@ func main() {
 	defer f.Close()
 	w := bufio.NewWriter(f)
 
+	var req uint32 = SNDCTL_DSP_SETFRAGMENT
+	var data uint32 = BUFFER_SIZE
+	/*_, _, ern := syscall.Syscall(
+		syscall.SYS_IOCTL,
+		uintptr(f.Fd()),
+		uintptr(req),
+		uintptr(unsafe.Pointer(&data)),
+	)
+	if ern != 0 {
+		p("set buffer:", ern)
+		time.Sleep(time.Second)
+	}*/
+
 	// set bit format
-	var req uint32 = SNDCTL_DSP_SETFMT
-	var data uint32 = SELECTED_FMT
+	req = SNDCTL_DSP_SETFMT
+	data = SELECTED_FMT
 	_, _, ern := syscall.Syscall(
 		syscall.SYS_IOCTL,
 		uintptr(f.Fd()),
@@ -479,11 +493,10 @@ func main() {
 	solo := -1
 	unsolo := []float64{}
 	lockLoad := make(chan struct{}, 1)
-	tokens := make(chan string, 1024)
+	tokens := make(chan string, 2<<12) // this will block input in extreme circumstances
 
 	go func() { // watchdog, anonymous to use variables in scope
 		// This function will restart the sound engine and reload listings with new sample rate
-		// At present runtime errors are not handled
 		for {
 			if exit {
 				return
@@ -542,7 +555,7 @@ func main() {
 		}
 	}()
 
-	go func() { // scan from go routinue to allow external concurrent input
+	go func() { // scan stdin from go routinue to allow external concurrent input
 		s := bufio.NewScanner(os.Stdin)
 		s.Split(bufio.ScanWords)
 		tt := ""
@@ -1200,7 +1213,7 @@ start:
 					break
 				}
 				continue
-			case "level", ".level":
+			case "level", ".level", "pan", ".pan":
 				if len(transfer.Listing) == 0 {
 					msg("no running listings")
 					continue
@@ -1210,11 +1223,10 @@ start:
 					msg("operand not an integer")
 					continue
 				}
-				i %= len(transfer.Listing) + 1
-				if i < 0 {
-					i = -i
+				if i < 0 || i > len(transfer.Listing) { // includes current listing to be launched
+					msg("index doesn't exist")
+					continue
 				}
-				opd = strconv.Itoa(i)
 			case "solo", ".solo", "s":
 				if len(transfer.Listing) == 0 {
 					msg("no running listings")
@@ -1411,7 +1423,7 @@ start:
 				if opd == "dac" {
 					break input
 				}
-			case ".out", ".>sync", ".level", "//":
+			case ".out", ".>sync", ".level", ".pan", "//":
 				break input
 			}
 			if !ext {
@@ -1469,7 +1481,7 @@ start:
 			display.Paused = not
 		}
 		lockLoad <- struct{}{}
-		//transfer to sound engine // or if reload, replace existing at that index
+		//transfer to sound engine, or if reload, replace existing at that index
 		if reload < 0 || reload > len(transfer.Listing)-1 {
 			dispListings = append(dispListings, dispListing)
 			transfer.Listing = append(transfer.Listing, newListing)
@@ -1483,7 +1495,7 @@ start:
 			}
 			transmit <- yes
 			<-accepted
-			if !restart {
+			if !restart { // hacky conditional
 				// save listing as <n>.syt for the reload
 				f := sf(".temp/%d.syt", len(transfer.Listing)-1)
 				content := ""
@@ -1527,7 +1539,7 @@ start:
 // parseType() evaluates conversion of types
 func parseType(expr, op string) (n float64, b bool) {
 	switch op { // ignore for following commands
-	case "mute", ".mute", "del", ".del", "solo", ".solo", "load", "save", "m", "rld", "r", "rpl", "s", "ld", "ls", "[", "do", "apd": // this is a bit messy, we don't care what value is - commands handled in input loop
+	case "mute", ".mute", "del", ".del", "d", "solo", ".solo", "load", "save", "m", "rld", "r", "rpl", "s", "ld", "ls", "[", "do", "apd": // this is a bit messy, we don't care what value is - commands handled in input loop
 		return 0, true
 	default:
 		// process expression below
@@ -1599,7 +1611,7 @@ func parseType(expr, op string) (n float64, b bool) {
 			// allow high values for these operators
 		default:
 			if Abs(n) > 20 {
-				msg("exceeds sensible values, do you mean %.[1]fhz, %.[1]fs, or %.[1]fbpm?", n)
+				msg("exceeds sensible values, use a type")
 				return 0, false
 			}
 		}
@@ -1967,14 +1979,14 @@ func SoundEngine(w *bufio.Writer, bits int) {
 
 	const (
 		Tau        = 2 * Pi
-		RATE       = 2 << 10
+		RATE       = 2 << 12
 		overload   = "Sound Engine overloaded"
 		recovering = "Sound Engine recovering"
+		rateLimit  = "At sample rate limit"
 	)
 
 	var (
 		no     noise   = noise(time.Now().UnixNano())
-		r      float64                                   // result
 		l, h   float64 = 1, 2                            // limiter, hold
 		dac    float64                                   // output
 		dac0   float64                                   // formatted output
@@ -1998,15 +2010,13 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		det float64 // limiter detection
 		lpf50, lpf1522,
 		deemph float64 // de-emphasis
-		smR8             = 40.0 / SampleRate
-		hroom            = (convFactor - 1.0) / convFactor // headroom for positive dither
-		c                float64                           // mix factor
-		rms, rr, prevRms float64
-		RMS              [RMS_INT]float64
-		pd               int
-		nyfL, nyfR       float64                                      // nyquist filtering
-		nyfC             float64 = 1 / (1 + 1/(2*Pi*2e4/SAMPLE_RATE)) // coefficient
-		L, R, sides      float64
+		smR8        = 40.0 / SampleRate
+		hroom       = (convFactor - 1.0) / convFactor // headroom for positive dither
+		c           float64                           // mix factor
+		pd          int
+		nyfL, nyfR  float64                                      // nyquist filtering
+		nyfC        float64 = 1 / (1 + 1/(2*Pi*2e4/SAMPLE_RATE)) // coefficient
+		L, R, sides float64
 	)
 	no *= 77777777777 // force overflow
 	defer func() {    // fail gracefully
@@ -2017,15 +2027,18 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			msg("%v", p)
 		default:
 			msg("%v", p) // report runtime error to infodisplay
-			var buf [4096]byte
+			/*var buf [4096]byte
 			n := runtime.Stack(buf[:], false)
-			msg("%s", buf[:n]) // print stack trace to infodisplay
+			msg("%s", buf[:n]) // print stack trace to infodisplay*/
 			if reload == -1 {
 				reload = len(transfer.Listing) - 1
 			}
+			for transfer.Listing[reload][0].Op == "deleted" {
+				reload--
+			}
 			transfer.Listing[reload] = listing{{Op: "deleted", Opn: 31}} // delete listing
 			transfer.Signals[reload][0] = 0                              // silence listing
-			msg("previous listing deleted")
+			msg("previous listing deleted: %d", reload)
 		}
 		fade := Pow(1e-4, 1/(SampleRate*100e-3)) // approx -80dB in 100ms
 		for i := 4800; i >= 0; i-- {
@@ -2034,11 +2047,15 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			output(w, dac0) // right
 		}
 	}()
+	stack := make([]float64, 0, 4)
 
 	<-transmit // load first listing(s) and start SoundEngine, multiple listings loaded on recover from panic
 	listings := make([]listing, len(transfer.Listing), len(transfer.Listing)+24)
 	sigs := make([][]float64, len(transfer.Signals), len(transfer.Signals)+23)
 	stacks := make([][]float64, len(transfer.Listing), len(transfer.Listing)+21)
+	for i := range stacks {
+		stacks[i] = stack
+	}
 	wavs := make([][]float64, len(transfer.Wavs), MAX_WAVS)
 	tapes := make([][]float64, 0, 26)
 	copy(listings, transfer.Listing)
@@ -2078,7 +2095,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			copy(sigs, transfer.Signals)
 			accepted <- yes
 			ffrz = make([]bool, len(transfer.Listing))
-			if len(transfer.Listing) > len(m) { // preserve extant tapes and mutes
+			if len(transfer.Listing) > len(m) { // preserve extant tapes and mutes, etc
 				tapes = append(tapes, make([]float64, TLlen))
 				m = append(m, 0) // m ramps to mute value on launch
 				lv = append(lv, 1)
@@ -2088,7 +2105,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				pan = append(pan, 0)
 				syncInhibit = append(syncInhibit, not)
 				peakfreq = append(peakfreq, 20/SampleRate)
-				stacks = append(stacks, []float64{})
+				stacks = append(stacks, stack)
 				fftArray = append(fftArray, [N]float64{})
 				ifftArray = append(ifftArray, [N]float64{})
 				ifft2 = append(ifft2, [N]float64{})
@@ -2120,9 +2137,9 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			sigs[i][6] = mouse.Left
 			sigs[i][7] = mouse.Right
 			sigs[i][8] = mouse.Middle
-			r = 0
-			for op := 0; op < len(list); op++ {
-				o := list[op]
+			r := 0.0
+			op := 0
+			for _, o := range list {
 				switch o.Opn {
 				case 0:
 					// nop
@@ -2193,6 +2210,8 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					tapes[i][n%TLlen] = r
 					t := Min(1/sigs[i][o.N], SampleRate*TAPE_LENGTH)
 					r = tapes[i][(n+TLlen-int(t)+1)%TLlen]
+				case 19:
+					r = sigs[i][o.N] - r
 				case 20: // "+tap", "tap"
 					t := Min(1/sigs[i][o.N], SampleRate*TAPE_LENGTH)
 					r = tapes[i][(n+TLlen-int(t)+1)%TLlen]
@@ -2226,7 +2245,10 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					}
 				case 27: // "jl0"
 					if r <= 0 {
-						op += int(Min(sigs[i][o.N], float64(len(list)-op-2)))
+						op += int(sigs[i][o.N])
+					}
+					if op > len(list)-2 {
+						op = len(list) - 2
 					}
 				case 28: // "level", ".level"
 					level[int(sigs[i][o.N])] = r
@@ -2263,20 +2285,9 @@ func SoundEngine(w *bufio.Writer, bits int) {
 						r = Copysign(1e-308, r)
 					}
 					r = sigs[i][o.N] / r
-				case 37: // "degrade" // needs more work
-					no.ise()
-					ii := (int(no >> 60)) % (len(listings) - 1)
-					index := (int(no >> 59)) % (len(sigs[ii]) - 1)
-					sigs[ii][index] += sigs[i][o.N] * r
-					no.ise()
-					ii = (int(no >> 60)) % (len(listings) - 1)
-					index = (int(no >> 59)) % (len(sigs[ii]) - 1)
-					r += sigs[i][o.N] * sigs[ii][index]
-					//if ii< 0 { index*= -1 }
-					//if index< 0 { index*= -1 }
-				case 38: // "pan"
-					pan[i] = Max(-1, Min(1, r))
-				case 40: // "all"
+				case 38: // "pan", ".pan"
+					pan[int(sigs[i][o.N])] = Max(-1, Min(1, r))
+				case 39: // "all"
 					c := -3.0                   // to avoid being mixed twice
 					for ii := 0; ii < i; ii++ { // only read from prior listings
 						if sigs[ii][0] == 0 { // avoid silent listings, hacky
@@ -2289,19 +2300,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 						c = 1
 					}
 					r /= c
-				case 41: // "rms" // never used, slated for removal
-					r *= r
-					rms += r
-					RMS[n%RMS_INT] = r
-					rms -= RMS[(n+1)%RMS_INT]
-					rr = Sqrt(rms / RMS_INT)
-					if rr > sigs[i][o.N] {
-						r = rr
-						prevRms = rr
-					} else {
-						r = prevRms
-					}
-				case 39: // "fft"
+				case 40: // "fft"
 					fftArray[i][n%N] = r
 					if n%N2 == 0 && n >= N && !ffrz[i] {
 						nn := n % N
@@ -2313,13 +2312,11 @@ func SoundEngine(w *bufio.Writer, bits int) {
 						}
 						z[i] = fft(zz, 1)
 					}
-				case 42: // "ifft"
+				case 41: // "ifft"
 					if n%N == 1 && n >= N {
 						zz := fft(z[i], -1)
 						for n, z := range zz { // n, z are shadowed
 							w := (1 - Cos(Tau*float64(n)/float64(N-1))) / 2 // Hann
-							//r, Θ := cmplx.Polar(z) // expensive
-							//z = cmplx.Rect(r, Θ)
 							ifftArray[i][n] = w * real(z) / N
 
 						}
@@ -2328,8 +2325,6 @@ func SoundEngine(w *bufio.Writer, bits int) {
 						zz := fft(z[i], -1)
 						for n, z := range zz { // n, z are shadowed
 							w := (1 - Cos(Tau*float64(n)/float64(N-1))) / 2 // Hann
-							//r, Θ := cmplx.Polar(z) // expensive
-							//z = cmplx.Rect(r, Θ)
 							ifft2[i][n] = w * real(z) / N
 
 						}
@@ -2340,7 +2335,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 						r = (ifftArray[i][n%N] + ifftArray[i][(n+N2)%N]) // +
 						//ifftArray[i][(n+N2/2)%N] + ifftArray[i][(n+(3*N2)/2)%N])/ 2
 					}
-				case 43: // "fftrnc"
+				case 42: // "fftrnc"
 					if n%N2 == 0 && n >= N {
 						switch {
 						case sigs[i][o.N] > 0:
@@ -2357,7 +2352,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 							}
 						}
 					}
-				case 44: // "shfft"
+				case 43: // "shfft"
 					s := sigs[i][o.N]
 					if n%N2 == 0 && n >= N {
 						l := int(Mod(s, 1) * N)
@@ -2366,11 +2361,12 @@ func SoundEngine(w *bufio.Writer, bits int) {
 							z[i][n] = z[i][nn]
 						}
 					}
-				case 45: // "ffrz"
+				case 44: // "ffrz"
 					ffrz[i] = sigs[i][o.N] == 0
 				default:
 					// nop, r = r
 				}
+				op++
 			}
 			m[i] = (m[i]*764 + mute[i]) / 765 // anti-click filter @ ~10hz
 			lv[i] = (lv[i]*7 + level[i]) / 8  // @ 1091hz
@@ -2487,7 +2483,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		rates[n%RATE] = t // rolling average buffer
 		rate -= rates[(n+1)%RATE]
 		if n%RATE == 0 {
-			display.Load = (display.Load + (rate / RATE)) / 2 // some smoothening
+			display.Load = rate / RATE
 			if (float64(display.Load) > 1e9/SampleRate || ds) && SampleRate > 22050 {
 				ds = not
 				DS <<= 1
@@ -2497,7 +2493,9 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				fade = Pow(1e-4, 1/(100e-3*SampleRate))    // 100ms
 				release = Pow(8000, -1.0/(0.5*SampleRate)) // 500ms
 				panic(overload)
-			} else if DS > 1 && float64(display.Load) < 35e7/SampleRate && n > 50000 { //holdoff for ~2secs x DS
+			} else if float64(display.Load) > 1e9/SampleRate {
+				panic(rateLimit)
+			} else if DS > 1 && float64(display.Load) < 35e7/SampleRate && n > 50000 { // holdoff for ~2secs x DS
 				DS >>= 1
 				nyfC = 1 / (1 + (float64(DS*DS) / Pi)) // coefficient is non-linear
 				SampleRate *= 2
@@ -2568,15 +2566,14 @@ func save(data interface{}, f string) bool {
 func p(i ...any) {
 	fmt.Println(i...)
 }
-
-var sf func(string, ...interface{}) string = fmt.Sprintf
-
 func pf(s string, i ...interface{}) { // mega hacky nullify output on re/load
 	if ext {
 		return
 	}
 	fmt.Printf(s, i...)
 }
+
+var sf func(string, ...interface{}) string = fmt.Sprintf
 
 // msg sends a formatted string to info display
 func msg(s string, i ...interface{}) {

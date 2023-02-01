@@ -56,7 +56,7 @@ Syntə is designed to be both capable as a serious sonic tool and a good entry p
 The ◊ symbol indicates a sentence or section that may need updating in future.
 
 Note on synthesis and levels:  
-The design of Syntə has from inception included sufficient control of sound levels as a core aim. The open possibilities of Syntə are deliberately constrained in two main ways. A limiter is built-in to the sound engine, which controls levels on a frequency dependent basis. Also, listings can use the `mix` function to set a reasonable level based on simple heuristics that follow a siimilar principle to the limiter. The upper limit of potential hearing damage is defined by the capabilities of your sound playback system - the amplifier(s) and speakers; however, we have applied our best efforts to ensure loud frequencies do not leave Syntə. More details in the Sound Engine section below.
+The design of Syntə has from inception included sufficient control of sound levels as a core aim. The open possibilities of Syntə are deliberately constrained in two main ways. A limiter is built-in to the sound engine, which controls levels on a frequency dependent basis. Also, listings can use the `mix` function to set a reasonable level based on simple heuristics that follow a similar principle to the limiter. The upper limit of potential hearing damage is defined by the capabilities of your sound playback system - the amplifier(s) and speakers; however, we have applied our best efforts to ensure loud frequencies do not leave Syntə. More details in the Sound Engine section below.
 
 
 <a name="top"></a>
@@ -814,7 +814,7 @@ which will send one pulse. The `.` allows `.\>sync` to end a listing and send it
 which will send pulses at the frequency given, in this case 1Hz. The saw function is similar to osc except the output spans between -1 and 1 which is necessary to trigger the pulse.  
 Muting a sync listing will have no effect on the synchronisation, as it is send via a separate channel.  
 
-If you wish to launch a listing that only starts playing when the next `\<sync` is received, use the `catch` function prior to the last operation, eg. `catch, mix`.  But then that would spoil all the fun, wouldn't it?
+If you wish to launch a listing that only starts playing when the next `\<sync` is received, use the `catch` function prior to the last operation, eg. `catch, mix`.  
 
 At present the behaviour of submitting more than one instance of `\>sync` to the sound engine is undefined. ◊  
 The synchronisation is somewhat rudementary, a world away from DAW/midi sequencers, yet it has been designed to be raw and flexible in keeping with the Syntə philosophy. It also allows for a modicum of 'musicianship' as it is possible to submit listings in time with one another by hand (without sync) if you are that way inclined. Of course this is live coding which only intersects with music in general :)

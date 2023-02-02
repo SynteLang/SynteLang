@@ -299,9 +299,11 @@ type Disp struct {
 }
 
 var display = Disp{
-	Mode:   "off",
-	MouseX: 1,
-	MouseY: 1,
+	Mode:    "off",
+	MouseX:  1,
+	MouseY:  1,
+	Protect: yes,
+	Info:    "clear",
 }
 
 type wavs []struct {
@@ -434,7 +436,6 @@ func main() {
 
 	go SoundEngine(w, format)
 	go infodisplay()
-	msg("clear")
 	go mouseRead()
 
 	// process wav
@@ -1938,21 +1939,15 @@ func infodisplay() {
 	n := 1
 	s := 1
 	for {
-		display.Protect = protected
-
 		select {
-		case infoString := <-info:
-			display.Info = infoString
-		case carryOn <- yes: // semaphore: received
-			// continue
+		case display.Info = <-info:
+		case carryOn <- yes: // semaphore: received, continue
 		case <-infoff:
-			time.Sleep(20 * time.Millisecond)
 			display.Info = sf("%sSyntə closed%s", italic, reset)
 			display.On = not // stops timer in info display
 			save(display, file)
 			return
-		default:
-			// passthrough
+		default: // passthrough
 		}
 		if !save(display, file) {
 			pf("%sinfo display not updated, check file %s%s%s exists%s\n",
@@ -2243,7 +2238,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					r = tapes[i][(n+TLlen-int(t)+1)%TLlen]
 				case 19:
 					r = sigs[i][o.N] - r
-				case 20: // "+tap", "tap"
+				case 20: // "tap"
 					t := Min(1/sigs[i][o.N], SampleRate*TAPE_LENGTH)
 					r = tapes[i][(n+TLlen-int(t)+1)%TLlen]
 				case 21: // "f2c"

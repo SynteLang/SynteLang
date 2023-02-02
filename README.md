@@ -561,9 +561,8 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	.>sync	|		yes		|		equivalent to >sync but will end listing and transfer, like `out dac`
 |	push	|		no		|		move result to a stack
 |	pop		|		no		|		take most recently pushed result from stack
-|	tape	|		yes		|		record and playback from a rotating buffer, analogous to a tape loop. Input will progressively distort and clip around ±1, this is to control the level when using feedback. Operand is tape tap time
-|	tap		|		yes		|		result drawn from tape, operand is offset in seconds/milliseconds (use types). This operator has been combined into `tape` and is now an alias of `+tap`
-|	+tap	|		yes		|		same as `tap` except added to previous result in listing
+|	tape	|		yes		|		record and playback from a rotating buffer, analogous to a tape loop. Input will progressively distort and clip around ±1, this is to control the level when using feedback. Operand is the offset in seconds/milliseconds (use types)
+|	tap		|		yes		|		result drawn from tape and added to input from preceding listing, operand is the offset in seconds/milliseconds (use types)
 |	f2c		|		no		|		convert frequency to filter coefficient. Numbers less than than 0 will be multiplied by -1 (sign removed, become positive)
 |	erase	|		yes		|		operand is number of operations to erase above the current in listing. For all use `: erase`. 
 |	wav		|		yes   	|		will play the corresponding sample of a loaded WAV file given by the operand. Expects an input in range [0, 1], values outside this range will wrap around this interval. See section below for more information
@@ -571,7 +570,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	level	|		yes   	|		changes the output level of the listing at the index given by operand, which must be a number (not a signal). The preceding input sets the level. Level will persist after deletion. Capable of modulation up to 1100Hz, but because of this sudden large changes in level may produce clicks. Operation independent of mute
 |	x		|		yes   	|		alias of `mul`
 |	*		|		yes   	|		alias of `x`
-|	from	|		yes   	|		receives mono output of listing given by operand.  By design operand must be a number not a named signal. If the operand is greater than the number of listings it will wrap round (modulous)
+|	from	|		yes   	|		receives mono output of listing given by operand, regardless of whether that listing has been muted.  By design operand must be a number not a named signal. If the operand is greater than the number of listings it will wrap round (modulous).
 |	sgn		|		no   	|		outputs is 1 if the input is positive and -1 if negative
 |	/		|		yes   	|		subtracts the operand from the input repeatedly until zero and outputs the number of subtractions as a fraction. AKA divide. output = input / operand
 |	\		|		yes   	|		output = operand / input
@@ -581,7 +580,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	print	|		no   	|		prints value of input to info display and passes through unchanged to next operation. Timing is a random point in an interval approximately 341ms to 682ms
 |	index	|		no   	|		outputs index of current listing
 |	//		|		yes   	|		does nothing, use to display comments. Separate words with underscores like_this_etc. Remainder of listing will be skipped, use as a single line listing
-|	all		|		no   	|		output is sum of all preceding listings
+|	all		|		no   	|		output is sum of all preceding listings, regardless of whether they have been muted
 |	.out	|		yes   	|		use to end silent listing, for use with signals `tempo`, `pitch`, `grid`, or Exported signals.
 |	jl0		|		yes   	|		jump if less than zero. The next n number of operations are skipped if input is less than or equal to zero, where n is given by operand.  Bear in mind that this number of skips includes all the operations within any functions within the listing. The final operation in a listing will always execute. An operand of zero is no jump. Added for fun in a vague attempt to make syntə turing-complete
 |	pan		|		yes   	|		input (limited to ±1) sets the stereo pan of the listing given by operand (which must be a number, similarly to `level`). Positive input pans left and negative input pans right. The pan curve chosen ensures neither channel is boosted at full pan, while mono sounds remain at unity gain in both channels. This is achieved by turning down the mono channel while pan increases. Because of this a sound with modulated (changing) pan summed to mono will fluctuate in volume, so we recommend modulating with a signal `pan` on stereo playback systems only. That is to say - for full mono compatiblity only apply static `pan` (input is unchanging) at most. But don't worry as this is somewhat of a niche concern. Pan will persist after deletion
@@ -597,7 +596,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	]		|		no 		|  		end function definition. Listing input is cleared                          |
 |	:		|   	yes		|   	perform mode command: exit, erase, play, pause, fon, foff, clear, verbose, mc |
 |	fade	|		yes		|		changes fade out time after exit. Default is 325e-3 (unit is seconds, maximum 104s)
-|	del		|		yes		|		delete an entire compliled and running listing numbered by operand. Play will be resumed if paused. On deletion the `.temp/*.syt` file remains intact so the listing can be reloaded with `rld`
+|	del		|		yes		|		delete an entire compliled and running listing numbered by operand. Play will be resumed if paused. On deletion the `.temp/*.syt` file remains intact so the listing can be reloaded with `rld`. If you wish to delete all listings simply exit from Syntə and restart
 |	index	|		yes		|		access index of listing
 |	mute 	|		yes		|		mute  or un-mute listing at index given by operand. Muting won't affect sync operations sent by a listing
 |	unmute 	|		no		|		un-mute all muted listings
@@ -678,7 +677,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	Phi		|		φ, the golden ratio = (1+√5)/2 		|  
 |	invSR	|		1 / SampleRate   			|  
 |	SR		|		SampleRate					|  
-|	Epsilon	|		Epsilon, smallest possible number within syntə |
+|	Epsilon	|		Epsilon, smallest possible number within Syntə |
 |	wavR	|		Frequency for wav playback at SampleRate, 0.25Hz at 4s sample time. Will need to be adjusted for samples with a different rate	|  
 |	semitone|		The twelfth root of 2, ratio of one semitone interval |  
 |	Tau		|		τ, = 2π						|  
@@ -700,7 +699,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 
 |  mode	| Description                           |
 |-----------|---------------|
-| exit		| shutdown syntə
+| exit		| shutdown Syntə
 | erase		| erase entire listing input 
 | pause		| pause playback
 | play		| resume playback
@@ -716,8 +715,8 @@ ___
 <a name="det"></a>
 
 ## Exposition  
-Although theoretically possible, syntə is not primarily designed for making 'normal' music. A suggested use is the composition of waves, frequencies, shapes and combinations thereof to express a feeling or to dance to.  
-The ideal aspect of syntə is using the full power of a modern computer to produce musical structures that would otherwise be difficult to materialise. The simple building blocks help gain insight into the workings and provide almost orthogonal flexibility. (If something is orthogonal it means the smallest number of parts to realise the full possibilities of a concept space.)  
+Although theoretically possible, Syntə is not primarily designed for making 'normal' music. A suggested use is the composition of waves, frequencies, shapes and combinations thereof to express a feeling or to dance to.  
+The ideal aspect of Syntə is using the full power of a modern computer to produce musical structures that would otherwise be difficult to materialise. The simple building blocks help gain insight into the workings and provide almost orthogonal flexibility. (If something is orthogonal it means the smallest number of parts to realise the full possibilities of a concept space.)  
 Syntə enables detailed specification of sounds because it is built from small atomic operations. This gives a lot of freedom, which in turn requires some learning and practice. If you are new to synthesis you will need to learn that to, the program itself won't teach you. However, in the opinion of the author the concepts and maths of audio are a delight to uncover and play with. Most of the time simple arithmetic is all that is required for a deeper understanding. Take small steps and be surprised at what you achieve in time.  
 The language is intended to expand and suppliment the existing live-coding space to offer other possibilities and benefit the ecosystem as a whole.  
 
@@ -903,12 +902,12 @@ Although it is not necessary to know how the sound engine works to perform or pl
 When a listing is send to the sound engine an internal copy is generated and added to the sequence of listings. The sound engine takes each listing in turn from 0 onwards and runs through it once to produce the value of the next sample, then it moves on to the next listing. Once it has computed all the listings the resulting samples are summed together and sent through the built-in limiter to ensure no loud surprises and the peak amplitude of the output is also sent to the info display. The resulting signal is converted to the correct format and sent to the soundcard in your computer, after which the whole process repeats.  
 The terms 'listing' and 'necklace' are interchangeable. Necklace also illustrates the point that the listing is computed in a continuous loop.  
 All values in the sound engine are represented by 64-bit floating point numbers which represent a nominal value within Syntə of between -1 and 1 inclusive. At the end of each cycle of the sound engine this is converted to a 32, 24 or 16 bit number to be sent to the soundcard, depending on the format it accepts. Within a listing a value can be anywhere in the range of the 64-bit float (approx ±1.8x10^308 with an precision of about 15 decimal places.) These numbers will be limited or clipped to ±1 before audio conversion.  
-The samples from each listing will clip by design if they exceed ~±2, they are then added together and when there are more than four listings the sum is divided by the number of listings for unity gain. For 1, 2, 3, or 4 listings the sun is always divided by four. The result is then passed through a high-pass filter before the limiter. This is to remove any DC offsets, which means a consistent average signal other than 0, or another way to think of it is attentuating (reducing) frequencies below 4.6Hz. If my calculations are correct, any DC signal will fade below -120dB after half a second. DC signals can still be passed between listings using `from` or Exported signals.  
+The samples from each listing will progressively clip between 0 and +6db by design to prevent obliteration of other listings under limiting, they are then added together and when there are more than four listings the sum is divided by the number of listings for unity gain. For less than 5 listings the sum is always divided by approximately four, there is in fact a smooth transition between these two states. The result is then passed through a high-pass filter before the limiter. This is to remove any DC offsets, which means a consistent average signal other than 0, or another way to think of it is attentuating (reducing) frequencies below 4.6Hz. If my calculations are correct, any DC signal will fade below -120dB after half a second. DC signals can still be passed between listings using `from`, `all` or Exported signals.  
 The limiter reduces the level of audio above a peak value of 1 to avoid the possibility of clipping the main output, which would produce distortion. The detection algorithm of the limiter is progressively more sensitive to higher frequencies, it expects audio to have a spectrum approximately equivalent to 'pink noise'.  
 The density distribution of pink noise is a good general approximation to expected frequency levels in audio (*Barrow, 1995*). The `mix` function also uses this as a guiding principle in setting a sensible level. Some adjustment may be required; however, the limiter will always kick in if internal levels are exceeded.  
 Because of the frequency dependent nature of the limiter detection, gain reduction may occur before the info display shows a high VU level. This is normal and you can adjust listings via the `level` operator to prevent higher frequencies from dominating the playback.  
-Between the limiter and the clipping stage before conversion, what is known as dither is applied to the signal. This is a tiny amount of noise to avoid rounding errors, but is probably overkill. Before the dither any envelopes associated with pausing or exiting are applied. These reduce the chances of pops or clicks.  
-The whole main loop of the sound engine has a timer to produce the 'load' value that shows how much work it is doing to create each sample for the soundcard. See info display section above. If enough listings are added and the sound engine is unable to perform all calculations in time before the next sample is due, glitches or dropouts in the output can occur. In order to avoid this if a high load is detected the sample rate will be halved automatically and the sound engine restarted. The sample rate won't be halved below 11025hz. In future if type converions are added back in as part of making the language strongly typed, the sapmle rate will be able to dynamically adjust without restarting. The sound engine will also restart if a runtime or other error occurs and in this case will remove the previously added listing, as this is most likely to have caused the error. The listing will still be available in the `.temp/` directory to be amended and reloaded as desired.
+Between the limiter and the clipping stage before conversion, what is known as triangular dither is applied to the signal. This is a tiny amount of noise to mask rounding errors, but is probably overkill. Before the dither any envelopes associated with pausing or exiting are applied. These reduce the chances of pops or clicks.  
+The whole main loop of the sound engine has a timer to produce the 'load' value that shows how much work it is doing to create each sample for the soundcard. See info display section above. If enough listings are added and the sound engine is unable to perform all calculations in time before the next sample is due, glitches or dropouts in the output can occur. In order to avoid this if a high load is detected the sample rate will be halved automatically and the sound engine restarted. The sample rate won't be halved below 11025hz. In future if type converions are added back in as part of making the language strongly typed, the sample rate will be able to dynamically adjust without restarting. The sound engine will also restart if a runtime or other error occurs and in this case will remove the previously added listing, as this is most likely to have caused the error. The listing will still be available in the `.temp/` directory to be amended and reloaded as desired.
 
 ## A note on the Go code
 

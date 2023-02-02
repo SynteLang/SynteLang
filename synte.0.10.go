@@ -180,6 +180,7 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"fftrnc": ops{yes, 42},
 	"shfft":  ops{yes, 43},
 	"ffrz":   ops{yes, 44},
+	"gafft":  ops{yes, 45},
 
 	// specials
 	"]":       ops{not, 0},
@@ -212,6 +213,8 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"do":      ops{yes, 0},
 	"d":       ops{yes, 0},
 	"deleted": ops{not, 0}, // for internal use
+	"extyes":  ops{not, 0}, // for internal use
+	"extnot":  ops{not, 0}, // for internal use
 }
 
 // listing is a slice of { operator, operand; signal and operator numbers }
@@ -493,7 +496,7 @@ func main() {
 	solo := -1
 	unsolo := []float64{}
 	lockLoad := make(chan struct{}, 1)
-	tokens := make(chan string, 2<<12) // this will block input in extreme circumstances
+	tokens := make(chan string, 2<<12) // this channel will block input in extreme circumstances
 
 	go func() { // watchdog, anonymous to use variables in scope
 		// This function will restart the sound engine and reload listings with new sample rate
@@ -514,7 +517,6 @@ func main() {
 				for len(tokens) > 0 { // empty incoming tokens
 					<-tokens
 				}
-				ext = yes
 				for i := 0; i < len(transfer.Listing); i++ { // preload listings into tokens buffer
 					f := sf(".temp/%d.syt", i)
 					if e(rr) {
@@ -534,9 +536,11 @@ func main() {
 						tokens <- "dac"
 						continue
 					}
+					tokens <- "extyes"
 					for s.Scan() {
 						tokens <- s.Text()
 					}
+					tokens <- "extnot"
 					inputF.Close()
 				}
 				transfer.Listing = nil
@@ -620,10 +624,11 @@ func main() {
 						reload = i
 						s := bufio.NewScanner(inputF)
 						s.Split(bufio.ScanWords)
-						ext = yes
+						tokens <- "extyes"
 						for s.Scan() {
 							tokens <- s.Text()
 						}
+						tokens <- "extnot"
 						msg("%slisting reloaded:%s %d", italic, reset, i)
 						inputF.Close()
 						prevStat[i] = stat[i]
@@ -680,7 +685,10 @@ start:
 	input:
 		for { // input loop
 			if len(tokens) == 0 {
-				ext = not
+				// not strictly correct. restart only becomes true on an empty token channel,
+				// no files saved to temp while restart is true,
+				// tokens will be empty at completion of restart unless received from stdin within
+				// time taken to compile and launch. This is not critical as restart only controls file save.
 				restart = not
 			}
 			pf("%s\033[H\033[2J", reset) // this clears prior error messages!
@@ -712,6 +720,18 @@ start:
 			var op, opd string
 			pf("\t  %s", yellow)
 			op = <-tokens
+			for e := yes; e; { // deal with all ext signals until token received
+				switch op {
+				case "extnot":
+					ext = not
+					op = <-tokens
+				case "extyes":
+					ext = yes
+					op = <-tokens
+				default:
+					e = not
+				}
+			}
 			pf("%s", reset)
 			if (len(op) > 2 && byte(op[1]) == 91) || op == "_" { // hack to escape terminal characters
 				continue
@@ -909,6 +929,7 @@ start:
 					if !save(funcs, "functions.json") {
 						msg("functions not saved!")
 					}
+					msg("%sfunctions saved%s", italic, reset)
 					continue
 				case "pause":
 					if started && !display.Paused {
@@ -934,6 +955,8 @@ start:
 					display.Paused = not
 					continue
 				case "unprotected":
+					msg("unavailable")
+					continue
 					protected = !protected
 					continue
 				case "clear", "c":
@@ -997,10 +1020,11 @@ start:
 				}
 				s := bufio.NewScanner(inputF)
 				s.Split(bufio.ScanWords)
-				ext = yes
+				tokens <- "extyes"
 				for s.Scan() {
 					tokens <- s.Text()
 				}
+				tokens <- "extnot"
 				inputF.Close()
 				continue
 			case "save":
@@ -1384,6 +1408,9 @@ start:
 					continue
 				}
 				msg("%snext operation repeated%s %dx", italic, reset, do)
+				continue
+			case "extyes", "extnot": // remove this case after testing, should be unreachable //
+				msg("external signal rejected from token queue")
 				continue
 			default:
 				// nop
@@ -2033,8 +2060,11 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			if reload == -1 {
 				reload = len(transfer.Listing) - 1
 			}
-			for transfer.Listing[reload][0].Op == "deleted" {
+			for reload >= 0 && transfer.Listing[reload][0].Op == "deleted" {
 				reload--
+			}
+			if reload < 0 {
+				break
 			}
 			transfer.Listing[reload] = listing{{Op: "deleted", Opn: 31}} // delete listing
 			transfer.Signals[reload][0] = 0                              // silence listing
@@ -2297,9 +2327,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 						r += sigs[ii][0]
 						c++
 					}
-					if c < 1 {
-						c = 1
-					}
+					c = Max(c, 1)
 					r /= c
 				case 40: // "fft"
 					fftArray[i][n%N] = r
@@ -2336,7 +2364,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 						r = (ifftArray[i][n%N] + ifftArray[i][(n+N2)%N])
 					}
 				case 42: // "fftrnc"
-					if n%N2 == 0 && n >= N {
+					if n%N2 == 0 && n >= N && !ffrz[i] {
 						switch {
 						case sigs[i][o.N] > 0:
 							l := int(N * sigs[i][o.N])
@@ -2354,7 +2382,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					}
 				case 43: // "shfft"
 					s := sigs[i][o.N]
-					if n%N2 == 0 && n >= N {
+					if n%N2 == 0 && n >= N && !ffrz[i] {
 						l := int(Mod(s, 1) * N)
 						for n := range z[i] {
 							nn := (N + n + l) % N
@@ -2363,6 +2391,22 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					}
 				case 44: // "ffrz"
 					ffrz[i] = sigs[i][o.N] == 0
+				case 45: // "gafft"
+					if n%N2 == 0 && n >= N && !ffrz[i] {
+						s := sigs[i][o.N] * 50
+						gt := yes
+						if s < 0 {
+							s = -s
+							gt = not
+						}
+						for n, zz := range z[i] {
+							if gt && Abs(real(zz)) < s {
+								z[i][n] = 0
+							} else if !gt && Abs(real(zz)) > s {
+								z[i][n] = 0
+							}
+						}
+					}
 				default:
 					// nop, r = r
 				}
@@ -2382,18 +2426,17 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				sigs[i][0] = 0
 				panic(sf("listing: %d - overflow", i))
 			}
-			if sigs[i][0] > ct { // soft clip
+			if sigs[i][0] > ct && protected { // soft clip
 				sigs[i][0] = ct + Tanh(sigs[i][0]-ct)
 				display.Clip = yes
-			} else if sigs[i][0] < -ct {
+			} else if sigs[i][0] < -ct && protected {
 				sigs[i][0] = Tanh(sigs[i][0]+ct) - ct
 				display.Clip = yes
 			}
 			sigs[i][0] *= lv[i]
-			sigs[i][0] *= m[i]
-			sides += pan[i] * sigs[i][0] / 2
+			sides += pan[i] * (sigs[i][0] / 2) * m[i]
 			sigs[i][0] *= 1 - Abs(pan[i]/2)
-			dac += sigs[i][0]
+			dac += sigs[i][0] * m[i]
 		}
 		c += 16 / (c + 4)
 		dac /= c
@@ -2414,7 +2457,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				lpf1522 = (lpf1522*5 + d) / 6.02
 				deemph = lpf50 + lpf1522/5.657
 			}
-			det = Abs(32*hpf2560+5.657*hpf160+dac) / 2
+			det = Abs(32*hpf2560 + 5.657*hpf160 + dac)
 			if det > l {
 				l = det // MC
 				h = release

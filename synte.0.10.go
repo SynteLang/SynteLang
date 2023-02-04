@@ -341,22 +341,9 @@ func main() {
 	defer f.Close()
 	w := bufio.NewWriter(f)
 
-	var req uint32 = SNDCTL_DSP_SETFRAGMENT
-	var data uint32 = BUFFER_SIZE
-	/*_, _, ern := syscall.Syscall(
-		syscall.SYS_IOCTL,
-		uintptr(f.Fd()),
-		uintptr(req),
-		uintptr(unsafe.Pointer(&data)),
-	)
-	if ern != 0 {
-		p("set buffer:", ern)
-		time.Sleep(time.Second)
-	}*/
-
 	// set bit format
-	req = SNDCTL_DSP_SETFMT
-	data = SELECTED_FMT
+	var req uint32 = SNDCTL_DSP_SETFMT
+	var data uint32 = SELECTED_FMT
 	_, _, ern := syscall.Syscall(
 		syscall.SYS_IOCTL,
 		uintptr(f.Fd()),
@@ -1926,7 +1913,7 @@ func mouseRead() {
 			mouse.Y = Pow(10, my/10)
 		} else {
 			mouse.X = mx / 5
-			mouse.Y = mx / 5
+			mouse.Y = my / 5
 		}
 		display.MouseX = mouse.X
 		display.MouseY = mouse.Y
@@ -2030,7 +2017,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		hpf2560, x2560,
 		hpf160, x160,
 		det float64 // limiter detection
-		lpf50, lpf1522,
+		lpf50, lpf510,
 		deemph float64 // de-emphasis
 		smR8        = 40.0 / SampleRate
 		hroom       = (convFactor - 1.0) / convFactor // headroom for positive dither
@@ -2299,7 +2286,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 						peakfreq[i] = a
 					}
 					r *= Min(1, 80/(peakfreq[i]*SampleRate+20)) // ignoring density
-					//r *= Min(1, Sqrt(20/(peakfreq[i]*SampleRate+20)))
+					//r *= Min(1, Sqrt(80/(peakfreq[i]*SampleRate+20)))
 				case 35: // "print"
 					pd++ // unnecessary?
 					if (pd)%32768 == 0 && !exit {
@@ -2447,10 +2434,10 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			hpf160 = (hpf160 + dac - x160) * 0.97948
 			x160 = dac
 			{
-				d := Max(-1, Min(1, dac))
-				lpf50 = (lpf50*152.8 + d) / 153.8
-				lpf1522 = (lpf1522*5 + d) / 6.02
-				deemph = lpf50 + lpf1522/5.657
+				d := 4 * dac / (1 + Abs(dac*4))
+				lpf50 = (lpf50*152 + d) / 153
+				lpf510 = (lpf510*152 + lpf50) / 153
+				deemph = lpf510 / 1.5
 			}
 			det = Abs(32*hpf2560 + 5.657*hpf160 + dac)
 			if det > l {

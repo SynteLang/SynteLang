@@ -663,6 +663,12 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	intfr	|		yes		|		non-linear feedback leads to radio-inteference sounding patterns
 |	fractal	|		yes		|		fractal inspired non-linear feedback mangles input in interesting ways
 |	catch	|		no		|		output is zero until first sync pulse received, input is passed through to output thereafter. Use before last operation of a listing containing `posc` for a smooth launch
+|	fft		|		no		|		applies a fast fourier transform to the input, which is regitered internally (on a per-listing basis) for use by related operators
+|	ifft	|		no		|		output is an inverse fast fourier transform applied to the internal frequency domain representation
+|	ffrz	|		no		|		when input is zero freeze the process in `fft`
+|	gafft	|		yes		|		gating in the frequency domain. All frequencies in magnitude below the given operand are zeroed when the operand is positive, frequencies above absolute value of operand are zeroed when it is negative
+|	fftrnc	|		yes		|		a proportion of the frequency spectrum given by operand is zeroed, creating a brickwall filter. Positive operands create low-pass, negative operands create high-pass
+|	shfft	|		yes		|		frequency spectrum is rotated by amount given by operand
 |           |               |
 
 **List of pre-defined constants**	

@@ -968,12 +968,12 @@ These are, as the author understands it (opinions may differ):
 >how to modulate pitch and volume, including ratios and exponents  
 feedback and what it means  
 filtering  
-delay and reverb  
+delay and reverb   
 mouse control  
-tempo and pitch
-euclidian rhythms using `grid` 
+tempo and pitch  
+euclidian rhythms using `grid`  
 fractal synthesis (not implemented yet)  
-mute and solo
+mute and solo  
 
 ---
 

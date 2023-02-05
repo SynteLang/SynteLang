@@ -6,35 +6,10 @@ The name is pronounced '*sinter*', which means to create something by
 fusing many tiny elements together under intense heat.  
 It is also a portmanteau of 'synth' and 'byte', which is a reference to the stream of bytes that are generated and sent to the soundcard by Syntə.  
 
-The input syntax is in EBNF:
-	operator " " [ [","] operand [","] " " ]
-An operand can be a name or a number where:  
-	name = letter { letter | digit }  
-	number = float \[ ( "/" | "\*" ) float ] [type]  
-A letter is defined as any UTF-8 character excluding + - . 0 1 2 3 4 5 6 7 8 9  
-A float matches the floating point literal in the Go language specification.  
-A type can be one of the following tokens: "hz", "s", "ms", "bpm", "!", or "db" .  
-A list of operators is given below.  
-Lists of operations may be composed into functions with multiple arguments.  
-The function syntax is = function [ " " operand \[ "," operand ] [ "," operand ] ] .  
-
 Protect your hearing when listening to *any* audio on a system capable of more than 85dB SPL  
 
 **Motivation:**  
 >Fun  
-
-**Features:**  
->Audio synthesis √  
-Wav playback √  
-Mouse control √  
-Telemetry / code display √  
-Anything can be connected to anything else within a listing √  
-Feedback permitted (see above) √  
-Groups of operators can be defined, named and instantiated as functions (extensible) √  
-Support for pitch control with useful constants √   
-Frequency scaling √  
-Useful predefined functions √  
-Built-in synchronisation operators √  
 
 **Intended purpose:**  
 >To compose and perform music using algorithms
@@ -45,19 +20,26 @@ Built-in synchronisation operators √
 **YouTube:**
 > [Syntə Lang Channel](https://www.youtube.com/channel/UCRj9_B6P9T0bQSwCL3yOkyw)  
 
+**Features:**  
+>Audio synthesis    
+Wav playback  
+Mouse control   
+Telemetry / code display  
+Anything can be connected to anything else within a listing  
+Feedback permitted (see above)  
+Groups of operators can be defined, named and instantiated as functions (extensible)  
+Useful predefined functions  
+Built-in synchronisation operators  
+
 This work and associated code is licensed for non-commercial use, see associated [`licence.md`](https://github.com/SynteLang/SynteLang/blob/main/licence.md) file  
 © 2022  
 
-For now this document also serves as an (incomplete) specification of the syntə language and may be viewed as a paper on the topic.
+For now this document also serves as a specification of the syntə language and may be viewed as a paper on the topic.
 
-This document has been written to be accessible to the widest audience as a deliberate aim. Some prior knowledge of unix-like sytems and sound synthesis will be useful, and you can build up some knowledge about them alongside this document.
+This document has been written to be accessible to the widest audience as a deliberate aim. Some prior knowledge of unix-like sytems and sound synthesis will be useful, and you can build up some knowledge about them alongside this document.  
 Syntə is designed to be both capable as a serious sonic tool and a good entry point for beginners, although inevitably there is a tradeoff and so some patience and learning may be required if you are starting from scratch.
 
-The ◊ symbol indicates a sentence or section that may need updating in future.
-
-Note on synthesis and levels:  
-The design of Syntə has from inception included sufficient control of sound levels as a core aim. The open possibilities of Syntə are deliberately constrained in two main ways. A limiter is built-in to the sound engine, which controls levels on a frequency dependent basis. Also, listings can use the `mix` function to set a reasonable level based on simple heuristics that follow a similar principle to the limiter. The upper limit of potential hearing damage is defined by the capabilities of your sound playback system - the amplifier(s) and speakers; however, we have applied our best efforts to ensure loud frequencies do not leave Syntə. More details in the Sound Engine section below.
-
+The ◊ symbol indicates a sentence or section that may need updating in future.  
 
 <a name="top"></a>
 -------------------------------------------------------------------------------------
@@ -716,6 +698,18 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 | mc		| switch mouse curve to linear (default is exponential). Toggles
 | stats		| display Go's automatic memory management pause times in info display
 
+
+The input syntax is in EBNF:
+	`operator " " [ [","] operand [","] " " ]`  
+An operand can be a name or a number where:  
+	`name = letter { letter | digit }`  
+	`number = float \[ ( "/" | "\*" ) float ] [type`]  
+A letter is defined as any UTF-8 character excluding `+ - . 0 1 2 3 4 5 6 7 8 9`  
+A float matches the floating point literal in the Go language specification.  
+A type can be one of the following tokens: "hz", "s", "ms", "bpm", "!", or "db" .    
+Lists of operations may be composed into functions with multiple arguments.  
+The function syntax is `function [ " " operand \[ "," operand ] [ "," operand ] ]` .  
+
 ___
 
 <a name="det"></a>
@@ -914,6 +908,10 @@ The density distribution of pink noise is a good general approximation to expect
 Because of the frequency dependent nature of the limiter detection, gain reduction may occur before the info display shows a high VU level. This is normal and you can adjust listings via the `level` operator to prevent higher frequencies from dominating the playback.  
 Between the limiter and the clipping stage before conversion, what is known as triangular dither is applied to the signal. This is a tiny amount of noise to mask rounding errors, but is probably overkill. Before the dither any envelopes associated with pausing or exiting are applied. These reduce the chances of pops or clicks.  
 The whole main loop of the sound engine has a timer to produce the 'load' value that shows how much work it is doing to create each sample for the soundcard. See info display section above. If enough listings are added and the sound engine is unable to perform all calculations in time before the next sample is due, glitches or dropouts in the output can occur. In order to avoid this if a high load is detected the sample rate will be halved automatically and the sound engine restarted. The sample rate won't be halved below 11025hz. In future if type converions are added back in as part of making the language strongly typed, the sample rate will be able to dynamically adjust without restarting. The sound engine will also restart if a runtime or other error occurs and in this case will remove the previously added listing, as this is most likely to have caused the error. The listing will still be available in the `.temp/` directory to be amended and reloaded as desired.
+
+## Synthesis and levels  
+
+The design of Syntə has from inception included sufficient control of sound levels as a core aim. The open possibilities of Syntə are deliberately constrained in two main ways. A limiter is built-in to the sound engine, which controls levels on a frequency dependent basis. Also, listings can use the `mix` function to set a reasonable level based on simple heuristics that follow a similar principle to the limiter. The upper limit of potential hearing damage is defined by the capabilities of your sound playback system - the amplifier(s) and speakers; however, we have applied our best efforts to ensure loud frequencies do not leave Syntə. More details in the Sound Engine section below.
 
 ## A note on the Go code
 

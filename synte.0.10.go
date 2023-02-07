@@ -494,6 +494,9 @@ func main() {
 		// This function will restart the sound engine and reload listings with new sample rate
 		for {
 			<-stop // wait until stop channel closed
+			if exit {
+				return
+			}
 			stop = make(chan struct{})
 			go SoundEngine(w, format)
 			sg["wavR"] = 1.0 / (WAV_TIME * SampleRate) // hack to update wav rate

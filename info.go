@@ -107,8 +107,12 @@ func main() {
 			}
 
 			loadColour := ""
+			l := float64(display.Load) / (1e9 / display.SR)
 			if display.On && n%10 == 0 {
-				load = float64(display.Load) / (1e9 / display.SR)
+				load = (load*24 + l) / 25
+			}
+			if 1.2*load < l || load > l*1.2 {
+				load = l
 			}
 			if load > 0.9 {
 				loadColour = red
@@ -161,8 +165,8 @@ func main() {
 			vu := 1 + (db / 1.75)
 			VU := fmt.Sprintf("\r          |                         %s|%s  %s", clip, reset, gr)
 			VU += fmt.Sprintf("\r           %s%s%s|", green, dB, reset)
-			n := int(vu * 20)
-			for i := 0; i < n; i++ {
+			nn := int(vu * 20)
+			for i := 0; i < nn; i++ {
 				VU += fmt.Sprintf("|")
 			}
 
@@ -186,8 +190,7 @@ func main() {
       %sMouse-X:%s %.4g		%sMouse-Y:%s %.4g
 ╰───────────────────────────────────────────────────╯`,
 				sync, paused, timer,
-				display.Mode,
-				yellow, reset, L,
+				display.Mode, yellow, reset, L,
 				messages[0].Content,
 				messages[1].Content,
 				messages[2].Content,
@@ -200,7 +203,6 @@ func main() {
 				messages[9].Content,
 				messages[10].Content,
 				VU, unprotected,
-				//italic, mutes, reset,
 				blue, reset, display.MouseX,
 				blue, reset, display.MouseY,
 			)

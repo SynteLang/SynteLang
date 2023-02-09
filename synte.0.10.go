@@ -429,19 +429,13 @@ func main() {
 	go infoDisplay()
 	go mouseRead()
 
-	// process wav
-	var wavsLoaded bool
-	var wavSlice wavs
-	wavNames := ""
-	if wavSlice, wavsLoaded = decodeWavs(); !wavsLoaded {
-		msg("no wavs loaded")
-	}
+	// process wavs
+	wavSlice := decodeWavs()
 	msg("")
 
-	// signals map with predefined constants, mutable
-	sg := map[string]float64{}
 	transfer.Wavs = make([][]float64, 0, len(wavSlice))
 	wmap := map[string]bool{}
+	wavNames := ""
 	for _, w := range wavSlice {
 		wavNames += w.Name + " "
 		wmap[w.Name] = yes
@@ -468,7 +462,8 @@ func main() {
 		reserved = append(reserved, sf("***%d", i+lenReserved)) // placeholder
 	}
 	var lenExported int = 0
-	var sig []float64 // local signals
+	sg := map[string]float64{} // signals map
+	var sig []float64          // local signals
 	funcs := make(map[string]listing)
 	// load functions from files and assign to funcs
 	load(&funcs, "functions.json")
@@ -491,7 +486,7 @@ func main() {
 	tokens := make(chan string, 2<<12) // arbitrary capacity, will block input in extreme circumstances
 
 	go func() { // watchdog, anonymous to use variables in scope
-		// This function will restart the sound engine and reload listings with new sample rate
+		// This function will restart the sound engine and reload listings using new sample rate
 		for {
 			<-stop // wait until stop channel closed
 			if exit {
@@ -510,10 +505,6 @@ func main() {
 			}
 			for i := 0; i < len(transfer.Listing); i++ { // preload listings into tokens buffer
 				f := sf(".temp/%d.syt", i)
-				if e(rr) {
-					msg("restart: unable to locate %d.syt", i)
-					continue
-				}
 				inputF, rr := os.Open(f)
 				if e(rr) {
 					msg("%v", rr)
@@ -1692,7 +1683,7 @@ func evaluateExpr(expr string) (float64, bool) {
 // A maximum of WAV_LENGTH samples are sent to the main routine.
 // All files are currently converted from stereo to mono.
 // Differing sample rates are not currently pitch converted. Header is assumed to be 44 bytes.
-func decodeWavs() (wavs, bool) {
+func decodeWavs() wavs {
 	var filelist []string
 	var w wavs
 	var wav struct {
@@ -1702,7 +1693,7 @@ func decodeWavs() (wavs, bool) {
 	files, rr := os.ReadDir("./wavs")
 	if e(rr) {
 		msg("%sno wavs:%s %v", italic, reset, rr)
-		return nil, false
+		return nil
 	}
 	limit := 0
 	for _, file := range files {
@@ -1718,7 +1709,7 @@ func decodeWavs() (wavs, bool) {
 	}
 	if len(filelist) == 0 {
 		msg("no wav files found")
-		return nil, false
+		return nil
 	}
 	pf("%sProcessing wavs...%s", italic, reset)
 	for _, file := range filelist {
@@ -1835,9 +1826,9 @@ func decodeWavs() (wavs, bool) {
 		msg("%s\t%2dbit  %3gkHz  %s  %.3gs", file, bits, float64(SR)/1000, c, t)
 	}
 	if len(w) == 0 {
-		return nil, false
+		return nil
 	}
-	return w, true
+	return w
 }
 
 // quick and basic decode of mouse bytes
@@ -1947,8 +1938,6 @@ func infoDisplay() {
 func SoundEngine(w *bufio.Writer, bits int) {
 	defer close(stop)
 	defer w.Flush()
-	runtime.LockOSThread() // of uncertain benefit
-	defer runtime.UnlockOSThread()
 	output := func(w *bufio.Writer, f float64) {
 		if rr := binary.Write(w, BYTE_ORDER, int16(f)); e(rr) {
 			msg("writing to soundcard failed!")
@@ -2509,7 +2498,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				panic(overload)
 			} else if float64(display.Load) > 1e9/SampleRate {
 				panic(rateLimit)
-			} else if DS > 1 && float64(display.Load) < 35e7/SampleRate && n > 50000 { // holdoff for ~2secs x DS
+			} else if DS > 1 && float64(display.Load) < 33e7/SampleRate && n > 100000 { // holdoff for ~4secs x DS
 				DS >>= 1
 				nyfC = 1 / (1 + (float64(DS*DS) / Pi)) // coefficient is non-linear
 				SampleRate *= 2

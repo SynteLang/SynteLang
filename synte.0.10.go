@@ -236,8 +236,6 @@ var transfer struct { // make this a slice of structs?
 	Wavs    [][]float64 // sample
 }
 
-var Sigs []int // list of exported signals to be daisy-chained
-
 // communication variables
 var (
 	stop     = make(chan struct{}) // confirm on close()
@@ -255,8 +253,10 @@ var (
 	muteSkip bool
 	ds       bool
 	restart  bool
-	reload        = -1
-	ext      bool = not // loading external listing state
+	reload   = -1
+	ext      = not // loading external listing state
+
+	daisyChains []int // list of exported signals to be daisy-chained
 )
 
 var ( // misc
@@ -266,8 +266,8 @@ var ( // misc
 	fade       float64 = Pow(1e-4, 1/(100e-3*SAMPLE_RATE)) // 100ms
 	protected          = yes
 	release    float64 = Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
-	DS         int     = 1                                 // down-sample, integer as float type
-	ct         float64 = 1                                 // individual listing clip threshold
+	DS                 = 1                                 // down-sample, integer as float type
+	ct                 = 1.0                               // individual listing clip threshold
 )
 
 type noise uint64
@@ -284,7 +284,7 @@ var mouse = struct {
 }
 var mc = yes
 
-type Disp struct {
+type disp struct {
 	On      bool
 	Mode    string // func add fon/foff
 	Vu      float64
@@ -302,7 +302,7 @@ type Disp struct {
 	Verbose bool
 }
 
-var display = Disp{
+var display = disp{
 	Mode:    "off",
 	MouseX:  1,
 	MouseY:  1,
@@ -359,8 +359,7 @@ func main() {
 		time.Sleep(time.Second)
 	}
 	if data != SELECTED_FMT {
-		p("Bit format not available! Change requested format in file")
-		time.Sleep(time.Second)
+		info <- "Bit format not available! Change requested format in file"
 	}
 	format := 16
 	switch {
@@ -419,8 +418,8 @@ func main() {
 	}
 	SampleRate = float64(data)
 	if data != SAMPLE_RATE {
-		p("\n--requested sample rate not accepted--")
-		pf("new sample rate: %vHz\n\n", SampleRate)
+		info <- "\n--requested sample rate not accepted--"
+		info <- sf("new sample rate: %vHz\n\n", SampleRate)
 		time.Sleep(time.Second)
 	}
 	display.SR = SampleRate // fixed at initial rate
@@ -457,11 +456,11 @@ func main() {
 	}
 	// add 12 reserved signals for inter-list signals
 	lenReserved := len(reserved) // use this as starting point for exported signals
-	Sigs = []int{2, 3, 9}        // pitch,tempo,grid
+	daisyChains = []int{2, 3, 9} // pitch,tempo,grid
 	for i := 0; i < EXPORTED_LIMIT; i++ {
 		reserved = append(reserved, sf("***%d", i+lenReserved)) // placeholder
 	}
-	var lenExported int = 0
+	lenExported := 0
 	sg := map[string]float64{} // signals map
 	var sig []float64          // local signals
 	funcs := make(map[string]listing)
@@ -923,8 +922,7 @@ start:
 					continue
 				case "unprotected":
 					msg("unavailable")
-					continue
-					protected = !protected
+					//protected = !protected
 					continue
 				case "clear", "c":
 					msg("clear")
@@ -1398,7 +1396,7 @@ start:
 					continue
 				}
 				reserved[lenReserved+lenExported] = opd
-				Sigs = append(Sigs, lenReserved+lenExported)
+				daisyChains = append(daisyChains, lenReserved+lenExported)
 				lenExported++
 				msg("%s%s added to exported signals%s", opd, italic, reset)
 			}
@@ -1749,25 +1747,9 @@ func decodeWavs() wavs {
 			to = len(data[44:]) / channels
 		}
 		rb := bytes.NewReader(data[44:])
-		switch bits { // generify these cases
+		switch bits {
 		case 16:
-			samples := make([]int16, to)
-			rr := binary.Read(rb, binary.LittleEndian, &samples)
-			if e(rr) && rr != io.ErrUnexpectedEOF {
-				msg("error decoding: %s %s", file, rr)
-				continue
-			}
-			// convert to syntə format
-			s := 0.0
-			wav.Data = make([]float64, 0, to)
-			for i := 0; i < to-channels+1; i += channels {
-				if channels == 2 {
-					s = (float64(samples[i]) + float64(samples[i+1])) / (2 * MaxInt16)
-				} else {
-					s = float64(samples[i]) / MaxInt16
-				}
-				wav.Data = append(wav.Data, s)
-			}
+			wav.Data = decode(rb, file, make([]int16, to), float64(MaxInt16), to, channels)
 		case 24:
 			d := make([]byte, 0, len(data)*2)
 			for i := 44; i < len(data)-3; i += 3 { // byte stuffing
@@ -1775,41 +1757,9 @@ func decodeWavs() wavs {
 				d = append(d, word...)
 			}
 			rb = bytes.NewReader(d)
-			samples := make([]int32, to)
-			rr := binary.Read(rb, binary.LittleEndian, &samples)
-			if e(rr) && rr != io.ErrUnexpectedEOF {
-				msg("error decoding: %s %s", file, rr)
-				continue
-			}
-			// convert to syntə format
-			s := 0.0
-			wav.Data = make([]float64, 0, to)
-			for i := 0; i < to-channels+1; i += channels {
-				if channels == 2 {
-					s = (float64(samples[i]) + float64(samples[i+1])) / (2 * MaxInt32)
-				} else {
-					s = float64(samples[i]) / MaxInt32
-				}
-				wav.Data = append(wav.Data, s)
-			}
+			wav.Data = decode(rb, file, make([]int32, to), float64(MaxInt32), to, channels)
 		case 32:
-			samples := make([]int32, to)
-			rr := binary.Read(rb, binary.LittleEndian, &samples)
-			if e(rr) && rr != io.ErrUnexpectedEOF {
-				msg("error decoding: %s %s", file, rr)
-				continue
-			}
-			// convert to syntə format
-			s := 0.0
-			wav.Data = make([]float64, 0, to)
-			for i := 0; i < to-channels+1; i += channels {
-				if channels == 2 {
-					s = (float64(samples[i]) + float64(samples[i+1])) / (2 * MaxInt32)
-				} else {
-					s = float64(samples[i]) / MaxInt32
-				}
-				wav.Data = append(wav.Data, s)
-			}
+			wav.Data = decode(rb, file, make([]int32, to), float64(MaxInt32), to, channels)
 		default:
 			msg("%s: needs to be 32, 24 or 16 bit", file)
 			continue
@@ -1829,6 +1779,26 @@ func decodeWavs() wavs {
 		return nil
 	}
 	return w
+}
+
+func decode[S int16 | int32](rb *bytes.Reader, file string, samples []S, factor float64, to, channels int) []float64 {
+	rr := binary.Read(rb, binary.LittleEndian, &samples)
+	if e(rr) && rr != io.ErrUnexpectedEOF {
+		msg("error decoding: %s %s", file, rr)
+		return nil
+	}
+	// convert to syntə format
+	wav := make([]float64, 0, to)
+	for i := 0; i < to-channels+1; i += channels {
+		s := 0.0
+		if channels == 2 {
+			s = (float64(samples[i]) + float64(samples[i+1])) / (2 * factor)
+		} else {
+			s = float64(samples[i]) / factor
+		}
+		wav = append(wav, s)
+	}
+	return wav
 }
 
 // quick and basic decode of mouse bytes
@@ -1879,7 +1849,7 @@ func mouseRead() {
 			}
 		}
 		if e(rr) {
-			msg("error reading mouse data:", rr)
+			msg("error reading mouse data: %v", rr)
 			return
 		}
 		if mc {
@@ -1930,19 +1900,18 @@ func infoDisplay() {
 }
 
 // The Sound Engine does the bare minimum to generate audio
-// The code has not been optimised, beyond certain design choices such as using slices instead of maps
+// Some work has been done on profiling, beyond design choices such as using slices instead of maps
+// Using floats is probably somewhat profligate, later on this may be converted to int type which would provide ample dynamic range
 // It is also freewheeling, it won't block on the action of any other goroutine, only on IO, namely writing to soundcard
 // The latency and jitter of the audio output is entirely dependent on the soundcard and its OS driver,
 // except where the calculations don't complete in time under heavy load and the soundcard driver buffer underruns. Frequency accuracy is determined by the soundcard clock and precision of float64 type
 // If the loop time exceeds the sample rate over number of samples given by RATE the Sound Engine will panic
+// The data transfer structures need a good clean up
 func SoundEngine(w *bufio.Writer, bits int) {
 	defer close(stop)
 	defer w.Flush()
 	output := func(w *bufio.Writer, f float64) {
-		if rr := binary.Write(w, BYTE_ORDER, int16(f)); e(rr) {
-			msg("writing to soundcard failed!")
-			return
-		}
+		binary.Write(w, BYTE_ORDER, int16(f))
 	}
 	switch bits {
 	case 8:
@@ -1962,7 +1931,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 
 	const (
 		Tau        = 2 * Pi
-		RATE       = 2 << 12
+		RATE       = 2 << 11
 		overload   = "Sound Engine overloaded"
 		recovering = "Sound Engine recovering"
 		rateLimit  = "At sample rate limit"
@@ -1970,12 +1939,11 @@ func SoundEngine(w *bufio.Writer, bits int) {
 
 	var (
 		no     noise   = noise(time.Now().UnixNano())
-		l, h   float64 = 1, 2                            // limiter, hold
-		dac    float64                                   // output
-		dac0   float64                                   // formatted output
-		env    float64 = 1                               // for exit envelope
-		penv   float64 = Pow(1e-4, 1/(SampleRate*50e-3)) // approx -80dB in 50ms
-		peak   float64                                   // vu meter
+		l, h   float64 = 1, 2 // limiter, hold
+		dac    float64        // output
+		dac0   float64        // formatted output
+		env    float64 = 1    // for exit envelope
+		peak   float64        // vu meter
 		dither float64
 		n      int // loop counter
 
@@ -1984,7 +1952,6 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		rates    [RATE]time.Duration
 		t        time.Duration
 		s        float64 = 1 // sync=0
-		p        bool        // play/pause, shadows func p
 
 		mx, my float64 = 1, 1 // mouse smooth intermediates
 		hpf, x float64        // DC-blocking high pass filter
@@ -2074,7 +2041,8 @@ func SoundEngine(w *bufio.Writer, bits int) {
 	for {
 		select {
 		case <-pause:
-			p = yes
+			pause <- not          // blocks until `: play`
+			lastTime = time.Now() // restart loop timer
 		case <-transmit:
 			listings = make([]listing, len(transfer.Listing))
 			copy(listings, transfer.Listing)
@@ -2114,8 +2082,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		my = (my*764 + mo.Y) / 765
 
 		for i, list := range listings {
-			// daisy-chains
-			for _, ii := range Sigs {
+			for _, ii := range daisyChains {
 				sigs[i][ii] = sigs[(i+len(sigs)-1)%len(sigs)][ii]
 			}
 			// skip muted/deleted listing
@@ -2387,9 +2354,8 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				panic(sf("listing: %d - overflow", i))
 			}
 			sigs[i][0] *= lv[i]
-			sides += pan[i] * (sigs[i][0] / 2) * m[i]
+			sides += pan[i] * (sigs[i][0] / 2) * m[i] * lv[i]
 			sigs[i][0] *= 1 - Abs(pan[i]/2)
-			sigs[i][0] *= m[i]
 			if sigs[i][0] > ct && protected { // soft clip
 				sigs[i][0] = ct + Tanh(sigs[i][0]-ct)
 				display.Clip = yes
@@ -2397,7 +2363,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				sigs[i][0] = Tanh(sigs[i][0]+ct) - ct
 				display.Clip = yes
 			}
-			dac += sigs[i][0]
+			dac += sigs[i][0] * m[i]
 		}
 		c += 16 / (c*c + 4)
 		dac /= c
@@ -2431,23 +2397,12 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			display.GR = l > 1+3e-4
 		}
 		if exit {
-			dac *= env   // fade out
-			sides *= env // fade out
+			dac *= env // fade out
+			sides *= env
 			env *= fade
 			if env < 1e-4 {
 				save([]listing{listing{{Op: advisory}}}, "displaylisting.json")
 				break
-			}
-		}
-		if p {
-			dac *= env   // fade out
-			sides *= env // fade out
-			env *= penv
-			if env < 1e-4 {
-				pause <- not // blocks until `: play`
-				lastTime = time.Now()
-				env = 1 // zero attack...
-				p = not
 			}
 		}
 		no.ise()
@@ -2470,7 +2425,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		if peak < 0 {
 			peak = 0
 		}
-		sides = Max(-1, Min(1, sides))
+		sides = Max(-0.5, Min(0.5, sides))
 		display.Vu = peak
 		L = (dac + sides) * convFactor
 		R = (dac - sides) * convFactor

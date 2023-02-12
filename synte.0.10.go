@@ -116,6 +116,7 @@ var convFactor = float64(MaxInt16) // checked below
 const (
 	reset   = "\x1b[0m"
 	italic  = "\x1b[3m"
+	red     = "\x1b[31m"
 	yellow  = "\x1b[33m"
 	magenta = "\x1b[35m"
 	cyan    = "\x1b[36m"
@@ -588,6 +589,8 @@ func main() {
 							break
 						}
 						reload = i
+						mute[reload] = 0
+						time.Sleep(25 * time.Millisecond)
 						s := bufio.NewScanner(inputF)
 						s.Split(bufio.ScanWords)
 						tokens <- "extyes"
@@ -1296,7 +1299,7 @@ start:
 				newListing = append(newListing, listing{{Op: "push"}, {Op: "in", Opd: sf("%v", NOISE_FREQ)}, {Op: "out", Opd: "^freq"}, {Op: "pop"}}...)
 			case "[":
 				if _, ok := funcs[opd]; ok {
-					msg("%swill overwrite existing function!%s", italic, reset)
+					msg("%swill overwrite existing function!%s", red, reset)
 				} else if _, ok := operators[opd]; ok {
 					msg("%sduplicate of extant operator, use another name%s", italic, reset)
 					continue
@@ -2163,11 +2166,11 @@ func SoundEngine(w *bufio.Writer, bits int) {
 					r = Max(-1, Min(1, r)) // hard clip for cleaner reverbs
 					th[i] = (th[i] + r - tx[i]) * 0.9994
 					tx[i] = r
-					tf[i] = (tf[i] + th[i]) / 2 // roll off the top end @ 7640Hz
-					r = tf[i]
-					tapes[i][n%TLlen] = r
+					tapes[i][n%TLlen] = th[i]
 					t := Min(1/sigs[i][o.N], SampleRate*TAPE_LENGTH)
 					r = tapes[i][(n+TLlen-int(t)+1)%TLlen]
+					tf[i] = (tf[i] + r) / 2 // roll off the top end @ 7640Hz
+					r = tf[i]
 				case 19:
 					r = sigs[i][o.N] - r
 				case 20: // "tap"
@@ -2356,14 +2359,15 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			sigs[i][0] *= lv[i]
 			sides += pan[i] * (sigs[i][0] / 2) * m[i] * lv[i]
 			sigs[i][0] *= 1 - Abs(pan[i]/2)
-			if sigs[i][0] > ct && protected { // soft clip
-				sigs[i][0] = ct + Tanh(sigs[i][0]-ct)
+			mm := sigs[i][0] * m[i]
+			if mm > ct && protected { // soft clip
+				mm = ct + Tanh(mm-ct)
 				display.Clip = yes
-			} else if sigs[i][0] < -ct && protected {
-				sigs[i][0] = Tanh(sigs[i][0]+ct) - ct
+			} else if mm < -ct && protected {
+				mm = Tanh(mm+ct) - ct
 				display.Clip = yes
 			}
-			dac += sigs[i][0] * m[i]
+			dac += mm
 		}
 		c += 16 / (c*c + 4)
 		dac /= c
@@ -2384,7 +2388,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				lpf510 = (lpf510*152 + lpf50) / 153
 				deemph = lpf510 / 1.5
 			}
-			det = Abs(32*hpf2560+5.657*hpf160+dac) / 2
+			det = Abs(32*hpf2560 + 5.657*hpf160 + dac)
 			if det > l {
 				l = det // MC
 				h = release

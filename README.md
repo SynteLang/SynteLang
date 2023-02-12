@@ -74,7 +74,7 @@ You should end up with a directory (folder) containing the following files:
 	functions.go (optional, recommended) 
 	an empty directory named 'recordings' (can contain a README.md) 
 	a directory named 'wavs' containing wav files (optional, can contain a README.md)
-	an empty directory named '.temp' (can contain a README.md) 
+	an empty directory named '.temp' (can contain a README.md, may need to be added manually) 
 
 Open a terminal, navigate to the directory and type 'go run synte.0.10.go' to begin. ◊ Open another terminal and run info.go similarly. This will display useful information and feedback as you input and run code, if you run this before synte.go it will display details of any loaded wavs. 
 Open another terminal and run listing.go to view currently running code, this will also show mute status in italics. You may wish to arrange these using a tiling window manager, terminal multiplexer, or equivalent.
@@ -552,7 +552,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	level	|		yes   	|		changes the output level of the listing at the index given by operand, which must be a number (not a signal). The preceding input sets the level. Level will persist after deletion. Capable of modulation up to 1100Hz, but because of this sudden large changes in level may produce clicks. Operation independent of mute
 |	x		|		yes   	|		alias of `mul`
 |	*		|		yes   	|		alias of `x`
-|	from	|		yes   	|		receives mono output of listing given by operand, regardless of whether that listing has been muted.  By design operand must be a number not a named signal. If the operand is greater than the number of listings it will wrap round (modulous).
+|	from	|		yes   	|		receives mono output of listing given by operand, regardless of whether that listing has been muted.  By design operand must be a number not a named signal. If the operand is greater than the number of listings it will wrap round (modulo).
 |	sgn		|		no   	|		outputs is 1 if the input is positive and -1 if negative
 |	/		|		yes   	|		subtracts the operand from the input repeatedly until zero and outputs the number of subtractions as a fraction. AKA divide. output = input / operand
 |	\		|		yes   	|		output = operand / input
@@ -592,6 +592,12 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	rpl 	|		yes		|		listing at index given by operand will be replaced by current input once launched, file in `.temp/ is not updated
 |	r 		|		yes		|		alias of rld
 |	do 		|		yes		|		repeat next operation or function n times, where n is given by the operand. Define a temporary function for this purpose if needs be
+|	fft		|		no		|		applies a fast fourier transform to the input, which is regitered internally (on a per-listing basis) for use by related operators
+|	ifft	|		no		|		output is an inverse fast fourier transform applied to the internal frequency domain representation
+|	ffrz	|		no		|		when input is zero freeze the process in `fft`
+|	gafft	|		yes		|		gating in the frequency domain. All frequencies in magnitude below the given operand are zeroed when the operand is positive, frequencies above absolute value of operand are zeroed when it is negative
+|	fftrnc	|		yes		|		a proportion of the frequency spectrum given by operand is zeroed, creating a brickwall filter. Positive operands create low-pass, negative operands create high-pass
+|	shfft	|		yes		|		frequency spectrum is rotated by amount given by operand
 
 **List of built-in functions**
 
@@ -645,12 +651,6 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	intfr	|		yes		|		non-linear feedback leads to radio-inteference sounding patterns
 |	fractal	|		yes		|		fractal inspired non-linear feedback mangles input in interesting ways
 |	catch	|		no		|		output is zero until first sync pulse received, input is passed through to output thereafter. Use before last operation of a listing containing `posc` for a smooth launch
-|	fft		|		no		|		applies a fast fourier transform to the input, which is regitered internally (on a per-listing basis) for use by related operators
-|	ifft	|		no		|		output is an inverse fast fourier transform applied to the internal frequency domain representation
-|	ffrz	|		no		|		when input is zero freeze the process in `fft`
-|	gafft	|		yes		|		gating in the frequency domain. All frequencies in magnitude below the given operand are zeroed when the operand is positive, frequencies above absolute value of operand are zeroed when it is negative
-|	fftrnc	|		yes		|		a proportion of the frequency spectrum given by operand is zeroed, creating a brickwall filter. Positive operands create low-pass, negative operands create high-pass
-|	shfft	|		yes		|		frequency spectrum is rotated by amount given by operand
 |           |               |
 
 **List of pre-defined constants**	

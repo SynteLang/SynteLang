@@ -801,9 +801,8 @@ Syntə produces the same audio on two channels (Left and Right) by default. Pann
 For those interested, the panning is facilitated by a mid-sides configuration internally. Each pan signal is passed though the limiter vca (the part that turns the sound down if too loud) but not through the limiter detection (the part that decides if the audio is too loud), thus the limiter may modulate the stereo width, but the stereo image should remain stable. As noted above, in the event you require full mono-compatibility it is best to avoid modulating the pan of any listing; however, static pans (eg. `in 1/2, pan 0`)should be ok.  
 
 ## Synchronisation    
-By default (and by design) when a listing is sent to the sound engine it starts immediately. The synchronisation operators `>sync` and `<sync` can be used to co-ordinate listings to play in time with one another. First, for a rhythmic element use the phase synchronised oscillator `posc` instead of osc. This contains a `<sync` operation which will reset the waveform when it receives a sync pulse. The `posc` operator requires a number betweeen 0 and 1 to offset the phase, you can use 0 to start with and experiment later. For reference 0.5 would result in a phase shift of 180°, 1 would be 360° etc. To send a sync pulse you can use `>sync` to synchronise all listings containing a `posc`. For `>sync` you can either:
+By default (and by design) when a listing is sent to the sound engine it starts immediately. The synchronisation operators `>sync` and `<sync` can be used to co-ordinate listings to play in time with one another. First, for a rhythmic element use the phase synchronised oscillator `posc` instead of osc. This contains a `<sync` operation which will reset the waveform when it receives a sync pulse. The `posc` operator requires a number betweeen 0 and 1 to offset the phase, you can use 0 to start with and experiment later. For reference 0.5 would result in a phase shift of 180°, 1 would be 360° etc. To send a sync pulse you can use `>sync` to synchronise all listings containing a `posc`. For `>sync` you can either simply:
 >
-	in -1
 	.>sync
 
 which will send one pulse. The `.` allows `.>sync` to end a listing and send it to the sound engine. The listings containing posc will remain in sync, even if you then delete this listing. Or, for periodic syncing you can:
@@ -812,10 +811,12 @@ which will send one pulse. The `.` allows `.>sync` to end a listing and send it 
 	ramp
 	.>sync
 
-which will send pulses at the frequency given, in this case 1Hz. The saw function is similar to osc except the output spans between -1 and 1 which is necessary to trigger the pulse.  
+which will send pulses at the frequency given, in this case 1Hz. `osc, gt 0.5` can be also be used in place of `ramp`, in general any signal which transistions to zero or less than zero (from greater than zero) at the desired sync point will work. `sq` begins at 1, so will trigger sync halfway through it's cycle.  
 Muting a sync listing will have no effect on the synchronisation, as it is send via a separate channel.  
 
 If you wish to launch a listing that only starts playing when the next `<sync` is received, use the `catch` function prior to the last operation, eg. `catch, mix`.  
+
+Sync pulses transmitted will be indicicated by a yellow dot at the top of the info display.  
 
 At present the behaviour of submitting more than one instance of `>sync` to the sound engine is undefined. ◊  
 The synchronisation is somewhat rudementary, a world away from DAW/midi sequencers, yet it has been designed to be raw and flexible in keeping with the Syntə philosophy. It also allows for a modicum of 'musicianship' as it is possible to submit listings in time with one another by hand (without sync) if you are that way inclined. Of course this is live coding which only intersects with music in general :)
@@ -834,7 +835,7 @@ An *abstraction* means wrapping up a bit of code into something simple to make i
 ## info.go and listing.go
 `info.go` is intended to run alongside Syntə to display useful information and error messages. The layout is as follows:
 ```
-Syntə info *press enter to quit*                0s      <-- elapsed running time in seconds
+Syntə info *press enter to quit*                0s      <-- elapsed running time in seconds. Also, a yellow dot indicates a sync event
 ╭───────────────────────────────────────────────────╮
 
                                     Load: 0.00          <-- If the sound engine is overloaded, the sound engine will restart without warning

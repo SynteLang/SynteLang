@@ -1605,7 +1605,7 @@ func parseType(expr, op string) (n float64, b bool) {
 		case "from", "level", ".level", "count", "/":
 			// allow high values for these operators
 		default:
-			if Abs(n) > 20 {
+			if Abs(n) > 50 {
 				msg("exceeds sensible values, use a type")
 				return 0, false
 			}
@@ -1894,8 +1894,10 @@ func infoDisplay() {
 			display.Clip = not
 			n = 0
 		}
-		s++
-		if s > 20 { // sync timeout
+		if display.Sync == yes {
+			s++
+		}
+		if s > 10 { // sync timeout
 			display.Sync = not
 			s = 0
 		}

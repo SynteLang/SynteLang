@@ -1003,18 +1003,24 @@ start:
 				}
 				pf("\tName: ")
 				f := <-tokens
-				f = "listings/" + f + ".syt"
-				files, rr := os.ReadDir("./listings/")
+				if len(f) < 4 || f[len(f)-4:] != ".syt" {
+					f = f + ".syt"
+				}
+				dir := strings.Split(f, "/")
+				if len(dir) == 1 {
+					dir = append([]string{"."}, dir...)
+				}
+				files, rr := os.ReadDir(dir[len(dir)-2])
 				if e(rr) {
-					msg("unable to access 'listings/': %s", rr)
+					msg("unable to access directory")
 					continue
 				}
 				for _, file := range files {
 					ffs := file.Name()
-					if ffs[len(ffs)-4:] != ".syt" {
+					if len(ffs) < 4 || ffs[len(ffs)-4:] != ".syt" {
 						continue
 					}
-					if ffs == f {
+					if ffs == dir[len(dir)-1] {
 						msg("duplicate name!")
 						continue input
 					}

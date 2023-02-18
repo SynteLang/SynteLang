@@ -976,7 +976,7 @@ start:
 				switch op {
 				case "rld", "r":
 					n, rr := strconv.Atoi(opd)
-					if e(rr) || n < -1 || n > len(transfer.Listing)-1 {
+					if e(rr) {
 						msg("%soperand not valid%s", italic, reset)
 						continue
 					}
@@ -989,6 +989,7 @@ start:
 				inputF, rr := os.Open(opd + ".syt")
 				if e(rr) {
 					msg("%v", rr)
+					reload = -1
 					continue
 				}
 				s := bufio.NewScanner(inputF)

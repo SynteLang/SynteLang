@@ -264,11 +264,11 @@ var (
 var ( // misc
 	SampleRate float64 = SAMPLE_RATE
 	BYTE_ORDER         = binary.LittleEndian // not allowed in constants
-	TLlen      int
+	TLlen      int     = SAMPLE_RATE * TAPE_LENGTH
 	fade       float64 = Pow(FDOUT, 1/(100e-3*SAMPLE_RATE)) // 100ms
 	protected          = yes
 	release    float64 = Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
-	DS                 = 1                                 // down-sample, integer as float type
+	DS                 = 1                                 // down-sample
 	ct                 = 1.0                               // individual listing clip threshold
 )
 
@@ -441,7 +441,6 @@ func main() {
 		wmap[w.Name] = yes
 		transfer.Wavs = append(transfer.Wavs, w.Data)
 	}
-	TLlen = int(SampleRate * TAPE_LENGTH)
 	//signals slice with reserved signals
 	reserved := []string{ // order is important
 		"dac",
@@ -494,16 +493,12 @@ func main() {
 			}
 			stop = make(chan struct{})
 			go SoundEngine(soundcard, format)
-			sg["wavR"] = 1.0 / (WAV_TIME * SampleRate) // hack to update wav rate
-			for _, w := range wavSlice {
-				sg["l."+w.Name] = float64(len(w.Data)-1) / (WAV_TIME * SampleRate)
-				sg["r."+w.Name] = 1 / float64(len(w.Data))
-			}
 			TLlen = int(SampleRate * TAPE_LENGTH)
 			lockLoad <- struct{}{}
 			for len(tokens) > 0 { // empty incoming tokens
 				<-tokens
 			}
+			tokens <- "_"                                // hack to restart input
 			for i := 0; i < len(transfer.Listing); i++ { // preload listings into tokens buffer
 				f := sf(".temp/%d.syt", i)
 				inputF, rr := os.Open(f)
@@ -638,8 +633,9 @@ start:
 		for i, w := range wavSlice {
 			sg[w.Name] = float64(i)
 			sg["l."+w.Name] = float64(len(w.Data)-1) / (WAV_TIME * SampleRate)
-			sg["r."+w.Name] = 1 / float64(len(w.Data))
+			sg["r."+w.Name] = float64(DS) / float64(len(w.Data))
 		}
+		TLlen = int(SampleRate * TAPE_LENGTH)
 		out := map[string]struct{}{}
 		for _, v := range reserved {
 			switch v {

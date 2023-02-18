@@ -62,6 +62,7 @@ import (
 	"io"
 	. "math" // don't do this!
 	"os"
+	"path/filepath"
 	"runtime"
 	"runtime/debug"
 	"strconv"
@@ -107,7 +108,7 @@ const (
 	MAX_WAVS       = 12
 	EXPORTED_LIMIT = 12
 	NOISE_FREQ     = 0.033 // 2½ times the geometric mean of audible spectrum (-8dB)
-	RUN_TIME_OUT   = 100   // seconds
+	FDOUT          = 1e-5
 )
 
 var convFactor = float64(MaxInt16) // checked below
@@ -264,7 +265,7 @@ var ( // misc
 	SampleRate float64 = SAMPLE_RATE
 	BYTE_ORDER         = binary.LittleEndian // not allowed in constants
 	TLlen      int
-	fade       float64 = Pow(1e-4, 1/(100e-3*SAMPLE_RATE)) // 100ms
+	fade       float64 = Pow(FDOUT, 1/(100e-3*SAMPLE_RATE)) // 100ms
 	protected          = yes
 	release    float64 = Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
 	DS                 = 1                                 // down-sample, integer as float type
@@ -336,22 +337,21 @@ func main() {
 	save([]listing{listing{{Op: advisory}}}, "displaylisting.json")
 	// open audio output (everything is a file...)
 	file := "/dev/dsp"
-	f, rr := os.OpenFile(file, os.O_WRONLY, 0644)
+	soundcard, rr := os.OpenFile(file, os.O_WRONLY, 0644)
 	if e(rr) {
 		p(rr)
 		p("soundcard not available, shutting down...")
 		time.Sleep(3 * time.Second)
 		os.Exit(1)
 	}
-	defer f.Close()
-	w := bufio.NewWriter(f)
+	defer soundcard.Close()
 
 	// set bit format
 	var req uint32 = SNDCTL_DSP_SETFMT
 	var data uint32 = SELECTED_FMT
 	_, _, ern := syscall.Syscall(
 		syscall.SYS_IOCTL,
-		uintptr(f.Fd()),
+		uintptr(soundcard.Fd()),
 		uintptr(req),
 		uintptr(unsafe.Pointer(&data)),
 	)
@@ -382,7 +382,7 @@ func main() {
 	data = CHANNELS
 	_, _, ern = syscall.Syscall(
 		syscall.SYS_IOCTL,
-		uintptr(f.Fd()),
+		uintptr(soundcard.Fd()),
 		uintptr(req),
 		uintptr(unsafe.Pointer(&data)),
 	)
@@ -409,7 +409,7 @@ func main() {
 	data = SAMPLE_RATE
 	_, _, ern = syscall.Syscall(
 		syscall.SYS_IOCTL,
-		uintptr(f.Fd()),
+		uintptr(soundcard.Fd()),
 		uintptr(req),
 		uintptr(unsafe.Pointer(&data)),
 	)
@@ -425,7 +425,7 @@ func main() {
 	}
 	display.SR = SampleRate // fixed at initial rate
 
-	go SoundEngine(w, format)
+	go SoundEngine(soundcard, format)
 	go infoDisplay()
 	go mouseRead()
 
@@ -493,10 +493,11 @@ func main() {
 				return
 			}
 			stop = make(chan struct{})
-			go SoundEngine(w, format)
+			go SoundEngine(soundcard, format)
 			sg["wavR"] = 1.0 / (WAV_TIME * SampleRate) // hack to update wav rate
 			for _, w := range wavSlice {
 				sg["l."+w.Name] = float64(len(w.Data)-1) / (WAV_TIME * SampleRate)
+				sg["r."+w.Name] = 1 / float64(len(w.Data))
 			}
 			TLlen = int(SampleRate * TAPE_LENGTH)
 			lockLoad <- struct{}{}
@@ -589,6 +590,7 @@ func main() {
 							break
 						}
 						reload = i
+						priorMutes[reload] = mute[reload]
 						mute[reload] = 0
 						time.Sleep(25 * time.Millisecond)
 						s := bufio.NewScanner(inputF)
@@ -636,6 +638,7 @@ start:
 		for i, w := range wavSlice {
 			sg[w.Name] = float64(i)
 			sg["l."+w.Name] = float64(len(w.Data)-1) / (WAV_TIME * SampleRate)
+			sg["r."+w.Name] = 1 / float64(len(w.Data))
 		}
 		out := map[string]struct{}{}
 		for _, v := range reserved {
@@ -877,6 +880,7 @@ start:
 					if started {
 						<-stop
 					}
+					save([]listing{listing{{Op: advisory}}}, "displaylisting.json")
 					p("Stopped")
 					close(infoff)
 					if funcsave {
@@ -906,7 +910,7 @@ start:
 							priorMutes[i] = mute[i]
 							mute[i] = 0
 						}
-						time.Sleep(50 * time.Millisecond)
+						time.Sleep(150 * time.Millisecond)
 						pause <- yes
 						display.Paused = yes
 					} else if !started {
@@ -1003,24 +1007,20 @@ start:
 				}
 				pf("\tName: ")
 				f := <-tokens
-				if len(f) < 4 || f[len(f)-4:] != ".syt" {
+				if filepath.Ext(f) != ".syt" {
 					f = f + ".syt"
 				}
-				dir := strings.Split(f, "/")
-				if len(dir) == 1 {
-					dir = append([]string{"."}, dir...)
-				}
-				files, rr := os.ReadDir(dir[len(dir)-2])
+				files, rr := os.ReadDir(filepath.Dir(f))
 				if e(rr) {
 					msg("unable to access directory")
 					continue
 				}
 				for _, file := range files {
 					ffs := file.Name()
-					if len(ffs) < 4 || ffs[len(ffs)-4:] != ".syt" {
+					if filepath.Ext(ffs) != ".syt" {
 						continue
 					}
-					if ffs == dir[len(dir)-1] {
+					if ffs == filepath.Base(f) {
 						msg("duplicate name!")
 						continue input
 					}
@@ -1079,7 +1079,7 @@ start:
 					<-pause
 					display.Paused = not
 				}
-				time.Sleep(50 * time.Millisecond) // wait for envelope to complete
+				time.Sleep(150 * time.Millisecond) // wait for envelope to complete
 				transfer.Listing[n] = listing{{Op: "deleted", Opn: 31}}
 				transfer.Signals[n][0] = 0 // silence listing
 				dispListings[n] = listing{{Op: "deleted"}}
@@ -1132,7 +1132,7 @@ start:
 					fade = 2e-7
 				}
 				msg("%sfade set to%s %.3gs", italic, reset, 1/(fade*SampleRate))
-				fade = Pow(1e-4, fade) // approx -80dB in t=fade
+				fade = Pow(FDOUT, fade) // approx -100dB in t=fade
 				continue
 			case "pop":
 				p := 0
@@ -1242,19 +1242,23 @@ start:
 				if solo == i {
 					for i := range mute { // i is shadowed
 						mute[i] = unsolo[i]
+						priorMutes[i] = mute[i]
 						display.Mute[i] = mute[i] == 0
-						solo = -1
 					}
 					mute[i] = 1
-					display.Mute[i] = mute[i] == 0
+					priorMutes[i] = mute[i]
+					display.Mute[i] = not
+					solo = -1
 				} else {
 					for i := range mute { // i is shadowed
 						unsolo[i] = mute[i]
 						mute[i] = 0
+						priorMutes[i] = mute[i]
 						display.Mute[i] = yes
 					}
 					if i < len(transfer.Listing) { // only solo extant listings, new will be unmuted
 						mute[i] = 1
+						priorMutes[i] = mute[i]
 						display.Mute[i] = not
 					}
 					solo = i
@@ -1334,16 +1338,17 @@ start:
 				ls := ""
 				for _, file := range files {
 					f := file.Name()
-					if f[len(f)-4:] != extn {
+					if filepath.Ext(f) != extn {
 						continue
 					}
-					ls += f[:len(f)-4] + " "
+					ls += f[:len(f)-4] + "\t"
 				}
 				if len(ls) == 0 {
 					msg("no files")
 					continue
 				}
 				msg("%s", ls)
+				msg("")
 				continue
 			case "ct":
 				if n, ok := parseType(opd, op); ok {
@@ -1508,14 +1513,11 @@ start:
 				}
 			}
 		} else { // reloaded listing isn't saved to '.temp/'
-			mute[reload] = 1
+			mute[reload] = priorMutes[reload]
 			dispListings[reload] = dispListing
 			transfer.Listing[reload] = newListing
 			transfer.Signals[reload] = sig
-			priorMutes[reload] = 1
-			unsolo[reload] = 1
-			display.Mute[reload] = not
-			level[reload] = 1
+			display.Mute[reload] = mute[reload] == 0
 			transmit <- yes
 			<-accepted
 		}
@@ -1918,21 +1920,20 @@ func infoDisplay() {
 // except where the calculations don't complete in time under heavy load and the soundcard driver buffer underruns. Frequency accuracy is determined by the soundcard clock and precision of float64 type
 // If the loop time exceeds the sample rate over number of samples given by RATE the Sound Engine will panic
 // The data transfer structures need a good clean up
-func SoundEngine(w *bufio.Writer, bits int) {
+func SoundEngine(w *os.File, bits int) {
 	defer close(stop)
-	defer w.Flush()
-	output := func(w *bufio.Writer, f float64) {
+	output := func(w *os.File, f float64) {
 		binary.Write(w, BYTE_ORDER, int16(f))
 	}
 	switch bits {
 	case 8:
-		output = func(w *bufio.Writer, f float64) {
+		output = func(w *os.File, f float64) {
 			binary.Write(w, BYTE_ORDER, int8(f))
 		}
 	case 16:
 		// already assigned
 	case 32:
-		output = func(w *bufio.Writer, f float64) {
+		output = func(w *os.File, f float64) {
 			binary.Write(w, BYTE_ORDER, int32(f))
 		}
 	default:
@@ -1975,8 +1976,8 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		hroom       = (convFactor - 1.0) / convFactor // headroom for positive dither
 		c           float64                           // mix factor
 		pd          int
-		nyfL, nyfR  float64                                      // nyquist filtering
-		nyfC        float64 = 1 / (1 + 1/(2*Pi*2e4/SAMPLE_RATE)) // coefficient
+		nyfL, nyfR  float64                                    // nyquist filtering
+		nyfC        float64 = 1 / (1 + 1/(Tau*2e4/SampleRate)) // coefficient
 		L, R, sides float64
 	)
 	no *= 77777777777 // force overflow
@@ -2005,7 +2006,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			transfer.Signals[reload][0] = 0                              // silence listing
 			msg("previous listing deleted: %d", reload)
 		}
-		fade := Pow(1e-4, 1/(SampleRate*100e-3)) // approx -80dB in 100ms
+		fade := Pow(FDOUT, 1/(SampleRate*100e-3)) // approx -100dB in 100ms
 		for i := 4800; i >= 0; i-- {
 			dac0 *= fade
 			output(w, dac0) // left
@@ -2052,7 +2053,11 @@ func SoundEngine(w *bufio.Writer, bits int) {
 	for {
 		select {
 		case <-pause:
-			pause <- not          // blocks until `: play`
+			pause <- not                // blocks until `: play`
+			for i := 0; i < 2400; i++ { // lead-in
+				output(w, nyfL) // left
+				output(w, nyfR) // right, remove if stereo not available
+			}
 			lastTime = time.Now() // restart loop timer
 		case <-transmit:
 			listings = make([]listing, len(transfer.Listing))
@@ -2089,13 +2094,15 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		}
 
 		mo := mouse
-		mx = (mx*764 + mo.X) / 765 // lpf @ ~10Hz
+		mx = (mx*382 + mo.X) / 383 // lpf @ ~20Hz
 		my = (my*764 + mo.Y) / 765
 
 		for i, list := range listings {
 			for _, ii := range daisyChains {
 				sigs[i][ii] = sigs[(i+len(sigs)-1)%len(sigs)][ii]
 			}
+			m[i] = (m[i]*764 + mute[i]) / 765 // anti-click filter @ ~10hz
+			lv[i] = (lv[i]*7 + level[i]) / 8  // @ 1091hz
 			// skip muted/deleted listing
 			if (muteSkip && mute[i] == 0 && m[i] < 1e-6) || list[0].Opn == 31 {
 				continue
@@ -2350,9 +2357,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				}
 				op++
 			}
-			m[i] = (m[i]*764 + mute[i]) / 765 // anti-click filter @ ~10hz
-			lv[i] = (lv[i]*7 + level[i]) / 8  // @ 1091hz
-			c += m[i]                         // add mute to mix factor
+			c += m[i] // add mute to mix factor
 			if sigs[i][0] == 0 {
 				continue
 			}
@@ -2396,7 +2401,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				lpf510 = (lpf510*152 + lpf50) / 153
 				deemph = lpf510 / 1.5
 			}
-			det = Abs(32*hpf2560 + 5.657*hpf160 + dac)
+			det = Abs(32*hpf2560+5.657*hpf160+dac) / 2
 			if det > l {
 				l = det // MC
 				h = release
@@ -2412,8 +2417,7 @@ func SoundEngine(w *bufio.Writer, bits int) {
 			dac *= env // fade out
 			sides *= env
 			env *= fade
-			if env < 1e-4 {
-				save([]listing{listing{{Op: advisory}}}, "displaylisting.json")
+			if env < FDOUT {
 				break
 			}
 		}
@@ -2437,8 +2441,8 @@ func SoundEngine(w *bufio.Writer, bits int) {
 		if peak < 0 {
 			peak = 0
 		}
-		sides = Max(-0.5, Min(0.5, sides))
 		display.Vu = peak
+		sides = Max(-0.5, Min(0.5, sides))
 		L = (dac + sides) * convFactor
 		R = (dac - sides) * convFactor
 		t = time.Since(lastTime)
@@ -2460,17 +2464,17 @@ func SoundEngine(w *bufio.Writer, bits int) {
 				nyfC = 1 / (1 + (float64(DS*DS) / Pi)) // coefficient is non-linear
 				SampleRate /= 2
 				display.SR = SampleRate
-				fade = Pow(1e-4, 1/(100e-3*SampleRate))    // 100ms
+				fade = Pow(FDOUT, 1/(100e-3*SampleRate))   // 100ms
 				release = Pow(8000, -1.0/(0.5*SampleRate)) // 500ms
 				panic(overload)
 			} else if float64(display.Load) > 1e9/SampleRate {
 				panic(rateLimit)
-			} else if DS > 1 && float64(display.Load) < 33e7/SampleRate && n > 100000 { // holdoff for ~4secs x DS
+			} else if DS > 1 && float64(display.Load) < 30e7/SampleRate && n > 100000 { // holdoff for ~4secs x DS
 				DS >>= 1
 				nyfC = 1 / (1 + (float64(DS*DS) / Pi)) // coefficient is non-linear
 				SampleRate *= 2
 				display.SR = SampleRate
-				fade = Pow(1e-4, 1/(100e-3*SampleRate))    // 100ms
+				fade = Pow(FDOUT, 1/(100e-3*SampleRate))   // 100ms
 				release = Pow(8000, -1.0/(0.5*SampleRate)) // 500ms
 				panic(recovering)
 			}

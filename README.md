@@ -755,7 +755,7 @@ wavR is a pre-defined constant which gives the playback speed for a sample recor
 
 By design only the first 4 seconds of any wav file will be loaded. Two reasons for this are fast-loading times and to encourage creativity. You can manually edit any wav file in a free program such as Audacity to ensure the part you want to play is within the first 4 seconds, ideally starting at the beginning of the sample. Samples less then 4 seconds long are fine.
 
-Later on, the intention is to provide more flexibility in synchronising other necklaces to wav files using `l.<wavname>` signals. This has been partially implemented and would provide the possibility to sync to exact loop length samples. ◊  
+Later on, the intention is to provide more flexibility in synchronising other necklaces to wav files using `l.<wavname>` signals. This has been partially implemented and would provide the possibility to sync to exact loop length samples. Likewise, you can use r.<wavname> in place of wavR. ◊  
 
 ## Tape loop ◊  
 Each listing has a tape loop available which is accessed by the `tape` operator. The tape loop is a rolling buffer of 1 second in length. The operand given sets the delay time of the intial tap. The loop can be additionally accessed by the tap operator, which will sum the new tap to its input. Multiple `tap` operators can be used. The use of multiple `tape` operators is undefined. Bear in mind that for modulating tap times (eg. for chorusing/detuning) only a small amount is required, and as time is inversely proportional to frequency this leads to large modulation times. For example `in 3hz, osc, sine, mul 30s, + 100ms, out t, ... tape t ...`

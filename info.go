@@ -108,7 +108,7 @@ func main() {
 
 			loadColour := ""
 			l := float64(display.Load) / (1e9 / display.SR)
-			if display.On && n%10 == 0 {
+			if display.On && n%10 == 0 && !display.Paused {
 				load = (load*24 + l) / 25
 			}
 			if 1.2*load < l || load > l*1.2 {

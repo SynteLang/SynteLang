@@ -975,7 +975,12 @@ start:
 			case "load", "ld", "rld", "r", "apd":
 				switch op {
 				case "rld", "r":
-					reload, _ = strconv.Atoi(opd) // no checks
+					n, rr := strconv.Atoi(opd)
+					if e(rr) || n < -1 || n > len(transfer.Listing)-1 {
+						msg("%soperand not valid%s", italic, reset)
+						continue
+					}
+					reload = n
 					opd = ".temp/" + opd
 				case "apd":
 					reload = -1
@@ -1358,7 +1363,7 @@ start:
 					msg("%soperand not an integer%s", italic, reset)
 					continue
 				}
-				if n >= len(transfer.Listing) { // not really necessary
+				if n >= len(transfer.Listing) {
 					msg("listing doesn't exist")
 					continue
 				}

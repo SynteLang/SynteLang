@@ -74,10 +74,10 @@ You should end up with a directory (folder) containing the following files:
 	functions.go (optional, recommended) 
 	an empty directory named 'recordings' (can contain a README.md) 
 	a directory named 'wavs' containing wav files (optional, can contain a README.md)
-	an empty directory named '.temp' (can contain a README.md, may need to be added manually) 
+	an empty directory named '.temp' (can contain a README file) 
 
-Open a terminal, navigate to the directory and type 'go run synte.0.10.go' to begin. ◊ Open another terminal and run info.go similarly. This will display useful information and feedback as you input and run code, if you run this before synte.go it will display details of any loaded wavs. 
-Open another terminal and run listing.go to view currently running code, this will also show mute status in italics. You may wish to arrange these using a tiling window manager, terminal multiplexer, or equivalent.
+Open a terminal, navigate to the directory and type `go run synte.0.10.go` to begin. ◊ Open another terminal and run `info.go` similarly. This will display useful information and feedback as you input and run code, if you run this before synte.go it will display details of any loaded wavs.  
+Open another terminal and run `listing.go` to view currently running code, this will also show mute status in italics. You may wish to arrange these using a tiling window manager, terminal multiplexer, or equivalent.
 
 You will be prompted to write your first syntə listing, a program that will make sounds.  
 The listing is input one line at a time. You must write the name of an operator or function, usually followed by a space and a number or signal name. The first character of a name cannot be either a number, plus, minus or dot, to avoid confusion.  
@@ -94,10 +94,15 @@ Try this example to test everything is working ok:
 	mul 0.2  
 	out dac  
 
-This should output a single sine tone.
+This should output a single sine tone.  
 
+To mute it, type `mute 0`  
+To delete it, type `del 0`  
+(where zero is the index of the listing)  
+
+To pause playback, type `: pause` and `: play` to resume.  
 To exit from syntə type `: exit`  
-The `:` operator is used for mode commands to syntə
+(The `:` operator is used for mode commands to Syntə)  
 
 A function is a predefined list of operations that you can use in your code as if they are operators. These are indicated by a different colour once you have typed them in.
 
@@ -131,7 +136,7 @@ In the syntə code example above, the output of the `osc` function is *shaped* b
 `dac` is a special signal name which sends the output to the soundcard of your computer. Typing `out dac` ends a listing and sends it to the sound engine to perform computations.  
 Most listings end in `out dac`, so it can only be used once. `dac` stands for digital audio converter, which is the technical name for anything that takes a series of digitally represented numbers and converts them into audio. A listing that generates signals for other listings but no sound directly can end with the `.out` operator, or you can also use the `.` function which sends zero to the soundcard. ◊  
 
-You will probably want to use the function `mix` which contains `out dac` and so will also end a necklace. `mix` will set the level based on the frequency of the most recent osc function within the listing to ensure output limiting doesn't take place (which may reduce the bass response). However, for listings that pass through using `from`, or play samples using `wav`, it is better to use `out dac`.
+You will probably want to use the function `mix` which contains `out dac` and so will also end a necklace. `mix` will set the level based on the frequency of the most recent osc function within the listing to ensure output limiting doesn't take place (which may reduce the bass response). However, for listings that pass through using `from` it is better to use `out dac`.
 
 The `sino` function combines `osc` and `sine` so can be used in their place.
 
@@ -567,6 +572,12 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	jl0		|		yes   	|		jump if less than zero. The next n number of operations are skipped if input is less than or equal to zero, where n is given by operand.  Bear in mind that this number of skips includes all the operations within any functions within the listing. The final operation in a listing will always execute. An operand of zero is no jump. Added for fun in a vague attempt to make syntə turing-complete
 |	pan		|		yes   	|		input (limited to ±1) sets the stereo pan of the listing given by operand (which must be a number, similarly to `level`). Positive input pans left and negative input pans right. The pan curve chosen ensures neither channel is boosted at full pan, while mono sounds remain at unity gain in both channels. This is achieved by turning down the mono channel while pan increases. Because of this a sound with modulated (changing) pan summed to mono will fluctuate in volume, so we recommend modulating with a signal `pan` on stereo playback systems only. That is to say - for full mono compatiblity only apply static `pan` (input is unchanging) at most. But don't worry as this is somewhat of a niche concern. Pan will persist after deletion
 |	--		|		yes   	|		output = operand - input. Useful for r = 1-r in particular
+|	fft		|		no		|		applies a fast fourier transform to the input, which is regitered internally (on a per-listing basis) for use by related operators
+|	ifft	|		no		|		output is an inverse fast fourier transform applied to the internal frequency domain representation
+|	ffrz	|		no		|		when input is zero freeze the process in `fft`
+|	gafft	|		yes		|		gating in the frequency domain. All frequencies in magnitude below the given operand are zeroed when the operand is positive, frequencies above absolute value of operand are zeroed when it is negative
+|	fftrnc	|		yes		|		a proportion of the frequency spectrum given by operand is zeroed, creating a brickwall filter. Positive operands create low-pass, negative operands create high-pass
+|	shfft	|		yes		|		frequency spectrum is rotated by amount given by operand
 |	       	| 		       	|
 |	fma		|		yes  	|		fused multiply add, the result of the input multiplied by the operand is stored in a special register `fma` (not implimented yet) ◊  
 
@@ -577,7 +588,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	[		|		yes		|  		begin function definition, operand is name                                 |
 |	]		|		no 		|  		end function definition. Listing input is cleared                          |
 |	:		|   	yes		|   	perform mode command: exit, erase, play, pause, fon, foff, clear, verbose, mc |
-|	fade	|		yes		|		changes fade out time after exit. Default is 325e-3 (unit is seconds, maximum 104s)
+|	fade	|		yes		|		changes fade out time after exit. Default is 325e-3 (unit is seconds, maximum 130s)
 |	del		|		yes		|		delete an entire compliled and running listing numbered by operand. Play will be resumed if paused. On deletion the `.temp/*.syt` file remains intact so the listing can be reloaded with `rld`. If you wish to delete all listings simply exit from Syntə and restart
 |	index	|		yes		|		access index of listing
 |	mute 	|		yes		|		mute  or un-mute listing at index given by operand. Muting won't affect sync operations sent by a listing
@@ -592,12 +603,6 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	rpl 	|		yes		|		listing at index given by operand will be replaced by current input once launched, file in `.temp/ is not updated
 |	r 		|		yes		|		alias of rld
 |	do 		|		yes		|		repeat next operation or function n times, where n is given by the operand. Define a temporary function for this purpose if needs be
-|	fft		|		no		|		applies a fast fourier transform to the input, which is regitered internally (on a per-listing basis) for use by related operators
-|	ifft	|		no		|		output is an inverse fast fourier transform applied to the internal frequency domain representation
-|	ffrz	|		no		|		when input is zero freeze the process in `fft`
-|	gafft	|		yes		|		gating in the frequency domain. All frequencies in magnitude below the given operand are zeroed when the operand is positive, frequencies above absolute value of operand are zeroed when it is negative
-|	fftrnc	|		yes		|		a proportion of the frequency spectrum given by operand is zeroed, creating a brickwall filter. Positive operands create low-pass, negative operands create high-pass
-|	shfft	|		yes		|		frequency spectrum is rotated by amount given by operand
 
 **List of built-in functions**
 
@@ -729,7 +734,7 @@ Any wav files placed in a folder named `wavs` will be loaded on startup. They ne
 >
 	in wavR  
 	osc  
-	wav [name of wav file indicated above listings]  
+	wav [name of wav file, indicated above listings]  
 	out dac  
 
 In the necklace above `in` sets the frequency of playback which is passed to osc to generate a rising ramp wave at that frequency. This 'scans' through the sample using the wav operator. Another way to look at it is that the output of osc, which repeats every 4 seconds, is 'shaped' into a sample waveform by `wav`. Any number between 0 and 1 will play the corresponding value of the sample at that point. Eg. 0.1 will play the sample at 400ms in. A continuous stream of values from `osc` will play the entire wav file. A decreasing series of numbers produced by, for example, `osc, flip` will play the sample backwards. `flip` turns the values of osc upside-down so they count down instead of up.  
@@ -755,10 +760,10 @@ wavR is a pre-defined constant which gives the playback speed for a sample recor
 
 By design only the first 4 seconds of any wav file will be loaded. Two reasons for this are fast-loading times and to encourage creativity. You can manually edit any wav file in a free program such as Audacity to ensure the part you want to play is within the first 4 seconds, ideally starting at the beginning of the sample. Samples less then 4 seconds long are fine.
 
-Later on, the intention is to provide more flexibility in synchronising other necklaces to wav files using `l.<wavname>` signals. This has been partially implemented and would provide the possibility to sync to exact loop length samples. Likewise, you can use r.<wavname> in place of wavR. ◊  
+Later on, the intention is to provide more flexibility in synchronising other necklaces to wav files using `l.wavname` signals. This has been partially implemented and would provide the possibility to sync to exact loop length samples. Likewise, you can use `r.wavname` in place of wavR. ◊  
 
 ## Tape loop ◊  
-Each listing has a tape loop available which is accessed by the `tape` operator. The tape loop is a rolling buffer of 1 second in length. The operand given sets the delay time of the intial tap. The loop can be additionally accessed by the tap operator, which will sum the new tap to its input. Multiple `tap` operators can be used. The use of multiple `tape` operators is undefined. Bear in mind that for modulating tap times (eg. for chorusing/detuning) only a small amount is required, and as time is inversely proportional to frequency this leads to large modulation times. For example `in 3hz, osc, sine, mul 30s, + 100ms, out t, ... tape t ...`
+Each listing has a tape loop available which is accessed by the `tape` operator. The tape loop is a rolling buffer of 1 second in length. The operand given sets the delay time of the intial tap. The loop can be additionally accessed by the tap operator, which will sum the new tap to its input. Multiple `tap` operators can be used. The use of multiple `tape` operators is undefined. Bear in mind that for modulating tap times (eg. for chorusing/detuning) only a small amount is required, and as time is inversely proportional to frequency this leads to large modulation times. For example `in 3hz, osc, sine, mul 30s, + 100ms, out t, ... tape t ...` An easier formulation is `in 3hz, osc, sine, mul 0.01, + 1, mul 100ms, out t, ... tape t ...`  
 
 ## Arithmetic operations
 An operand may be added in a listing of the form a/b or a\*b where a and b are valid numbers and the result is divison and multiplication respectively. For example: typing  

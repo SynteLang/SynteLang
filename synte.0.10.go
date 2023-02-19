@@ -1130,8 +1130,8 @@ start:
 				if fade > 1.0/4800 { // minimum fade time
 					fade = 1.0 / 4800
 				}
-				if fade < 2e-7 { // maximum fade time
-					fade = 2e-7
+				if fade < 1.6e-7 { // maximum fade time
+					fade = 1.6e-7
 				}
 				msg("%sfade set to%s %.3gs", italic, reset, 1/(fade*SampleRate))
 				fade = Pow(FDOUT, fade) // approx -100dB in t=fade

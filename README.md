@@ -87,12 +87,14 @@ Press enter to complete each line.
 
 Try this example to test everything is working ok:
 
+<Test>
 >	
 	in 330hz  
 	osc  
 	sine  
-	mul 0.2  
-	out dac  
+	mix
+
+</Test>
 
 This should output a single sine tone.  
 
@@ -656,6 +658,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	intfr	|		yes		|		non-linear feedback leads to radio-inteference sounding patterns
 |	fractal	|		yes		|		fractal inspired non-linear feedback mangles input in interesting ways
 |	catch	|		no		|		output is zero until first sync pulse received, input is passed through to output thereafter. Use before last operation of a listing containing `posc` for a smooth launch
+|	smooth	|		no		|		alias of `lpf 150hz`, use to smoothen vca signals or other below audio rate CV's
 |           |               |
 
 **List of pre-defined constants**	

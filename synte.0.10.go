@@ -595,7 +595,7 @@ func main() {
 							tokens <- s.Text()
 						}
 						tokens <- "extnot"
-						msg("%slisting reloaded:%s %d", italic, reset, i)
+						//msg("%slisting reloaded:%s %d", italic, reset, i)
 						inputF.Close()
 						prevStat[i] = stat[i]
 						break
@@ -718,8 +718,20 @@ start:
 			if op2.Opd { // parse second token
 				pf("%s", yellow)
 				opd = <-tokens
-				opd = strings.TrimSuffix(opd, ",") // to allow comma separation of tokens
+				for e := yes; e; { // deal with all ext signals until token received
+					switch op {
+					case "extnot":
+						ext = not
+						op = <-tokens
+					case "extyes":
+						ext = yes
+						op = <-tokens
+					default:
+						e = not
+					}
+				}
 				pf("%s", reset)
+				opd = strings.TrimSuffix(opd, ",") // to allow comma separation of tokens
 				if opd == "_" {
 					continue
 				}
@@ -1406,7 +1418,7 @@ start:
 				}
 			}
 			_, inSg := sg[opd]
-			if !inSg && !alreadyIn && !num.Is && unicode.IsUpper([]rune(opd)[0]) {
+			if !inSg && !alreadyIn && !num.Is && !fIn && unicode.IsUpper([]rune(opd)[0]) {
 				if lenExported > EXPORTED_LIMIT {
 					msg("we've ran out of exported signals :(")
 					continue
@@ -1563,11 +1575,26 @@ func parseType(expr, op string) (n float64, b bool) {
 		if !nyquist(n, expr) {
 			return 0, false
 		}
+	case len(expr) > 4 && expr[len(expr)-4:] == "mins":
+		if n, b = evaluateExpr(expr[:len(expr)-4]); !b {
+			return 0, false
+		}
+		n *= 60
+		n = 1 / (n * SampleRate)
 	case len(expr) > 1 && expr[len(expr)-1:] == "s":
 		if n, b = evaluateExpr(expr[:len(expr)-1]); !b {
 			return 0, false
 		}
 		n = 1 / (n * SampleRate)
+		if !nyquist(n, expr) {
+			return 0, false
+		}
+	case len(expr) > 3 && expr[len(expr)-3:] == "khz":
+		if n, b = evaluateExpr(expr[:len(expr)-3]); !b {
+			return 0, false
+		}
+		n *= 1e3
+		n /= SampleRate
 		if !nyquist(n, expr) {
 			return 0, false
 		}
@@ -1601,12 +1628,6 @@ func parseType(expr, op string) (n float64, b bool) {
 		}
 		n /= 60
 		n /= SampleRate
-	case len(expr) > 4 && expr[len(expr)-4:] == "mins":
-		if n, b = evaluateExpr(expr[:len(expr)-4]); !b {
-			return 0, false
-		}
-		n *= 60
-		n = 1 / (n * SampleRate)
 	default:
 		if n, b = evaluateExpr(expr); !b {
 			return 0, false
@@ -1654,9 +1675,6 @@ func evaluateExpr(expr string) (float64, bool) {
 			if strings.HasPrefix(expr, "-") {
 				opds = strings.SplitN(strings.TrimPrefix(expr, "-"), v, 2)
 				opds[0] = "-" + opds[0]
-			}
-			if strings.Contains(expr, "e") { // don't compute exponential notation
-				opds = []string{expr}
 			}
 			op = v
 			break

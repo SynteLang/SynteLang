@@ -10,7 +10,7 @@
 	Where an operand can be a ( name = letter { letter | digit } ) | ( number = float  ["/" float ] [type] ) .
 	A letter is defined as any UTF-8 character excluding + - . 0 1 2 3 4 5 6 7 8 9
 	A float matches the floating point literal in the Go language specification.
-	A type can be one of the following tokens: "hz", "s", "ms", "bpm", "db", "!" .
+	A type can be one of the following tokens: "hz", "khz", "s", "ms", "bpm", "db", "!" .
 	A list of operators is given below.
 	Lists of operations may be composed into functions with multiple arguments.
 	The function syntax is = function [ " " operand [ "," operand ] [ "," operand ] ].

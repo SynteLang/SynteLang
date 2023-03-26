@@ -574,12 +574,13 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	jl0		|		yes   	|		jump if less than zero. The next n number of operations are skipped if input is less than or equal to zero, where n is given by operand.  Bear in mind that this number of skips includes all the operations within any functions within the listing. The final operation in a listing will always execute. An operand of zero is no jump. Added for fun in a vague attempt to make syntə turing-complete
 |	pan		|		yes   	|		input (limited to ±1) sets the stereo pan of the listing given by operand (which must be a number, similarly to `level`). Positive input pans left and negative input pans right. The pan curve chosen ensures neither channel is boosted at full pan, while mono sounds remain at unity gain in both channels. This is achieved by turning down the mono channel while pan increases. Because of this a sound with modulated (changing) pan summed to mono will fluctuate in volume, so we recommend modulating with a signal `pan` on stereo playback systems only. That is to say - for full mono compatiblity only apply static `pan` (input is unchanging) at most. But don't worry as this is somewhat of a niche concern. Pan will persist after deletion
 |	--		|		yes   	|		output = operand - input. Useful for r = 1-r in particular
-|	fft		|		no		|		applies a fast fourier transform to the input, which is regitered internally (on a per-listing basis) for use by related operators
+|	fft		|		no		|		applies a fast fourier transform to the input, which is regitered internally (on a per-listing basis) for use by related operators below
 |	ifft	|		no		|		output is an inverse fast fourier transform applied to the internal frequency domain representation
-|	ffrz	|		no		|		when input is zero freeze the process in `fft`
+|	ffrz	|		yes		|		when operand is zero, freeze the process in `fft`
 |	gafft	|		yes		|		gating in the frequency domain. All frequencies in magnitude below the given operand are zeroed when the operand is positive, frequencies above absolute value of operand are zeroed when it is negative
 |	fftrnc	|		yes		|		a proportion of the frequency spectrum given by operand is zeroed, creating a brickwall filter. Positive operands create low-pass, negative operands create high-pass
 |	shfft	|		yes		|		frequency spectrum is rotated by amount given by operand
+|	rev		|		no		|		reverse order of internal frequency representation
 |	       	| 		       	|
 |	fma		|		yes  	|		fused multiply add, the result of the input multiplied by the operand is stored in a special register `fma` (not implimented yet) ◊  
 

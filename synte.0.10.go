@@ -187,6 +187,7 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"shfft":  ops{yes, 43},
 	"ffrz":   ops{yes, 44},
 	"gafft":  ops{yes, 45},
+	"rev":    ops{not, 46},
 
 	// specials
 	"]":       ops{not, 0},
@@ -707,7 +708,7 @@ start:
 			op = strings.TrimSuffix(op, ",") // to allow comma separation of tokens
 			op2, in := operators[op]
 			if !in {
-				msg("%soperator or function doesn't exist:%s %s", italic, reset, op)
+				msg("%soperator or function doesn't exist:%s '%s'", italic, reset, op)
 				for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
 					<-tokens
 				}
@@ -1936,13 +1937,13 @@ func infoDisplay() {
 }
 
 // The Sound Engine does the bare minimum to generate audio
-// Some work has been done on profiling, beyond design choices such as using slices instead of maps
-// Using floats is probably somewhat profligate, later on this may be converted to int type which would provide ample dynamic range
-// It is also freewheeling, it won't block on the action of any other goroutine, only on IO, namely writing to soundcard
+// It is freewheeling, it won't block on the action of any other goroutine, only on IO, namely writing to soundcard
 // The latency and jitter of the audio output is entirely dependent on the soundcard and its OS driver,
 // except where the calculations don't complete in time under heavy load and the soundcard driver buffer underruns. Frequency accuracy is determined by the soundcard clock and precision of float64 type
 // If the loop time exceeds the sample rate over number of samples given by RATE the Sound Engine will panic
 // The data transfer structures need a good clean up
+// Some work has been done on profiling, beyond design choices such as using slices instead of maps
+// Using floats is probably somewhat profligate, later on this may be converted to int type which would provide ample dynamic range
 func SoundEngine(w *os.File, bits int) {
 	defer close(stop)
 	output := func(w *os.File, f float64) {
@@ -2310,7 +2311,7 @@ func SoundEngine(w *os.File, bits int) {
 						z[i] = fft(zz, 1)
 					}
 				case 41: // "ifft"
-					if n%N == 1 && n >= N {
+					if n%N == 0 && n >= N {
 						zz := fft(z[i], -1)
 						for n, z := range zz { // n, z are shadowed
 							w := (1 - Cos(Tau*float64(n)/float64(N-1))) / 2 // Hann
@@ -2373,6 +2374,23 @@ func SoundEngine(w *os.File, bits int) {
 							} else if !gt && Abs(real(zz)) > s {
 								z[i][n] = 0
 							}
+						}
+					}
+				case 46: // "rev"
+					if n%N2 == 0 && n >= N && !ffrz[i] {
+						ii := i // from 'the blue book':
+						for i, j := 0, len(z[ii])-1; i < j; i, j = i+1, j-1 {
+							z[ii][i], z[ii][j] = z[ii][j], z[ii][i]
+						}
+					}
+				case 47: // "reu"
+					if n%N2 == 0 && n >= N && !ffrz[i] {
+						ii := i // from 'the blue book':
+						for i, j := 0, len(z[ii])/2; i < j; i, j = i+1, j-1 {
+							z[ii][i], z[ii][j] = z[ii][j], z[ii][i]
+						}
+						for i, j := len(z[ii])/2, len(z[ii])-1; i < j; i, j = i+1, j-1 {
+							z[ii][i], z[ii][j] = z[ii][j], z[ii][i]
 						}
 					}
 				default:

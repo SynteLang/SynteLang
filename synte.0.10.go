@@ -61,6 +61,7 @@ import (
 	"fmt"
 	"io"
 	. "math" // don't do this!
+	"math/cmplx"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -188,6 +189,9 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"ffrz":   ops{yes, 44},
 	"gafft":  ops{yes, 45},
 	"rev":    ops{not, 46},
+	"ffltr":  ops{yes, 47},
+	"ffzy":   ops{not, 48},
+	"ffaze":  ops{yes, 49},
 
 	// specials
 	"]":       ops{not, 0},
@@ -586,8 +590,10 @@ func main() {
 							break
 						}
 						reload = i
-						priorMutes[reload] = mute[reload]
-						mute[reload] = 0
+						if !display.Paused {
+							priorMutes[reload] = mute[reload]
+							mute[reload] = 0
+						}
 						time.Sleep(25 * time.Millisecond)
 						s := bufio.NewScanner(inputF)
 						s.Split(bufio.ScanWords)
@@ -596,7 +602,6 @@ func main() {
 							tokens <- s.Text()
 						}
 						tokens <- "extnot"
-						//msg("%slisting reloaded:%s %d", italic, reset, i)
 						inputF.Close()
 						prevStat[i] = stat[i]
 						break
@@ -2071,6 +2076,7 @@ func SoundEngine(w *os.File, bits int) {
 	ifftArray := make([][N]float64, len(transfer.Listing))
 	ifft2 := make([][N]float64, len(transfer.Listing))
 	z := make([][N]complex128, len(transfer.Listing))
+	zf := make([][N]complex128, len(transfer.Listing))
 	ffrz := make([]bool, len(transfer.Listing))
 
 	lastTime = time.Now()
@@ -2105,6 +2111,7 @@ func SoundEngine(w *os.File, bits int) {
 				ifftArray = append(ifftArray, [N]float64{})
 				ifft2 = append(ifft2, [N]float64{})
 				z = append(z, [N]complex128{})
+				zf = append(zf, [N]complex128{})
 			} else if reload > -1 {
 				m[reload] = 0 // m ramps to mute value on reload
 				syncInhibit[reload] = not
@@ -2315,7 +2322,7 @@ func SoundEngine(w *os.File, bits int) {
 						zz := fft(z[i], -1)
 						for n, z := range zz { // n, z are shadowed
 							w := (1 - Cos(Tau*float64(n)/float64(N-1))) / 2 // Hann
-							ifftArray[i][n] = w * real(z) / N
+							ifftArray[i][n] = w * real(z) / N2
 
 						}
 					}
@@ -2323,7 +2330,7 @@ func SoundEngine(w *os.File, bits int) {
 						zz := fft(z[i], -1)
 						for n, z := range zz { // n, z are shadowed
 							w := (1 - Cos(Tau*float64(n)/float64(N-1))) / 2 // Hann
-							ifft2[i][n] = w * real(z) / N
+							ifft2[i][n] = w * real(z) / N2
 
 						}
 					}
@@ -2383,7 +2390,34 @@ func SoundEngine(w *os.File, bits int) {
 							z[ii][i], z[ii][j] = z[ii][j], z[ii][i]
 						}
 					}
-				case 47: // "reu"
+				case 47: // "ffltr"
+					if n%N2 == 0 && n >= N && !ffrz[i] {
+						coeff := complex(Abs(sigs[i][o.N]*N), 0)
+						coeff *= Tau
+						coeff /= (coeff + 1)
+						for n := range z[i] {
+							zf[i][n] = zf[i][n] + (z[i][n]-zf[i][n])*coeff
+							z[i][n] = zf[i][n]
+						}
+					}
+				case 48: // "ffzy"
+					if n%N2 == 0 && n >= N && !ffrz[i] {
+						for n := range z[i] {
+							r, θ := cmplx.Polar(z[i][n])
+							no.ise()
+							θ += (Tau * (float64(no)/MaxUint - 0.5))
+							z[i][n] = cmplx.Rect(r, θ)
+						}
+					}
+				case 49: // "ffaze"
+					if n%N2 == 0 && n >= N && !ffrz[i] {
+						for n := range z[i] {
+							r, θ := cmplx.Polar(z[i][n])
+							θ += Tau * sigs[i][o.N]
+							z[i][n] = cmplx.Rect(r, θ)
+						}
+					}
+				case 50: // "reu"
 					if n%N2 == 0 && n >= N && !ffrz[i] {
 						ii := i // from 'the blue book':
 						for i, j := 0, len(z[ii])/2; i < j; i, j = i+1, j-1 {
@@ -2533,8 +2567,8 @@ func (n *noise) ise() {
 }
 
 const (
-	N  = 2 << 12 // fft window size
-	N2 = N >> 1
+	N  = 2 << 12
+	N2 = N >> 1 // fft window size
 )
 
 func fft(y [N]complex128, s float64) [N]complex128 {

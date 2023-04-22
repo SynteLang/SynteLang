@@ -110,6 +110,8 @@ const (
 	EXPORTED_LIMIT = 12
 	NOISE_FREQ     = 0.033 // 2½ times the geometric mean of audible spectrum (-8dB)
 	FDOUT          = 1e-5
+	MIN_FADE       = 175e-3 // 175ms
+	MAX_FADE       = 120    // 120s
 )
 
 var convFactor = float64(MaxInt16) // checked below
@@ -270,7 +272,7 @@ var ( // misc
 	SampleRate float64 = SAMPLE_RATE
 	BYTE_ORDER         = binary.LittleEndian // not allowed in constants
 	TLlen      int     = SAMPLE_RATE * TAPE_LENGTH
-	fade       float64 = Pow(FDOUT, 1/(100e-3*SAMPLE_RATE)) // 100ms
+	fade       float64 = Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
 	protected          = yes
 	release    float64 = Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
 	DS                 = 1                                 // down-sample
@@ -654,7 +656,7 @@ start:
 		st := 0    // func def start
 		fun := 0   // don't worry the fun will increase!
 		reload = -1
-		do := 0
+		do, To := 0, 0
 
 	input:
 		for { // input loop
@@ -753,10 +755,22 @@ start:
 					}
 				}
 			}
+			once := true
 			for do > 1 { // one already done
+				if once && len(opd) > 2 && opd[:3] == "{i}" {
+					do += 2 // hack around bug
+					To += 2
+					once = false
+				}
 				tokens <- op
+				d := opd
+				// Experimental:
+				if len(opd) > 2 && opd[:3] == "{i}" { // BUG: first do has operand '{i}'
+					d = sf("%d%s", To-do, opd[3:]) // should be + 1
+					// opd[3:] concatenated to provide calc, which mute, solo etc don't support...
+				}
 				if t2 := operators[op]; t2.Opd { // to avoid weird blank opds being sent
-					tokens <- opd
+					tokens <- d
 				}
 				do--
 			}
@@ -995,7 +1009,7 @@ start:
 				case "rld", "r":
 					n, rr := strconv.Atoi(opd)
 					if e(rr) {
-						msg("%soperand not valid%s", italic, reset)
+						msg("%soperand not valid:%s %s", italic, reset, opd)
 						continue
 					}
 					reload = n
@@ -1147,15 +1161,20 @@ start:
 					msg("%snot a valid number%s", italic, reset)
 					continue
 				}
-				fade = num.Ber
-				if fade > 1.0/4800 { // minimum fade time
-					fade = 1.0 / 4800
+				fd := num.Ber
+				ft := 1 / (fd * SampleRate)
+				if ft < MIN_FADE { // minimum fade time
+					fd = 1 / (MIN_FADE * SampleRate)
 				}
-				if fade < 1.6e-7 { // maximum fade time
-					fade = 1.6e-7
+				if ft > MAX_FADE { // maximum fade time
+					fd = 1 / (MAX_FADE * SampleRate)
 				}
-				msg("%sfade set to%s %.3gs", italic, reset, 1/(fade*SampleRate))
-				fade = Pow(FDOUT, fade) // approx -100dB in t=fade
+				if ft < 1 {
+					msg("%sfade set to%s %.3gms", italic, reset, 1/(fd*SampleRate)*1e3)
+				} else {
+					msg("%sfade set to%s %.3gs", italic, reset, 1/(fd*SampleRate))
+				}
+				fade = Pow(FDOUT, fd) // approx -100dB in t=fd
 				continue
 			case "pop":
 				p := 0
@@ -1410,6 +1429,7 @@ start:
 					continue
 				}
 				msg("%snext operation repeated%s %dx", italic, reset, do)
+				To = do
 				continue
 			case "extyes", "extnot": // remove this case after testing, should be unreachable //
 				msg("external signal rejected from token queue")
@@ -1584,6 +1604,28 @@ func parseType(expr, op string) (n float64, b bool) {
 		if !nyquist(n, expr) {
 			return 0, false
 		}
+	case len(expr) > 3 && expr[len(expr)-3:] == "bpm":
+		if n, b = evaluateExpr(expr[:len(expr)-3]); !b {
+			return 0, false
+		}
+		if n > 300 {
+			msg("gabber territory")
+		}
+		if n > 3000 {
+			msg("%fbpm? You're 'aving a larf mate", n)
+			return 0, false
+		}
+		if n < 10 {
+			msg("erm, why?")
+		}
+		n /= 60
+		n /= SampleRate
+	case len(expr) > 1 && expr[len(expr)-1:] == "m":
+		if n, b = evaluateExpr(expr[:len(expr)-1]); !b {
+			return 0, false
+		}
+		n *= 60
+		n = 1 / (n * SampleRate)
 	case len(expr) > 4 && expr[len(expr)-4:] == "mins":
 		if n, b = evaluateExpr(expr[:len(expr)-4]); !b {
 			return 0, false
@@ -1621,22 +1663,6 @@ func parseType(expr, op string) (n float64, b bool) {
 		}
 		n /= 20
 		n = Pow(10, n)
-	case len(expr) > 3 && expr[len(expr)-3:] == "bpm":
-		if n, b = evaluateExpr(expr[:len(expr)-3]); !b {
-			return 0, false
-		}
-		if n > 300 {
-			msg("gabber territory")
-		}
-		if n > 3000 {
-			msg("%fbpm? You're 'aving a larf mate", n)
-			return 0, false
-		}
-		if n < 10 {
-			msg("erm, why?")
-		}
-		n /= 60
-		n /= SampleRate
 	default:
 		if n, b = evaluateExpr(expr); !b {
 			return 0, false
@@ -1949,20 +1975,22 @@ func infoDisplay() {
 // The data transfer structures need a good clean up
 // Some work has been done on profiling, beyond design choices such as using slices instead of maps
 // Using floats is probably somewhat profligate, later on this may be converted to int type which would provide ample dynamic range
-func SoundEngine(w *os.File, bits int) {
+func SoundEngine(file *os.File, bits int) {
 	defer close(stop)
-	output := func(w *os.File, f float64) {
+	w := bufio.NewWriter(file)
+	//defer w.Flush()
+	output := func(w *bufio.Writer, f float64) {
 		binary.Write(w, BYTE_ORDER, int16(f))
 	}
 	switch bits {
 	case 8:
-		output = func(w *os.File, f float64) {
+		output = func(w *bufio.Writer, f float64) {
 			binary.Write(w, BYTE_ORDER, int8(f))
 		}
 	case 16:
 		// already assigned
 	case 32:
-		output = func(w *os.File, f float64) {
+		output = func(w *bufio.Writer, f float64) {
 			binary.Write(w, BYTE_ORDER, int32(f))
 		}
 	default:
@@ -2035,7 +2063,7 @@ func SoundEngine(w *os.File, bits int) {
 			transfer.Signals[reload][0] = 0                              // silence listing
 			msg("previous listing deleted: %d", reload)
 		}
-		fade := Pow(FDOUT, 1/(SampleRate*100e-3)) // approx -100dB in 100ms
+		fade := Pow(FDOUT, 1/(MIN_FADE*SampleRate))
 		for i := 4800; i >= 0; i-- {
 			dac0 *= fade
 			output(w, dac0) // left
@@ -2539,7 +2567,7 @@ func SoundEngine(w *os.File, bits int) {
 				nyfC = 1 / (1 + (float64(DS*DS) / Pi)) // coefficient is non-linear
 				SampleRate /= 2
 				display.SR = SampleRate
-				fade = Pow(FDOUT, 1/(100e-3*SampleRate))   // 100ms
+				fade = Pow(FDOUT, 1/(MIN_FADE*SampleRate))
 				release = Pow(8000, -1.0/(0.5*SampleRate)) // 500ms
 				panic(overload)
 			} else if float64(display.Load) > 1e9/SampleRate {
@@ -2549,7 +2577,7 @@ func SoundEngine(w *os.File, bits int) {
 				nyfC = 1 / (1 + (float64(DS*DS) / Pi)) // coefficient is non-linear
 				SampleRate *= 2
 				display.SR = SampleRate
-				fade = Pow(FDOUT, 1/(100e-3*SampleRate))   // 100ms
+				fade = Pow(FDOUT, 1/(MIN_FADE*SampleRate))
 				release = Pow(8000, -1.0/(0.5*SampleRate)) // 500ms
 				panic(recovering)
 			}

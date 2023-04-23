@@ -1,3 +1,6 @@
+// info.go displays information about a running instance of Syntə
+// Press enter to quit
+
 package main
 
 import (

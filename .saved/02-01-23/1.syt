@@ -1,0 +1,6 @@
+from 0
++ c
+tape 113ms
+mul 0.2
+out c
+out dac

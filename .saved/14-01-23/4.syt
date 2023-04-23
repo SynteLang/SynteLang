@@ -1,0 +1,14 @@
+in 6s
+osc 
+tri 
+out vca
+in 8hz
+osc 
+mul 4
+clip 0
+flip 
+exp 5
+noise 
+mul vca
+mul 2
+mix 

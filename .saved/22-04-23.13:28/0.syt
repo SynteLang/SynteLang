@@ -1,0 +1,26 @@
+in tempo
+* 2
+posc 0.5
+flip
+exp 2
+smooth
+mul 550hz
+out f
+in tempo
+/ 4
+step 7.1
+8bit 5
+8bit 12
+lpf 5hz
+base 2
+mul 440hz
+out p
+mul 1.001
+saw
+out m
+in p
+saw
++ m
+lpf f
+lpf f
+mix 

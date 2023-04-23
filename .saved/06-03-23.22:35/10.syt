@@ -1,0 +1,8 @@
+in grid
+dirac
+down 750ms
+mul 165/2hz
+sino 
+mul grid
+smooth
+mix 

@@ -1,0 +1,7 @@
+in tempo
+sq 
+lpf 25hz
+out vca
+from 1
+mul vca
+out dac

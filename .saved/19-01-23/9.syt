@@ -1,0 +1,10 @@
+in 4s
+osc
+tri
+mul 50ms
+out s
+in grid
+dirac 
+down s
+noise 
+mix 

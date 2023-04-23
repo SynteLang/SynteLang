@@ -1,0 +1,11 @@
+in 120bpm
+mul 8
+osc 
+gt 0.5
+out a
+in 5hz
+osc 
+gt 0.9
+mul a
+noise 
+mix 

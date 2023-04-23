@@ -1,0 +1,13 @@
+in 5.7hz
+sino 
+mul 0.01
++ 1
+mul 250/3ms
+out t
+from 2
++ c
+tape t
+/ 1.2
+lpf 1200hz
+out c
+mix 

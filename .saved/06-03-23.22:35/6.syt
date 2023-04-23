@@ -1,0 +1,15 @@
+in r.VocalTune
+* 6
+sq
+s/h grid
+dirac
+down 300ms
+out e
+exp 1.2
+mul 85hz
+sino 
+tanh 
+mul e
+mul 3
+smooth 
+mix 

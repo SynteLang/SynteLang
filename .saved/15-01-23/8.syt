@@ -1,0 +1,17 @@
+in tempo
+mul 3/2
+osc 
+sino 
+mul 100ms
++ 15ms
+out t
+in grid
+dirac 
+down 16hz
+exp 5
+noise 
+out m
+tape t
++ m
+/ 6
+mix 

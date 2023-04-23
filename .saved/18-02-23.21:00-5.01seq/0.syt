@@ -1,0 +1,8 @@
+in 2hz
+step 5.01
+8bit 12
+lpf 75hz
+base 2
+mul 440hz
+sino 
+mix 

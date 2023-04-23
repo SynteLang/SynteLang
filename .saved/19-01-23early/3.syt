@@ -1,0 +1,11 @@
+in 8hz
+osc 
+exp 8
+slew 20hz
+lpf 20hz
+mul mousex
+clip 0
+out vca
+from 0
+mul vca
+out dac

@@ -1,0 +1,6 @@
+in 2/3
+out T
+mul -1
++ 1
+out T-1
+. 

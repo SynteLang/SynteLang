@@ -1,0 +1,17 @@
+in 0.3hz
+osc
+tri
++ 1
+mul 440hz
+out f
+in 5.01hz
+posc 0
+lt 0.01
+noise 
++ c
+tape f
+lpf 7200hz
+out c
+catch
+mul 4
+mix 

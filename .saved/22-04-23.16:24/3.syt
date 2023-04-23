@@ -1,0 +1,17 @@
+in tempo
+* 1.5
+/ Bar
+posc 0
+lt 0.5
+s/h grid
+dirac 
+down 10ms
+gt 0.25
+noise 
++ c
+tape 110hz
+lpf 1khz
+tanh 
+mul -1
+out c
+mix 

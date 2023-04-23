@@ -1,0 +1,8 @@
+in semitone
+mul 1/100
+mul -7
++ 1
+mul pitch
+mul 4
+sino 
+mix 

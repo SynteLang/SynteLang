@@ -1,0 +1,14 @@
+in 6s
+posc 0.5
+lt 0.25
+mul .25
++ 1
+out p
+in 4s
+posc 0
+gt 0.5
+mul -.2
++ p
+mul 220hz
+lpf 100hz
+.out pitch

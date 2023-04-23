@@ -1,0 +1,20 @@
+in 4s
+posc 0
+lt 0.5
+mul 5
++ 2
+out ex
+in 4hz
+posc 0
+flip 
+lpf 50hz
+out vca
+exp ex
+mul 5hz
++ 50hz
+sino
+mul 3
+tanh
+mul vca
+lpf 50hz
+mix 

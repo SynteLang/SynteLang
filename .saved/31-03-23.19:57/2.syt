@@ -1,0 +1,25 @@
+in 2hz
+posc 0
+lt 0.5
+out gt
+dirac 
+down 1/2s
+exp 4
+smooth 
+smooth
+smooth
+out vca
+in 3s
+mul Phi
+osc 
+tri 
+s/h gt
+8bit 7.5
++ 1/3
+mod 1
+8bit 12
+base 2
+mul 55hz
+sino 
+mul vca
+mix 

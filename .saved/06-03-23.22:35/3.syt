@@ -1,0 +1,10 @@
+in 3hz
+osc 
+flip 
+mul 50hz
+out t
+from 1
+tape t
+lpf 1200hz
+mul 2
+out dac

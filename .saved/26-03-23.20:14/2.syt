@@ -1,0 +1,9 @@
+in 5.01/2hz
+posc 0
+flip 
+exp 5
+mul 65hz
+sino 
+tanh
+mul 3
+mix 

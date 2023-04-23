@@ -1,0 +1,10 @@
+in 124bpm
+/ 8
+posc 0
+gt 0.5
+lpf 200hz
+mul 0.125
++ 1
+mul 330hz
+out pitch
+. 

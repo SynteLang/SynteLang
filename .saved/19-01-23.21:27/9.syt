@@ -1,0 +1,13 @@
+in 4s
+osc
+tri
+mul 50ms
+out s
+in grid
+dirac 
+down s
+hpf 1hz
+clip 0
+lpf 200hz
+noise 
+mix 

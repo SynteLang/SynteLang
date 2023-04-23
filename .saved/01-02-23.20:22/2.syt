@@ -1,0 +1,13 @@
+in 3s
+osc 
+mul 50hz
++ 10hz
+out f
+in 2hz
+sq 
+lpf f
+out vca
+all 
+mul vca
+lpf 500hz
+out dac

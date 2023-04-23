@@ -1,0 +1,23 @@
+from 3
+hpf 100hz
+lpf 500hz
+mul mousey
+out m
+in .3hz
+osc 
+sine 
+mul 10s
++ 75ms
+out t
+from 1
+sub fb
+out ff
+tape t
+out b
+mul 0.9
+out fb
+in ff
+mul 0.9
++ b
++ m
+out dac

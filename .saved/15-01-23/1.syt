@@ -1,0 +1,6 @@
+from 0
++ c
+/ 2
+tape 3hz
+out c
+out dac

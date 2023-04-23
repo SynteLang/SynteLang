@@ -1,0 +1,15 @@
+in 3.7hz
+osc 
+tri 
+mul 0.01
++ 1
+mul 50ms
+out t
+from 1
++ c
+tape t
+hpf 10hz
+lpf 8000hz
+/ 1.3
+out c
+out dac

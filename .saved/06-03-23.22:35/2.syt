@@ -1,0 +1,6 @@
+from 1
++ c
+tape 500/3ms
+/ 3
+out c
+out dac

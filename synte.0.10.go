@@ -1395,7 +1395,7 @@ start:
 			case "ct":
 				if n, ok := parseType(opd, op); ok {
 					ct = n
-					msg("%sclip threshold set to %.2g%s", italic, ct, reset)
+					msg("%sclip threshold set to %.3g%s", italic, ct, reset)
 				}
 				continue
 			case "rpl", ".rpl":
@@ -2240,9 +2240,19 @@ func SoundEngine(file *os.File, bits int) {
 					r = Max(-1, Min(1, r)) // hard clip for cleaner reverbs
 					th[i] = (th[i] + r - tx[i]) * 0.9994
 					tx[i] = r
-					tapes[i][n%TLlen] = th[i]
-					t := Min(1/sigs[i][o.N], SampleRate*TAPE_LENGTH)
-					r = tapes[i][(n+TLlen-int(t)+1)%TLlen]
+					tapes[i][n%TLlen] = th[i] // record head
+					tl := SampleRate * TAPE_LENGTH
+					t := Min(1/sigs[i][o.N], tl)
+					xt := n + TLlen - int(t)
+					xa := xt % TLlen
+					x := Mod(float64(n+TLlen)-t, tl)
+					ta := tapes[i][xa]           // play head
+					tb := tapes[i][(xt+1)%TLlen] // second play head
+					//xx := Max(-1, Min(1, x-float64(xa))) // clip x for end of loop
+					xx := Mod(x-float64(xa), tl-1) // to avoid end of loop clicks
+					r = ta + ((tb - ta) * (xx))    // linear interpolation
+					//r += 0.003*(float64(no)/MaxUint - 0.5) // dither
+					//r = ((3 - (2*xx)) * xx*xx * (tb - ta)) + ta // 3rd order interpolation // not working
 					tf[i] = (tf[i] + r) / 2 // roll off the top end @ 7640Hz
 					r = tf[i]
 				case 19:

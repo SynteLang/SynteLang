@@ -2250,13 +2250,23 @@ func SoundEngine(file *os.File, bits int) {
 					tb := tapes[i][(n+TLlen-int(t)+1)%TLlen]
 					tb1 := tapes[i][(n+TLlen-int(t)+2)%TLlen]
 					xx := Mod(x-float64(xa), tl-1) // to avoid end of loop clicks
-					z := xx - 0.5                  // 4-point 2nd order "optimal" interpolation filter by Olli Niemitalo
+
+					z := xx - 0.5
 					ev1, od1 := tb+ta, tb-ta
 					ev2, od2 := tb1+ta0, tb1-ta0
+					/* // 4-point 2nd order "optimal" interpolation filter by Olli Niemitalo
 					c0 := ev1*0.42334633257225274 + ev2*0.07668732202139628
 					c1 := od1*0.26126047291143606 + od2*0.24778879018226652
 					c2 := ev1*-0.213439787561776841 + ev2*0.21303593243799016
 					r = (c2*z+c1)*z + c0
+					*/
+					// 4-point 4th order "optimal" interpolation
+					c0 := ev1*0.45645918406487612 + ev2*0.04354173901996461
+					c1 := od1*0.47236675362442071 + od2*0.17686613581136501
+					c2 := ev1*-0.253674794204558521 + ev2*0.25371918651882464
+					c3 := od1*-0.37917091811631082 + od2*0.11952965967158
+					c4 := ev1*0.04252164479749607 + ev2*-0.04289144034653719
+					r = (((c4*z + c3)*z + c2)*z + c1)*z +c0
 					tf[i] = (tf[i] + r) / 2 // roll off the top end @ 7640Hz
 					r = tf[i]
 				case 19:
@@ -2270,8 +2280,8 @@ func SoundEngine(file *os.File, bits int) {
 					ta := tapes[i][xa] // play heads
 					tb := tapes[i][(n+TLlen-int(t)+1)%TLlen]
 					tb1 := tapes[i][(n+TLlen-int(t)+2)%TLlen]
-					xx := Mod(x-float64(xa), tl-1) // to avoid end of loop clicks
-					z := xx - 0.5                  // 4-point 2nd order "optimal" interpolation filter by Olli Niemitalo
+					z := Mod(x-float64(xa), tl-1) - 0.5 // to avoid end of loop clicks
+					// 4-point 2nd order "optimal" interpolation filter by Olli Niemitalo
 					ev1, od1 := tb+ta, tb-ta
 					ev2, od2 := tb1+ta0, tb1-ta0
 					c0 := ev1*0.42334633257225274 + ev2*0.07668732202139628
@@ -2286,8 +2296,20 @@ func SoundEngine(file *os.File, bits int) {
 				case 22: // "wav"
 					r += 1 // to allow negative input to reverse playback
 					r = Abs(r)
-					r *= float64(len(wavs[int(sigs[i][o.N])]))
-					r = wavs[int(sigs[i][o.N])][int(r)%len(wavs[int(sigs[i][o.N])])] // interpolate?
+					l := len(wavs[int(sigs[i][o.N])])
+					r *= float64(l)
+					x1 := int(r)%l
+					w0 := wavs[int(sigs[i][o.N])][int(r-1)%l]
+					w1 := wavs[int(sigs[i][o.N])][x1]
+					w2 := wavs[int(sigs[i][o.N])][int(r+1)%l]
+					w3 := wavs[int(sigs[i][o.N])][int(r+2)%l]
+					z := Mod(r-float64(x1), float64(l-1)) - 0.5
+					ev1, od1 := w2+w1, w2-w1
+					ev2, od2 := w3+w0, w3-w0
+					c0 := ev1*0.42334633257225274 + ev2*0.07668732202139628
+					c1 := od1*0.26126047291143606 + od2*0.24778879018226652
+					c2 := ev1*-0.213439787561776841 + ev2*0.21303593243799016
+					r = (c2*z+c1)*z + c0
 				case 23: // "8bit"
 					r = float64(int8(r*sigs[i][o.N])) / sigs[i][o.N]
 				case 24: // "index"

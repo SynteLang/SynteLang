@@ -2266,7 +2266,7 @@ func SoundEngine(file *os.File, bits int) {
 					c2 := ev1*-0.253674794204558521 + ev2*0.25371918651882464
 					c3 := od1*-0.37917091811631082 + od2*0.11952965967158
 					c4 := ev1*0.04252164479749607 + ev2*-0.04289144034653719
-					r = (((c4*z + c3)*z + c2)*z + c1)*z +c0
+					r = (((c4*z+c3)*z+c2)*z+c1)*z + c0
 					tf[i] = (tf[i] + r) / 2 // roll off the top end @ 7640Hz
 					r = tf[i]
 				case 19:
@@ -2298,7 +2298,7 @@ func SoundEngine(file *os.File, bits int) {
 					r = Abs(r)
 					l := len(wavs[int(sigs[i][o.N])])
 					r *= float64(l)
-					x1 := int(r)%l
+					x1 := int(r) % l
 					w0 := wavs[int(sigs[i][o.N])][int(r-1)%l]
 					w1 := wavs[int(sigs[i][o.N])][x1]
 					w2 := wavs[int(sigs[i][o.N])][int(r+1)%l]

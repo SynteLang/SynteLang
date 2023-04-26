@@ -2242,24 +2242,42 @@ func SoundEngine(file *os.File, bits int) {
 					tx[i] = r
 					tapes[i][n%TLlen] = th[i] // record head
 					tl := SampleRate * TAPE_LENGTH
-					t := Min(1/sigs[i][o.N], tl)
-					xt := n + TLlen - int(t)
-					xa := xt % TLlen
-					x := Mod(float64(n+TLlen)-t, tl)
-					ta := tapes[i][xa]           // play head
-					tb := tapes[i][(xt+1)%TLlen] // second play head
-					//xx := Max(-1, Min(1, x-float64(xa))) // clip x for end of loop
+					t := Mod(1/sigs[i][o.N], tl)
+					xa := (n + TLlen - int(t)) % TLlen
+					x := Mod(float64(n+TLlen)-(t), tl)
+					ta0 := tapes[i][(n+TLlen-int(t)-1)%TLlen]
+					ta := tapes[i][xa] // play heads
+					tb := tapes[i][(n+TLlen-int(t)+1)%TLlen]
+					tb1 := tapes[i][(n+TLlen-int(t)+2)%TLlen]
 					xx := Mod(x-float64(xa), tl-1) // to avoid end of loop clicks
-					r = ta + ((tb - ta) * (xx))    // linear interpolation
-					//r += 0.003*(float64(no)/MaxUint - 0.5) // dither
-					//r = ((3 - (2*xx)) * xx*xx * (tb - ta)) + ta // 3rd order interpolation // not working
+					z := xx - 0.5                  // 4-point 2nd order "optimal" interpolation filter by Olli Niemitalo
+					ev1, od1 := tb+ta, tb-ta
+					ev2, od2 := tb1+ta0, tb1-ta0
+					c0 := ev1*0.42334633257225274 + ev2*0.07668732202139628
+					c1 := od1*0.26126047291143606 + od2*0.24778879018226652
+					c2 := ev1*-0.213439787561776841 + ev2*0.21303593243799016
+					r = (c2*z+c1)*z + c0
 					tf[i] = (tf[i] + r) / 2 // roll off the top end @ 7640Hz
 					r = tf[i]
 				case 19:
 					r = sigs[i][o.N] - r
 				case 20: // "tap"
-					t := Min(1/sigs[i][o.N], SampleRate*TAPE_LENGTH)
-					r = tapes[i][(n+TLlen-int(t)+1)%TLlen]
+					tl := SampleRate * TAPE_LENGTH
+					t := Mod(1/sigs[i][o.N], tl)
+					xa := (n + TLlen - int(t)) % TLlen
+					x := Mod(float64(n+TLlen)-(t), tl)
+					ta0 := tapes[i][(n+TLlen-int(t)-1)%TLlen]
+					ta := tapes[i][xa] // play heads
+					tb := tapes[i][(n+TLlen-int(t)+1)%TLlen]
+					tb1 := tapes[i][(n+TLlen-int(t)+2)%TLlen]
+					xx := Mod(x-float64(xa), tl-1) // to avoid end of loop clicks
+					z := xx - 0.5                  // 4-point 2nd order "optimal" interpolation filter by Olli Niemitalo
+					ev1, od1 := tb+ta, tb-ta
+					ev2, od2 := tb1+ta0, tb1-ta0
+					c0 := ev1*0.42334633257225274 + ev2*0.07668732202139628
+					c1 := od1*0.26126047291143606 + od2*0.24778879018226652
+					c2 := ev1*-0.213439787561776841 + ev2*0.21303593243799016
+					r += (c2*z+c1)*z + c0
 				case 21: // "f2c"
 					r = Abs(r)
 					//r = 1 / (1 + 1/(Tau*r))
@@ -2269,7 +2287,7 @@ func SoundEngine(file *os.File, bits int) {
 					r += 1 // to allow negative input to reverse playback
 					r = Abs(r)
 					r *= float64(len(wavs[int(sigs[i][o.N])]))
-					r = wavs[int(sigs[i][o.N])][int(r)%len(wavs[int(sigs[i][o.N])])]
+					r = wavs[int(sigs[i][o.N])][int(r)%len(wavs[int(sigs[i][o.N])])] // interpolate?
 				case 23: // "8bit"
 					r = float64(int8(r*sigs[i][o.N])) / sigs[i][o.N]
 				case 24: // "index"

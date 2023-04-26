@@ -1,0 +1,20 @@
+in 5.01hz
+posc 0
+flip 
+exp 5
+lpf 40hz
+out vca
+gt 0.05
+out g
+in 2hz
+step 5.01
+8bit 12
+lpf 50hz
+base 2
+s/h g
+mul 440hz
+sino 
+lpf 440hz
+mul vca
+mul 6db
+mix 

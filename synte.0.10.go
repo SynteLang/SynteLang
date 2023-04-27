@@ -2554,7 +2554,7 @@ func SoundEngine(file *os.File, bits int) {
 				lpf510 = (lpf510*152 + lpf50) / 153
 				deemph = lpf510 / 1.5
 			}
-			det = Abs(32*hpf2560+5.657*hpf160+dac) / 2
+			det = Abs(32*hpf2560 + 5.657*hpf160 + dac)
 			if det > l {
 				l = det // MC
 				h = release

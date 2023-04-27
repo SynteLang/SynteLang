@@ -1197,6 +1197,7 @@ start:
 						continue input
 					}
 				}
+				newListing = append(newListing, listing{{Op: "push"}, {Op: "in", Opd: sf("%v", NOISE_FREQ)}, {Op: "out", Opd: "^freq"}, {Op: "pop"}}...)
 			case "degrade":
 				if len(transfer.Listing) == 0 {
 					msg("%scan't use degrade in first listing%s", italic, reset)

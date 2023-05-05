@@ -438,7 +438,7 @@ func main() {
 
 	// process wavs
 	wavSlice := decodeWavs()
-	msg("")
+	info <- sf("")
 
 	transfer.Wavs = make([][]float64, 0, len(wavSlice))
 	wmap := map[string]bool{}
@@ -1840,7 +1840,7 @@ func decodeWavs() wavs {
 		if channels == 1 {
 			c = "mono  "
 		}
-		msg("%s\t%2dbit  %3gkHz  %s  %.3gs", file, bits, float64(SR)/1000, c, t)
+		info <- sf("%s\t%2dbit  %3gkHz  %s  %.3gs", file, bits, float64(SR)/1000, c, t)
 	}
 	if len(w) == 0 {
 		return nil

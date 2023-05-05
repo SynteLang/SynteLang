@@ -500,7 +500,7 @@ Here, we use the `base` operator to shape the inverted ramp wave from osc into a
 
 </Test>
 
-Although not perticularly musical, this simple necklace illustrates mixing two signals and gating them (turning on and off) with a third signal which is a pulse wave. The `pulse` function can be used instead to gate a signal by a variable width. `slew 150` could be added before `out a` to smoothen the pulse for a less clicky sound.
+Although not particularly musical, this simple necklace illustrates mixing two signals and gating them (turning on and off) with a third signal which is a pulse wave. The `pulse` function can be used instead to gate a signal by a variable width. `slew 150` could be added before `out a` to smoothen the pulse for a less clicky sound.
 
 **Euclidean Rhythm**
 

@@ -1359,7 +1359,7 @@ start:
 				}
 				st = len(newListing) // because current input hasn't been added yet
 				fIn = yes
-				msg("%sbegin function definition%s %s", italic, reset, opd)
+				msg("%sbegin function definition,%s", italic, reset)
 				msg("%suse @ for operand signal%s", italic, reset)
 			case "ls":
 				if opd == "l" {

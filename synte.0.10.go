@@ -228,6 +228,7 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"deleted": ops{not, 0}, // for internal use
 	"extyes":  ops{not, 0}, // for internal use
 	"extnot":  ops{not, 0}, // for internal use
+	"/*":      ops{yes, 0}, // non-breaking comments, nop
 }
 
 // listing is a slice of { operator, operand; signal and operator numbers }

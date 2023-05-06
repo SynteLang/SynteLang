@@ -1,0 +1,12 @@
+in 180bpm
+posc 0
+lt 0.15
+hpf 25hz
+lpf 100hz
+mul 10
+noise 
+lpf 50hz
+lpf 50hz
+lpf 50hz
+mul 45db
+mix 

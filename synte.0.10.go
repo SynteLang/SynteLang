@@ -2645,10 +2645,11 @@ func SoundEngine(file *os.File, bits int) {
 }
 
 var sineTab = make([]float64, int(SampleRate))
+
 func calcSineTab() {
 	for i := range sineTab {
 		// using cosine, even function avoids negation for -ve x
-		sineTab[i] = Cos(2*Pi*float64(i)/SampleRate)
+		sineTab[i] = Cos(2 * Pi * float64(i) / SampleRate)
 	}
 }
 func init() {
@@ -2660,10 +2661,10 @@ func sine(x float64) float64 {
 		x = -x
 	}
 	sr := int(SampleRate)
-	a := int(x*SampleRate)
+	a := int(x * SampleRate)
 	sa := sineTab[a%sr]
 	sb := sineTab[(a+1)%sr]
-	xx := Mod((x * SampleRate) - float64(a), SampleRate-1)
+	xx := Mod((x*SampleRate)-float64(a), SampleRate-1)
 	return sa + ((sb - sa) * xx) // linear interpolation
 }
 

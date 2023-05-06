@@ -1219,68 +1219,80 @@
 			"Opd": "c"
 		},
 		{
-			"Op": "tanh",
-			"Opd": ""
-		},
-		{
-			"Op": "push",
-			"Opd": ""
-		},
-		{
-			"Op": "abs",
-			"Opd": ""
+			"Op": "clip",
+			"Opd": "1"
 		},
 		{
 			"Op": "out",
-			"Opd": "d.0"
+			"Opd": "x"
+		},
+		{
+			"Op": "mul",
+			"Opd": "x"
+		},
+		{
+			"Op": "-",
+			"Opd": "b.0"
+		},
+		{
+			"Op": "out",
+			"Opd": "a.0"
 		},
 		{
 			"Op": "in",
-			"Opd": "1/20hz"
+			"Opd": "2s"
 		},
 		{
 			"Op": "f2c",
 			"Opd": ""
 		},
 		{
-			"Op": "out",
-			"Opd": "c.0"
-		},
-		{
 			"Op": "mul",
-			"Opd": "d.0"
-		},
-		{
-			"Op": "out",
 			"Opd": "a.0"
-		},
-		{
-			"Op": "in",
-			"Opd": "1"
-		},
-		{
-			"Op": "sub",
-			"Opd": "c.0"
-		},
-		{
-			"Op": "mul",
-			"Opd": "b.0"
 		},
 		{
 			"Op": "+",
-			"Opd": "a.0"
+			"Opd": "b.0"
 		},
 		{
 			"Op": "out",
 			"Opd": "b.0"
+		},
+		{
+			"Op": "-",
+			"Opd": "b.1"
+		},
+		{
+			"Op": "out",
+			"Opd": "a.1"
+		},
+		{
+			"Op": "in",
+			"Opd": "2s"
+		},
+		{
+			"Op": "f2c",
+			"Opd": ""
+		},
+		{
+			"Op": "mul",
+			"Opd": "a.1"
+		},
+		{
+			"Op": "+",
+			"Opd": "b.1"
+		},
+		{
+			"Op": "out",
+			"Opd": "b.1"
 		},
 		{
 			"Op": "out",
 			"Opd": "c"
 		},
 		{
-			"Op": "pop",
-			"Opd": ""
+			"Op": "in",
+			"Opd": "x"
 		}
 	],
 	"hpf": [

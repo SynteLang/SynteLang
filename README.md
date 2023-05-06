@@ -548,10 +548,10 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	pow		|		yes		|		result is operand raised to the power of input
 |	base	|		yes		|		result is input raised to the power of operand
 |	\<sync	|		yes		|		receive sync pulse which zeros whatever is passed through. Operand adds phase offset on pulse
-|	\>sync	|		yes		|		send one sync pulse to all listings when input ≤ 0. Latches off until input > 0. Output to next operation is zero
-|	.>sync	|		yes		|		equivalent to >sync but will end listing and transfer, like `out dac`
-|	push	|		no		|		move result to a stack
-|	pop		|		no		|		take most recently pushed result from stack
+|	\>sync	|		yes		|		send one sync pulse to all listings when input ≤ 0. Latches off until input > 0
+|	.>sync	|		yes		|		equivalent to >sync but will end listing and launch, like `out dac`
+|	push	|		no		|		move result to the stack of that listing
+|	pop		|		no		|		take most recently pushed result from stack of that listing
 |	tape	|		yes		|		record and playback from a rotating buffer, analogous to a tape loop. Input will clip around ±1, this is to control the level when using feedback. Operand is the offset in seconds/milliseconds (use types)
 |	tap		|		yes		|		result drawn from tape and added to input from preceding listing, operand is the offset in seconds/milliseconds (use types)
 |	f2c		|		no		|		convert frequency to filter coefficient. Numbers less than than 0 will be multiplied by -1 (sign removed, become positive)
@@ -830,7 +830,7 @@ which will send one pulse. The `.` allows `.>sync` to end a listing and send it 
 	ramp
 	.>sync
 
-which will send pulses at the frequency given, in this case 1Hz. `osc, gt 0.5` can be also be used in place of `ramp`, in general any signal which transistions to zero or less than zero (from greater than zero) at the desired sync point will work. `sq` begins at 1, so will trigger sync halfway through it's cycle.  
+which will send pulses at the frequency given, in this case 120bpm. `osc, gt 0.5` can be also be used in place of `ramp`, in general any signal which transistions to zero or less than zero (from greater than zero) at the desired sync point will work. `sq` begins at 1, so will trigger sync halfway through it's cycle.  
 Muting a sync listing will have no effect on the synchronisation, as it is send via a separate channel.  
 
 If you wish to launch a listing that only starts playing when the next `<sync` is received, use the `catch` function prior to the last operation, eg. `catch, mix`.  

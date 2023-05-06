@@ -2620,6 +2620,8 @@ func SoundEngine(file *os.File, bits int) {
 				display.SR = SampleRate
 				fade = Pow(FDOUT, 1/(MIN_FADE*SampleRate))
 				release = Pow(8000, -1.0/(0.5*SampleRate)) // 500ms
+				sineTab = make([]float64, int(SampleRate))
+				calcSineTab()
 				panic(overload)
 			} else if float64(display.Load) > 1e9/SampleRate {
 				panic(rateLimit)
@@ -2630,6 +2632,8 @@ func SoundEngine(file *os.File, bits int) {
 				display.SR = SampleRate
 				fade = Pow(FDOUT, 1/(MIN_FADE*SampleRate))
 				release = Pow(8000, -1.0/(0.5*SampleRate)) // 500ms
+				sineTab = make([]float64, int(SampleRate))
+				calcSineTab()
 				panic(recovering)
 			}
 		}
@@ -2637,6 +2641,29 @@ func SoundEngine(file *os.File, bits int) {
 		dac = 0
 		n++
 	}
+}
+
+var sineTab = make([]float64, int(SampleRate))
+func calcSineTab() {
+	for i := range sineTab {
+		// using cosine, even function avoids negation for -ve x
+		sineTab[i] = Cos(2*Pi*float64(i)/SampleRate)
+	}
+}
+func init() {
+	calcSineTab()
+}
+
+func sine(x float64) float64 {
+	if x < 0 {
+		x = -x
+	}
+	sr := int(SampleRate)
+	a := int(x*SampleRate)
+	sa := sineTab[a%sr]
+	sb := sineTab[(a+1)%sr]
+	xx := Mod((x * SampleRate) - float64(a), SampleRate-1)
+	return sa + ((sb - sa) * xx) // linear interpolation
 }
 
 func (n *noise) ise() {

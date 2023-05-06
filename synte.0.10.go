@@ -276,7 +276,7 @@ var ( // misc
 	protected          = yes
 	release    float64 = Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
 	DS                 = 1                                 // down-sample
-	ct                 = 1.0                               // individual listing clip threshold
+	ct                 = 8.0                               // individual listing clip threshold
 )
 
 type noise uint64

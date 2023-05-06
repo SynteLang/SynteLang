@@ -1,0 +1,31 @@
+in 85s
+osc
+mul 0.25
++ 0.9
+out t
+- 0.9
+mul 4
+mul 1s
++ 45s
+osc
+out m
+lt 1/2
+mul m
+mul 2
+lpf 3s
+lpf 3s
+out s
+mul 0.2
++ 1
+out f
+from 0
++ c
+tanh
+tape 180*12bpm
+lpf 3khz
+* f
+mul t
+out c
+mul s
+mul 24db
+mix 

@@ -2262,13 +2262,7 @@ func SoundEngine(file *os.File, bits int) {
 					z := xx - 0.5
 					ev1, od1 := tb+ta, tb-ta
 					ev2, od2 := tb1+ta0, tb1-ta0
-					/* // 4-point 2nd order "optimal" interpolation filter by Olli Niemitalo
-					c0 := ev1*0.42334633257225274 + ev2*0.07668732202139628
-					c1 := od1*0.26126047291143606 + od2*0.24778879018226652
-					c2 := ev1*-0.213439787561776841 + ev2*0.21303593243799016
-					r = (c2*z+c1)*z + c0
-					*/
-					// 4-point 4th order "optimal" interpolation
+					// 4-point 4th order "optimal" interpolation filter by Olli Niemitalo
 					c0 := ev1*0.45645918406487612 + ev2*0.04354173901996461
 					c1 := od1*0.47236675362442071 + od2*0.17686613581136501
 					c2 := ev1*-0.253674794204558521 + ev2*0.25371918651882464
@@ -2334,7 +2328,7 @@ func SoundEngine(file *os.File, bits int) {
 					case syncSt8[i] == on: // single sample pulse
 						s = 1
 						syncSt8[i] = off
-					case r > 0:
+					case r > 0: // reset
 						syncSt8[i] = run
 					}
 				case 27: // "jl0"

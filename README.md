@@ -666,6 +666,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	smooth	|		no		|		alias of `lpf 150hz`, use to smoothen vca signals or other below audio rate CV's
 |	CB		|		no		|		an 808-like cowbell, triggered like `dirac`
 |	.grid	|		no		|		an exprimental alternative to `grid`, will terminate listing. Not synced
+|	for		|		yes		|		input sets frequency of pulse which stays high for time interval given by operand, output is [0, 1]
 |           |               |
 
 **List of pre-defined constants**	

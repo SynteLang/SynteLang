@@ -2195,7 +2195,8 @@ func SoundEngine(file *os.File, bits int) {
 				case 4: // "in"
 					r = sigs[i][o.N]
 				case 5: // "sine"
-					r = Sin(Tau * r)
+					//r = Sin(Tau * r)
+					r = sine(r)
 				case 6: // "mod"
 					r = Mod(r, sigs[i][o.N])
 				case 7: // "gt"
@@ -2215,7 +2216,7 @@ func SoundEngine(file *os.File, bits int) {
 				case 10: // "abs"
 					r = Abs(r)
 				case 11: // "tanh"
-					r = Tanh(r)
+					r = tanh(r)
 				case 12: // "pow"
 					if Signbit(sigs[i][o.N]) && r == 0 {
 						r = Copysign(1e-308, r) // inverse is within upper range of float
@@ -2627,7 +2628,7 @@ func SoundEngine(file *os.File, bits int) {
 				panic(overload)
 			} else if float64(display.Load) > 1e9/SampleRate {
 				panic(rateLimit)
-			} else if DS > 1 && float64(display.Load) < 30e7/SampleRate && n > 100000 { // holdoff for ~4secs x DS
+			} else if DS > 1 && float64(display.Load) < 40/SampleRate && n > 100000 { // holdoff for ~4secs x DS
 				DS >>= 1
 				nyfC = 1 / (1 + (float64(DS*DS) / Pi)) // coefficient is non-linear
 				SampleRate *= 2
@@ -2646,6 +2647,8 @@ func SoundEngine(file *os.File, bits int) {
 }
 
 var sineTab = make([]float64, int(SampleRate))
+const width = 2 << 16 // precision of tanh table
+var tanhTab = make([]float64, width)
 
 func calcSineTab() {
 	for i := range sineTab {
@@ -2655,6 +2658,14 @@ func calcSineTab() {
 }
 func init() {
 	calcSineTab()
+}
+func calcTanhTab() {
+	for i := range tanhTab {
+		tanhTab[i] = Tanh(float64(i)/ width)
+	}
+}
+func init() {
+	calcTanhTab()
 }
 
 func sine(x float64) float64 {
@@ -2667,6 +2678,27 @@ func sine(x float64) float64 {
 	sb := sineTab[(a+1)%sr]
 	xx := Mod((x*SampleRate)-float64(a), SampleRate-1)
 	return sa + ((sb - sa) * xx) // linear interpolation
+}
+
+func tanh(x float64) float64 {
+	if x < -1 || x > 1 {
+		return Tanh(x)
+	}
+	neg := not
+	if x < 0 {
+		neg = yes
+		x = -x
+	}
+	w := (width - 1.0) // slightly imprecise
+	x *= w
+	a := int(x)
+	ta := tanhTab[a]
+	tb := tanhTab[a+1]
+	xx := x - float64(a)
+	if neg {
+		return -(ta + ((tb - ta) * xx))
+	}
+	return ta + ((tb - ta) * xx)
 }
 
 func (n *noise) ise() {

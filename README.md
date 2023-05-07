@@ -837,7 +837,6 @@ If you wish to launch a listing that only starts playing when the next `<sync` i
 
 Sync pulses transmitted will be indicicated by a yellow dot at the top of the info display.  
 
-At present the behaviour of submitting more than one instance of `>sync` to the sound engine is undefined. ◊  
 The synchronisation is somewhat rudementary, a world away from DAW/midi sequencers, yet it has been designed to be raw and flexible in keeping with the Syntə philosophy. It also allows for a modicum of 'musicianship' as it is possible to submit listings in time with one another by hand (without sync) if you are that way inclined. Of course this is live coding which only intersects with music in general :)
 
 ## Setting levels

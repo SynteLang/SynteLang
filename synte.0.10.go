@@ -2095,7 +2095,13 @@ func SoundEngine(file *os.File, bits int) {
 	tx := make([]float64, len(transfer.Listing)+31)
 	pan := make([]float64, len(transfer.Listing)+31)
 	accepted <- yes
-	syncInhibit := make([]bool, len(transfer.Listing), len(transfer.Listing)+27) // inhibitions
+	type st8 int
+	const (
+		run st8 = iota
+		on
+		off
+	)
+	syncSt8 := make([]st8, len(transfer.Listing), len(transfer.Listing)+27)
 	peakfreq := make([]float64, len(transfer.Listing), len(transfer.Listing)+28) // peak frequency for setlevel
 	for i := range peakfreq {
 		peakfreq[i] = 20 / SampleRate
@@ -2134,7 +2140,7 @@ func SoundEngine(file *os.File, bits int) {
 				th = append(th, 0)
 				tx = append(tx, 0)
 				pan = append(pan, 0)
-				syncInhibit = append(syncInhibit, not)
+				syncSt8 = append(syncSt8, 0)
 				peakfreq = append(peakfreq, 20/SampleRate)
 				stacks = append(stacks, stack)
 				fftArray = append(fftArray, [N]float64{})
@@ -2144,7 +2150,7 @@ func SoundEngine(file *os.File, bits int) {
 				zf = append(zf, [N]complex128{})
 			} else if reload > -1 {
 				m[reload] = 0 // m ramps to mute value on reload
-				syncInhibit[reload] = not
+				syncSt8[reload] = 0
 			}
 		default:
 			// play
@@ -2320,15 +2326,16 @@ func SoundEngine(file *os.File, bits int) {
 					r *= s
 					r += (1 - s) * sigs[i][o.N] // phase offset
 				case 26: // ">sync", ".>sync"
-					switch { // syncInhibit is a slice to make multiple >sync operations independent
-					case r <= 0 && s == 1 && !syncInhibit[i]:
+					switch { // syncSt8 is a slice to make multiple >sync operations independent
+					case r <= 0 && syncSt8[i] == run: // edge-detect
 						s = 0
-						syncInhibit[i] = yes
-					case s == 0 && syncInhibit[i]: // single sample pulse
-						s = 1
 						display.Sync = yes
+						syncSt8[i] = on
+					case syncSt8[i] == on: // single sample pulse
+						s = 1
+						syncSt8[i] = off
 					case r > 0:
-						syncInhibit[i] = not
+						syncSt8[i] = run
 					}
 				case 27: // "jl0"
 					if r <= 0 {

@@ -194,6 +194,7 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"ffltr":  ops{yes, 47},
 	"ffzy":   ops{not, 48},
 	"ffaze":  ops{yes, 49},
+	"reu":    ops{not, 46},
 
 	// specials
 	"]":       ops{not, 0},

@@ -585,6 +585,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	rev		|		no		|		reverse order of internal frequency representation
 |	ffzy	|		no		|		randomise phases of internal representation
 |	ffltr	|		yes		|		smear multiple windows, suggest operand in range 2s to 50s
+|	ffaze	|		yes		|		rotate phases by operand [-1. 1]
 |	       	| 		       	|
 |	fma		|		yes  	|		fused multiply add, the result of the input multiplied by the operand is stored in a special register `fma` (not implimented yet) ◊  
 

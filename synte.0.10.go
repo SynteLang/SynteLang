@@ -266,6 +266,7 @@ var (
 	restart  bool
 	reload   = -1
 	ext      = not // loading external listing state
+	rs bool
 
 	daisyChains []int // list of exported signals to be daisy-chained
 )
@@ -676,7 +677,11 @@ start:
 			if len(wavNames) > 0 {
 				pf(" %swavs:%s %s\n\n", italic, reset, wavNames)
 			}
-			pf("\n%s%d%s:", cyan, len(dispListings), reset)
+			l := len(dispListings)
+			if reload > -1 {
+				l = reload
+			}
+			pf("\n%s%d%s:", cyan, l, reset)
 			for i, o := range dispListing {
 				switch dispListing[i].Op {
 				case "in", "pop", "tap", "index", "[", "]", "from", "all":
@@ -1001,6 +1006,10 @@ start:
 					continue
 				case "ds":
 					ds = yes // not intended to be invoked while paused
+					continue
+				case "rs": // root sync
+					rs = yes
+					msg("%snext launch will sync to root instance%s", italic, reset)
 					continue
 				default:
 					msg("%sunrecognised mode%s", italic, reset)
@@ -1407,8 +1416,8 @@ start:
 					msg("%soperand not an integer%s", italic, reset)
 					continue
 				}
-				if n >= len(transfer.Listing) {
-					msg("listing doesn't exist")
+				if n < 0 || n >= len(transfer.Listing) {
+					reload = -1
 					continue
 				}
 				reload = n
@@ -1970,6 +1979,38 @@ func infoDisplay() {
 	}
 }
 
+func rootSync() bool {
+	if !rs {
+		return false
+	}
+	f := "../infodisplay.json"
+	d := disp{}
+	s := not
+	info <- "> waiting to sync"
+	for {
+		Json, rr := os.ReadFile(f)
+		if e(rr) {
+			info <- sf("error reading: %v", rr)
+			rs = not
+			return false
+		}
+		rr = json.Unmarshal(Json, &d)
+		if e(rr) {
+			//info <- sf("error unmarshalling: %v", rr)
+			//info <- sf("%v", d)
+			//rs = not
+			//return false
+		}
+		if d.Sync && !s {
+			break
+		}
+		s = d.Sync
+	}
+	rs = not
+	info <- "< synced to root"
+	return true
+}
+
 // The Sound Engine does the bare minimum to generate audio
 // It is freewheeling, it won't block on the action of any other goroutine, only on IO, namely writing to soundcard
 // The latency and jitter of the audio output is entirely dependent on the soundcard and its OS driver,
@@ -1980,8 +2021,8 @@ func infoDisplay() {
 // Using floats is probably somewhat profligate, later on this may be converted to int type which would provide ample dynamic range
 func SoundEngine(file *os.File, bits int) {
 	defer close(stop)
-	w := bufio.NewWriter(file)
-	//defer w.Flush()
+	w := bufio.NewWriterSize(file, 1024)
+	defer w.Flush()
 	output := func(w *bufio.Writer, f float64) {
 		binary.Write(w, BYTE_ORDER, int16(f))
 	}
@@ -2116,6 +2157,7 @@ func SoundEngine(file *os.File, bits int) {
 	zf := make([][N]complex128, len(transfer.Listing))
 	ffrz := make([]bool, len(transfer.Listing))
 
+
 	lastTime = time.Now()
 	for {
 		select {
@@ -2152,6 +2194,9 @@ func SoundEngine(file *os.File, bits int) {
 			} else if reload > -1 {
 				m[reload] = 0 // m ramps to mute value on reload
 				syncSt8[reload] = 0
+			}
+			if rootSync() {
+				lastTime = time.Now()
 			}
 		default:
 			// play
@@ -2532,10 +2577,10 @@ func SoundEngine(file *os.File, bits int) {
 			sigs[i][0] *= 1 - Abs(pan[i]/2)
 			mm := sigs[i][0] * m[i]
 			if mm > ct && protected { // soft clip
-				mm = ct + Tanh(mm-ct)
+				mm = ct + tanh(mm-ct)
 				display.Clip = yes
 			} else if mm < -ct && protected {
-				mm = Tanh(mm+ct) - ct
+				mm = tanh(mm+ct) - ct
 				display.Clip = yes
 			}
 			dac += mm
@@ -2629,7 +2674,7 @@ func SoundEngine(file *os.File, bits int) {
 				panic(overload)
 			} else if float64(display.Load) > 1e9/SampleRate {
 				panic(rateLimit)
-			} else if DS > 1 && float64(display.Load) < 40/SampleRate && n > 100000 { // holdoff for ~4secs x DS
+			} else if DS > 1 && float64(display.Load) < 35e8/SampleRate && n > 100000 { // holdoff for ~4secs x DS
 				DS >>= 1
 				nyfC = 1 / (1 + (float64(DS*DS) / Pi)) // coefficient is non-linear
 				SampleRate *= 2

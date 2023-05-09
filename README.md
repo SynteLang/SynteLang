@@ -265,7 +265,6 @@ The kick will play on every beat. For once per bar of four beats use `in 120bpm,
 
 <Test>
 
-	in -1
 	.>sync
 
 </Test>
@@ -965,7 +964,7 @@ Many influences and inspirations have been drawn upon either deliberately or sub
 
 ### Future possiblities for Syntə  
 The main focus of development is building up a library of functions which provide useful and intuitive abstractions to speed up and simplify performing.  
-It would be great if translations of this document and the language itself become available in future, get in touch if you can help with this. A live distro with Syntə included could be useful for users of other operating systems to boot from. Another possiblity for the code is integration with a terminal library such as tcell or bubbletea for a slicker UI. Also, the Sound Engine could be adapted to a 'headless' mode for use with an editor such as Atom. This option hasn't been pursued for now as it is helpful to provide immediate feedback via info.go with each operation entered. Future additions include providing for audio and MIDI input and use of other sound drivers than OSS/ALSA. A browser-based interface is another option, which would make the program extremely portable. This could be as simple as redirecting stdout to a local websocket server.
+It would be great if translations of this document and the language itself become available in future, get in touch if you can help with this. A live distro with Syntə included could be useful for users of other operating systems to boot from. Another possiblity for the code is integration with a terminal library such as tcell or bubbletea for a slicker UI. Future additions include providing for audio and MIDI input and use of other sound drivers than OSS/ALSA. A browser-based interface is another option, which would make the program extremely portable. This could be as simple as redirecting stdout to a local websocket server.
 You may consider the current implementation of Syntə to be a prototype. At present most of the basic features have been taken care of, and as the language is tried out by different people, changes and adjustments that will tidy up and make performing easier may become apparent. The core aims of fun and accessibility won't change. 
 
 ### General principles of live coding performance  

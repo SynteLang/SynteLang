@@ -726,6 +726,7 @@ start:
 				for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
 					<-tokens
 				}
+				ext = not
 				continue
 			}
 			_, f := funcs[op]
@@ -1994,13 +1995,7 @@ func rootSync() bool {
 			rs = not
 			return false
 		}
-		rr = json.Unmarshal(Json, &d)
-		if e(rr) {
-			//info <- sf("error unmarshalling: %v", rr)
-			//info <- sf("%v", d)
-			//rs = not
-			//return false
-		}
+		json.Unmarshal(Json, &d) // too many spurious errors
 		if d.Sync && !s {
 			break
 		}

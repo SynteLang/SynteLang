@@ -266,7 +266,7 @@ var (
 	restart  bool
 	reload   = -1
 	ext      = not // loading external listing state
-	rs bool
+	rs       bool
 
 	daisyChains []int // list of exported signals to be daisy-chained
 )
@@ -547,8 +547,7 @@ func main() {
 		s.Split(bufio.ScanWords)
 		for {
 			s.Scan() // blocks on stdin
-			t := s.Text()
-			tokens <- t
+			tokens <- s.Text()
 		}
 	}()
 
@@ -599,10 +598,10 @@ func main() {
 	}()
 
 start:
-for { // main loop
-	newListing := listing{}
-	dispListing := listing{}
-	sig = make([]float64, len(reserved), 30) // capacity is nominal
+	for { // main loop
+		newListing := listing{}
+		dispListing := listing{}
+		sig = make([]float64, len(reserved), 30) // capacity is nominal
 		// signals map with predefined constants, mutable
 		sg = map[string]float64{ // reset sg map
 			"ln2":      Ln2,
@@ -2130,7 +2129,6 @@ func SoundEngine(file *os.File, bits int) {
 	zf := make([][N]complex128, len(transfer.Listing))
 	ffrz := make([]bool, len(transfer.Listing))
 
-
 	lastTime = time.Now()
 	for {
 		select {
@@ -2666,6 +2664,7 @@ func SoundEngine(file *os.File, bits int) {
 }
 
 var sineTab = make([]float64, int(SampleRate))
+
 const width = 2 << 16 // precision of tanh table
 var tanhTab = make([]float64, width)
 
@@ -2680,7 +2679,7 @@ func init() {
 }
 func calcTanhTab() {
 	for i := range tanhTab {
-		tanhTab[i] = Tanh(float64(i)/ width)
+		tanhTab[i] = Tanh(float64(i) / width)
 	}
 }
 func init() {

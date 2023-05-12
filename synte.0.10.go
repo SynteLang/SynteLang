@@ -552,77 +552,57 @@ func main() {
 		}
 	}()
 
-	go func() { // poll '.temp/%d.syt' modified time and reload if changed
+	go func() { // poll '.temp/*.syt' modified time and reload if changed
+		l := len(transfer.Listing)
+		stat := make([]time.Time, l)
 		for {
-			lockLoad <- struct{}{}
-			l := len(transfer.Listing)
-			stat := make([]time.Time, len(transfer.Listing))
-			prevStat := make([]time.Time, len(transfer.Listing))
-			for i := 0; i < len(transfer.Listing); i++ {
-				f := sf(".temp/%d.syt", i)
-				st, rr := os.Stat(f)
-				if e(rr) {
-					msg("reload: unable to locate %d.syt", i)
-					return
-				}
-				stat[i] = st.ModTime()
-				prevStat[i] = stat[i]
+			time.Sleep(84721 * time.Microsecond) // coarse loop timing
+			if !started {
+				continue
 			}
-			<-lockLoad
-			for {
-				time.Sleep(84721 * time.Microsecond) // coarse loop timing
-				if !started {
+			lockLoad <- struct{}{}
+			for ; l < len(transfer.Listing); l++ {
+				stat = append(stat, time.Time{})
+			}
+			for i := range transfer.Listing {
+				f := sf(".temp/%d.syt", i)
+				st, rm := os.Stat(f)
+				if e(rm) || st.ModTime() == stat[i] {
 					continue
 				}
-				lockLoad <- struct{}{}
-				if len(transfer.Listing) != l {
-					<-lockLoad
-					break // to remake stat slices
-				}
-				l = len(transfer.Listing)
-				for i := 0; i < len(transfer.Listing); i++ {
-					f := sf(".temp/%d.syt", i)
-					st, rr := os.Stat(f)
-					if e(rr) {
-						msg("unable to locate %d.syt", i)
-						break
-					}
+				if stat[i].IsZero() { // initialise new listings for next loop
 					stat[i] = st.ModTime()
-					if prevStat[i] != stat[i] {
-						inputF, rr := os.Open(f)
-						if e(rr) {
-							msg("%v", rr)
-							break
-						}
-						reload = i
-						if !display.Paused {
-							priorMutes[reload] = mute[reload]
-							mute[reload] = 0
-						}
-						time.Sleep(25 * time.Millisecond)
-						s := bufio.NewScanner(inputF)
-						s.Split(bufio.ScanWords)
-						tokens <- "extyes"
-						for s.Scan() {
-							tokens <- s.Text()
-						}
-						tokens <- "extnot"
-						inputF.Close()
-						prevStat[i] = stat[i]
-						break
-					}
-					prevStat[i] = stat[i]
+					continue
 				}
-				<-lockLoad
+				inputF, rr := os.Open(f)
+				if e(rr) {
+					continue // skip missing listings without warning
+				}
+				reload = i
+				if !display.Paused {
+					priorMutes[reload] = mute[reload]
+					mute[reload] = 0
+				}
+				time.Sleep(25 * time.Millisecond) // wait for mutes
+				s := bufio.NewScanner(inputF)
+				s.Split(bufio.ScanWords)
+				tokens <- "extyes"
+				for s.Scan() {
+					tokens <- s.Text()
+				}
+				tokens <- "extnot"
+				inputF.Close()
+				stat[i] = st.ModTime()
 			}
+			<-lockLoad
 		}
 	}()
 
 start:
-	for { // main loop
-		newListing := listing{}
-		dispListing := listing{}
-		sig = make([]float64, len(reserved), 30) // capacity is nominal
+for { // main loop
+	newListing := listing{}
+	dispListing := listing{}
+	sig = make([]float64, len(reserved), 30) // capacity is nominal
 		// signals map with predefined constants, mutable
 		sg = map[string]float64{ // reset sg map
 			"ln2":      Ln2,
@@ -919,10 +899,8 @@ start:
 					save([]listing{listing{{Op: advisory}}}, "displaylisting.json")
 					p("Stopped")
 					close(infoff)
-					if funcsave {
-						if !save(funcs, "functions.json") {
-							msg("functions not saved!")
-						}
+					if funcsave && !save(funcs, "functions.json") {
+						msg("functions not saved!")
 					}
 					time.Sleep(30 * time.Millisecond) // wait for infoDisplay to finish
 					break start

@@ -2396,11 +2396,8 @@ func SoundEngine(file *os.File, bits int) {
 				case 39: // "all"
 					c := -3.0                   // to avoid being mixed twice
 					for ii := 0; ii < i; ii++ { // only read from prior listings
-						if sigs[ii][0] == 0 { // avoid silent listings, hacky
-							continue
-						}
 						r += sigs[ii][0]
-						c++
+						c += m[ii]
 					}
 					c = Max(c, 1)
 					r /= c

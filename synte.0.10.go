@@ -344,6 +344,10 @@ you exceed these limits:
 `
 
 func main() {
+	auto := not
+	if len(os.Args) > 1 && os.Args[1] == "-a" {
+		auto = yes
+	}
 	save([]listing{listing{{Op: advisory}}}, "displaylisting.json")
 	// open audio output (everything is a file...)
 	file := "/dev/dsp"
@@ -552,18 +556,29 @@ func main() {
 	}()
 
 	go func() { // poll '.temp/*.syt' modified time and reload if changed
-		l := len(transfer.Listing)
+		l := 0
+		if auto {
+			files, rr := os.ReadDir(filepath.Dir(".temp/"))
+			if e(rr) {
+				msg("unable to access '.temp/', autoload failed")
+				return
+			}
+			for _, file := range files {
+				if filepath.Ext(file.Name()) != ".syt" {
+					continue
+				}
+				l++
+			}
+			msg("%d %sfiles in .temp%s", l, italic, reset)
+		}
 		stat := make([]time.Time, l)
 		for {
-			time.Sleep(84721 * time.Microsecond) // coarse loop timing
-			if !started {
-				continue
-			}
+			time.Sleep(32361 * time.Microsecond) // coarse loop timing
 			lockLoad <- struct{}{}
 			for ; l < len(transfer.Listing); l++ {
 				stat = append(stat, time.Time{})
 			}
-			for i := range transfer.Listing {
+			for i := 0; i < l; i++ {
 				f := sf(".temp/%d.syt", i)
 				st, rm := os.Stat(f)
 				if e(rm) || st.ModTime() == stat[i] {
@@ -578,11 +593,11 @@ func main() {
 					continue // skip missing listings without warning
 				}
 				reload = i
-				if !display.Paused {
+				if !display.Paused && reload < len(mute) {
 					priorMutes[reload] = mute[reload]
 					mute[reload] = 0
+					time.Sleep(25 * time.Millisecond) // wait for mute
 				}
-				time.Sleep(25 * time.Millisecond) // wait for mutes
 				s := bufio.NewScanner(inputF)
 				s.Split(bufio.ScanWords)
 				tokens <- "extyes"
@@ -649,28 +664,28 @@ start:
 				// time taken to compile and launch. This is not critical as restart only controls file save.
 				restart = not
 			}
-			pf("%s\033[H\033[2J", reset) // this clears prior error messages!
-			pf(">  %dbit %2gkHz %s\n", format, SampleRate/1000, channels)
-			pf("%sSyntə%s running...\n", cyan, reset)
-			pf("Always protect your ears above +85dB SPL\n\n")
-			if len(wavNames) > 0 {
-				pf(" %swavs:%s %s\n\n", italic, reset, wavNames)
-			}
-			l := len(dispListings)
-			if reload > -1 {
-				l = reload
-			}
-			pf("\n%s%d%s:", cyan, l, reset)
-			for i, o := range dispListing {
-				switch dispListing[i].Op {
-				case "in", "pop", "tap", "index", "[", "]", "from", "all":
-					pf("\t  %s%s %s%s\n", yellow, o.Op, o.Opd, reset)
-				default:
-					_, f := funcs[dispListing[i].Op]
-					switch {
-					case f:
-						pf("\t\u21AA %s%s %s%s%s\n", magenta, o.Op, yellow, o.Opd, reset)
+			if !ext {
+				pf("%s\033[H\033[2J", reset) // this clears prior error messages!
+				pf(">  %dbit %2gkHz %s\n", format, SampleRate/1000, channels)
+				pf("%sSyntə%s running...\n", cyan, reset)
+				pf("Always protect your ears above +85dB SPL\n\n")
+				if len(wavNames) > 0 {
+					pf(" %swavs:%s %s\n\n", italic, reset, wavNames)
+				}
+				l := len(dispListings)
+				if reload > -1 {
+					l = reload
+				}
+				pf("\n%s%d%s:", cyan, l, reset)
+				for i, o := range dispListing {
+					switch dispListing[i].Op {
+					case "in", "pop", "tap", "index", "[", "]", "from", "all":
+						pf("\t  %s%s %s%s\n", yellow, o.Op, o.Opd, reset)
 					default:
+						if _, f := funcs[dispListing[i].Op]; f {
+							pf("\t\u21AA %s%s %s%s%s\n", magenta, o.Op, yellow, o.Opd, reset)
+							continue
+						}
 						pf("\t\u21AA %s%s %s%s\n", yellow, o.Op, o.Opd, reset)
 					}
 				}
@@ -680,7 +695,7 @@ start:
 				Is  bool
 			}
 			var op, opd string
-			pf("\t  %s", yellow)
+			if !ext { pf("\t  ") }
 			op = <-tokens
 			for e := yes; e; { // deal with all ext signals until token received
 				switch op {
@@ -694,7 +709,6 @@ start:
 					e = not
 				}
 			}
-			pf("%s", reset)
 			if (len(op) > 2 && byte(op[1]) == 91) || op == "_" { // hack to escape terminal characters
 				continue
 			}
@@ -711,7 +725,6 @@ start:
 			_, f := funcs[op]
 			var operands = []string{}
 			if op2.Opd { // parse second token
-				pf("%s", yellow)
 				opd = <-tokens
 				for e := yes; e; { // deal with all ext signals until token received
 					switch op {
@@ -725,7 +738,6 @@ start:
 						e = not
 					}
 				}
-				pf("%s", reset)
 				opd = strings.TrimSuffix(opd, ",") // to allow comma separation of tokens
 				if opd == "_" {
 					continue
@@ -2771,10 +2783,7 @@ func save(data interface{}, f string) bool {
 func p(i ...any) {
 	fmt.Println(i...)
 }
-func pf(s string, i ...interface{}) { // mega hacky nullify output on re/load
-	if ext {
-		return
-	}
+func pf(s string, i ...interface{}) {
 	fmt.Printf(s, i...)
 }
 

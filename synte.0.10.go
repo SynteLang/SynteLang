@@ -344,10 +344,6 @@ you exceed these limits:
 `
 
 func main() {
-	auto := not
-	if len(os.Args) > 1 && os.Args[1] == "-a" {
-		auto = yes
-	}
 	save([]listing{listing{{Op: advisory}}}, "displaylisting.json")
 	// open audio output (everything is a file...)
 	file := "/dev/dsp"
@@ -557,20 +553,6 @@ func main() {
 
 	go func() { // poll '.temp/*.syt' modified time and reload if changed
 		l := 0
-		if auto {
-			files, rr := os.ReadDir(filepath.Dir(".temp/"))
-			if e(rr) {
-				msg("unable to access '.temp/', autoload failed")
-				return
-			}
-			for _, file := range files {
-				if filepath.Ext(file.Name()) != ".syt" {
-					continue
-				}
-				l++
-			}
-			msg("%d %sfiles in .temp%s", l, italic, reset)
-		}
 		stat := make([]time.Time, l)
 		for {
 			time.Sleep(32361 * time.Microsecond) // coarse loop timing
@@ -1006,6 +988,20 @@ start:
 					continue
 				}
 			case "load", "ld", "rld", "r", "apd":
+				/* auto mode - count files
+				if opd == "all" {
+					files, rr := os.ReadDir(filepath.Dir(".temp/"))
+					if e(rr) {
+						msg("unable to access '.temp/', autoload failed")
+						return
+					}
+					for _, file := range files {
+						if filepath.Ext(file.Name()) != ".syt" {
+							continue
+						}
+						l++
+					}
+				} */
 				switch op {
 				case "rld", "r":
 					n, rr := strconv.Atoi(opd)

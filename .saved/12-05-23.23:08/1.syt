@@ -1,0 +1,15 @@
+>sync
+in 9hz
+osc
+tri
+out p
+in 10s
+posc 0 
+tri 
+mul 2
++ 1
+mul 110hz
+pulse p
+lpf 220hz
+lpf 220hz
+mix 

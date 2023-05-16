@@ -66,6 +66,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
+	"sort"
 	"strconv"
 	"strings"
 	"syscall"
@@ -493,6 +494,7 @@ func main() {
 	unsolo := []float64{}
 	lockLoad := make(chan struct{}, 1)
 	tokens := make(chan string, 2<<12) // arbitrary capacity, will block input in extreme circumstances
+	usage := loadUsage()
 
 	go func() { // watchdog, anonymous to use variables in scope
 		// This function will restart the sound engine and reload listings using new sample rate
@@ -578,7 +580,6 @@ func main() {
 				if !display.Paused && reload < len(mute) {
 					priorMutes[reload] = mute[reload]
 					mute[reload] = 0
-					time.Sleep(25 * time.Millisecond) // wait for mute
 				}
 				s := bufio.NewScanner(inputF)
 				s.Split(bufio.ScanWords)
@@ -705,6 +706,7 @@ start:
 				continue
 			}
 			_, f := funcs[op]
+			usage[op] += 1
 			var operands = []string{}
 			if op2.Opd { // parse second token
 				opd = <-tokens
@@ -1578,6 +1580,7 @@ start:
 				italic, reset, italic, reset)
 		}
 	}
+	saveUsage(usage)
 }
 
 // parseType() evaluates conversion of types
@@ -2087,7 +2090,7 @@ func SoundEngine(file *os.File, bits int) {
 			transfer.Signals[reload][0] = 0                              // silence listing
 			msg("previous listing deleted: %d", reload)
 		}
-		fade := Pow(FDOUT, 1/(MIN_FADE*SampleRate))
+		fade := Pow(FDOUT, 1/(MIN_FADE*SampleRate*float64(DS)))
 		for i := 4800; i >= 0; i-- {
 			dac0 *= fade
 			output(w, dac0) // left
@@ -2794,4 +2797,60 @@ func msg(s string, i ...interface{}) {
 // error handling
 func e(rr error) bool {
 	return rr != nil
+}
+
+func loadUsage() map[string]int {
+	u:= map[string]int{}
+	f, rr := os.Open("usage.txt")
+	if e(rr) {
+		//msg("%v", rr)
+		return u
+	}
+	s := bufio.NewScanner(f)
+	s.Split(bufio.ScanWords)
+	for s.Scan() {
+		op := s.Text()
+		if op == "unused:" {
+			break
+		}
+		s.Scan()
+		n, rr := strconv.Atoi(s.Text())
+		if e(rr) {
+			//msg("usage: %v", rr)
+			continue
+		}
+		u[op] = n
+	}
+	return u
+}
+
+type pair struct {
+	Key string
+	Value int
+}
+type pairs []pair
+func (p pairs) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+func (p pairs) Len() int { return len(p) }
+func (p pairs) Less(i,j int) bool { return p[i].Value > p[j].Value }
+func saveUsage(u map[string]int) {
+	p := make(pairs, len(u))
+	i := 0
+	for k,v := range u {
+		p[i] = pair{k,v}
+		i++
+	}
+	sort.Sort(p)
+	data := ""
+	for _,s := range p {
+		data += sf("%s %d\n", s.Key, s.Value)
+	}
+	data += "\nunused:\n"
+	for op := range operators {
+		if _, in := u[op]; !in {
+			data += sf("%s\n", op)
+		}
+	}
+	if rr := os.WriteFile("usage.txt", []byte(data), 0666); e(rr) {
+		//msg("%v", rr)
+	}
 }

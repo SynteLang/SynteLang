@@ -2389,7 +2389,7 @@ func SoundEngine(file *os.File, bits int) {
 					if Abs(d) < 0.01 {
 						peakfreq[i] = a
 					}
-					r *= Min(1, 80/(peakfreq[i]*SampleRate+20)) // ignoring density
+					r *= Min(1, 75/(peakfreq[i]*SampleRate+20)) // ignoring density
 					//r *= Min(1, Sqrt(80/(peakfreq[i]*SampleRate+20)))
 				case 35: // "print"
 					pd++ // unnecessary?

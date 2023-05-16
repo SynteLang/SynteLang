@@ -109,7 +109,7 @@ const (
 	TAPE_LENGTH    = 1 //seconds
 	MAX_WAVS       = 12
 	EXPORTED_LIMIT = 12
-	NOISE_FREQ     = 0.033 // 2½ times the geometric mean of audible spectrum (-8dB)
+	NOISE_FREQ     = 0.0625 // 3kHz
 	FDOUT          = 1e-5
 	MIN_FADE       = 175e-3 // 175ms
 	MAX_FADE       = 120    // 120s

@@ -88,11 +88,11 @@ Press enter to complete each line.
 Try this example to test everything is working ok:
 
 <Test>
->	
+
 	in 330hz  
 	osc  
 	sine  
-	mix
+	mix  
 
 </Test>
 
@@ -463,8 +463,8 @@ The reverb begins at the `+ c` line. the output is pushed onto the stack before 
 	in 0.5hz
 	osc
 	flip
-	base E
-	sub 1
+	exp 5
+	lpf 120hz
 	out a
 	in 280hz
 	osc
@@ -478,7 +478,7 @@ The reverb begins at the `+ c` line. the output is pushed onto the stack before 
 
 </Test>
 
-Here, we use the `base` operator to shape the inverted ramp wave from osc into an exponential decay to control the amplitude of the bell. Feeding the output of the second `osc` into a third one results in FM synthesis, that is the output of one oscillator controls or modulates the frequency of the next.
+Here, we use the `exp` function to shape the inverted ramp wave from osc into an exponential decay to control the amplitude of the bell. Feeding the output of the second `osc` into a third one results in FM synthesis, that is the output of one oscillator controls or modulates the frequency of the next. The `lpf` smoothes out the amplitude envelope, `a` which helps avoid limiting on the output (slower attack reduces higher frequencies, which the limiter is more sensitive to).
 
 **Dialing tone**
 
@@ -487,6 +487,7 @@ Here, we use the `base` operator to shape the inverted ramp wave from osc into a
 	in 1/6hz
 	osc
 	lt 1/3
+	lpf 120hz
 	out a
 	in 480hz
 	sino
@@ -637,7 +638,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	zx		|		no		|		detects negative-going zero-crossing of input. A preceding `ramp` will generate a single pulse of 1 at the end of its cycle.
 |	lmap	|		yes		|		implements the Logistic Map, modified to constrain the output to range [0,1] using `mod` (to prevent divergence at high values of r). Iterates on zero-crossing of the input. Operand is the r value, suggested between 3 and 4. Preceed with `ramp` and follow with `cv2a` for audio output
 |	euclid	|		3		|		outputs euclidean rhythms at the frequency given by input as a series of pulses. Eg. output for (3,8) = "X..X..X." the X will be 1 and the rests 0
-|	exp		|		no		|		converts linear ramps on interval [0,1] to exponential. Operand is the number of times one is halved for an input of zero, eg. three would be ½ x ½ x ½ = ⅛, the greater the number the steeper the curve. Typically useful to shape a descending ramp. Negative operands will double instead of halve
+|	exp		|		yes		|		converts linear ramps on interval [0,1] to exponential. Operand is the number of times one is halved for an input of zero, eg. three would be ½ x ½ x ½ = ⅛, the greater the number the steeper the curve. Typically useful to shape a descending ramp. Negative operands will double instead of halve
 |	dial	|		no		|		plays uk telephone ringing tone
 |	dirac	|		no		|		outputs a single sample pulse when input goes from 0 to 1. Will trigger on first run of listing if input is 1
 |	range	|		2		|		spreads input from 0 to ±1 across a range of values from the first operand to the second. Eg. `range 220hz,440hz`. If the second operand is smaller the range will be negative. Operands should be in order of slow to fast, eg. 2s,1s

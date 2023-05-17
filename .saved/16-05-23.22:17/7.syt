@@ -1,0 +1,25 @@
+in 2hz
+out tempo
+* 4
+posc 0
+lt 0.5
+out grid
+in tempo
+* 4/5
+posc 0
+lt 0.5
+s/h grid
+dirac 
+down 350ms
+smooth 
+out vca
+exp 7
+mul 110hz
+saw 
+lpf 100hz
+lpf 100hz
+lpf 100hz
+mul vca
+mul -6db
+catch 
+mix 

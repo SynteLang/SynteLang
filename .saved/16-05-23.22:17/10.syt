@@ -1,0 +1,9 @@
+in tempo
+* 4
+posc 0
+mul 5
+clip 0
+flip 
+noise 
+catch 
+mix 

@@ -266,6 +266,7 @@ var (
 	ds       bool
 	restart  bool
 	reload   = -1
+	reloadChan = make(chan int, 12)
 	ext      = not // loading external listing state
 	rs       bool
 
@@ -576,11 +577,7 @@ func main() {
 				if e(rr) {
 					continue // skip missing listings without warning
 				}
-				reload = i
-				if !display.Paused && reload < len(mute) {
-					priorMutes[reload] = mute[reload]
-					mute[reload] = 0
-				}
+				reloadChan <- i
 				s := bufio.NewScanner(inputF)
 				s.Split(bufio.ScanWords)
 				tokens <- "extyes"
@@ -1530,6 +1527,9 @@ start:
 			display.Paused = not
 		}
 		lockLoad <- struct{}{}
+		if len(reloadChan) > 0 { // relies on reload func being much faster than std input
+			reload = <-reloadChan
+		}
 		//transfer to sound engine, or if reload, replace existing at that index
 		if reload < 0 || reload > len(transfer.Listing)-1 {
 			dispListings = append(dispListings, dispListing)

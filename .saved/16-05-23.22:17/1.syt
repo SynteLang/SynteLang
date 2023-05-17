@@ -1,0 +1,9 @@
+in 1s
+posc 0
+flip 
+8bit 7
+8bit 12
+base 2
+mul 330*1.5hz
+sino 
+mix 

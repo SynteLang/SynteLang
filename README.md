@@ -655,7 +655,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	pink	|		no		|		approximation of pinkening filter, low pass at -3db per octave
 |	play	|		yes		|		plays wav given by operand once when input goes from 0 to 1
 |	sqr		|		no		|		square wave at audio levels, output is in range [-1,1]
-|	sq		|		no		|		square wave, equivalent to `pulse 0.5`, output is in range [0,1]
+|	sq		|		no		|		square wave, equivalent to `pulse 0.5`, output is in range [0,1], contains `<sync`
 |	xvr		|		no		|		emulates class-B crossover distortion
 |	sclp	|		no		|		soft clipping, harsher than tanh
 |	every	|		yes		|		for a pulse (or square) input [0,1], outputs a pulse ending at second rising edge of input every n input pulses, where n is the operand. Uses `count` internally

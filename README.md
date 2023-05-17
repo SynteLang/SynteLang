@@ -607,7 +607,6 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	.solo 	|		yes		|		equivalent to `solo` except will insert 'out dac' to launch listing. Play will be resumed if paused
 |	erase 	|		yes		|		erase preceding number of lines given by operand
 |	rld 	|		yes		|		reload edited listing, file in `.temp/` is not updated. if index not extant, will append to listings, but won't overwrite that particular `.temp/` file
-|	rpl 	|		yes		|		listing at index given by operand will be replaced by current input once launched, file in `.temp/ is not updated
 |	r 		|		yes		|		alias of rld
 |	do 		|		yes		|		repeat next operation or function n times, where n is given by the operand. Define a temporary function for this purpose if needs be
 

@@ -1985,18 +1985,19 @@ func SoundEngine(file *os.File, bits int) {
 	defer close(stop)
 	w := bufio.NewWriterSize(file, 1024)
 	defer w.Flush()
-	output := func(w *bufio.Writer, f float64) {
+	//w := file
+	output := func(w io.Writer, f float64) {
 		binary.Write(w, BYTE_ORDER, int16(f))
 	}
 	switch bits {
 	case 8:
-		output = func(w *bufio.Writer, f float64) {
+		output = func(w io.Writer, f float64) {
 			binary.Write(w, BYTE_ORDER, int8(f))
 		}
 	case 16:
 		// already assigned
 	case 32:
-		output = func(w *bufio.Writer, f float64) {
+		output = func(w io.Writer, f float64) {
 			binary.Write(w, BYTE_ORDER, int32(f))
 		}
 	default:
@@ -2632,7 +2633,7 @@ func SoundEngine(file *os.File, bits int) {
 				panic(overload)
 			} else if float64(display.Load) > 1e9/SampleRate {
 				panic(rateLimit)
-			} else if DS > 1 && float64(display.Load) < 35e8/SampleRate && n > 100000 { // holdoff for ~4secs x DS
+			} else if DS > 1 && float64(display.Load) < 33e8/SampleRate && n > 100000 { // holdoff for ~4secs x DS
 				DS >>= 1
 				nyfC = 1 / (1 + (float64(DS*DS) / Pi)) // coefficient is non-linear
 				SampleRate *= 2

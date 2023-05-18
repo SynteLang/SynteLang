@@ -264,7 +264,6 @@ var (
 	ds       bool
 	restart  bool
 	reload   = -1
-	reloadChan = make(chan int, 12)
 	ext      = not // loading external listing state
 	rs       bool
 
@@ -492,7 +491,12 @@ func main() {
 	solo := -1
 	unsolo := []float64{}
 	lockLoad := make(chan struct{}, 1)
-	tokens := make(chan string, 2<<12) // arbitrary capacity, will block input in extreme circumstances
+	type token struct {
+		tk string
+		reload int
+		ext bool
+	}
+	tokens := make(chan token, 2<<12) // arbitrary capacity, will block input in extreme circumstances
 	usage := loadUsage()
 
 	go func() { // watchdog, anonymous to use variables in scope
@@ -509,7 +513,7 @@ func main() {
 			for len(tokens) > 0 { // empty incoming tokens
 				<-tokens
 			}
-			tokens <- "_"                                // hack to restart input
+			tokens <- token{"_", -1, yes}                                // hack to restart input
 			for i := 0; i < len(transfer.Listing); i++ { // preload listings into tokens buffer
 				f := sf(".temp/%d.syt", i)
 				inputF, rr := os.Open(f)
@@ -520,16 +524,14 @@ func main() {
 				s := bufio.NewScanner(inputF)
 				s.Split(bufio.ScanWords)
 				if transfer.Listing[i][0].Op == "deleted" { // hacky, to avoid undeleting listings
-					tokens <- "deleted"
-					tokens <- "out"
-					tokens <- "dac"
+					tokens <- token{"deleted", -1, yes}
+					tokens <- token{"out", -1, yes}
+					tokens <- token{"dac", -1, yes}
 					continue
 				}
-				tokens <- "extyes"
 				for s.Scan() {
-					tokens <- s.Text()
+					tokens <- token{s.Text(), -1, yes}
 				}
-				tokens <- "extnot"
 				inputF.Close()
 			}
 			transfer.Listing = nil
@@ -548,7 +550,7 @@ func main() {
 		s.Split(bufio.ScanWords)
 		for {
 			s.Scan() // blocks on stdin
-			tokens <- s.Text()
+			tokens <- token{s.Text(), -1, not}
 		}
 	}()
 
@@ -575,14 +577,11 @@ func main() {
 				if e(rr) {
 					continue // skip missing listings without warning
 				}
-				reloadChan <- i
 				s := bufio.NewScanner(inputF)
 				s.Split(bufio.ScanWords)
-				tokens <- "extyes"
 				for s.Scan() {
-					tokens <- s.Text()
+					tokens <- token{s.Text(), i, yes}
 				}
-				tokens <- "extnot"
 				inputF.Close()
 				stat[i] = st.ModTime()
 			}
@@ -674,20 +673,11 @@ start:
 			}
 			var op, opd string
 			if !ext { pf("\t  ") }
-			op = <-tokens
-			for e := yes; e; { // deal with all ext signals until token received
-				switch op {
-				case "extnot":
-					ext = not
-					op = <-tokens
-				case "extyes":
-					ext = yes
-					op = <-tokens
-				default:
-					e = not
-				}
-			}
-			if (len(op) > 2 && byte(op[1]) == 91) || op == "_" { // hack to escape terminal characters
+			t := <-tokens
+			op = t.tk
+			reload = t.reload
+			ext = t.ext
+			if (len(op) > 2 && byte(op[1]) == 91) || op == "_" || op == "" {
 				continue
 			}
 			op = strings.TrimSuffix(op, ",") // to allow comma separation of tokens
@@ -704,19 +694,10 @@ start:
 			usage[op] += 1
 			var operands = []string{}
 			if op2.Opd { // parse second token
-				opd = <-tokens
-				for e := yes; e; { // deal with all ext signals until token received
-					switch op {
-					case "extnot":
-						ext = not
-						op = <-tokens
-					case "extyes":
-						ext = yes
-						op = <-tokens
-					default:
-						e = not
-					}
-				}
+				t := <-tokens
+				opd = t.tk
+				reload = t.reload
+				ext = t.ext
 				opd = strings.TrimSuffix(opd, ",") // to allow comma separation of tokens
 				if opd == "_" {
 					continue
@@ -740,7 +721,7 @@ start:
 					To += 2
 					once = false
 				}
-				tokens <- op
+				tokens <- token{op, -1, not}
 				d := opd
 				// Experimental:
 				if len(opd) > 2 && opd[:3] == "{i}" { // BUG: first do has operand '{i}'
@@ -748,7 +729,7 @@ start:
 					// opd[3:] concatenated to provide calc, which mute, solo etc don't support...
 				}
 				if t2 := operators[op]; t2.Opd { // to avoid weird blank opds being sent
-					tokens <- d
+					tokens <- token{d, -1, not}
 				}
 				do--
 			}
@@ -1020,11 +1001,9 @@ start:
 				}
 				s := bufio.NewScanner(inputF)
 				s.Split(bufio.ScanWords)
-				tokens <- "extyes"
 				for s.Scan() {
-					tokens <- s.Text()
+					tokens <- token{s.Text(), -1, yes}
 				}
-				tokens <- "extnot"
 				inputF.Close()
 				continue
 			case "save":
@@ -1034,7 +1013,7 @@ start:
 					continue
 				}
 				pf("\tName: ")
-				f := <-tokens
+				f := (<-tokens).tk
 				if filepath.Ext(f) != ".syt" {
 					f = f + ".syt"
 				}
@@ -1212,9 +1191,9 @@ start:
 					continue
 				}
 				for i := 0; i < len(dispListing)-n; i++ { // recompile
-					tokens <- dispListing[i].Op
+					tokens <- token{dispListing[i].Op, -1, yes}
 					if len(dispListing[i].Opd) > 0 {
-						tokens <- dispListing[i].Opd
+						tokens <- token{dispListing[i].Opd, -1, yes}
 					}
 				}
 				continue start
@@ -1407,9 +1386,6 @@ start:
 				msg("%snext operation repeated%s %dx", italic, reset, do)
 				To = do
 				continue
-			case "extyes", "extnot": // remove this case after testing, should be unreachable //
-				msg("external signal rejected from token queue")
-				continue
 			default:
 				// nop
 			}
@@ -1506,9 +1482,6 @@ start:
 			display.Paused = not
 		}
 		lockLoad <- struct{}{}
-		if len(reloadChan) > 0 { // relies on reload func being much faster than std input
-			reload = <-reloadChan
-		}
 		//transfer to sound engine, or if reload, replace existing at that index
 		if reload < 0 || reload > len(transfer.Listing)-1 {
 			dispListings = append(dispListings, dispListing)
@@ -2007,7 +1980,7 @@ func SoundEngine(file *os.File, bits int) {
 
 	const (
 		Tau        = 2 * Pi
-		RATE       = 2 << 11
+		RATE       = 2 << 12
 		overload   = "Sound Engine overloaded"
 		recovering = "Sound Engine recovering"
 		rateLimit  = "At sample rate limit"

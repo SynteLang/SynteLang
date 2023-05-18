@@ -226,8 +226,6 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"do":      ops{yes, 0},
 	"d":       ops{yes, 0},
 	"deleted": ops{not, 0}, // for internal use
-	"extyes":  ops{not, 0}, // for internal use
-	"extnot":  ops{not, 0}, // for internal use
 	"/*":      ops{yes, 0}, // non-breaking comments, nop
 }
 
@@ -498,6 +496,14 @@ func main() {
 	}
 	tokens := make(chan token, 2<<12) // arbitrary capacity, will block input in extreme circumstances
 	usage := loadUsage()
+	clr := func(s string, i ...interface{}){
+		for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
+			<-tokens
+		}
+		ext = not
+		info <- fmt.Sprintf(s, i...)
+		<-carryOn
+	}
 
 	go func() { // watchdog, anonymous to use variables in scope
 		// This function will restart the sound engine and reload listings using new sample rate
@@ -683,11 +689,7 @@ start:
 			op = strings.TrimSuffix(op, ",") // to allow comma separation of tokens
 			op2, in := operators[op]
 			if !in {
-				msg("%soperator or function doesn't exist:%s '%s'", italic, reset, op)
-				for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
-					<-tokens
-				}
-				ext = not
+				clr("%soperator or function doesn't exist:%s '%s'", italic, reset, op)
 				continue
 			}
 			_, f := funcs[op]
@@ -699,12 +701,12 @@ start:
 				reload = t.reload
 				ext = t.ext
 				opd = strings.TrimSuffix(opd, ",") // to allow comma separation of tokens
-				if opd == "_" {
+				if opd == "_" || opd == "" {
 					continue
 				}
 				operands = strings.Split(opd, ",")
 				if !f && len(operands) > 1 {
-					msg("only functions can have multiple operands")
+					clr("only functions can have multiple operands")
 					continue
 				}
 				wav := wmap[opd] && op == "wav" // wavs can start with a number
@@ -783,7 +785,7 @@ start:
 				case mm{yes, yes, yes}:
 					m = 3
 				default:
-					msg("malformed function") // probably not needed
+					clr("malformed function") // probably not needed
 					continue input
 				}
 				l := len(operands)
@@ -798,16 +800,16 @@ start:
 				if m > l {
 					switch {
 					case m == 1:
-						msg("%sthe function requires an operand%s", italic, reset)
+						clr("%sthe function requires an operand%s", italic, reset)
 						continue
 					case m > 1:
-						msg("%sthe function requires %d operands%s", italic, m, reset)
+						clr("%sthe function requires %d operands%s", italic, m, reset)
 						continue
 					}
 				}
 				for i, opd := range operands { // opd shadowed
 					if operands[i] == "" {
-						msg("empty argument %d", i+1)
+						clr("empty argument %d", i+1)
 						continue input
 					}
 					if strings.ContainsAny(opd[:1], "+-.0123456789") {
@@ -1054,13 +1056,13 @@ start:
 				}
 				switch {
 				case num.Is:
-					msg("%soutput to number not permitted%s", italic, reset)
+					clr("%soutput to number not permitted%s", italic, reset)
 					continue
 				case in && opd[:1] != "^" && opd != "dac" && !ExpSig && op != "out+":
-					msg("%sduplicate output to signal, c'est interdit%s", italic, reset)
+					clr("%sduplicate output to signal, c'est interdit%s", italic, reset)
 					continue
 				case opd == "@":
-					msg("%scan't send to @, represents function operand%s", italic, reset)
+					clr("%scan't send to @, represents function operand%s", italic, reset)
 					continue
 				case opd == "dac" && len(newListing) == 0:
 					// drop silently
@@ -1199,7 +1201,7 @@ start:
 				continue start
 			case "wav":
 				if !wmap[opd] && opd != "@" {
-					msg("%sname isn't in wav list%s", italic, reset)
+					clr("%sname isn't in wav list%s", italic, reset)
 					continue
 				}
 			case "mute", ".mute", "m":

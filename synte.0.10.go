@@ -2198,10 +2198,10 @@ func SoundEngine(file *os.File, bits int) {
 					tx[i] = r
 					tapes[i][n%TLlen] = th[i] // record head
 					tl := SampleRate * TAPE_LENGTH
-					t := Mod(1/sigs[i][o.N], tl)
+					t := Min(1/sigs[i][o.N], tl)
 					xa := (n + TLlen - int(t)) % TLlen
 					x := Mod(float64(n+TLlen)-(t), tl)
-					ta0 := tapes[i][(n+TLlen-int(t)-1)%TLlen]
+					ta0 := tapes[i][(n+TLlen+TLlen-int(t)-1)%TLlen]
 					ta := tapes[i][xa] // play heads
 					tb := tapes[i][(n+TLlen-int(t)+1)%TLlen]
 					tb1 := tapes[i][(n+TLlen-int(t)+2)%TLlen]

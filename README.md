@@ -664,7 +664,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	fractal	|		yes		|		fractal inspired non-linear feedback mangles input in interesting ways
 |	catch	|		no		|		output is zero until first sync pulse received, input is passed through to output thereafter. Use before last operation of a listing containing `posc` for a smooth launch
 |	smooth	|		no		|		alias of `lpf 150hz`, use to smoothen vca signals or other below audio rate CV's
-|	CB		|		no		|		an 808-like cowbell, triggered like `dirac`
+|	CB		|		yes		|		an 808-like cowbell, triggered like `dirac`. Operand multiplies pitch
 |	.grid	|		no		|		an exprimental alternative to `grid`, will terminate listing. Not synced
 |	for		|		yes		|		input sets frequency of pulse which stays high for time interval given by operand, output is [0, 1]
 |           |               |

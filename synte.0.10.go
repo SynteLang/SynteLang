@@ -1161,6 +1161,7 @@ start:
 						tokens <- token{dispListing[i].Opd, -1, yes}
 					}
 				}
+				tokens <- token{"", -1, not}
 				continue start
 			case "wav":
 				if !wmap[opd] && opd != "@" {

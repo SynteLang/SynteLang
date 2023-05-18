@@ -215,7 +215,6 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"load":    ops{yes, 0},
 	"ld":      ops{yes, 0}, // alias of load
 	"[":       ops{yes, 0},
-	"save":    ops{yes, 0},
 	"ls":      ops{yes, 0},
 	"ct":      ops{yes, 0}, // individual clip threshold
 	"rld":     ops{yes, 0},
@@ -1007,42 +1006,6 @@ start:
 					tokens <- token{s.Text(), -1, yes}
 				}
 				inputF.Close()
-				continue
-			case "save":
-				n, rr := strconv.Atoi(opd)
-				if e(rr) || n < 0 || n > len(transfer.Listing)-1 {
-					msg("%soperand not valid%s", italic, reset)
-					continue
-				}
-				pf("\tName: ")
-				f := (<-tokens).tk
-				if filepath.Ext(f) != ".syt" {
-					f = f + ".syt"
-				}
-				files, rr := os.ReadDir(filepath.Dir(f))
-				if e(rr) {
-					msg("unable to access directory")
-					continue
-				}
-				for _, file := range files {
-					ffs := file.Name()
-					if filepath.Ext(ffs) != ".syt" {
-						continue
-					}
-					if ffs == filepath.Base(f) {
-						msg("duplicate name!")
-						continue input
-					}
-				}
-				content := ""
-				for _, d := range dispListings[n] {
-					content += d.Op + " " + d.Opd + "\n"
-				}
-				if rr := os.WriteFile(f, []byte(content), 0666); e(rr) {
-					msg("%v", rr)
-					continue
-				}
-				msg("%slisting%s %d %ssaved to%s %s", italic, reset, n, italic, reset, f)
 				continue
 			case "in":
 				// nop

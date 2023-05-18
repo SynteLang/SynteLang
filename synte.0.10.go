@@ -582,6 +582,10 @@ func main() {
 				if e(rr) {
 					continue // skip missing listings without warning
 				}
+				if !display.Paused {
+					priorMutes[i] = mute[i]
+					mute[i] = 0
+				}
 				s := bufio.NewScanner(inputF)
 				s.Split(bufio.ScanWords)
 				for s.Scan() {
@@ -590,6 +594,7 @@ func main() {
 				inputF.Close()
 				stat[i] = st.ModTime()
 			}
+			time.Sleep(25*time.Millisecond) // wait for mutes
 			<-lockLoad
 		}
 	}()
@@ -1946,7 +1951,7 @@ func SoundEngine(file *os.File, bits int) {
 
 	const (
 		Tau        = 2 * Pi
-		RATE       = 2 << 12
+		RATE       = 2 << 11
 		overload   = "Sound Engine overloaded"
 		recovering = "Sound Engine recovering"
 		rateLimit  = "At sample rate limit"

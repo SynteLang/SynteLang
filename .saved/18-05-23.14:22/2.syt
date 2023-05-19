@@ -1,0 +1,19 @@
+in tempo
+/ 4
+push 
+* 0.25
+posc 0
+s/h grid
+base 2
+mul 110hz
+out f
+pop 
+euclid 3,8,0
+dirac
+down 150ms
+mul f
+sino 
+tanh 
+catch
+mul -4db
+mix 

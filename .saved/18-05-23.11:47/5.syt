@@ -1,0 +1,14 @@
+in tempo
+* 3/4
+posc 0
+tri 
+mul 220hz
+out a
+in 55hz
+saw 
+lpf a
+lpf a
+lpf a
+lpf a
+lpf a
+mix 

@@ -489,13 +489,13 @@ func main() {
 	unsolo := []float64{}
 	lockLoad := make(chan struct{}, 1)
 	type token struct {
-		tk string
+		tk     string
 		reload int
-		ext bool
+		ext    bool
 	}
 	tokens := make(chan token, 2<<12) // arbitrary capacity, will block input in extreme circumstances
 	usage := loadUsage()
-	clr := func(s string, i ...interface{}){
+	clr := func(s string, i ...interface{}) {
 		for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
 			<-tokens
 		}
@@ -518,7 +518,7 @@ func main() {
 			for len(tokens) > 0 { // empty incoming tokens
 				<-tokens
 			}
-			tokens <- token{"_", -1, yes}                                // hack to restart input
+			tokens <- token{"_", -1, yes}                // hack to restart input
 			for i := 0; i < len(transfer.Listing); i++ { // preload listings into tokens buffer
 				f := sf(".temp/%d.syt", i)
 				inputF, rr := os.Open(f)
@@ -594,7 +594,7 @@ func main() {
 				inputF.Close()
 				stat[i] = st.ModTime()
 			}
-			time.Sleep(25*time.Millisecond) // wait for mutes
+			time.Sleep(25 * time.Millisecond) // wait for mutes
 			<-lockLoad
 		}
 	}()
@@ -682,7 +682,9 @@ start:
 				Is  bool
 			}
 			var op, opd string
-			if !ext { pf("\t  ") }
+			if !ext {
+				pf("\t  ")
+			}
 			t := <-tokens
 			op = t.tk
 			reload = t.reload
@@ -2308,7 +2310,7 @@ func SoundEngine(file *os.File, bits int) {
 				case 34: // "setmix"
 					a := Abs(sigs[i][o.N]) + 1e-6
 					d := a/peakfreq[i] - 1
-					d = Max(-1, Min(1, d))
+					// d= Max(-1, Min(1, d))
 					peakfreq[i] += a * (d * smR8)
 					if Abs(d) < 0.01 {
 						peakfreq[i] = a
@@ -2724,7 +2726,7 @@ func e(rr error) bool {
 }
 
 func loadUsage() map[string]int {
-	u:= map[string]int{}
+	u := map[string]int{}
 	f, rr := os.Open("usage.txt")
 	if e(rr) {
 		//msg("%v", rr)
@@ -2749,23 +2751,24 @@ func loadUsage() map[string]int {
 }
 
 type pair struct {
-	Key string
+	Key   string
 	Value int
 }
 type pairs []pair
-func (p pairs) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
-func (p pairs) Len() int { return len(p) }
-func (p pairs) Less(i,j int) bool { return p[i].Value > p[j].Value }
+
+func (p pairs) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+func (p pairs) Len() int           { return len(p) }
+func (p pairs) Less(i, j int) bool { return p[i].Value > p[j].Value }
 func saveUsage(u map[string]int) {
 	p := make(pairs, len(u))
 	i := 0
-	for k,v := range u {
-		p[i] = pair{k,v}
+	for k, v := range u {
+		p[i] = pair{k, v}
 		i++
 	}
 	sort.Sort(p)
 	data := ""
-	for _,s := range p {
+	for _, s := range p {
 		data += sf("%s %d\n", s.Key, s.Value)
 	}
 	data += "\nunused:\n"

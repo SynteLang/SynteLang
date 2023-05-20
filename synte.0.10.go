@@ -710,37 +710,31 @@ start:
 				if opd == "_" || opd == "" {
 					continue
 				}
-				operands = strings.Split(opd, ",")
+				o := strings.ReplaceAll(opd, "{i}", sf("%d", 0))
+				o = strings.ReplaceAll(o, "{i+1}", sf("%d", 0))
+				operands = strings.Split(o, ",")
 				if !f && len(operands) > 1 {
 					clr("only functions can have multiple operands")
 					continue
 				}
 				wav := wmap[opd] && op == "wav" // wavs can start with a number
-				if strings.ContainsAny(opd[:1], "+-.0123456789") && !wav && !f {
-					if num.Ber, num.Is = parseType(opd, op); !num.Is {
+				if strings.ContainsAny(o[:1], "+-.0123456789") && !wav && !f {
+					if num.Ber, num.Is = parseType(o, op); !num.Is {
 						continue input // parseType will report error
 					}
 				}
 			}
-			once := true
 			for do > 1 { // one already done
-				if once && len(opd) > 2 && opd[:3] == "{i}" {
-					do += 2 // hack around bug
-					To += 2
-					once = false
-				}
 				tokens <- token{op, -1, not}
-				d := opd
-				// Experimental:
-				if len(opd) > 2 && opd[:3] == "{i}" { // BUG: first do has operand '{i}'
-					d = sf("%d%s", To-do, opd[3:]) // should be + 1
-					// opd[3:] concatenated to provide calc, which mute, solo etc don't support...
-				}
+				d := strings.ReplaceAll(opd, "{i}", sf("%d", To-do+1))
+				d = strings.ReplaceAll(d, "{i+1}", sf("%d", To-do+2))
 				if t2 := operators[op]; t2.Opd { // to avoid weird blank opds being sent
 					tokens <- token{d, -1, not}
 				}
 				do--
 			}
+			opd = strings.ReplaceAll(opd, "{i}", sf("%d", 0))
+			opd = strings.ReplaceAll(opd, "{i+1}", sf("%d", 1))
 
 			if f { // parse function
 				function := make(listing, len(funcs[op]))
@@ -1642,7 +1636,7 @@ func evaluateExpr(expr string) (float64, bool) {
 		}
 	}
 	if n, rr = strconv.ParseFloat(opds[0], 64); e(rr) {
-		msg("not a number or a name in first part of expression")
+		msg("%s is not a number", opds[0])
 		return 0, false
 	}
 	if len(opds) == 1 {
@@ -1653,7 +1647,7 @@ func evaluateExpr(expr string) (float64, bool) {
 		return 0, false
 	}
 	if n2, rr = strconv.ParseFloat(opds[1], 64); e(rr) {
-		msg("not a number or a name in second part of expression")
+		msg("%s is not a number", opds[1])
 		return 0, false
 	}
 	switch op {
@@ -2205,10 +2199,10 @@ func SoundEngine(file *os.File, bits int) {
 					tx[i] = r
 					tapes[i][n%TLlen] = th[i] // record head
 					tl := SampleRate * TAPE_LENGTH
-					t := Min(1/sigs[i][o.N], tl)
+					t := Abs(Min(1/sigs[i][o.N], tl))
 					xa := (n + TLlen - int(t)) % TLlen
 					x := Mod(float64(n+TLlen)-(t), tl)
-					ta0 := tapes[i][(n+TLlen+TLlen-int(t)-1)%TLlen]
+					ta0 := tapes[i][(n+TLlen+int(t)-1)%TLlen]
 					ta := tapes[i][xa] // play heads
 					tb := tapes[i][(n+TLlen-int(t)+1)%TLlen]
 					tb1 := tapes[i][(n+TLlen-int(t)+2)%TLlen]
@@ -2230,7 +2224,7 @@ func SoundEngine(file *os.File, bits int) {
 					r = sigs[i][o.N] - r
 				case 20: // "tap"
 					tl := SampleRate * TAPE_LENGTH
-					t := Mod(1/sigs[i][o.N], tl)
+					t := Abs(Min(1/sigs[i][o.N], tl))
 					xa := (n + TLlen - int(t)) % TLlen
 					x := Mod(float64(n+TLlen)-(t), tl)
 					ta0 := tapes[i][(n+TLlen-int(t)-1)%TLlen]
@@ -2256,7 +2250,7 @@ func SoundEngine(file *os.File, bits int) {
 					l := len(wavs[int(sigs[i][o.N])])
 					r *= float64(l)
 					x1 := int(r) % l
-					w0 := wavs[int(sigs[i][o.N])][int(r-1)%l]
+					w0 := wavs[int(sigs[i][o.N])][(l+int(r-1))%l]
 					w1 := wavs[int(sigs[i][o.N])][x1]
 					w2 := wavs[int(sigs[i][o.N])][int(r+1)%l]
 					w3 := wavs[int(sigs[i][o.N])][int(r+2)%l]
@@ -2310,12 +2304,9 @@ func SoundEngine(file *os.File, bits int) {
 				case 34: // "setmix"
 					a := Abs(sigs[i][o.N]) + 1e-6
 					d := a/peakfreq[i] - 1
-					// d= Max(-1, Min(1, d))
-					peakfreq[i] += a * (d * smR8)
-					if Abs(d) < 0.01 {
-						peakfreq[i] = a
-					}
-					r *= Min(1, 75/(peakfreq[i]*SampleRate+20)) // ignoring density
+					//peakfreq[i] += a * (d+1) * d * smR8
+					peakfreq[i] += a * d * smR8
+					r *= Min(1, 50/(peakfreq[i]*SampleRate+20)) // ignoring density
 					//r *= Min(1, Sqrt(80/(peakfreq[i]*SampleRate+20)))
 				case 35: // "print"
 					pd++ // unnecessary?
@@ -2624,7 +2615,7 @@ func sine(x float64) float64 {
 	if x < 0 {
 		x = -x
 	}
-	sr := int(SampleRate)
+	sr := int(SampleRate)-1
 	a := int(x * SampleRate)
 	sa := sineTab[a%sr]
 	sb := sineTab[(a+1)%sr]
@@ -2641,7 +2632,7 @@ func tanh(x float64) float64 {
 		neg = yes
 		x = -x
 	}
-	w := (width - 1.0) // slightly imprecise
+	w := (width - 2.0) // slightly imprecise
 	x *= w
 	a := int(x)
 	ta := tanhTab[a]

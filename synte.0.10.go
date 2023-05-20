@@ -724,7 +724,7 @@ start:
 					}
 				}
 			}
-			for do > 1 { // one already done
+			for do > 1 { // one done below
 				tokens <- token{op, -1, not}
 				d := strings.ReplaceAll(opd, "{i}", sf("%d", To-do+1))
 				d = strings.ReplaceAll(d, "{i+1}", sf("%d", To-do+2))
@@ -2615,7 +2615,7 @@ func sine(x float64) float64 {
 	if x < 0 {
 		x = -x
 	}
-	sr := int(SampleRate)-1
+	sr := int(SampleRate)
 	a := int(x * SampleRate)
 	sa := sineTab[a%sr]
 	sb := sineTab[(a+1)%sr]

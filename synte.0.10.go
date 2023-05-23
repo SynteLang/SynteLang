@@ -1976,7 +1976,7 @@ func SoundEngine(file *os.File, bits int) {
 		det float64 // limiter detection
 		lpf50, lpf510,
 		deemph float64 // de-emphasis
-		smR8        = 40.0 / SampleRate
+		α        = 1 / (SampleRate/(2*Pi*6.3) + 1) // co-efficient for setmix
 		hroom       = (convFactor - 1.0) / convFactor // headroom for positive dither
 		c           float64                           // mix factor
 		pd          int
@@ -2303,9 +2303,9 @@ func SoundEngine(file *os.File, bits int) {
 					r -= sigs[i][o.N]
 				case 34: // "setmix"
 					a := Abs(sigs[i][o.N]) + 1e-6
-					d := a/peakfreq[i] - 1
-					//peakfreq[i] += a * (d+1) * d * smR8
-					peakfreq[i] += a * d * smR8
+					d := a - peakfreq[i]
+					//peakfreq[i] += d * α * (a / peakfreq[i])
+					peakfreq[i] += d * α * (30*Abs(d)*a/peakfreq[i])
 					r *= Min(1, 50/(peakfreq[i]*SampleRate+20)) // ignoring density
 					//r *= Min(1, Sqrt(80/(peakfreq[i]*SampleRate+20)))
 				case 35: // "print"

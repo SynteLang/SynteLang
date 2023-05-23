@@ -613,7 +613,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	e	 	|		yes		|		alias of `erase`
 |	rld 	|		yes		|		reload edited listing, file in `.temp/` is not updated. if index not extant, will append to listings, but won't overwrite that particular `.temp/` file
 |	r 		|		yes		|		alias of `rld`
-|	do 		|		yes		|		repeat next operation or function n times, where n is given by the operand. Define a temporary function for this purpose if needs be
+|	do 		|		yes		|		repeat next operation or function n times, where n is given by the operand. Define a temporary function for this purpose if needs be. any instance of the string "{i}" will be replaced by index of do loop number i.e. 0 to 9, for `do 9`. Alternatively, "{i+1}" will produce 1 to 10 in that instance. Multiple listings can be reloaded with eg. `do 3, r {i}`
 
 **List of built-in functions**
 

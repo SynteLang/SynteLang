@@ -1355,6 +1355,7 @@ start:
 					continue
 				}
 				msg("%snext operation repeated%s %dx", italic, reset, do)
+				do++
 				To = do
 				continue
 			default:
@@ -2206,7 +2207,7 @@ func SoundEngine(file *os.File, bits int) {
 					t := Abs(Min(1/sigs[i][o.N], tl))
 					xa := (n + TLlen - int(t)) % TLlen
 					x := Mod(float64(n+TLlen)-(t), tl)
-					ta0 := tapes[i][(n+TLlen+int(t)-1)%TLlen]
+					ta0 := tapes[i][(n+TLlen-int(t)-1)%TLlen]
 					ta := tapes[i][xa] // play heads
 					tb := tapes[i][(n+TLlen-int(t)+1)%TLlen]
 					tb1 := tapes[i][(n+TLlen-int(t)+2)%TLlen]
@@ -2310,7 +2311,7 @@ func SoundEngine(file *os.File, bits int) {
 					d := a - peakfreq[i]
 					//peakfreq[i] += d * α * (a / peakfreq[i])
 					peakfreq[i] += d * α * (30*Abs(d)*a/peakfreq[i])
-					r *= Min(1, 50/(peakfreq[i]*SampleRate+20)) // ignoring density
+					r *= Min(1, 75/(peakfreq[i]*SampleRate+20)) // ignoring density
 					//r *= Min(1, Sqrt(80/(peakfreq[i]*SampleRate+20)))
 				case 35: // "print"
 					pd++ // unnecessary?

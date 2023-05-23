@@ -226,6 +226,7 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"d":       ops{yes, 0},
 	"deleted": ops{not, 0}, // for internal use
 	"/*":      ops{yes, 0}, // non-breaking comments, nop
+	"m+":      ops{yes, 0}, // add to mute group
 }
 
 // listing is a slice of { operator, operand; signal and operator numbers }
@@ -644,6 +645,7 @@ start:
 			info <- fmt.Sprintf(s, i...)
 			<-carryOn
 		}
+		mutes := []int{}
 
 	input:
 		for { // input loop
@@ -1173,7 +1175,7 @@ start:
 					clr("%sname isn't in wav list%s", italic, reset)
 					continue
 				}
-			case "mute", ".mute", "m":
+			case "mute", ".mute", "m", "m+":
 				i, rr := strconv.Atoi(opd)
 				if e(rr) {
 					msg("%soperand not an integer%s", italic, reset)
@@ -1183,19 +1185,30 @@ start:
 					msg("listing index does not exist")
 					continue
 				}
-				if display.Paused && i < len(transfer.Listing) { // exclude present listing
-					priorMutes[i] = 1 - priorMutes[i]
-					display.Mute[i] = priorMutes[i] == 0 // convert binary to boolean
-				} else {
-					mute[i] = 1 - mute[i]
-					unsolo[i] = mute[i]
-					display.Mute[i] = mute[i] == 0 // convert binary to boolean
+				if op == "m+" {
+					mutes = append(mutes, i)
+					dispListing = append(dispListing, listing{{Op: "m+", Opd: opd}}...)
+					continue
+				}
+				mutes = append(mutes, i)
+				for _, i := range mutes {
+					if display.Paused && i < len(transfer.Listing) { // exclude present listing
+						priorMutes[i] = 1 - priorMutes[i]
+						display.Mute[i] = priorMutes[i] == 0 // convert binary to boolean
+					} else {
+						mute[i] = 1 - mute[i]
+						unsolo[i] = mute[i]
+						display.Mute[i] = mute[i] == 0 // convert binary to boolean
+					}
 				}
 				if op[:1] == "." && len(newListing) > 0 {
 					dispListing = append(dispListing, listing{{Op: "mix"}}...)
 					newListing = append(newListing, listing{{Op: "setmix", Opd: "^freq"}}...) // hacky
 					op, opd = "out", "dac"
 					break
+				}
+				if len(mutes) > 1 {
+					continue start
 				}
 				continue
 			case "level", ".level", "pan", ".pan":
@@ -1988,6 +2001,7 @@ func SoundEngine(file *os.File, bits int) {
 		nyfL, nyfR  float64                                    // nyquist filtering
 		nyfC        float64 = 1 / (1 + 1/(Tau*2e4/SampleRate)) // coefficient
 		L, R, sides float64
+		setmixDefault = 3200 / SampleRate
 	)
 	no *= 77777777777 // force overflow
 	defer func() {    // fail gracefully
@@ -2054,7 +2068,7 @@ func SoundEngine(file *os.File, bits int) {
 	syncSt8 := make([]st8, len(transfer.Listing), len(transfer.Listing)+27)
 	peakfreq := make([]float64, len(transfer.Listing), len(transfer.Listing)+28) // peak frequency for setlevel
 	for i := range peakfreq {
-		peakfreq[i] = 20 / SampleRate
+		peakfreq[i] = setmixDefault
 	}
 	m := make([]float64, len(transfer.Listing), len(transfer.Listing)+29)  // filter intermediate for mute
 	lv := make([]float64, len(transfer.Listing), len(transfer.Listing)+30) // filter intermediate for level
@@ -2091,7 +2105,7 @@ func SoundEngine(file *os.File, bits int) {
 				tx = append(tx, 0)
 				pan = append(pan, 0)
 				syncSt8 = append(syncSt8, 0)
-				peakfreq = append(peakfreq, 20/SampleRate)
+				peakfreq = append(peakfreq, setmixDefault)
 				stacks = append(stacks, stack)
 				fftArray = append(fftArray, [N]float64{})
 				ifftArray = append(ifftArray, [N]float64{})

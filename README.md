@@ -600,15 +600,19 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	del		|		yes		|		delete an entire compliled and running listing numbered by operand. Play will be resumed if paused. On deletion the `.temp/*.syt` file remains intact so the listing can be reloaded with `rld`. If you wish to delete all listings simply exit from Syntə and restart
 |	index	|		yes		|		access index of listing
 |	mute 	|		yes		|		mute  or un-mute listing at index given by operand. Muting won't affect sync operations sent by a listing
+|	m	 	|		yes		|		alias of `mute`
+|	m+	 	|		yes		|		like mute but simply adds to mute group, the whole group is launched at once by a final invocation of `mute` / `m`
 |	unmute 	|		no		|		un-mute all muted listings
 |	solo	|		yes		|		solo listing at index given by operand (all other listings are muted). Solo-ing the same listing twice will reinstate prior mutes, including if a previous solo state
+|	s		|		yes		|		alias of `solo`
 |	release	|		yes		|		set the release constant of the built in limiter. The limiter VCA envelope will decay by approximately 70dB in the operand time given in milliseconds. Default is 1s. Times of less than ~200ms may result in audible distortion or pumping. Times greater than ~2s will have a slow response to a decrease in level. The limiter has absolute peak detection (non-interpolated) and the attack (onset) is instantaneous. The decay curve is not stricly exponential as it has a slow onset to avoid distortion. Any listings that are much louder than the others will bring down the volume of all listings.  
 |	.mute 	|		yes		|		equivalent to `mute` except will insert 'out dac' to launch listing. Play will be resumed if paused
 |	.del 	|		yes		|		equivalent to `del` except will insert 'out dac' to launch listing. Used in effect to replace a listing, play will be resumed if paused
 |	.solo 	|		yes		|		equivalent to `solo` except will insert 'out dac' to launch listing. Play will be resumed if paused
 |	erase 	|		yes		|		erase preceding number of lines given by operand
+|	e	 	|		yes		|		alias of `erase`
 |	rld 	|		yes		|		reload edited listing, file in `.temp/` is not updated. if index not extant, will append to listings, but won't overwrite that particular `.temp/` file
-|	r 		|		yes		|		alias of rld
+|	r 		|		yes		|		alias of `rld`
 |	do 		|		yes		|		repeat next operation or function n times, where n is given by the operand. Define a temporary function for this purpose if needs be
 
 **List of built-in functions**
@@ -704,7 +708,9 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |  mode	| Description                           |
 |-----------|---------------|
 | exit		| shutdown Syntə
+| q			| alias of `exit`
 | erase		| erase entire listing input 
+| e			| alias of `erase`
 | pause		| pause playback
 | play		| resume playback
 | fon		| save newly defined functions on exit

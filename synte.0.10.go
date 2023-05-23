@@ -495,14 +495,6 @@ func main() {
 	}
 	tokens := make(chan token, 2<<12) // arbitrary capacity, will block input in extreme circumstances
 	usage := loadUsage()
-	clr := func(s string, i ...interface{}) {
-		for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
-			<-tokens
-		}
-		ext = not
-		info <- fmt.Sprintf(s, i...)
-		<-carryOn
-	}
 
 	go func() { // watchdog, anonymous to use variables in scope
 		// This function will restart the sound engine and reload listings using new sample rate
@@ -550,12 +542,13 @@ func main() {
 		}
 	}()
 
+	rpl := -1
 	go func() { // scan stdin from goroutine to allow external concurrent input
 		s := bufio.NewScanner(os.Stdin)
 		s.Split(bufio.ScanWords)
 		for {
 			s.Scan() // blocks on stdin
-			tokens <- token{s.Text(), -1, not}
+			tokens <- token{s.Text(), rpl, not}
 		}
 	}()
 
@@ -640,7 +633,17 @@ start:
 		st := 0    // func def start
 		fun := 0   // don't worry the fun will increase!
 		reload = -1
+		rpl = reload
 		do, To := 0, 0
+		clr := func(s string, i ...interface{}) {
+			for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
+				<-tokens
+			}
+			rpl = reload
+			ext = not
+			info <- fmt.Sprintf(s, i...)
+			<-carryOn
+		}
 
 	input:
 		for { // input loop
@@ -720,6 +723,7 @@ start:
 				wav := wmap[opd] && op == "wav" // wavs can start with a number
 				if strings.ContainsAny(o[:1], "+-.0123456789") && !wav && !f {
 					if num.Ber, num.Is = parseType(o, op); !num.Is {
+						clr("")
 						continue input // parseType will report error
 					}
 				}

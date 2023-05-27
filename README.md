@@ -601,7 +601,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	index	|		yes		|		access index of listing
 |	mute 	|		yes		|		mute  or un-mute listing at index given by operand. Muting won't affect sync operations sent by a listing
 |	m	 	|		yes		|		alias of `mute`
-|	m+	 	|		yes		|		like mute but simply adds to mute group, the whole group is launched at once by a final invocation of `mute` / `m`
+|	m+	 	|		yes		|		like mute but simply adds to mute group, the whole group is launched (and reset) at once by a final invocation of `mute` or `m`
 |	unmute 	|		no		|		un-mute all muted listings
 |	solo	|		yes		|		solo listing at index given by operand (all other listings are muted). Solo-ing the same listing twice will reinstate prior mutes, including if a previous solo state
 |	s		|		yes		|		alias of `solo`

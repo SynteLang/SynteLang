@@ -1012,7 +1012,7 @@ start:
 				s := bufio.NewScanner(inputF)
 				s.Split(bufio.ScanWords)
 				for s.Scan() {
-					tokens <- token{s.Text(), -1, yes}
+					tokens <- token{s.Text(), reload, yes}
 				}
 				inputF.Close()
 				continue
@@ -1189,7 +1189,6 @@ start:
 				}
 				if op == "m+" {
 					mutes = append(mutes, i)
-					dispListing = append(dispListing, listing{{Op: "m+", Opd: opd}}...)
 					continue
 				}
 				mutes = append(mutes, i)
@@ -1209,9 +1208,7 @@ start:
 					op, opd = "out", "dac"
 					break
 				}
-				if len(mutes) > 1 {
-					continue start
-				}
+				mutes = []int{}
 				continue
 			case "level", ".level", "pan", ".pan":
 				if len(transfer.Listing) == 0 {
@@ -1358,24 +1355,17 @@ start:
 					msg("%sclip threshold set to %.3g%s", italic, ct, reset)
 				}
 				continue
-			case "rpl", ".rpl":
+			case "rpl":
 				n, rr := strconv.Atoi(opd)
 				if e(rr) {
 					msg("%soperand not an integer%s", italic, reset)
 					continue
 				}
 				if n < 0 || n >= len(transfer.Listing) {
-					reload = -1
 					continue
 				}
 				reload = n
 				msg("%swill replace listing %s%d%s on launch%s", italic, reset, n, italic, reset)
-				if op[:1] == "." && len(newListing) > 0 {
-					dispListing = append(dispListing, listing{{Op: "mix"}}...)
-					newListing = append(newListing, listing{{Op: "setmix", Opd: "^freq"}}...) // hacky
-					op, opd = "out", "dac"
-					break
-				}
 				continue
 			case "all":
 				if len(transfer.Listing) == 0 {

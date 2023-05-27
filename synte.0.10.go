@@ -2469,10 +2469,10 @@ func SoundEngine(file *os.File, bits int) {
 				}
 				op++
 			}
-			c += m[i] // add mute to mix factor
 			if sigs[i][0] == 0 {
 				continue
 			}
+			c += m[i] // add mute to mix factor
 			if sigs[i][0] != sigs[i][0] { // test for NaN
 				sigs[i][0] = 0
 				panic(sf("listing: %d - NaN", i))

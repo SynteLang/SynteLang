@@ -552,7 +552,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	.>sync	|		yes		|		equivalent to >sync but will end listing and launch, like `out dac`
 |	push	|		no		|		move result to the stack of that listing
 |	pop		|		no		|		take most recently pushed result from stack of that listing
-|	tape	|		yes		|		record and playback from a rotating buffer, analogous to a tape loop. Input will clip around ±1, this is to control the level when using feedback. Operand is the offset in seconds/milliseconds (use types)
+|	tape	|		yes		|		record and playback from a rotating buffer, analogous to a tape loop. Input will clip around ±1, this is to control the level when using feedback. Operand is the offset in seconds/milliseconds (use types). Contains a high-pass filter internally
 |	tap		|		yes		|		result drawn from tape and added to input from preceding listing, operand is the offset in seconds/milliseconds (use types)
 |	f2c		|		no		|		convert frequency to filter coefficient. Numbers less than than 0 will be multiplied by -1 (sign removed, become positive)
 |	erase	|		yes		|		operand is number of operations to erase above the current in listing. For all use `: erase`. 

@@ -976,20 +976,6 @@ start:
 					continue
 				}
 			case "load", "ld", "rld", "r", "apd":
-				/* auto mode - count files
-				if opd == "all" {
-					files, rr := os.ReadDir(filepath.Dir(".temp/"))
-					if e(rr) {
-						msg("unable to access '.temp/', autoload failed")
-						return
-					}
-					for _, file := range files {
-						if filepath.Ext(file.Name()) != ".syt" {
-							continue
-						}
-						l++
-					}
-				} */
 				switch op {
 				case "rld", "r":
 					n, rr := strconv.Atoi(opd)

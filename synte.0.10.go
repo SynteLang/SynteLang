@@ -2472,7 +2472,6 @@ func SoundEngine(file *os.File, bits int) {
 			if sigs[i][0] == 0 {
 				continue
 			}
-			c += m[i] // add mute to mix factor
 			if sigs[i][0] != sigs[i][0] { // test for NaN
 				sigs[i][0] = 0
 				panic(sf("listing: %d - NaN", i))
@@ -2481,6 +2480,7 @@ func SoundEngine(file *os.File, bits int) {
 				sigs[i][0] = 0
 				panic(sf("listing: %d - overflow", i))
 			}
+			c += m[i] // add mute to mix factor
 			sigs[i][0] *= lv[i]
 			sides += pan[i] * (sigs[i][0] / 2) * m[i] * lv[i]
 			sigs[i][0] *= 1 - Abs(pan[i]/2)

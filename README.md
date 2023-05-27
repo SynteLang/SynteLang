@@ -894,6 +894,7 @@ Info display won't display the same message sent more than once in succession.
 + want to fade in a listing? Use `in 10s, once, level n, in 0, .mute n` where n is th index of the particular listing (that has previously been muted)
 + want a long fade out on exit? Type `fade 30s` before you type `: exit`
 + want to purge the .temp folder of old listings? Type `rm -v .temp/*.syt` from inside the project directory
++ reset the phase of the `sino` function by adding `push, dirac, flip, out ^z, pop` after the pulse you want to sync to
 + other tips tba... ◊  
 
 ## Performing with Syntə

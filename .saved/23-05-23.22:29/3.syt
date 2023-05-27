@@ -1,0 +1,14 @@
+in 2hz
+osc 
+flip 
+exp 7
+smooth 
+out vca
+in 500/3hz
+saw 
+mul 1500hz
+mul vca
++ 1khz
+sino 
+mul vca
+mix 

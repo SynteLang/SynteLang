@@ -1,0 +1,18 @@
+in 3s
+osc 
+tri 
+flip 
+mul 2
+out md
+in 4hz
+osc 
+mul md
+clip 0
+flip 
+smooth 
+out vca
+in 110hz
+sino 
+mul vca
+tanh 
+mix 

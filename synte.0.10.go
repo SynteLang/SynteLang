@@ -109,7 +109,7 @@ const (
 	TAPE_LENGTH    = 1 //seconds
 	MAX_WAVS       = 12
 	EXPORTED_LIMIT = 12
-	NOISE_FREQ     = 0.0625 // 3kHz
+	NOISE_FREQ     = 0.0625 // 3kHz @ 48kHz Sample rate
 	FDOUT          = 1e-5
 	MIN_FADE       = 175e-3 // 175ms
 	MAX_FADE       = 120    // 120s
@@ -1363,7 +1363,6 @@ start:
 					continue
 				}
 				msg("%snext operation repeated%s %dx", italic, reset, do)
-				do++
 				To = do
 				continue
 			default:
@@ -2316,7 +2315,7 @@ func SoundEngine(file *os.File, bits int) {
 				case 33: // "sub"
 					r -= sigs[i][o.N]
 				case 34: // "setmix"
-					a := Abs(sigs[i][o.N]) + 1e-6
+					a := Abs(sigs[i][o.N])
 					d := a - peakfreq[i]
 					//peakfreq[i] += d * α * (a / peakfreq[i])
 					peakfreq[i] += d * α * (30*Abs(d)*a/peakfreq[i])

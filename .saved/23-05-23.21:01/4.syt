@@ -1,0 +1,8 @@
+from 3
++ c
+tape 750/2ms
+lpf 3khz
+/ 1.1
+out c
+/ 2
+out dac

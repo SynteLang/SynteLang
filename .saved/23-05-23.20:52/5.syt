@@ -1,0 +1,8 @@
+in r.test
+* 192/44.1
+* 0.1
+osc 
+wav test
+lpf 350hz
+mul 2
+out dac

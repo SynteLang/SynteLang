@@ -219,6 +219,8 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"ct":      ops{yes, 0}, // individual clip threshold
 	"rld":     ops{yes, 0},
 	"r":       ops{yes, 0}, // alias of rld
+	"rpl":     ops{yes, 0},
+	".rpl":    ops{yes, 0},
 	"s":       ops{yes, 0}, // alias of solo
 	"e":       ops{yes, 0}, // alias of erase
 	"apd":     ops{yes, 0},
@@ -1356,6 +1358,25 @@ start:
 					msg("%sclip threshold set to %.3g%s", italic, ct, reset)
 				}
 				continue
+			case "rpl", ".rpl":
+				n, rr := strconv.Atoi(opd)
+				if e(rr) {
+					msg("%soperand not an integer%s", italic, reset)
+					continue
+				}
+				if n < 0 || n >= len(transfer.Listing) {
+					reload = -1
+					continue
+				}
+				reload = n
+				msg("%swill replace listing %s%d%s on launch%s", italic, reset, n, italic, reset)
+				if op[:1] == "." && len(newListing) > 0 {
+					dispListing = append(dispListing, listing{{Op: "mix"}}...)
+					newListing = append(newListing, listing{{Op: "setmix", Opd: "^freq"}}...) // hacky
+					op, opd = "out", "dac"
+					break
+				}
+				continue
 			case "all":
 				if len(transfer.Listing) == 0 {
 					msg("all is meaningless in first listing")
@@ -1523,7 +1544,7 @@ start:
 // parseType() evaluates conversion of types
 func parseType(expr, op string) (n float64, b bool) {
 	switch op { // ignore for following commands
-	case "mute", ".mute", "del", ".del", "d", "solo", ".solo", "load", "save", "m", "rld", "r", "s", "ld", "ls", "[", "do", "apd": // this is a bit messy, we don't care what value is - commands handled in input loop
+	case "mute", ".mute", "del", ".del", "d", "solo", ".solo", "load", "save", "m", "rld", "r", "rpl", "s", "ld", "ls", "[", "do", "apd": // this is a bit messy, we don't care what value is - commands handled in input loop
 		return 0, true
 	default:
 		// process expression below

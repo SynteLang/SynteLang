@@ -1002,8 +1002,6 @@ start:
 				}
 				inputF.Close()
 				continue
-			case "in":
-				// nop
 			case "out", "out+", ".out":
 				_, in := out[opd]
 				ExpSig := not

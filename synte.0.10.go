@@ -2001,7 +2001,7 @@ func SoundEngine(file *os.File, bits int) {
 		nyfL, nyfR  float64                                    // nyquist filtering
 		nyfC        float64 = 1 / (1 + 1/(Tau*2e4/SampleRate)) // coefficient
 		L, R, sides float64
-		setmixDefault = 3200 / SampleRate
+		setmixDefault = 320 / SampleRate
 	)
 	no *= 77777777777 // force overflow
 	defer func() {    // fail gracefully

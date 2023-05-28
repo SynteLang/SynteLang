@@ -126,6 +126,7 @@ func loadUsage() map[string]int {
 	}
 	return u
 }
+
 type pair struct {
 	Key   string
 	Value int

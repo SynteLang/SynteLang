@@ -1988,13 +1988,13 @@ func SoundEngine(file *os.File, bits int) {
 		det float64 // limiter detection
 		lpf50, lpf510,
 		deemph float64 // de-emphasis
-		α        = 1 / (SampleRate/(2*Pi*6.3) + 1) // co-efficient for setmix
-		hroom       = (convFactor - 1.0) / convFactor // headroom for positive dither
-		c           float64                           // mix factor
-		pd          int
-		nyfL, nyfR  float64                                    // nyquist filtering
-		nyfC        float64 = 1 / (1 + 1/(Tau*2e4/SampleRate)) // coefficient
-		L, R, sides float64
+		α             = 1 / (SampleRate/(2*Pi*6.3) + 1) // co-efficient for setmix
+		hroom         = (convFactor - 1.0) / convFactor // headroom for positive dither
+		c             float64                           // mix factor
+		pd            int
+		nyfL, nyfR    float64                                    // nyquist filtering
+		nyfC          float64 = 1 / (1 + 1/(Tau*2e4/SampleRate)) // coefficient
+		L, R, sides   float64
 		setmixDefault = 320 / SampleRate
 	)
 	no *= 77777777777 // force overflow
@@ -2318,7 +2318,7 @@ func SoundEngine(file *os.File, bits int) {
 					a := Abs(sigs[i][o.N])
 					d := a - peakfreq[i]
 					//peakfreq[i] += d * α * (a / peakfreq[i])
-					peakfreq[i] += d * α * (30*Abs(d)*a/peakfreq[i])
+					peakfreq[i] += d * α * (30 * Abs(d) * a / peakfreq[i])
 					r *= Min(1, 75/(peakfreq[i]*SampleRate+20)) // ignoring density
 					//r *= Min(1, Sqrt(80/(peakfreq[i]*SampleRate+20)))
 				case 35: // "print"

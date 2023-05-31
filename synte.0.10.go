@@ -1179,6 +1179,7 @@ start:
 				for _, i := range mutes {
 					if display.Paused && i < len(transfer.Listing) { // exclude present listing
 						priorMutes[i] = 1 - priorMutes[i]
+						unsolo[i] = priorMutes[i]
 						display.Mute[i] = priorMutes[i] == 0 // convert binary to boolean
 					} else {
 						mute[i] = 1 - mute[i]

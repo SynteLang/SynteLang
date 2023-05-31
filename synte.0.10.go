@@ -645,7 +645,6 @@ start:
 				<-tokens
 			}
 			rpl = reload
-			ext = not
 			info <- fmt.Sprintf(s, i...)
 			<-carryOn
 		}
@@ -705,6 +704,10 @@ start:
 			op2, in := operators[op]
 			if !in {
 				clr("%soperator or function doesn't exist:%s '%s'", italic, reset, op)
+				if ext {
+					ext = not
+					continue start
+				}
 				continue
 			}
 			_, f := funcs[op]
@@ -724,12 +727,20 @@ start:
 				operands = strings.Split(o, ",")
 				if !f && len(operands) > 1 {
 					clr("only functions can have multiple operands")
+				if ext {
+					ext = not
+					continue start
+				}
 					continue
 				}
 				wav := wmap[opd] && op == "wav" // wavs can start with a number
 				if strings.ContainsAny(o[:1], "+-.0123456789") && !wav && !f {
 					if num.Ber, num.Is = parseType(o, op); !num.Is {
 						clr("")
+				if ext {
+					ext = not
+					continue start
+				}
 						continue input // parseType will report error
 					}
 				}
@@ -796,6 +807,10 @@ start:
 					m = 3
 				default:
 					clr("malformed function") // probably not needed
+					if ext {
+						ext = not
+						continue start
+					}
 					continue input
 				}
 				l := len(operands)
@@ -811,15 +826,27 @@ start:
 					switch {
 					case m == 1:
 						clr("%sthe function requires an operand%s", italic, reset)
+						if ext {
+							ext = not
+							continue start
+						}
 						continue
 					case m > 1:
 						clr("%sthe function requires %d operands%s", italic, m, reset)
+						if ext {
+							ext = not
+							continue start
+						}
 						continue
 					}
 				}
 				for i, opd := range operands { // opd shadowed
 					if operands[i] == "" {
 						clr("empty argument %d", i+1)
+						if ext {
+							ext = not
+							continue start
+						}
 						continue input
 					}
 					if strings.ContainsAny(opd[:1], "+-.0123456789") {
@@ -1015,12 +1042,24 @@ start:
 				switch {
 				case num.Is:
 					clr("%soutput to number not permitted%s", italic, reset)
+					if ext {
+						ext = not
+						continue start
+					}
 					continue
 				case in && opd[:1] != "^" && opd != "dac" && !ExpSig && op != "out+":
 					clr("%sduplicate output to signal, c'est interdit%s", italic, reset)
+					if ext {
+						ext = not
+						continue start
+					}
 					continue
 				case opd == "@":
 					clr("%scan't send to @, represents function operand%s", italic, reset)
+					if ext {
+						ext = not
+						continue start
+					}
 					continue
 				case opd == "dac" && len(newListing) == 0:
 					// drop silently
@@ -1161,6 +1200,10 @@ start:
 			case "wav":
 				if !wmap[opd] && opd != "@" {
 					clr("%sname isn't in wav list%s", italic, reset)
+					if ext {
+						ext = not
+						continue start
+					}
 					continue
 				}
 			case "mute", ".mute", "m", "m+":

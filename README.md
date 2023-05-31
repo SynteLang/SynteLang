@@ -62,7 +62,7 @@ It is not known at present what the performance will be on other systems. ◊ Th
 
 **Getting Started**
 
-To download the files use Git Clone on this repo or click on the green code link above this doc on the main page of the github repository (which you are probably looking at right now) and download as a zip file. As the software is under continuous development it is a good idea to update the code regularly.  
+To download the files use `git clone` on this repo or click on the green code link above this doc on the main page of the github repository (which you are probably looking at right now) and download as a zip file. As the software is under continuous development it is a good idea to update the code regularly.  
 You should end up with a directory (folder) containing the following files:  
 
 >	

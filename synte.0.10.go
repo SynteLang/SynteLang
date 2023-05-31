@@ -159,6 +159,8 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"noise":  ops{not, 15},
 	"push":   ops{not, 16},
 	"pop":    ops{not, 17},
+	"{":   ops{not, 16}, // alias of push
+	"}":    ops{not, 17}, // alias of pop
 	"tape":   ops{yes, 18},
 	"--":     ops{yes, 19},
 	"tap":    ops{yes, 20},
@@ -673,7 +675,7 @@ start:
 				pf("\n%s%d%s:", cyan, l, reset)
 				for i, o := range dispListing {
 					switch dispListing[i].Op {
-					case "in", "pop", "tap", "index", "[", "]", "from", "all":
+					case "in", "pop", "index", "[", "]", "from", "all":
 						pf("\t  %s%s %s%s\n", yellow, o.Op, o.Opd, reset)
 					default:
 						if _, f := funcs[dispListing[i].Op]; f {

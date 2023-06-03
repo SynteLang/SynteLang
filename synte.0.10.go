@@ -694,9 +694,7 @@ start:
 				pf("\t  ")
 			}
 			t := <-tokens
-			op = t.tk
-			reload = t.reload
-			ext = t.ext
+			op, reload, ext = t.tk, t.reload, t.ext
 			if (len(op) > 2 && byte(op[1]) == 91) || op == "_" || op == "" {
 				continue
 			}
@@ -715,9 +713,7 @@ start:
 			var operands = []string{}
 			if op2.Opd { // parse second token
 				t := <-tokens
-				opd = t.tk
-				reload = t.reload
-				ext = t.ext
+				opd, reload, ext = t.tk, t.reload, t.ext
 				opd = strings.TrimSuffix(opd, ",") // to allow comma separation of tokens
 				if opd == "_" || opd == "" {
 					continue

@@ -876,7 +876,7 @@ start:
 					if o.Opd == "dac" {
 						break input
 					}
-				case ".out", ".>sync", ".level", "//":
+				case ".out", ".>sync", ".level", ".pan", "//":
 					break input
 				}
 				continue
@@ -1926,12 +1926,14 @@ func infoDisplay() {
 			time.Sleep(2 * time.Second)
 		}
 		time.Sleep(20 * time.Millisecond) // coarse loop timing
-		n++
-		if n > 10 { // clip timeout
+		if display.Clip {
+			n++
+		}
+		if n > 20 { // clip timeout
 			display.Clip = not
 			n = 0
 		}
-		if display.Sync == yes {
+		if display.Sync {
 			s++
 		}
 		if s > 10 { // sync timeout
@@ -2538,6 +2540,7 @@ func SoundEngine(file *os.File, bits int) {
 		}
 		c += 16 / (c*c + 4)
 		dac /= c
+		dac *= 1.25
 		sides /= c
 		c = 0
 		hpf = (hpf + dac - x) * 0.9994 // hpf ≈ 4.6Hz
@@ -2555,7 +2558,7 @@ func SoundEngine(file *os.File, bits int) {
 				lpf510 = (lpf510*152 + lpf50) / 153
 				deemph = lpf510 / 1.5
 			}
-			det = Abs(32*hpf2560 + 5.657*hpf160 + dac)
+			det = Abs(32*hpf2560 + 5.657*hpf160 + dac) * 0.8
 			if det > l {
 				l = det // MC
 				h = release
@@ -2578,7 +2581,7 @@ func SoundEngine(file *os.File, bits int) {
 		no.ise()
 		dither = float64(no) / MaxUint64
 		no.ise()
-		dither += float64(no)/MaxUint64 - 1
+		dither += float64(no)/MaxUint64
 		dac *= hroom
 		dac += dither / convFactor // dither dac value ±1 from xorshift lfsr
 		if dac > 1 {               // hard clip

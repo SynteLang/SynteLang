@@ -2033,7 +2033,7 @@ func SoundEngine(file *os.File, bits int) {
 		deemph float64 // de-emphasis
 		α             = 1 / (SampleRate/(2*Pi*6.3) + 1) // co-efficient for setmix
 		hroom         = (convFactor - 1.0) / convFactor // headroom for positive dither
-		c             float64                           // mix factor
+		c, mixF       float64 = 4,4                          // mix factor
 		pd            int
 		nyfL, nyfR    float64                                    // nyquist filtering
 		nyfC          float64 = 1 / (1 + 1/(Tau*2e4/SampleRate)) // coefficient
@@ -2537,14 +2537,14 @@ func SoundEngine(file *os.File, bits int) {
 			}
 			dac += mm
 		}
-		c += 16 / (c*c + 4)
-		dac /= c
-		dac *= 1.25
-		sides /= c
-		c = 0
 		hpf = (hpf + dac - x) * 0.9994 // hpf ≈ 4.6Hz
 		x = dac
 		dac = hpf
+		c += 16 / (c*c + 4.77)
+		mixF = mixF + (Abs(c) - mixF) * 0.00026 // ~2Hz @ 48kHz // * 4.36e-5 // 3s @ 48kHz
+		dac /= mixF
+		sides /= c
+		c = 0
 		if protected { // limiter
 			// apply premphasis to detection
 			hpf2560 = (hpf2560 + dac - x2560) * 0.749

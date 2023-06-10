@@ -59,6 +59,7 @@ func main() {
 	unprotected := ""
 	paused := ""
 	sync := " "
+	GRhold := 0
 
 	file := "infodisplay.json"
 
@@ -150,9 +151,13 @@ func main() {
 				timeout = 2
 				clip = ""
 			}
-			gr := ""
 			if display.GR {
+				GRhold = 10
+			}
+			gr := ""
+			if GRhold > 0 {
 				gr = yellow + "GR" + reset
+				GRhold--
 			}
 			db := math.Log10(display.Vu)
 			if math.IsInf(db, -1) {

@@ -1,0 +1,10 @@
+in tempo
+/ 2
+posc 0
+lt 0.25
+* 0.5
++ 1
+lpf 50hz
+mul 330hz
+sino 
+mix 

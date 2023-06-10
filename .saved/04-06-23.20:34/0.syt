@@ -1,0 +1,10 @@
+>sync 
+in 2hz
+euclid 3.49,8,0
+dirac 
+down 4hz
+flip 
+exp 7
+noise 
+mul -6db
+mix 

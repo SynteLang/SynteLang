@@ -1,0 +1,9 @@
+>sync 
+in 2hz
+posc 0
+trn 4
+mul 110hz
+sino 
+tanh 
+lpf 200hz
+mix 

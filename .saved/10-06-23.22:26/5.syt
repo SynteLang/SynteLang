@@ -1,0 +1,9 @@
+in tempo
+/ 8
+posc 0
+lt 0.5
+mul 0.5
++ 1
+mul 330*1.5hz
+smooth 
+.out pitch

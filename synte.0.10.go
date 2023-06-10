@@ -2028,8 +2028,7 @@ func SoundEngine(file *os.File, bits int) {
 		mx, my float64 = 1, 1 // mouse smooth intermediates
 		hpf, x float64        // DC-blocking high pass filter
 		hpf2560, x2560,
-		hpf160, x160,
-		det float64 // limiter detection
+		hpf160, x160 float64 // limiter detection
 		lpf50, lpf510,
 		deemph float64 // de-emphasis
 		α             = 1 / (SampleRate/(2*Pi*6.3) + 1) // co-efficient for setmix
@@ -2558,10 +2557,11 @@ func SoundEngine(file *os.File, bits int) {
 				lpf510 = (lpf510*152 + lpf50) / 153
 				deemph = lpf510 / 1.5
 			}
-			det = Abs(32*hpf2560 + 5.657*hpf160 + dac) * 0.8
+			det := Abs(32*hpf2560 + 5.657*hpf160 + dac) * 0.8
 			if det > l {
 				l = det // MC
 				h = release
+				display.GR = yes
 			}
 			dac /= l
 			sides /= l

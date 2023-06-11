@@ -197,7 +197,8 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"ffltr":  ops{yes, 47},
 	"ffzy":   ops{not, 48},
 	"ffaze":  ops{yes, 49},
-	"reu":    ops{not, 46},
+	"reu":    ops{not, 50},
+	"/sync":  ops{yes, 51},
 
 	// specials
 	"]":       ops{not, 0},
@@ -464,10 +465,11 @@ func main() {
 		"butt3",
 		"butt2",
 		"grid",
+		"sync",
 	}
 	// add 12 reserved signals for inter-list signals
 	lenReserved := len(reserved) // use this as starting point for exported signals
-	daisyChains = []int{2, 3, 9} // pitch,tempo,grid
+	daisyChains = []int{2, 3, 9, 10} // pitch,tempo,grid
 	for i := 0; i < EXPORTED_LIMIT; i++ {
 		reserved = append(reserved, sf("***%d", i+lenReserved)) // placeholder
 	}
@@ -629,7 +631,7 @@ start:
 		out := map[string]struct{}{}
 		for _, v := range reserved {
 			switch v {
-			case "tempo", "pitch", "grid":
+			case "tempo", "pitch", "grid", "sync":
 				continue
 			}
 			out[v] = struct{}{}
@@ -764,7 +766,7 @@ start:
 						continue
 					}
 					switch o.Opd {
-					case "dac", "tempo", "pitch", "grid": // should be all reserved?
+					case "dac", "tempo", "pitch", "grid", "sync": // should be all reserved?
 						continue
 					case "@":
 						M.at = yes
@@ -1586,7 +1588,7 @@ func parseType(expr, op string) (n float64, b bool) {
 			msg("gabber territory")
 		}
 		if n > 3000 {
-			msg("%fbpm? You're 'aving a larf mate", n)
+			msg("%.fbpm? You're 'aving a larf mate", n)
 			return 0, false
 		}
 		if n < 10 {
@@ -2109,12 +2111,13 @@ func SoundEngine(file *os.File, bits int) {
 	}
 	m := make([]float64, len(transfer.Listing), len(transfer.Listing)+29)  // filter intermediate for mute
 	lv := make([]float64, len(transfer.Listing), len(transfer.Listing)+30) // filter intermediate for level
-	fftArray := make([][N]float64, len(transfer.Listing))
-	ifftArray := make([][N]float64, len(transfer.Listing))
-	ifft2 := make([][N]float64, len(transfer.Listing))
-	z := make([][N]complex128, len(transfer.Listing))
-	zf := make([][N]complex128, len(transfer.Listing))
-	ffrz := make([]bool, len(transfer.Listing))
+	fftArray := make([][N]float64, len(transfer.Listing), len(transfer.Listing)+32)
+	ifftArray := make([][N]float64, len(transfer.Listing), len(transfer.Listing)+32)
+	ifft2 := make([][N]float64, len(transfer.Listing), len(transfer.Listing)+32)
+	z := make([][N]complex128, len(transfer.Listing), len(transfer.Listing)+33)
+	zf := make([][N]complex128, len(transfer.Listing), len(transfer.Listing)+33)
+	ffrz := make([]bool, len(transfer.Listing), len(transfer.Listing)+33)
+	launch := make([]bool, len(transfer.Listing), len(transfer.Listing)+34)
 
 	lastTime = time.Now()
 	for {
@@ -2149,9 +2152,11 @@ func SoundEngine(file *os.File, bits int) {
 				ifft2 = append(ifft2, [N]float64{})
 				z = append(z, [N]complex128{})
 				zf = append(zf, [N]complex128{})
+				launch = append(launch, not)
 			} else if reload > -1 {
 				m[reload] = 0 // m ramps to mute value on reload
 				syncSt8[reload] = 0
+				launch[reload] = not
 			}
 			if rootSync() {
 				lastTime = time.Now()
@@ -2506,6 +2511,11 @@ func SoundEngine(file *os.File, bits int) {
 						for i, j := len(z[ii])/2, len(z[ii])-1; i < j; i, j = i+1, j-1 {
 							z[ii][i], z[ii][j] = z[ii][j], z[ii][i]
 						}
+					}
+				case 51: // "/sync"
+					if !launch[i] {
+						r = sigs[i][o.N]
+						launch[i] = yes
 					}
 				default:
 					// nop, r = r

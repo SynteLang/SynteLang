@@ -846,6 +846,9 @@ Sync pulses transmitted will be indicicated by a yellow dot at the top of the in
 
 The synchronisation is somewhat rudementary, a world away from DAW/midi sequencers, yet it has been designed to be raw and flexible in keeping with the Syntə philosophy. It also allows for a modicum of 'musicianship' as it is possible to submit listings in time with one another by hand (without sync) if you are that way inclined. Of course this is live coding which only intersects with music in general :)
 
+UPDATE:
+A new synchronisation paradigm has been introduced for smoother DAW-like capabilities. There is a new built-in signal `sync` that can be used to send a varying waveform such as a ramp from `osc`. This can be recieved using `/psc` or `/bsc` which are similar to `posc` and contain a new special `/sync` operator which can recieve `sync` internally. `/bsc` takes two arguments - the first is the number of cycles in a given `sync` cycle, and the second is the phase offset. The `b` in `/bsc` stands for bars. Synchronise listings using for example: `in 135bpm, / 8, out Bars, osc, .out sync` and then something like `in Bars, /bsc 8,0, ...` - where 8 is the number of beats in 2 bars of 4/4 time. ◊
+
 ## Setting levels
 
 The `level` operator is used to adjust the audio level of a running listing, like so: `in 0.5 level 2` which would set listing two to half the available level, whcih is -6dB. This level-setting listing may be deleted straightaway and the level will persist once set. Although intended for basic mixing of listings, you may modulate the level at rates up to 1200Hz. This is an arbitary limit set to reduce clicks produced by immediate large changes in volume, while still allowing frequency modulation. You need to use `.level` to end a necklace.

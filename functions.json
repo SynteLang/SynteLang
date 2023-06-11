@@ -59,6 +59,52 @@
 			"Opd": "tempo"
 		}
 	],
+	"/bsc": [
+		{
+			"Op": "mul",
+			"Opd": "@"
+		},
+		{
+			"Op": "push",
+			"Opd": ""
+		},
+		{
+			"Op": "in",
+			"Opd": "sync"
+		},
+		{
+			"Op": "mul",
+			"Opd": "@"
+		},
+		{
+			"Op": "+",
+			"Opd": "@1"
+		},
+		{
+			"Op": "out",
+			"Opd": "s"
+		},
+		{
+			"Op": "pop",
+			"Opd": ""
+		},
+		{
+			"Op": "+",
+			"Opd": "a"
+		},
+		{
+			"Op": "/sync",
+			"Opd": "s"
+		},
+		{
+			"Op": "mod",
+			"Opd": "1"
+		},
+		{
+			"Op": "out",
+			"Opd": "a"
+		}
+	],
 	"/psc": [
 		{
 			"Op": "out",

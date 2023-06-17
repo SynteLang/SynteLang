@@ -2009,6 +2009,7 @@ func SoundEngine(file *os.File, bits int) {
 		overload   = "Sound Engine overloaded"
 		recovering = "Sound Engine recovering"
 		rateLimit  = "At sample rate limit"
+		invMaxUint = 1.0 / MaxUint64
 	)
 
 	var (
@@ -2174,15 +2175,15 @@ func SoundEngine(file *os.File, bits int) {
 		}
 
 		mo := mouse
-		mx = (mx*382 + mo.X) / 383 // lpf @ ~20Hz
-		my = (my*764 + mo.Y) / 765
+		mx = mx + (mo.X - mx) * 0.0026 // lpf @ ~20Hz
+		my = my + (mo.Y - my) * 0.0013
 
 		for i, list := range listings {
 			for _, ii := range daisyChains {
 				sigs[i][ii] = sigs[(i+len(sigs)-1)%len(sigs)][ii]
 			}
-			m[i] = (m[i]*764 + mute[i]) / 765 // anti-click filter @ ~10hz
-			lv[i] = (lv[i]*7 + level[i]) / 8  // @ 1091hz
+			m[i] = m[i] + (mute[i] - m[i]) * 0.0013 // anti-click filter @ ~10hz
+			lv[i] = lv[i] + (level[i] - lv[i]) * 0.125  // @ 1091hz
 			// skip muted/deleted listing
 			if (muteSkip && mute[i] == 0 && m[i] < 1e-6) || list[0].Opn == 31 {
 				continue
@@ -2251,7 +2252,7 @@ func SoundEngine(file *os.File, bits int) {
 					}
 				case 15: // "noise"
 					no.ise() // roll a fresh one
-					r *= (2*(float64(no)/MaxUint) - 1)
+					r *= (2*(float64(no)*invMaxUint) - 1)
 					//if r > 0.9999 { panic("test") } // for testing
 				case 16: // "push"
 					stacks[i] = append(stacks[i], r)
@@ -2283,7 +2284,7 @@ func SoundEngine(file *os.File, bits int) {
 					c3 := od1*-0.37917091811631082 + od2*0.11952965967158
 					c4 := ev1*0.04252164479749607 + ev2*-0.04289144034653719
 					r = (((c4*z+c3)*z+c2)*z+c1)*z + c0
-					tf[i] = (tf[i] + r) / 2 // roll off the top end @ 7640Hz
+					tf[i] = (tf[i] + r) * 0.5 // roll off the top end @ 7640Hz
 					r = tf[i]
 				case 19:
 					r = sigs[i][o.N] - r
@@ -2400,7 +2401,7 @@ func SoundEngine(file *os.File, bits int) {
 						nn := n % N
 						var zz [N]complex128
 						for n := range fftArray[i] { // n is shadowed
-							ww := float64(n) / float64(N-1)
+							ww := float64(n) * N1
 							w := Pow(1-ww*ww, 1.25) // modified Welch
 							zz[n] = complex(w*fftArray[i][(n+nn)%N], 0)
 						}
@@ -2410,16 +2411,16 @@ func SoundEngine(file *os.File, bits int) {
 					if n%N == 0 && n >= N {
 						zz := fft(z[i], -1)
 						for n, z := range zz { // n, z are shadowed
-							w := (1 - Cos(Tau*float64(n)/float64(N-1))) / 2 // Hann
-							ifftArray[i][n] = w * real(z) / N2
+							w := (1 - Cos(Tau*float64(n)*N1)) * 0.5 // Hann
+							ifftArray[i][n] = w * real(z) * invN2
 
 						}
 					}
 					if n%N == N2+1 && n >= N {
 						zz := fft(z[i], -1)
 						for n, z := range zz { // n, z are shadowed
-							w := (1 - Cos(Tau*float64(n)/float64(N-1))) / 2 // Hann
-							ifft2[i][n] = w * real(z) / N2
+							w := (1 - Cos(Tau*float64(n)*N1)) * 0.5 // Hann
+							ifft2[i][n] = w * real(z) * invN2
 
 						}
 					}
@@ -2539,8 +2540,8 @@ func SoundEngine(file *os.File, bits int) {
 			}
 			c += m[i] // add mute to mix factor
 			sigs[i][0] *= lv[i]
-			sides += pan[i] * (sigs[i][0] / 2) * m[i] * lv[i]
-			sigs[i][0] *= 1 - Abs(pan[i]/2)
+			sides += pan[i] * (sigs[i][0] * 0.5) * m[i] * lv[i]
+			sigs[i][0] *= 1 - Abs(pan[i]*0.5)
 			mm := sigs[i][0] * m[i]
 			if mm > ct && protected { // soft clip
 				mm = ct + tanh(mm-ct)
@@ -2566,10 +2567,10 @@ func SoundEngine(file *os.File, bits int) {
 			hpf160 = (hpf160 + dac - x160) * 0.97948
 			x160 = dac
 			{
-				d := 4 * dac / (1 + Abs(dac*4))
-				lpf50 = (lpf50*152 + d) / 153
-				lpf510 = (lpf510*152 + lpf50) / 153
-				deemph = lpf510 / 1.5
+				d := 4 * dac / (1 + Abs(dac*4)) // tanh approximation
+				lpf50 = lpf50 + (d-lpf50) * 0.006536
+				lpf510 = lpf510 + (lpf50-lpf510) * 0.006536
+				deemph = lpf510 * 0.667
 			}
 			det := Abs(32*hpf2560 + 5.657*hpf160 + dac) * 0.8
 			if det > l {
@@ -2593,9 +2594,9 @@ func SoundEngine(file *os.File, bits int) {
 			}
 		}
 		no.ise()
-		dither = float64(no) / MaxUint64
+		dither = float64(no) * invMaxUint 
 		no.ise()
-		dither += float64(no)/MaxUint64
+		dither += float64(no)* invMaxUint
 		dac *= hroom
 		dac += dither / convFactor // dither dac value ±1 from xorshift lfsr
 		if dac > 1 {               // hard clip
@@ -2725,6 +2726,8 @@ func (n *noise) ise() {
 const (
 	N  = 2 << 12
 	N2 = N >> 1 // fft window size
+	invN2 = 1.0 / N2
+	N1 = 1.0 / (N-1)
 )
 
 func fft(y [N]complex128, s float64) [N]complex128 {

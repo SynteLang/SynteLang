@@ -1981,7 +1981,7 @@ func rootSync() bool {
 // Using floats is probably somewhat profligate, later on this may be converted to int type which would provide ample dynamic range
 func SoundEngine(file *os.File, bits int) {
 	defer close(stop)
-	w := bufio.NewWriterSize(file, 1024)
+	w := bufio.NewWriterSize(file, 256)
 	defer w.Flush()
 	//w := file
 	output := func(w io.Writer, f float64) {
@@ -2005,7 +2005,7 @@ func SoundEngine(file *os.File, bits int) {
 
 	const (
 		Tau        = 2 * Pi
-		RATE       = 2 << 11
+		RATE       = 2 << 12
 		overload   = "Sound Engine overloaded"
 		recovering = "Sound Engine recovering"
 		rateLimit  = "At sample rate limit"
@@ -2069,10 +2069,14 @@ func SoundEngine(file *os.File, bits int) {
 			msg("previous listing deleted: %d", reload)
 		}
 		fade := Pow(FDOUT, 1/(MIN_FADE*SampleRate*float64(DS)))
-		for i := 4800; i >= 0; i-- {
+		//for i := 48000; i >= 0; i-- {
+		for {
 			dac0 *= fade
 			output(w, dac0) // left
 			output(w, dac0) // right
+			if Abs(dac0) < FDOUT {
+				break
+			}
 		}
 	}()
 	stack := make([]float64, 0, 4)

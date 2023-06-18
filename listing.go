@@ -92,7 +92,12 @@ func main() {
 					if verbose {
 						fmt.Printf(" %s%d:%s ", italic, i, reset)
 					}
-					fmt.Printf("%s%s%s ", m, v.Op, reset)
+					mm := m
+					switch v.Op {
+					case "noise", "sino", "saw", "sqr", "pulse":
+						mm = yellow
+					}
+					fmt.Printf("%s%s%s ", mm, v.Op, reset)
 					if opd := v.Opd; opd != "" {
 						fmt.Printf("%s%s%s ", c, opd, reset)
 					}

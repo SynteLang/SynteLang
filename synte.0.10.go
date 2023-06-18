@@ -885,150 +885,6 @@ start:
 			}
 
 			switch op {
-			case ":": //mode setting
-				if opd == "p" { // toggle pause/play
-					switch {
-					case display.Paused:
-						opd = "play"
-					default:
-						opd = "pause"
-					}
-				}
-				switch opd {
-				case "exit", "q":
-					p("\nexiting...")
-					if display.Paused {
-						<-pause
-					}
-					exit = yes
-					if started {
-						<-stop
-					}
-					save([]listing{listing{{Op: advisory}}}, "displaylisting.json")
-					p("Stopped")
-					close(infoff)
-					if funcsave && !save(funcs, "functions.json") {
-						msg("functions not saved!")
-					}
-					time.Sleep(30 * time.Millisecond) // wait for infoDisplay to finish
-					break start
-				case "erase", "e":
-					continue start
-				case "foff":
-					funcsave = not
-					display.Mode = "off"
-					continue
-				case "fon":
-					funcsave = yes
-					display.Mode = "on"
-					if !save(funcs, "functions.json") {
-						msg("functions not saved!")
-					}
-					msg("%sfunctions saved%s", italic, reset)
-					continue
-				case "pause":
-					if started && !display.Paused {
-						for i := range mute { // save, and mute all
-							priorMutes[i] = mute[i]
-							mute[i] = 0
-						}
-						time.Sleep(150 * time.Millisecond)
-						pause <- yes
-						display.Paused = yes
-					} else if !started {
-						msg("%snot started%s", italic, reset)
-					}
-					continue
-				case "play":
-					if !display.Paused {
-						continue
-					}
-					for i := range mute { // restore mutes
-						mute[i] = priorMutes[i]
-					}
-					<-pause
-					display.Paused = not
-					continue
-				case "unprotected":
-					msg("unavailable")
-					//protected = !protected
-					continue
-				case "clear", "c":
-					msg("clear")
-					continue
-				case "verbose":
-					switch code {
-					case &dispListings:
-						code = &transfer.Listing
-					case &transfer.Listing:
-						code = &dispListings
-					}
-					display.Verbose = !display.Verbose
-					if !save(*code, "displaylisting.json") {
-						msg("%slisting display not updated, check %s'displaylisting.json'%s exists%s",
-							italic, reset, italic, reset)
-					}
-					continue
-				case "stats":
-					if !started {
-						continue
-					}
-					stats := new(debug.GCStats)
-					debug.ReadGCStats(stats)
-					msg("___GC statistics:___")
-					msg("No.: %v", stats.NumGC)
-					msg("Tot.: %v", stats.PauseTotal)
-					msg("Avg.: %v", stats.PauseTotal/time.Duration(stats.NumGC))
-					continue
-				case "mc": // mouse curve, exp or lin
-					mc = !mc
-					continue
-				case "muff": // Mute Off
-					muteSkip = !muteSkip
-					s := "no"
-					if muteSkip {
-						s = "yes"
-					}
-					msg("%smute skip:%s %v", italic, reset, s)
-					continue
-				case "ds":
-					ds = yes // not intended to be invoked while paused
-					continue
-				case "rs": // root sync
-					rs = yes
-					msg("%snext launch will sync to root instance%s", italic, reset)
-					continue
-				default:
-					msg("%sunrecognised mode%s", italic, reset)
-					continue
-				}
-			case "load", "ld", "rld", "r", "apd":
-				switch op {
-				case "rld", "r":
-					n, rr := strconv.Atoi(opd)
-					if e(rr) {
-						msg("%soperand not valid:%s %s", italic, reset, opd)
-						continue
-					}
-					reload = n
-					opd = ".temp/" + opd
-				case "apd":
-					reload = -1
-					opd = ".temp/" + opd
-				}
-				inputF, rr := os.Open(opd + ".syt")
-				if e(rr) {
-					msg("%v", rr)
-					reload = -1
-					continue
-				}
-				s := bufio.NewScanner(inputF)
-				s.Split(bufio.ScanWords)
-				for s.Scan() {
-					tokens <- token{s.Text(), reload, yes}
-				}
-				inputF.Close()
-				continue
 			case "out", "out+", ".out":
 				_, in := out[opd]
 				ExpSig := not
@@ -1297,6 +1153,33 @@ start:
 					break
 				}
 				continue
+			case "load", "ld", "rld", "r", "apd":
+				switch op {
+				case "rld", "r":
+					n, rr := strconv.Atoi(opd)
+					if e(rr) {
+						msg("%soperand not valid:%s %s", italic, reset, opd)
+						continue
+					}
+					reload = n
+					opd = ".temp/" + opd
+				case "apd":
+					reload = -1
+					opd = ".temp/" + opd
+				}
+				inputF, rr := os.Open(opd + ".syt")
+				if e(rr) {
+					msg("%v", rr)
+					reload = -1
+					continue
+				}
+				s := bufio.NewScanner(inputF)
+				s.Split(bufio.ScanWords)
+				for s.Scan() {
+					tokens <- token{s.Text(), reload, yes}
+				}
+				inputF.Close()
+				continue
 			case "release":
 				if opd == "time" {
 					msg("%slimiter release is:%s %.4gms", italic, reset,
@@ -1409,8 +1292,121 @@ start:
 				msg("%snext operation repeated%s %dx", italic, reset, do)
 				To = do
 				continue
-			default:
-				// nop
+			case ":":
+				if opd == "p" { // toggle pause/play
+					switch {
+					case display.Paused:
+						opd = "play"
+					default:
+						opd = "pause"
+					}
+				}
+				switch opd {
+				case "exit", "q":
+					p("\nexiting...")
+					if display.Paused {
+						<-pause
+					}
+					exit = yes
+					if started {
+						<-stop
+					}
+					save([]listing{listing{{Op: advisory}}}, "displaylisting.json")
+					p("Stopped")
+					close(infoff)
+					if funcsave && !save(funcs, "functions.json") {
+						msg("functions not saved!")
+					}
+					time.Sleep(30 * time.Millisecond) // wait for infoDisplay to finish
+					break start
+				case "erase", "e":
+					continue start
+				case "foff":
+					funcsave = not
+					display.Mode = "off"
+				case "fon":
+					funcsave = yes
+					display.Mode = "on"
+					if !save(funcs, "functions.json") {
+						msg("functions not saved!")
+					}
+					msg("%sfunctions saved%s", italic, reset)
+				case "pause":
+					if started && !display.Paused {
+						for i := range mute { // save, and mute all
+							priorMutes[i] = mute[i]
+							mute[i] = 0
+						}
+						time.Sleep(150 * time.Millisecond)
+						pause <- yes
+						display.Paused = yes
+					} else if !started {
+						msg("%snot started%s", italic, reset)
+					}
+				case "play":
+					if !display.Paused {
+						continue
+					}
+					for i := range mute { // restore mutes
+						mute[i] = priorMutes[i]
+					}
+					<-pause
+					display.Paused = not
+				case "unprotected":
+					msg("unavailable")
+					//protected = !protected
+				case "clear", "c":
+					msg("clear")
+				case "verbose":
+					switch code {
+					case &dispListings:
+						code = &transfer.Listing
+					case &transfer.Listing:
+						code = &dispListings
+					}
+					display.Verbose = !display.Verbose
+					if !save(*code, "displaylisting.json") {
+						msg("%slisting display not updated, check %s'displaylisting.json'%s exists%s",
+							italic, reset, italic, reset)
+					}
+				case "stats":
+					if !started {
+						continue
+					}
+					stats := new(debug.GCStats)
+					debug.ReadGCStats(stats)
+					msg("___GC statistics:___")
+					msg("No.: %v", stats.NumGC)
+					msg("Tot.: %v", stats.PauseTotal)
+					msg("Avg.: %v", stats.PauseTotal/time.Duration(stats.NumGC))
+				case "mstat":
+					if !started {
+						continue
+					}
+					stats := new(runtime.MemStats)
+					runtime.ReadMemStats(stats)
+					msg("___Mem Stats:___")
+					msg("Alloc: %v", stats.Alloc)
+					msg("Sys: %v", stats.Sys)
+					msg("Live: %v", stats.Mallocs - stats.Frees)
+				case "mc": // mouse curve, exp or lin
+					mc = !mc
+				case "muff": // Mute Off
+					muteSkip = !muteSkip
+					s := "no"
+					if muteSkip {
+						s = "yes"
+					}
+					msg("%smute skip:%s %v", italic, reset, s)
+				case "ds":
+					ds = yes // not intended to be invoked while paused
+				case "rs": // root sync
+					rs = yes
+					msg("%snext launch will sync to root instance%s", italic, reset)
+				default:
+					msg("%sunrecognised mode%s", italic, reset)
+				}
+				continue
 			}
 			// end of switch
 
@@ -1946,9 +1942,6 @@ func infoDisplay() {
 }
 
 func rootSync() bool {
-	if !rs {
-		return false
-	}
 	f := "../infodisplay.json"
 	d := disp{}
 	s := not
@@ -1985,18 +1978,21 @@ func SoundEngine(file *os.File, bits int) {
 	defer w.Flush()
 	//w := file
 	output := func(w io.Writer, f float64) {
-		binary.Write(w, BYTE_ORDER, int16(f))
+		//binary.Write(w, BYTE_ORDER, int16(f))
+		w.Write([]byte{byte(uint32(f)), byte(uint32(f)>>8)})
 	}
 	switch bits {
 	case 8:
 		output = func(w io.Writer, f float64) {
 			binary.Write(w, BYTE_ORDER, int8(f))
+			//w.Write([]byte{byte(f)})
 		}
 	case 16:
 		// already assigned
 	case 32:
 		output = func(w io.Writer, f float64) {
-			binary.Write(w, BYTE_ORDER, int32(f))
+			//binary.Write(w, BYTE_ORDER, int32(f))
+			w.Write([]byte{byte(uint32(f)), byte(uint32(f)>>8), byte(uint32(f)>>16), byte(uint32(f)>>24)})
 		}
 	default:
 		msg("unable to write to soundcard!")
@@ -2163,7 +2159,7 @@ func SoundEngine(file *os.File, bits int) {
 				syncSt8[reload] = 0
 				launch[reload] = not
 			}
-			if rootSync() {
+			if rs && rootSync() {
 				lastTime = time.Now()
 			}
 		default:

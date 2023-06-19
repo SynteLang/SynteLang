@@ -1,0 +1,24 @@
+>sync 
+in 10s
+mul Phi
+osc
+tri
+- 0.5
+clip 0
+mul 6
++ 5
+out m
+in tempo
+/ 4
+posc 0
+s/h grid
+mul m
+mod 1
+s/h grid
+mul m
+mod 1
+8bit 5
+8bit 12
+base 2
+/ 1.5
+.out pitch

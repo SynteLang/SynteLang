@@ -1,0 +1,21 @@
+in tempo
+posc 0
+flip 
+exp 3
+smooth 
+out vca
+mul pitch
+* 3
+out f
+in pitch
+saw 
+out m
+in pitch
+* 1.007
+saw 
++ m
+lpf 2khz
+lpf f
+lpf f
+mul vca
+mix 

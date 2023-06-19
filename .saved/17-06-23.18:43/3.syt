@@ -1,0 +1,10 @@
+>sync
+in tempo
+/ 5
+step 5
+mod mousex
+flip 
+8bit 12
+base 2
+mul 220hz
+.out pitch

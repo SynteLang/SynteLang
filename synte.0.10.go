@@ -66,6 +66,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
+	"runtime/pprof"
 	"sort"
 	"strconv"
 	"strings"
@@ -346,6 +347,20 @@ you exceed these limits:
 `
 
 func main() {
+	prof := not
+	if prof {
+		f, rr := os.Create("cpu.prof")
+		if e(rr) {
+			msg("no cpu profile: %v", rr)
+			return
+		}
+		defer f.Close()
+		if rr := pprof.StartCPUProfile(f); e(rr) {
+			msg("profiling not started: %v", rr)
+			return
+		}
+		defer pprof.StopCPUProfile()
+	}
 	save([]listing{listing{{Op: advisory}}}, "displaylisting.json")
 	// open audio output (everything is a file...)
 	file := "/dev/dsp"
@@ -2208,7 +2223,7 @@ func SoundEngine(file *os.File, bits int) {
 					//r = Sin(Tau * r)
 					r = sine(r)
 				case 6: // "mod"
-					r = Mod(r, sigs[i][o.N])
+					r = mod(r, sigs[i][o.N])
 				case 7: // "gt"
 					if r >= sigs[i][o.N] {
 						r = 1
@@ -2233,9 +2248,14 @@ func SoundEngine(file *os.File, bits int) {
 					}
 					r = Pow(r, sigs[i][o.N])
 				case 13: // "base"
-					r = Pow(sigs[i][o.N], r)
-					if IsInf(r, 0) { // infinity to '93
-						r = Nextafter(r, 0)
+					sg := sigs[i][o.N]
+					switch sg {
+					case E:
+						r = Exp(r)
+					case 2:
+						r = Exp2(r)
+					default:
+						r = Pow(sg, r)
 					}
 				case 14: // "clip"
 					switch {
@@ -2244,6 +2264,7 @@ func SoundEngine(file *os.File, bits int) {
 					case sigs[i][o.N] > 0:
 						r = Max(-sigs[i][o.N], Min(sigs[i][o.N], r))
 					case sigs[i][o.N] < 0:
+						//r = Min(-sigs[i][o.N], Max(sigs[i][o.N], r))
 						r = Min(-sigs[i][o.N], Max(sigs[i][o.N], r))
 					}
 				case 15: // "noise"
@@ -2263,12 +2284,12 @@ func SoundEngine(file *os.File, bits int) {
 					tl := SampleRate * TAPE_LENGTH
 					t := Abs(Min(1/sigs[i][o.N], tl))
 					xa := (n + TLlen - int(t)) % TLlen
-					x := Mod(float64(n+TLlen)-(t), tl)
+					x := mod(float64(n+TLlen)-(t), tl)
 					ta0 := tapes[i][(n+TLlen-int(t)-1)%TLlen]
 					ta := tapes[i][xa] // play heads
 					tb := tapes[i][(n+TLlen-int(t)+1)%TLlen]
 					tb1 := tapes[i][(n+TLlen-int(t)+2)%TLlen]
-					xx := Mod(x-float64(xa), tl-1) // to avoid end of loop clicks
+					xx := mod(x-float64(xa), tl-1) // to avoid end of loop clicks
 
 					z := xx - 0.5
 					ev1, od1 := tb+ta, tb-ta
@@ -2288,12 +2309,12 @@ func SoundEngine(file *os.File, bits int) {
 					tl := SampleRate * TAPE_LENGTH
 					t := Abs(Min(1/sigs[i][o.N], tl))
 					xa := (n + TLlen - int(t)) % TLlen
-					x := Mod(float64(n+TLlen)-(t), tl)
+					x := mod(float64(n+TLlen)-(t), tl)
 					ta0 := tapes[i][(n+TLlen-int(t)-1)%TLlen]
 					ta := tapes[i][xa] // play heads
 					tb := tapes[i][(n+TLlen-int(t)+1)%TLlen]
 					tb1 := tapes[i][(n+TLlen-int(t)+2)%TLlen]
-					z := Mod(x-float64(xa), tl-1) - 0.5 // to avoid end of loop clicks
+					z := mod(x-float64(xa), tl-1) - 0.5 // to avoid end of loop clicks
 					// 4-point 2nd order "optimal" interpolation filter by Olli Niemitalo
 					ev1, od1 := tb+ta, tb-ta
 					ev2, od2 := tb1+ta0, tb1-ta0
@@ -2316,7 +2337,7 @@ func SoundEngine(file *os.File, bits int) {
 					w1 := wavs[int(sigs[i][o.N])][x1]
 					w2 := wavs[int(sigs[i][o.N])][int(r+1)%l]
 					w3 := wavs[int(sigs[i][o.N])][int(r+2)%l]
-					z := Mod(r-float64(x1), float64(l-1)) - 0.5
+					z := mod(r-float64(x1), float64(l-1)) - 0.5
 					ev1, od1 := w2+w1, w2-w1
 					ev2, od2 := w3+w0, w3-w0
 					c0 := ev1*0.42334633257225274 + ev2*0.07668732202139628
@@ -2445,7 +2466,7 @@ func SoundEngine(file *os.File, bits int) {
 				case 43: // "shfft"
 					s := sigs[i][o.N]
 					if n%N2 == 0 && n >= N && !ffrz[i] {
-						l := int(Mod(s, 1) * N)
+						l := int(mod(s, 1) * N)
 						for n := range z[i] {
 							nn := (N + n + l) % N
 							z[i][n] = z[i][nn]
@@ -2688,7 +2709,7 @@ func sine(x float64) float64 {
 	a := int(x * SampleRate)
 	sa := sineTab[a%sr]
 	sb := sineTab[(a+1)%sr]
-	xx := Mod((x*SampleRate)-float64(a), SampleRate-1)
+	xx := mod((x*SampleRate)-float64(a), SampleRate-1)
 	return sa + ((sb - sa) * xx) // linear interpolation
 }
 
@@ -2717,6 +2738,12 @@ func (n *noise) ise() {
 	*n ^= *n << 13
 	*n ^= *n >> 7
 	*n ^= *n << 17
+}
+
+func mod(x, y float64) float64 {
+	m := int(MaxInt32*x)
+	m %= int(MaxInt32*y) // dirty mod
+	return float64(m)/MaxInt32
 }
 
 const (

@@ -2049,6 +2049,7 @@ func SoundEngine(file *os.File, bits int) {
 		nyfC          float64 = 1 / (1 + 1/(Tau*2e4/SampleRate)) // coefficient
 		L, R, sides   float64
 		setmixDefault = 320 / SampleRate
+		current int
 	)
 	no *= 77777777777 // force overflow
 	defer func() {    // fail gracefully
@@ -2063,18 +2064,16 @@ func SoundEngine(file *os.File, bits int) {
 			/*var buf [4096]byte
 			n := runtime.Stack(buf[:], false)
 			msg("%s", buf[:n]) // print stack trace to infoDisplay*/
-			if reload == -1 {
-				reload = len(transfer.Listing) - 1
+			if current > len(transfer.Listing)-1 {
+				current = len(transfer.Listing)-1
 			}
-			for reload >= 0 && transfer.Listing[reload][0].Op == "deleted" {
-				reload--
-			}
-			if reload < 0 {
+			if current < 0 {
 				break
 			}
-			transfer.Listing[reload] = listing{{Op: "deleted", Opn: 31}} // delete listing
-			transfer.Signals[reload][0] = 0                              // silence listing
-			msg("previous listing deleted: %d", reload)
+			// this doesn't handle immediate panics well, despite above bounds checks
+			transfer.Listing[current] = listing{{Op: "deleted", Opn: 31}} // delete listing
+			transfer.Signals[current][0] = 0                              // silence listing
+			info <- sf("listing deleted: %d", current)
 		}
 		fade := Pow(FDOUT, 1/(MIN_FADE*SampleRate*float64(DS)))
 		//for i := 48000; i >= 0; i-- {
@@ -2204,6 +2203,7 @@ func SoundEngine(file *os.File, bits int) {
 			r := 0.0
 			op := 0
 			for _, o := range list {
+				current = i
 				switch o.Opn {
 				case 0:
 					// nop

@@ -597,10 +597,6 @@ func main() {
 				if e(rr) {
 					continue // skip missing listings without warning
 				}
-				if !display.Paused {
-					priorMutes[i] = mute[i]
-					mute[i] = 0
-				}
 				s := bufio.NewScanner(inputF)
 				s.Split(bufio.ScanWords)
 				for s.Scan() {
@@ -1266,7 +1262,7 @@ start:
 					if filepath.Ext(f) != extn {
 						continue
 					}
-					ls += f[:len(f)-4] + "\t"
+					ls += f[:len(f)-4] + "  "
 				}
 				if len(ls) == 0 {
 					msg("no files")
@@ -2282,7 +2278,8 @@ func SoundEngine(file *os.File, bits int) {
 					tx[i] = r
 					tapes[i][n%TLlen] = th[i] // record head
 					tl := SampleRate * TAPE_LENGTH
-					t := Abs(Min(1/sigs[i][o.N], tl))
+					//t := Abs(Min(1/sigs[i][o.N], tl))
+					t := Min(Abs(1/sigs[i][o.N]), tl)
 					xa := (n + TLlen - int(t)) % TLlen
 					x := mod(float64(n+TLlen)-(t), tl)
 					ta0 := tapes[i][(n+TLlen-int(t)-1)%TLlen]
@@ -2290,7 +2287,6 @@ func SoundEngine(file *os.File, bits int) {
 					tb := tapes[i][(n+TLlen-int(t)+1)%TLlen]
 					tb1 := tapes[i][(n+TLlen-int(t)+2)%TLlen]
 					xx := mod(x-float64(xa), tl-1) // to avoid end of loop clicks
-
 					z := xx - 0.5
 					ev1, od1 := tb+ta, tb-ta
 					ev2, od2 := tb1+ta0, tb1-ta0
@@ -2307,7 +2303,8 @@ func SoundEngine(file *os.File, bits int) {
 					r = sigs[i][o.N] - r
 				case 20: // "tap"
 					tl := SampleRate * TAPE_LENGTH
-					t := Abs(Min(1/sigs[i][o.N], tl))
+					//t := Abs(Min(1/sigs[i][o.N], tl))
+					t := Min(Abs(1/sigs[i][o.N]), tl)
 					xa := (n + TLlen - int(t)) % TLlen
 					x := mod(float64(n+TLlen)-(t), tl)
 					ta0 := tapes[i][(n+TLlen-int(t)-1)%TLlen]
@@ -2741,6 +2738,7 @@ func (n *noise) ise() {
 }
 
 func mod(x, y float64) float64 {
+	return Mod(x, y)
 	m := int(MaxInt32*x)
 	m %= int(MaxInt32*y) // dirty mod
 	return float64(m)/MaxInt32

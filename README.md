@@ -557,7 +557,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	f2c		|		no		|		convert frequency to filter coefficient. Numbers less than than 0 will be multiplied by -1 (sign removed, become positive)
 |	erase	|		yes		|		operand is number of operations to erase above the current in listing. For all use `: erase`. 
 |	wav		|		yes   	|		will play the corresponding sample of a loaded WAV file given by the operand. Expects an input in range [0, 1], values outside this range will wrap around this interval. See section below for more information
-|	8bit	|		yes   	|		quantises input to 8 bits of resolution (-128 to +127). The Operand is the size of quantisation steps. So to quantise a ±1 signal, use 127 as the operand. Alternatively, quantise to integers with an operand of 1.
+|	8bit	|		yes   	|		quantises input to 8 bits of resolution (-128 to +127). The operand is the size of quantisation steps. So to quantise a ±1 signal, use 127 as the operand. Alternatively, quantise to integers with an operand of 1.
 |	level	|		yes   	|		changes the output level of the listing at the index given by operand, which must be a number (not a signal). The preceding input sets the level. Level will persist after deletion. Capable of modulation up to 1100Hz, but because of this sudden large changes in level may produce clicks. Operation independent of mute
 |	x		|		yes   	|		alias of `mul`
 |	*		|		yes   	|		alias of `x`

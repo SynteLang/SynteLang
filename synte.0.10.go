@@ -1433,7 +1433,7 @@ start:
 				}
 			}
 			_, inSg := sg[opd]
-			if !inSg && !alreadyIn && !num.Is && !fIn && unicode.IsUpper([]rune(opd)[0]) {
+			if !inSg && !alreadyIn && !num.Is && !fIn && op != "//" && unicode.IsUpper([]rune(opd)[0]) {
 				if lenExported > EXPORTED_LIMIT {
 					msg("we've ran out of exported signals :(")
 					continue

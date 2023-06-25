@@ -2279,7 +2279,10 @@ func SoundEngine(file *os.File, bits int) {
 					tapes[i][n%TLlen] = th[i] // record head
 					tl := SampleRate * TAPE_LENGTH
 					//t := Abs(Min(1/sigs[i][o.N], tl))
-					t := Min(Abs(1/sigs[i][o.N]), tl)
+					t := Mod((1/sigs[i][o.N]), tl)
+					if sigs[i][o.N] == 0 {
+						t = 0
+					}
 					xa := (n + TLlen - int(t)) % TLlen
 					x := mod(float64(n+TLlen)-(t), tl)
 					ta0 := tapes[i][(n+TLlen-int(t)-1)%TLlen]
@@ -2391,7 +2394,7 @@ func SoundEngine(file *os.File, bits int) {
 				case 35: // "print"
 					pd++ // unnecessary?
 					if (pd)%32768 == 0 && !exit {
-						info <- sf("listing %d, op %d: %.3g", i, op, r)
+						info <- sf("listing %d, op %d: %.5g", i, op, r)
 						pd += int(no >> 50)
 					}
 				case 36: // "\\"

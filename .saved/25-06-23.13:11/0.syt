@@ -1,0 +1,10 @@
+in 2hz
+osc
+flip
+out vca
+in 440hz
+saw
+mul vca
+lpf 330hz
+lpf 330hz
+mix 

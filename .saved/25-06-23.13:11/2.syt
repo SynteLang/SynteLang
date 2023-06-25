@@ -1,0 +1,13 @@
+in F
+posc 0
+mul 1.8
+/ F
+\ 1
+out t
+from 0
++ c
+tape t
+/ R
+out c
+mul R
+out dac

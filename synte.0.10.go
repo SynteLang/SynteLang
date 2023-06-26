@@ -889,7 +889,16 @@ start:
 					if o.Opd == "dac" {
 						break input
 					}
-				case ".out", ".>sync", ".level", ".pan", "//":
+				case ".out", ".>sync", ".level", ".pan":
+					if reload < 0 || reload > len(transfer.Listing)-1 {
+						mute = append(mute, 0)
+						priorMutes = append(priorMutes, 0)
+						unsolo = append(unsolo, 0)
+						display.Mute = append(display.Mute, yes)
+						level = append(level, 1)
+					}
+					break input
+				case "//":
 					break input
 				}
 				continue
@@ -1458,7 +1467,16 @@ start:
 				if opd == "dac" {
 					break input
 				}
-			case ".out", ".>sync", ".level", ".pan", "//":
+			case ".out", ".>sync", ".level", ".pan":
+				if reload < 0 || reload > len(transfer.Listing)-1 {
+					mute = append(mute, 0)
+					priorMutes = append(priorMutes, 0)
+					unsolo = append(unsolo, 0)
+					display.Mute = append(display.Mute, yes)
+					level = append(level, 1)
+				}
+				break input
+			case "//":
 				break input
 			}
 			if !ext {

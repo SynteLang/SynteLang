@@ -50,7 +50,7 @@ func main() {
 
 	type message struct {
 		Content string
-		Added   time.Time
+		Added   time.Time // redundant
 	}
 	messages := make([]message, 11)
 
@@ -75,18 +75,17 @@ func main() {
 		dB := "     "
 		for {
 			Json, err := os.ReadFile(file)
-			err2 := json.Unmarshal(Json, &display)
-			if err != nil || err2 != nil {
-				//fmt.Printf("error loading %s: %v %v\n", file, err, err2)
-				//fmt.Println(display)
-				//fmt.Scanln()
-				//time.Sleep(2 * time.Second)
+			json.Unmarshal(Json, &display)
+			//if err != nil || err2 != nil {
+			if err != nil { // ignore unmarshal errors
+				messages[9].Content = fmt.Sprintf("error loading %s: %v\n", file, err)
+				//messages[10].Content = "info display out of order"
 			}
 
 			if display.Paused {
 				paused = green + "paused" + reset
 			} else {
-				paused = ""
+				paused = "      "
 			}
 			if display.On {
 				if !started {
@@ -95,7 +94,6 @@ func main() {
 				}
 				timer = time.Since(start).Round(time.Second)
 			} else { // timer for continuous play
-				// timer = 0
 				started = false
 			}
 
@@ -171,7 +169,7 @@ func main() {
 				}
 			}
 			n++
-			vu := 1 + (db / 3)
+			vu := 1 + (db / 2.5)
 			VU := fmt.Sprintf("\r          |                         %s|%s  %s", clip, reset, gr)
 			VU += fmt.Sprintf("\r           %s%s%s|", green, dB, reset)
 			nn := int(vu * 20)
@@ -181,7 +179,7 @@ func main() {
 
 			fmt.Printf("\033[H\033[2J")
 			fmt.Printf("%sSyntə info%s %spress enter to quit%s", cyan, reset, italic, reset)
-			fmt.Printf(`	%s	%s	%3s
+			fmt.Printf(`   %s   %s  %3s
 ╭───────────────────────────────────────────────────╮
 	%s		%sLoad:%s %v
 %s

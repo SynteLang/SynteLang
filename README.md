@@ -879,7 +879,7 @@ Syntə info *press enter to quit*                0s      <-- elapsed running tim
 
 
 																		(the top line of the audio meter will flicker red if clipping occurs internally)
-        0.00    |||||||             |                   <-- peak audio meter, approx 60dB of range, will display 'GR' if limiting takes place on the output.
+        0.00    |||||||             |                   <-- peak audio meter, approx 50dB of range, will display 'GR' if limiting takes place on the output.
       Mouse-X: 0				Mouse-Y: 0              <-- value of mouse X and Y
 ╰───────────────────────────────────────────────────╯
 ```

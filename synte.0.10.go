@@ -160,8 +160,8 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"noise":  ops{not, 15},
 	"push":   ops{not, 16},
 	"pop":    ops{not, 17},
-	"{":   ops{not, 16}, // alias of push
-	"}":    ops{not, 17}, // alias of pop
+	"(":   ops{not, 16}, // alias of push
+	")":    ops{not, 17}, // alias of pop
 	"tape":   ops{yes, 18},
 	"--":     ops{yes, 19},
 	"tap":    ops{yes, 20},
@@ -1429,7 +1429,11 @@ start:
 				}
 			}
 			_, inSg := sg[opd]
-			if !inSg && !alreadyIn && !num.Is && !fIn && op != "//" && unicode.IsUpper([]rune(opd)[0]) {
+			r := 0
+			if len(opd) > 1 && opd[:1] == "'" {
+				r = 1
+			}
+			if !inSg && !alreadyIn && !num.Is && !fIn && op != "//" && unicode.IsUpper([]rune(opd)[r]) {
 				if lenExported > EXPORTED_LIMIT {
 					msg("we've ran out of exported signals :(")
 					continue

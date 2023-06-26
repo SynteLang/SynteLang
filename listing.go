@@ -81,7 +81,7 @@ func main() {
 				if list[0].Op == "deleted" {
 					continue
 				}
-				fmt.Printf("\n%d:  ", i)
+				fmt.Printf("\n\n%d:\t", i)
 				m, c, y := magenta, cyan, yellow
 				if len(mute) >= i+1 { // bounds check
 					if mute[i] {
@@ -106,7 +106,8 @@ func main() {
 					}
 					switch list[i+1].Op {
 					case "in", "pop", "tap", "index", "from", "all", "ifft":
-						fmt.Printf(" %s|%s  ", y, reset)
+						//fmt.Printf(" %s|%s  ", y, reset)
+						fmt.Printf("\n\t")
 					default:
 						fmt.Printf(" %s\u22A2%s  ", y, reset)
 					}

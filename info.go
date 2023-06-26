@@ -171,7 +171,7 @@ func main() {
 				}
 			}
 			n++
-			vu := 1 + (db / 1.75)
+			vu := 1 + (db / 3)
 			VU := fmt.Sprintf("\r          |                         %s|%s  %s", clip, reset, gr)
 			VU += fmt.Sprintf("\r           %s%s%s|", green, dB, reset)
 			nn := int(vu * 20)

@@ -1,0 +1,13 @@
+in 'F
+posc 0
+mul 1.999
+/ 'F
+\ 1
+out t
+from 0
++ B
+tape t
+/ R
+out A
+mul R
+out dac

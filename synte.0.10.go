@@ -143,8 +143,10 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"+":      ops{yes, 1},
 	"out":    ops{yes, 2},
 	".out":   ops{yes, 2}, // alias of out
+	">":   ops{yes, 2}, // alias of out
 	"out+":   ops{yes, 3},
 	"in":     ops{yes, 4},
+	"<":     ops{yes, 4},
 	"sine":   ops{not, 5},
 	"mod":    ops{yes, 6},
 	"gt":     ops{yes, 7},
@@ -233,6 +235,7 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"deleted": ops{not, 0}, // for internal use
 	"/*":      ops{yes, 0}, // non-breaking comments, nop
 	"m+":      ops{yes, 0}, // add to mute group
+	".":      ops{yes, 0}, // add to mute group
 }
 
 // listing is a slice of { operator, operand; signal and operator numbers }
@@ -662,6 +665,7 @@ start:
 			<-carryOn
 		}
 		mutes := []int{}
+		inout := not
 
 	input:
 		for { // input loop
@@ -766,6 +770,20 @@ start:
 			opd = strings.ReplaceAll(opd, "{i}", sf("%d", 0))
 			opd = strings.ReplaceAll(opd, "{i+1}", sf("%d", 1))
 
+			switch {
+			case op == "." && !inout:
+				op = "<"
+			case op == "." && inout:
+				op = ">"
+			}
+			switch op {
+			case "<":
+				inout = yes
+			case ">":
+				inout = not
+			}
+
+
 			if f { // parse function
 				function := make(listing, len(funcs[op]))
 				copy(function, funcs[op])
@@ -799,7 +817,8 @@ start:
 						}
 					}
 					function[i].Opd += s // rename signal
-					if o.Op == "out" {
+					switch o.Op {
+					case "out", ">":
 						out[function[i].Opd] = struct{}{}
 					}
 
@@ -885,7 +904,7 @@ start:
 					continue
 				}
 				switch o := newListing[len(newListing)-1]; o.Op {
-				case "out":
+				case "out", ">":
 					if o.Opd == "dac" {
 						break input
 					}
@@ -905,7 +924,7 @@ start:
 			}
 
 			switch op {
-			case "out", "out+", ".out":
+			case "out", "out+", ".out", ">":
 				_, in := out[opd]
 				ExpSig := not
 				for i := lenReserved; i < lenReserved+lenExported; i++ {
@@ -1463,7 +1482,7 @@ start:
 			}
 			// break and launch
 			switch op {
-			case "out":
+			case "out", ">":
 				if opd == "dac" {
 					break input
 				}

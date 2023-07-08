@@ -95,21 +95,22 @@ func main() {
 					mm := m
 					switch v.Op {
 					case "noise", "sino", "saw", "sqr", "pulse":
-						mm = yellow
+						mm = y
 					}
-					fmt.Printf("%s%s%s ", mm, v.Op, reset)
+					fmt.Printf("%s%s%s", mm, v.Op, reset)
 					if opd := v.Opd; opd != "" {
-						fmt.Printf("%s%s%s ", c, opd, reset)
+						fmt.Printf(" %s%s%s", c, opd, reset)
 					}
 					if i == len(list)-1 || verbose {
 						continue
 					}
 					switch list[i+1].Op {
-					case "in", "pop", "index", "from", "all", "ifft":
+					case "in", "<", "pop", "index", "from", "all", "ifft":
 						//fmt.Printf(" %s|%s  ", y, reset)
 						fmt.Printf("\n\t")
 					default:
-						fmt.Printf(" %s\u22A2%s  ", y, reset)
+						//fmt.Printf(" %s\u22A2%s  ", y, reset)
+						fmt.Printf("%s,%s  ", italic, reset)
 					}
 				}
 			}

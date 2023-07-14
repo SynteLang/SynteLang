@@ -238,12 +238,17 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	".":      ops{yes, 0}, // alternate between in and out
 }
 
-// listing is a slice of { operator, operand; signal and operator numbers }
-type listing []struct {
-	Op  string
-	Opd string
+type operation struct {
+	Op  string // operator
+	Opd string // operand
 	N   int `json:"-"`
 	Opn int `json:"-"`
+}
+type listing []operation
+
+type function struct {
+	comment string
+	body	listing
 }
 
 // 'global' transfer variable
@@ -364,7 +369,7 @@ func main() {
 		}
 		defer pprof.StopCPUProfile()
 	}
-	save([]listing{listing{{Op: advisory}}}, "displaylisting.json")
+	save([]listing{listing{operation{Op: advisory}}}, "displaylisting.json")
 	// open audio output (everything is a file...)
 	file := "/dev/dsp"
 	soundcard, rr := os.OpenFile(file, os.O_WRONLY, 0644)
@@ -898,7 +903,7 @@ start:
 					function[i] = o
 				}
 				fun++
-				dispListing = append(dispListing, listing{{Op: op, Opd: opd}}...) // only display name
+				dispListing = append(dispListing, operation{Op: op, Opd: opd}) // only display name
 				newListing = append(newListing, function...)
 				if fIn {
 					continue
@@ -982,9 +987,9 @@ start:
 					display.Paused = not
 				}
 				time.Sleep(150 * time.Millisecond) // wait for envelope to complete
-				transfer.Listing[n] = listing{{Op: "deleted", Opn: 31}}
+				transfer.Listing[n] = listing{operation{Op: "deleted", Opn: 31}}
 				transfer.Signals[n][0] = 0 // silence listing
-				dispListings[n] = listing{{Op: "deleted"}}
+				dispListings[n] = listing{operation{Op: "deleted"}}
 				transmit <- yes
 				<-accepted
 				if !save(*code, "displaylisting.json") {
@@ -992,8 +997,8 @@ start:
 						italic, reset, italic, reset)
 				}
 				if op[:1] == "." && len(newListing) > 0 {
-					dispListing = append(dispListing, listing{{Op: "mix"}}...)
-					newListing = append(newListing, listing{{Op: "setmix", Opd: "^freq"}}...) // hacky
+					dispListing = append(dispListing, operation{Op: "mix"})
+					newListing = append(newListing, operation{Op: "setmix", Opd: "^freq"}) // hacky
 					op, opd = "out", "dac"
 					break
 				}
@@ -1129,8 +1134,8 @@ start:
 					}
 				}
 				if op[:1] == "." && len(newListing) > 0 {
-					dispListing = append(dispListing, listing{{Op: "mix"}}...)
-					newListing = append(newListing, listing{{Op: "setmix", Opd: "^freq"}}...) // hacky
+					dispListing = append(dispListing, operation{Op: "mix"})
+					newListing = append(newListing, operation{Op: "setmix", Opd: "^freq"}) // hacky
 					op, opd = "out", "dac"
 					break
 				}
@@ -1188,8 +1193,8 @@ start:
 					solo = i // save index of solo
 				}
 				if op[:1] == "." && len(newListing) > 0 {
-					dispListing = append(dispListing, listing{{Op: "mix"}}...)
-					newListing = append(newListing, listing{{Op: "setmix", Opd: "^freq"}}...) // hacky
+					dispListing = append(dispListing, operation{Op: "mix"})
+					newListing = append(newListing, operation{Op: "setmix", Opd: "^freq"}) // hacky
 					op, opd = "out", "dac"
 					break
 				}
@@ -1352,7 +1357,7 @@ start:
 					if started {
 						<-stop
 					}
-					save([]listing{listing{{Op: advisory}}}, "displaylisting.json")
+					save([]listing{listing{operation{Op: advisory}}}, "displaylisting.json")
 					p("Stopped")
 					close(infoff)
 					if funcsave && !save(funcs, "functions.json") {
@@ -1476,9 +1481,9 @@ start:
 
 			// add to listing
 			if len(dispListing) == 0 || op != "mix" && dispListing[len(dispListing)-1].Op != "mix" {
-				dispListing = append(dispListing, listing{{Op: op, Opd: opd}}...)
+				dispListing = append(dispListing, operation{Op: op, Opd: opd})
 			}
-			newListing = append(newListing, listing{{Op: op, Opd: opd}}...)
+			newListing = append(newListing, operation{Op: op, Opd: opd})
 			if fIn {
 				continue
 			}
@@ -2114,7 +2119,7 @@ func SoundEngine(file *os.File, bits int) {
 				break
 			}
 			// this doesn't handle immediate panics well, despite above bounds checks
-			transfer.Listing[current] = listing{{Op: "deleted", Opn: 31}} // delete listing
+			transfer.Listing[current] = listing{operation{Op: "deleted", Opn: 31}} // delete listing
 			transfer.Signals[current][0] = 0                              // silence listing
 			info <- sf("listing deleted: %d", current)
 		}

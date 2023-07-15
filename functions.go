@@ -33,14 +33,14 @@ type operation struct {
 }
 type listing []operation
 
-type fn struct {
+type funcs map[string]struct {
 	Comment string
 	Body listing
 }
 
 func main() {
 
-	var functions map[string]fn
+	var functions funcs
 
 	file := "functions.json"
 
@@ -50,6 +50,7 @@ func main() {
 		fmt.Printf("error loading %s: %v %v", file, err, err2)
 	}
 	if len(os.Args) > 1 && os.Args[1] == "-u" {
+		// process usage stats
 		u := loadUsage()
 		for name, n := range u {
 			// for each function in usage list
@@ -72,6 +73,55 @@ func main() {
 		fmt.Println(sortUsage(u))
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "-docs" {
+		// process comments for docs
+		type mm struct{ at, at1, at2 bool }
+		for _, name := range functions.sortedByName() {
+			function := functions[name]
+			M := mm{}
+			if function.Comment == "" {
+				continue
+			}
+			for _, o := range function.Body {
+				if len(o.Opd) == 0 {
+					continue
+				}
+				switch o.Opd {
+				case "@":
+					M.at = true
+				case "@1":
+					M.at1 = true
+				case "@2":
+					M.at2 = true
+				}
+			}
+			args := 0
+			switch M {
+			case mm{false, false, false}:
+				// nop
+			case mm{true, false, false}:
+				args = 1
+			case mm{true, true, false}:
+				args = 2
+			case mm{true, true, true}:
+				args = 3
+			default:
+				fmt.Printf("malformed function: %s\n", name) // probably not needed
+				return
+			}
+			arg := "no"
+			switch {
+			case args == 1:
+				arg = "yes"
+			case args > 1:
+				arg = fmt.Sprint(args)
+			}
+			fmt.Printf("|	%s	|	%s	|	%s	|\n", name, arg, function.Comment)
+		}
+		return
+	}
+
+	// pretty-print functions
 	fmt.Printf("\n%s%sfunctions%s\n", yellow, italic, reset)
 	fmt.Println()
 
@@ -159,4 +209,12 @@ func sortUsage(u map[string]int) string {
 		data += fmt.Sprintf("%d %d %s\n", i, s.Value, s.Key)
 	}
 	return data
+}
+func (f funcs) sortedByName() []string {
+	var names []string
+	for name := range f {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
 }

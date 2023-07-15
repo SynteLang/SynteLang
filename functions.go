@@ -1,5 +1,7 @@
 // Syntə functions
-// displays functions saved in functions.json
+// pretty-prints functions saved in functions.json to stdout
+// OR
+// with -u flag, processes usage stats and prints to stdout
 
 package main
 
@@ -25,13 +27,20 @@ const (
 	cyan    = "\x1b[36m"
 )
 
+type operation struct {
+	Op string
+	Opd string
+}
+type listing []operation
+
+type fn struct {
+	Comment string
+	Body listing
+}
+
 func main() {
 
-	var functions map[string][]struct {
-		Op  string
-		Opd string
-		N   int
-	}
+	var functions map[string]fn
 
 	file := "functions.json"
 
@@ -49,7 +58,7 @@ func main() {
 			}
 			// for each operator in function count usage
 			ops := map[string]int{}
-			for _, f := range functions[name] {
+			for _, f := range functions[name].Body {
 				ops[f.Op]++
 			}
 			// multiply each op count by function count
@@ -66,7 +75,8 @@ func main() {
 	fmt.Printf("\n%s%sfunctions%s\n", yellow, italic, reset)
 	fmt.Println()
 
-	for k, listing := range functions {
+	for k, v := range functions {
+		listing := v.Body
 		if len(listing) < 1 {
 			continue
 		}

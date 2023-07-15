@@ -246,9 +246,9 @@ type operation struct {
 }
 type listing []operation
 
-type function struct {
-	comment string
-	body	listing
+type fn struct {
+	Comment string
+	Body	listing
 }
 
 // 'global' transfer variable
@@ -499,12 +499,12 @@ func main() {
 	lenExported := 0
 	sg := map[string]float64{} // signals map
 	var sig []float64          // local signals
-	funcs := make(map[string]listing)
+	funcs := make(map[string]fn)
 	// load functions from files and assign to funcs
 	load(&funcs, "functions.json")
 	for k, f := range funcs { // add funcs to operators map
 		hasOpd := not
-		for _, o := range f {
+		for _, o := range f.Body {
 			if o.Opd == "@" { // set but don't reset
 				hasOpd = yes
 			}
@@ -790,8 +790,8 @@ start:
 
 
 			if f { // parse function
-				function := make(listing, len(funcs[op]))
-				copy(function, funcs[op])
+				function := make(listing, len(funcs[op].Body))
+				copy(function, funcs[op].Body)
 				s := sf(".%d", fun)
 				type mm struct{ at, at1, at2 bool }
 				M := mm{}
@@ -1014,15 +1014,17 @@ start:
 						hasOpd = yes
 					}
 				}
-				o := operators[newListing[st].Opd]
+				name := newListing[st].Opd
+				o := operators[name]
 				o.Opd = hasOpd
-				operators[newListing[st].Opd] = o
-				funcs[newListing[st].Opd] = newListing[st+1:]
-				msg("%sfunction assigned to:%s %s", italic, reset, newListing[st].Opd)
+				operators[name] = o
+				funcs[name] = fn{Body: newListing[st+1:]}
 				fIn = not
 				if funcsave {
 					if !save(funcs, "functions.json") {
-						msg("functions not saved!")
+						msg("function not saved!")
+					} else {
+						msg("%sfunction saved%s", italic, reset)
 					}
 				}
 				continue start
@@ -1362,6 +1364,7 @@ start:
 					close(infoff)
 					if funcsave && !save(funcs, "functions.json") {
 						msg("functions not saved!")
+						continue start
 					}
 					time.Sleep(30 * time.Millisecond) // wait for infoDisplay to finish
 					break start
@@ -1375,6 +1378,7 @@ start:
 					display.Mode = "on"
 					if !save(funcs, "functions.json") {
 						msg("functions not saved!")
+						continue
 					}
 					msg("%sfunctions saved%s", italic, reset)
 				case "pause":

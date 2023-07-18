@@ -1707,7 +1707,7 @@ func parseType(expr, op string) (n float64, b bool) {
 			// allow high values for these operators
 		default:
 			if Abs(n) > 50 {
-				msg("exceeds sensible values, use a type")
+				msg("%.3g exceeds sensible values, use a type", n)
 				return 0, false
 			}
 		}

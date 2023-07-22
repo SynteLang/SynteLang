@@ -145,6 +145,7 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	".out":   ops{yes, 2}, // alias of out
 	">":   ops{yes, 2}, // alias of out
 	"out+":   ops{yes, 3}, // add to named signal
+	">+":   ops{yes, 3}, // alias of out+
 	"in":     ops{yes, 4}, // input numerical value or receive from named signal
 	"<":     ops{yes, 4}, // alias of in
 	"sine":   ops{not, 5}, // shape linear input to sine
@@ -1019,6 +1020,7 @@ start:
 				o.Opd = hasOpd
 				operators[name] = o
 				funcs[name] = fn{Body: newListing[st+1:]}
+				msg("%sfunction %s%s%s ready%s", italic, reset, name, italic, reset)
 				fIn = not
 				if funcsave {
 					if !save(funcs, "functions.json") {
@@ -1121,17 +1123,15 @@ start:
 					continue
 				}
 				mutes = append(mutes, i)
+				m := &mute
+				if display.Paused && i < len(transfer.Listing) {
+					m = &priorMutes // alter saved mutes if paused
+				}
 				for _, i := range mutes {
-					if display.Paused && i < len(transfer.Listing) { // exclude present listing
-						priorMutes[i] = 1 - priorMutes[i] // toggle mute status for play/pause
-						unsolo[i] = priorMutes[i] // toggle status for unsolo
-						display.Mute[i] = priorMutes[i] == 0 // convert binary to boolean and display
-					} else {
-						mute[i] = 1 - mute[i] // toggle mute
-						unsolo[i] = mute[i] // toggle status for unsolo
-						display.Mute[i] = mute[i] == 0 // convert binary to boolean and display
-					}
-					if solo == i && mute[i] == 0 { // if muting solo'd listing reset solo
+					(*m)[i] = 1 - (*m)[i] // toggle mute
+					unsolo[i] = (*m)[i] // toggle status for unsolo
+					display.Mute[i] = (*m)[i] == 0 // convert binary to boolean and display
+					if solo == i && (*m)[i] == 0 { // if muting solo'd listing reset solo
 						solo = -1
 					}
 				}
@@ -1590,11 +1590,9 @@ start:
 				}
 			}
 		} else { // reloaded listing isn't saved to '.temp/'
-			mute[reload] = priorMutes[reload]
 			dispListings[reload] = dispListing
 			transfer.Listing[reload] = newListing
 			transfer.Signals[reload] = sig
-			display.Mute[reload] = mute[reload] == 0
 			transmit <- yes
 			<-accepted
 		}

@@ -493,7 +493,7 @@ func main() {
 	}
 	// add 12 reserved signals for inter-list signals
 	lenReserved := len(reserved) // use this as starting point for exported signals
-	daisyChains = []int{2, 3, 9, 10} // pitch,tempo,grid
+	daisyChains = []int{2, 3, 9, 10} // pitch,tempo,grid,sync
 	for i := 0; i < EXPORTED_LIMIT; i++ {
 		reserved = append(reserved, sf("***%d", i+lenReserved)) // placeholder
 	}
@@ -640,7 +640,10 @@ start:
 			"Tau":      2 * Pi, // 2π
 			"ln7":      Log(7),
 			"^freq":    NOISE_FREQ, // default frequency for setmix, suitable for noise
-			"null":     0,
+			"null":     0, // only necessary if zero is banned in Syntə again
+			"fifth":	Pow(2, 7.0/12), // equal temperament ≈ 1.5 (2:3)
+			"third":	Pow(2, 1.0/3), // major, equal temperament ≈ 1.25 (4:5)
+			"seventh":	Pow(2, 11.0/12), // major, equal temperament ≈ 1.875 (8:15)
 		}
 		for i, w := range wavSlice {
 			sg[w.Name] = float64(i)
@@ -1020,7 +1023,7 @@ start:
 				o.Opd = hasOpd
 				operators[name] = o
 				funcs[name] = fn{Body: newListing[st+1:]}
-				msg("%sfunction %s%s%s ready%s", italic, reset, name, italic, reset)
+				msg("%sfunction %s%s%s ready%s.", italic, reset, name, italic, reset)
 				fIn = not
 				if funcsave {
 					if !save(funcs, "functions.json") {
@@ -2439,7 +2442,7 @@ func SoundEngine(file *os.File, bits int) {
 					d := a - peakfreq[i]
 					//peakfreq[i] += d * α * (a / peakfreq[i])
 					peakfreq[i] += d * α * (30 * Abs(d) * a / peakfreq[i])
-					r *= Min(1, 75/(peakfreq[i]*SampleRate+20)) // ignoring density
+					r *= Min(1, 70/(peakfreq[i]*SampleRate+20)) // ignoring density
 					//r *= Min(1, Sqrt(80/(peakfreq[i]*SampleRate+20)))
 				case 35: // "print"
 					pd++ // unnecessary?
@@ -2455,6 +2458,7 @@ func SoundEngine(file *os.File, bits int) {
 				case 38: // "pan", ".pan"
 					pan[int(sigs[i][o.N])] = Max(-1, Min(1, r))
 				case 39: // "all"
+					// r := 0 // TODO
 					c := -3.0                   // to avoid being mixed twice
 					for ii := 0; ii < i; ii++ { // only read from prior listings
 						r += sigs[ii][0]

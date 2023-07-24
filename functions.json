@@ -79,47 +79,6 @@
 			}
 		]
 	},
-	"/psc": {
-		"Comment": "",
-		"Body": [
-			{
-				"Op": "out",
-				"Opd": "^freq"
-			},
-			{
-				"Op": "in",
-				"Opd": "sync"
-			},
-			{
-				"Op": "+",
-				"Opd": "@"
-			},
-			{
-				"Op": "out",
-				"Opd": "s"
-			},
-			{
-				"Op": "in",
-				"Opd": "^freq"
-			},
-			{
-				"Op": "+",
-				"Opd": "a"
-			},
-			{
-				"Op": "/sync",
-				"Opd": "s"
-			},
-			{
-				"Op": "mod",
-				"Opd": "1"
-			},
-			{
-				"Op": "out",
-				"Opd": "a"
-			}
-		]
-	},
 	"3sum": {
 		"Comment": "",
 		"Body": [

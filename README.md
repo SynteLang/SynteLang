@@ -669,6 +669,8 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	CB		|		yes		|		an 808-like cowbell, triggered like `dirac`. Operand multiplies pitch
 |	.grid	|		no		|		an exprimental alternative to `grid`, will terminate listing. Not synced
 |	for		|		yes		|		input sets frequency of pulse which stays high for time interval given by operand, output is [0, 1]
+|	/b		|		2		|		creates a rising ramp in sync with a ramp sent to `sync` signal
+|	def		|		2		|		sends tempo and sync to other listings, first argument is tempo, second is number of beats which the sync wave spans
 |           |               |
 
 **List of pre-defined constants**	
@@ -689,6 +691,9 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	Tau		|		τ, = 2π						|  
 |	ln7		|		natural logarithm of 7		|  
 |	null	|		0							|  
+|	fifth	|		equal temperament = 2^(7/12) ≈ 1.5 (2:3)	|  
+|	third	|		major, equal temperament = 2^(1/3) ≈ 1.25 (4:5)	|  
+|	seventh	|		major, equal temperament = 2^(11/12) ≈ 1.875 (8:15)	|  
 |			|									|
 **List of reserved signals**
 |	dac		|		signal represents output to soundcard. For use as `out dac` only	|

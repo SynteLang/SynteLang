@@ -1,9 +1,0 @@
-in tempo
-osc 
-flip 
-smooth 
-out vca
-in 0
-all 
-chorus 3.7hz,15
-out dac

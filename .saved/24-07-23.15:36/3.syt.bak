@@ -1,8 +1,0 @@
-/bsc 2,0.5
-lt 0.25
-out m
-/bsc 8,0
-noise 
-mul m
-mul -4db
-mix 

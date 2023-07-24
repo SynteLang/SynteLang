@@ -202,7 +202,6 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"ffzy":   ops{not, 48}, // rotate phases by random values
 	"ffaze":  ops{yes, 49}, // rotate phases by operand
 	"reu":    ops{not, 50}, // reverse each half of complex spectrum
-	"/sync":  ops{yes, 51}, // synchronise to phase
 
 	// specials
 	"]":       ops{not, 0}, // end function input
@@ -2181,7 +2180,6 @@ func SoundEngine(file *os.File, bits int) {
 	z := make([][N]complex128, len(transfer.Listing), len(transfer.Listing)+33)
 	zf := make([][N]complex128, len(transfer.Listing), len(transfer.Listing)+33)
 	ffrz := make([]bool, len(transfer.Listing), len(transfer.Listing)+33)
-	launch := make([]bool, len(transfer.Listing), len(transfer.Listing)+34)
 
 	lastTime = time.Now()
 	for {
@@ -2216,11 +2214,9 @@ func SoundEngine(file *os.File, bits int) {
 				ifft2 = append(ifft2, [N]float64{})
 				z = append(z, [N]complex128{})
 				zf = append(zf, [N]complex128{})
-				launch = append(launch, not)
 			} else if reload > -1 {
 				m[reload] = 0 // m ramps to mute value on reload
 				syncSt8[reload] = 0
-				launch[reload] = not
 			}
 			if rs && rootSync() {
 				lastTime = time.Now()
@@ -2587,11 +2583,6 @@ func SoundEngine(file *os.File, bits int) {
 						for i, j := len(z[ii])/2, len(z[ii])-1; i < j; i, j = i+1, j-1 {
 							z[ii][i], z[ii][j] = z[ii][j], z[ii][i]
 						}
-					}
-				case 51: // "/sync"
-					if !launch[i] {
-						r = sigs[i][o.N]
-						launch[i] = yes
 					}
 				default:
 					// nop, r = r

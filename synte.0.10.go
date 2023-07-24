@@ -605,6 +605,11 @@ func main() {
 				if e(rr) {
 					continue // skip missing listings without warning
 				}
+				if !display.Paused { // mute before reload
+					priorMutes[i] = mute[i]
+					mute[i] = 0
+					time.Sleep(50 * time.Millisecond) // wait for mutes
+				}
 				s := bufio.NewScanner(inputF)
 				s.Split(bufio.ScanWords)
 				for s.Scan() {
@@ -613,7 +618,6 @@ func main() {
 				inputF.Close()
 				stat[i] = st.ModTime()
 			}
-			time.Sleep(25 * time.Millisecond) // wait for mutes
 			<-lockLoad
 		}
 	}()
@@ -979,7 +983,7 @@ start:
 				}
 				mute[n] = 0 // wintermute
 				display.Mute[n] = yes
-				if display.Paused {
+				if display.Paused { // play resumed to enact deletion in sound engine
 					for i := range mute { // restore mutes
 						if i == n {
 							continue
@@ -1386,8 +1390,8 @@ start:
 				case "pause":
 					if started && !display.Paused {
 						for i := range mute { // save, and mute all
-							priorMutes[i] = mute[i]
-							mute[i] = 0
+							priorMutes[i] = mute[i] // save mutes for resume play
+							mute[i] = 0 // here, mute is dual-purposed to gracefully turn off listings
 						}
 						time.Sleep(150 * time.Millisecond) // wait for mutes
 						pause <- yes
@@ -1401,6 +1405,7 @@ start:
 					}
 					for i := range mute { // restore mutes
 						mute[i] = priorMutes[i]
+						priorMute[i] = 1 // set to avoid muted listings when reload
 					}
 					<-pause
 					display.Paused = not
@@ -1558,9 +1563,10 @@ start:
 			i++
 		}
 
-		if display.Paused { // restart on launch if paused
+		if display.Paused { // resume play on launch if paused
 			for i := range mute { // restore mutes
 				mute[i] = priorMutes[i]
+				priorMute[i] = 1
 			}
 			<-pause
 			display.Paused = not
@@ -1597,6 +1603,7 @@ start:
 			transfer.Signals[reload] = sig
 			transmit <- yes
 			<-accepted
+			mute[reload] = priorMutes[reload]
 		}
 		<-lockLoad
 		if !started {
@@ -1706,7 +1713,7 @@ func parseType(expr, op string) (n float64, b bool) {
 		case "from", "level", ".level", "count", "/":
 			// allow high values for these operators
 		default:
-			if Abs(n) > 50 {
+			if Abs(n) > 64 {
 				msg("%.3g exceeds sensible values, use a type", n)
 				return 0, false
 			}

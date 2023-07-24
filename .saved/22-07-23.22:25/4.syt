@@ -1,0 +1,22 @@
+. 5s
+sq
+mul 4
++ 6
+. r
+. Bars
+/bsc 16,0
+lt 0.5
+. grid
+. Bars
+/bsc r,0
+lt 0.5
+s/h grid
+dirac
+down 500ms
+exp 5
+mul 55hz
++ 70hz
+sino
+lpf 150hz
+tanh
+mix

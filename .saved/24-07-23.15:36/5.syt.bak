@@ -1,0 +1,8 @@
+/bsc 4,0.5
+trn 16
+noise 
+hpf 1khz
+lpf 1khz
+lpf 1khz
+mul 20db
+mix 

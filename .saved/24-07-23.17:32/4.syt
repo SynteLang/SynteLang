@@ -1,0 +1,8 @@
+/b 1,0
+trn 16
+out vca
+mul 440hz
+sino 
+mul vca
+lpf 500hz
+mix 

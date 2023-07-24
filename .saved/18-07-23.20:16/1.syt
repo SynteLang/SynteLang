@@ -1,0 +1,13 @@
+in tempo
+/ 3
+posc 0
+lt 0.5
+out p
+in tempo
+/ 8
+posc 0.5
+gt 0.7
+mul p
++ 1
+mul 100/1.5hz
+.out pitch

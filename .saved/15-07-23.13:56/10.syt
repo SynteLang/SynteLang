@@ -1,0 +1,8 @@
+in wavR
+* 1
+posc 0
+mod mousex
++ 0.5
+wav TouchMe
+lpf 1110hz
+out dac

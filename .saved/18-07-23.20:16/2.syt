@@ -1,0 +1,28 @@
+>sync 
+in tempo
+/ 1.5
+posc 0.5
+flip 
+exp 4
+- 0.3
+clip 0
+smooth 
+mul 6db
+out vca
+in tempo
+/ 8
+step 5.02
+mul 3.418
+mod 1
+8bit 4
+8bit 12
+base 2
+mul 100hz
+sino 
+mul 100!
+tanh 
+clip 0.5
+lpf 500hz
+lpf 500hz
+mul vca
+mix 

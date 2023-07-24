@@ -1,0 +1,9 @@
+>sync 
+in tempo
+posc 0
+trn 5
+mul 165hz
+sino 
+tanh 
+lpf 200hz
+mix 

@@ -1,0 +1,9 @@
+in tempo
+* 1.75
+posc 0
+trn 4
+out vca
+in 330hz
+sino 
+mul vca
+mix 

@@ -1,0 +1,7 @@
+in 135bpm
+out tempo
+*  1/8
+out Bars
+osc
+.out sync
+

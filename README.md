@@ -670,7 +670,8 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	.grid	|		no		|		an exprimental alternative to `grid`, will terminate listing. Not synced
 |	for		|		yes		|		input sets frequency of pulse which stays high for time interval given by operand, output is [0, 1]
 |	/b		|		2		|		creates a rising ramp in sync with a ramp sent to `sync` signal
-|	def		|		2		|		sends tempo and sync to other listings, first argument is tempo, second is number of beats which the sync wave spans
+|	def		|		2		|		sends tempo and sync to other listings, first argument is tempo, second is number of beats which the sync wave spans. Launches listing
+|	def_	|		2		|		like `def` but can be followed by other operators (doen't launch)
 |           |               |
 
 **List of pre-defined constants**	

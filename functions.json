@@ -740,8 +740,37 @@
 				"Opd": "@1"
 			},
 			{
+				"Op": "+",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
 				"Op": "out",
-				"Opd": "^freq"
+				"Opd": "a.0"
+			},
+			{
+				"Op": ".out",
+				"Opd": "sync"
+			}
+		]
+	},
+	"def_": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "in",
+				"Opd": "@"
+			},
+			{
+				"Op": "out",
+				"Opd": "tempo"
+			},
+			{
+				"Op": "/",
+				"Opd": "@1"
 			},
 			{
 				"Op": "+",
@@ -756,7 +785,7 @@
 				"Opd": "a.0"
 			},
 			{
-				"Op": ".out",
+				"Op": "out",
 				"Opd": "sync"
 			}
 		]

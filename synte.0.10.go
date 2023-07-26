@@ -2656,7 +2656,7 @@ func SoundEngine(file *os.File, bits int) {
 			dac *= env // fade out
 			sides *= env
 			env *= fade
-			if env < FDOUT {
+			if Abs(peak) < FDOUT {
 				break
 			}
 		}

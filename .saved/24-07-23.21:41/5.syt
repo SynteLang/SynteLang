@@ -1,0 +1,23 @@
+/b 64!,0
+flip
+exp 5
+smooth
+mul mousex
+clip 0
+out vca
+in pitch
+lpf 3hz
+saw 
+hpf 100hz
+lpf 1.5khz
+lpf 1.5khz
+/* mul /* null
++ c
+push
+tape 123ms
+lpf 2khz
+mul -1.11
+out c
+pop
+mul vca
+mix 

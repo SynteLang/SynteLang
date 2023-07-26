@@ -1,0 +1,17 @@
+in tempo
+syq 0
+out grid
+/b 3,0
+push 
+lt 0.3
+out gt
+pop 
+lpf 10hz
+s/h grid
+s/h gt
+8bit 12
+base 2
+lpf 1hz
+mul 220hz
+mul 1/2
+.out pitch

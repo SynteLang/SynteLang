@@ -1022,9 +1022,7 @@ start:
 					}
 				}
 				name := newListing[st].Opd
-				o := operators[name]
-				o.Opd = hasOpd
-				operators[name] = o
+				operators[name] = ops{Opd: hasOpd}
 				funcs[name] = fn{Body: newListing[st+1:]}
 				msg("%sfunction %s%s%s ready%s.", italic, reset, name, italic, reset)
 				fIn = not
@@ -1405,7 +1403,7 @@ start:
 					}
 					for i := range mute { // restore mutes
 						mute[i] = priorMutes[i]
-						priorMute[i] = 1 // set to avoid muted listings when reload
+						priorMutes[i] = 1 // set to avoid muted listings when reload
 					}
 					<-pause
 					display.Paused = not
@@ -1566,7 +1564,7 @@ start:
 		if display.Paused { // resume play on launch if paused
 			for i := range mute { // restore mutes
 				mute[i] = priorMutes[i]
-				priorMute[i] = 1
+				priorMutes[i] = 1
 			}
 			<-pause
 			display.Paused = not
@@ -2668,24 +2666,17 @@ func SoundEngine(file *os.File, bits int) {
 		dither += float64(no)* invMaxUint
 		dac *= hroom
 		dac += dither / convFactor // dither dac value ±1 from xorshift lfsr
-		if dac > 1 {               // hard clip
-			dac = 1
-			display.Clip = yes
-		} else if dac < -1 {
-			dac = -1
-			display.Clip = yes
-		}
 		if abs := Abs(dac); abs > peak { // peak detect
 			peak = abs
 		}
-		peak -= 8e-5 // meter ballistics
+		display.Vu = peak
+		peak -= 8e-5 // meter ballistics, linear (effectively logarithmic decay in dB)
 		if peak < 0 {
 			peak = 0
 		}
-		display.Vu = peak
 		sides = Max(-0.5, Min(0.5, sides))
-		L = (dac + sides) * convFactor
-		R = (dac - sides) * convFactor
+		L = clip(dac + sides) * convFactor // clip will display info
+		R = clip(dac - sides) * convFactor
 		t = time.Since(lastTime)
 		for i := 0; i < DS; i++ { // write sample(s) to soundcard
 			nyfL = nyfL + nyfC*(L-nyfL)
@@ -2728,6 +2719,16 @@ func SoundEngine(file *os.File, bits int) {
 		dac = 0
 		n++
 	}
+}
+func clip(in float64) float64 { // hard clip
+		if in > 1 {
+			in = 1
+			display.Clip = yes
+		} else if in < -1 {
+			in = -1
+			display.Clip = yes
+		}
+		return in
 }
 
 var sineTab = make([]float64, int(SampleRate))

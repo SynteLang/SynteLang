@@ -28,14 +28,14 @@ const (
 )
 
 type operation struct {
-	Op string
+	Op  string
 	Opd string
 }
 type listing []operation
 
 type funcs map[string]struct {
 	Comment string
-	Body listing
+	Body    listing
 }
 
 func main() {

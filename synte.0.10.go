@@ -140,115 +140,115 @@ type ops struct {
 
 var operators = map[string]ops{ // would be nice if switch indexes could be generated from a common root
 	// bool indicates if operand used
-	"+":      ops{yes, 1}, // add
-	"out":    ops{yes, 2}, // send to named signal
-	".out":   ops{yes, 2}, // alias of out
-	">":   ops{yes, 2}, // alias of out
-	"out+":   ops{yes, 3}, // add to named signal
-	">+":   ops{yes, 3}, // alias of out+
-	"in":     ops{yes, 4}, // input numerical value or receive from named signal
-	"<":     ops{yes, 4}, // alias of in
-	"sine":   ops{not, 5}, // shape linear input to sine
-	"mod":    ops{yes, 6}, // output = input MOD operand
-	"gt":     ops{yes, 7}, // greater than
-	"lt":     ops{yes, 8}, // less than
-	"mul":    ops{yes, 9}, // multiply
-	"*":      ops{yes, 9}, // alias of mul
-	"x":      ops{yes, 9}, // alias of mul
-	"abs":    ops{not, 10}, // absolute
-	"tanh":   ops{not, 11}, // hyperbolic tangent
-	"pow":    ops{yes, 12}, // power
-	"base":   ops{yes, 13}, // operand to the power of input
-	"clip":   ops{yes, 14}, // clip input
-	"noise":  ops{not, 15}, // white noise source
-	"push":   ops{not, 16}, // push to listing stack
-	"pop":    ops{not, 17}, // pop from listing stack
-	"(":   ops{not, 16}, // alias of push
-	")":    ops{not, 17}, // alias of pop
-	"tape":   ops{yes, 18}, // listing tape loop
-	"--":     ops{yes, 19}, // subtract from operand
-	"tap":    ops{yes, 20}, // tap from loop
-	"f2c":    ops{not, 21}, // convert frequency to co-efficient
-	"wav":    ops{yes, 22}, // play wav file
-	"8bit":   ops{yes, 23}, // quantise input
-	"index":  ops{not, 24}, // index of listing // change to signal?
-	"<sync":  ops{yes, 25}, // receive sync pulse
-	">sync":  ops{not, 26}, // send sync pulse
-	".>sync": ops{not, 26}, // alias, launches listing
-	"jl0":    ops{yes, 27}, // jump if less than zero
-	"level":  ops{yes, 28}, // vary level of a listing
-	".level": ops{yes, 28}, // alias, launches listing
-	"from":   ops{yes, 29},  // reveive output from a listing
-	"sgn":    ops{not, 30}, // sign of input
+	"+":      {yes, 1},  // add
+	"out":    {yes, 2},  // send to named signal
+	".out":   {yes, 2},  // alias of out
+	">":      {yes, 2},  // alias of out
+	"out+":   {yes, 3},  // add to named signal
+	">+":     {yes, 3},  // alias of out+
+	"in":     {yes, 4},  // input numerical value or receive from named signal
+	"<":      {yes, 4},  // alias of in
+	"sine":   {not, 5},  // shape linear input to sine
+	"mod":    {yes, 6},  // output = input MOD operand
+	"gt":     {yes, 7},  // greater than
+	"lt":     {yes, 8},  // less than
+	"mul":    {yes, 9},  // multiply
+	"*":      {yes, 9},  // alias of mul
+	"x":      {yes, 9},  // alias of mul
+	"abs":    {not, 10}, // absolute
+	"tanh":   {not, 11}, // hyperbolic tangent
+	"pow":    {yes, 12}, // power
+	"base":   {yes, 13}, // operand to the power of input
+	"clip":   {yes, 14}, // clip input
+	"noise":  {not, 15}, // white noise source
+	"push":   {not, 16}, // push to listing stack
+	"pop":    {not, 17}, // pop from listing stack
+	"(":      {not, 16}, // alias of push
+	")":      {not, 17}, // alias of pop
+	"tape":   {yes, 18}, // listing tape loop
+	"--":     {yes, 19}, // subtract from operand
+	"tap":    {yes, 20}, // tap from loop
+	"f2c":    {not, 21}, // convert frequency to co-efficient
+	"wav":    {yes, 22}, // play wav file
+	"8bit":   {yes, 23}, // quantise input
+	"index":  {not, 24}, // index of listing // change to signal?
+	"<sync":  {yes, 25}, // receive sync pulse
+	">sync":  {not, 26}, // send sync pulse
+	".>sync": {not, 26}, // alias, launches listing
+	"jl0":    {yes, 27}, // jump if less than zero
+	"level":  {yes, 28}, // vary level of a listing
+	".level": {yes, 28}, // alias, launches listing
+	"from":   {yes, 29}, // reveive output from a listing
+	"sgn":    {not, 30}, // sign of input
 	//	"deleted":      ops{yes, 31}, // specified below
-	"/":      ops{yes, 32}, // division
-	"sub":    ops{yes, 33}, // subtract operand
-	"-":      ops{yes, 33}, // alias of sub
-	"setmix": ops{yes, 34}, // set sensible level
-	"print":  ops{not, 35}, // print input to info display
-	"\\":     ops{yes, 36}, // "\"
+	"/":      {yes, 32}, // division
+	"sub":    {yes, 33}, // subtract operand
+	"-":      {yes, 33}, // alias of sub
+	"setmix": {yes, 34}, // set sensible level
+	"print":  {not, 35}, // print input to info display
+	"\\":     {yes, 36}, // "\"
 	//	"degrade": ops{yes, 37}, // deprecated
-	"pan":    ops{yes, 38}, // vary pan of a listing
-	".pan":   ops{yes, 38}, // alias, launches listing
-	"all":    ops{not, 39}, // receive output of all preceeding listings
-	"fft":    ops{not, 40}, // create fourier transform
-	"ifft":   ops{not, 41}, // receive from fourier representation
-	"fftrnc": ops{yes, 42}, // truncate spectrum
-	"shfft":  ops{yes, 43}, // shift spectrum
-	"ffrz":   ops{yes, 44}, // freeze-hold spectrum
-	"gafft":  ops{yes, 45}, // gate spectrum
-	"rev":    ops{not, 46}, // reverse spectrum
-	"ffltr":  ops{yes, 47}, // apply weighted average filter to spectrum
-	"ffzy":   ops{not, 48}, // rotate phases by random values
-	"ffaze":  ops{yes, 49}, // rotate phases by operand
-	"reu":    ops{not, 50}, // reverse each half of complex spectrum
+	"pan":    {yes, 38}, // vary pan of a listing
+	".pan":   {yes, 38}, // alias, launches listing
+	"all":    {not, 39}, // receive output of all preceding listings
+	"fft":    {not, 40}, // create fourier transform
+	"ifft":   {not, 41}, // receive from fourier representation
+	"fftrnc": {yes, 42}, // truncate spectrum
+	"shfft":  {yes, 43}, // shift spectrum
+	"ffrz":   {yes, 44}, // freeze-hold spectrum
+	"gafft":  {yes, 45}, // gate spectrum
+	"rev":    {not, 46}, // reverse spectrum
+	"ffltr":  {yes, 47}, // apply weighted average filter to spectrum
+	"ffzy":   {not, 48}, // rotate phases by random values
+	"ffaze":  {yes, 49}, // rotate phases by operand
+	"reu":    {not, 50}, // reverse each half of complex spectrum
 
 	// specials
-	"]":       ops{not, 0}, // end function input
-	":":       ops{yes, 0}, // command
-	"fade":    ops{yes, 0}, // set fade out
-	"del":     ops{yes, 0}, // delete a listing
-	"erase":   ops{yes, 0}, // erase a listing
-	"mute":    ops{yes, 0}, // mute a listing
-	"m":       ops{yes, 0}, // alias of mute
-	"solo":    ops{yes, 0}, // solo a listing
-	"release": ops{yes, 0}, // set limiter release
-	"unmute":  ops{not, 0}, // unmute all listings
-	".mute":   ops{yes, 0}, // alias, launches listing
-	".del":    ops{yes, 0}, // alias, launches listing
-	".solo":   ops{yes, 0}, // alias, launches listing
-	"//":      ops{yes, 0}, // comments
-	"load":    ops{yes, 0}, // load listing by filename
-	"ld":      ops{yes, 0}, // alias of load
-	"[":       ops{yes, 0}, // begin function input
-	"ls":      ops{yes, 0}, // list listings
-	"ct":      ops{yes, 0}, // individual clip threshold
-	"rld":     ops{yes, 0}, // reload a listing
-	"r":       ops{yes, 0}, // alias of rld
-	"rpl":     ops{yes, 0}, // replace a listing
-	".rpl":    ops{yes, 0}, // launch listing in place of another
-	"s":       ops{yes, 0}, // alias of solo
-	"e":       ops{yes, 0}, // alias of erase
-	"apd":     ops{yes, 0}, // launch index to new listing
-	"do":      ops{yes, 0}, // repeat next operation [operand] times
-	"d":       ops{yes, 0}, // alias of del
-	"deleted": ops{not, 0}, // for internal use
-	"/*":      ops{yes, 0}, // non-breaking comments, nop
-	"m+":      ops{yes, 0}, // add to mute group
-	".":      ops{yes, 0}, // alternate between in and out
+	"]":       {not, 0}, // end function input
+	":":       {yes, 0}, // command
+	"fade":    {yes, 0}, // set fade out
+	"del":     {yes, 0}, // delete a listing
+	"erase":   {yes, 0}, // erase a listing
+	"mute":    {yes, 0}, // mute a listing
+	"m":       {yes, 0}, // alias of mute
+	"solo":    {yes, 0}, // solo a listing
+	"release": {yes, 0}, // set limiter release
+	"unmute":  {not, 0}, // unmute all listings
+	".mute":   {yes, 0}, // alias, launches listing
+	".del":    {yes, 0}, // alias, launches listing
+	".solo":   {yes, 0}, // alias, launches listing
+	"//":      {yes, 0}, // comments
+	"load":    {yes, 0}, // load listing by filename
+	"ld":      {yes, 0}, // alias of load
+	"[":       {yes, 0}, // begin function input
+	"ls":      {yes, 0}, // list listings
+	"ct":      {yes, 0}, // individual clip threshold
+	"rld":     {yes, 0}, // reload a listing
+	"r":       {yes, 0}, // alias of rld
+	"rpl":     {yes, 0}, // replace a listing
+	".rpl":    {yes, 0}, // launch listing in place of another
+	"s":       {yes, 0}, // alias of solo
+	"e":       {yes, 0}, // alias of erase
+	"apd":     {yes, 0}, // launch index to new listing
+	"do":      {yes, 0}, // repeat next operation [operand] times
+	"d":       {yes, 0}, // alias of del
+	"deleted": {not, 0}, // for internal use
+	"/*":      {yes, 0}, // non-breaking comments, nop
+	"m+":      {yes, 0}, // add to mute group
+	".":       {yes, 0}, // alternate between in and out
 }
 
 type operation struct {
 	Op  string // operator
 	Opd string // operand
-	N   int `json:"-"`
-	Opn int `json:"-"`
+	N   int    `json:"-"`
+	Opn int    `json:"-"`
 }
 type listing []operation
 
 type fn struct {
 	Comment string
-	Body	listing
+	Body    listing
 }
 
 // 'global' transfer variable
@@ -272,10 +272,10 @@ var (
 	infoff   = make(chan struct{}) // shut-off info display (and external input)
 	mute     []float64             // should really be in transfer struct?
 	level    []float64
-	muteSkip bool // don't calculate muted listings
-	ds       bool // instigate downsampling
-	restart  bool // controls whether listing is saved to temp on launch
-	reload   = -1 // launch to index, or append if less than zero
+	muteSkip bool  // don't calculate muted listings
+	ds       bool  // instigate downsampling
+	restart  bool  // controls whether listing is saved to temp on launch
+	reload   = -1  // launch to index, or append if less than zero
 	ext      = not // loading external listing state
 	rs       bool  // root-sync between running instances
 
@@ -287,7 +287,7 @@ var ( // misc
 	BYTE_ORDER         = binary.LittleEndian // not allowed in constants
 	TLlen      int     = SAMPLE_RATE * TAPE_LENGTH
 	fade       float64 = Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
-	protected          = yes // redundant
+	protected          = yes                               // redundant
 	release    float64 = Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
 	DS                 = 1                                 // down-sample
 	ct                 = 8.0                               // individual listing clip threshold
@@ -369,7 +369,7 @@ func main() {
 		}
 		defer pprof.StopCPUProfile()
 	}
-	save([]listing{listing{operation{Op: advisory}}}, "displaylisting.json")
+	save([]listing{{operation{Op: advisory}}}, "displaylisting.json")
 	// open audio output (everything is a file...)
 	file := "/dev/dsp"
 	soundcard, rr := os.OpenFile(file, os.O_WRONLY, 0644)
@@ -491,7 +491,7 @@ func main() {
 		"sync",
 	}
 	// add 12 reserved signals for inter-list signals
-	lenReserved := len(reserved) // use this as starting point for exported signals
+	lenReserved := len(reserved)     // use this as starting point for exported signals
 	daisyChains = []int{2, 3, 9, 10} // pitch,tempo,grid,sync
 	for i := 0; i < EXPORTED_LIMIT; i++ {
 		reserved = append(reserved, sf("***%d", i+lenReserved)) // placeholder
@@ -513,10 +513,10 @@ func main() {
 	}
 	var funcsave bool
 	dispListings := []listing{}
-	code := &dispListings // code sent to listings.go
-	priorMutes := []float64{} // to save mutes for recall after pause/play
-	solo := -1 // index of most recent solo
-	unsolo := []float64{} // snapshot of mutes before solo
+	code := &dispListings              // code sent to listings.go
+	priorMutes := []float64{}          // to save mutes for recall after pause/play
+	solo := -1                         // index of most recent solo
+	unsolo := []float64{}              // snapshot of mutes before solo
 	lockLoad := make(chan struct{}, 1) // mutex on transferring listings
 	type token struct {
 		tk     string
@@ -524,7 +524,7 @@ func main() {
 		ext    bool
 	}
 	tokens := make(chan token, 2<<12) // arbitrary capacity, will block input in extreme circumstances
-	usage := loadUsage() // local usage telemetry
+	usage := loadUsage()              // local usage telemetry
 
 	go func() { // watchdog, anonymous to use variables in scope
 		// This function will restart the sound engine and reload listings using new sample rate
@@ -572,7 +572,7 @@ func main() {
 		}
 	}()
 
-	rpl := -1 // synchronised to 'reload' at new listing start and if error
+	rpl := -1   // synchronised to 'reload' at new listing start and if error
 	go func() { // scan stdin from goroutine to allow external concurrent input
 		s := bufio.NewScanner(os.Stdin)
 		s.Split(bufio.ScanWords)
@@ -642,11 +642,11 @@ start:
 			"semitone": Pow(2, 1.0/12),
 			"Tau":      2 * Pi, // 2π
 			"ln7":      Log(7),
-			"^freq":    NOISE_FREQ, // default frequency for setmix, suitable for noise
-			"null":     0, // only necessary if zero is banned in Syntə again
-			"fifth":	Pow(2, 7.0/12), // equal temperament ≈ 1.5 (2:3)
-			"third":	Pow(2, 1.0/3), // major, equal temperament ≈ 1.25 (4:5)
-			"seventh":	Pow(2, 11.0/12), // major, equal temperament ≈ 1.875 (8:15)
+			"^freq":    NOISE_FREQ,      // default frequency for setmix, suitable for noise
+			"null":     0,               // only necessary if zero is banned in Syntə again
+			"fifth":    Pow(2, 7.0/12),  // equal temperament ≈ 1.5 (2:3)
+			"third":    Pow(2, 1.0/3),   // major, equal temperament ≈ 1.25 (4:5)
+			"seventh":  Pow(2, 11.0/12), // major, equal temperament ≈ 1.875 (8:15)
 		}
 		for i, w := range wavSlice {
 			sg[w.Name] = float64(i)
@@ -662,9 +662,9 @@ start:
 			}
 			out[v] = struct{}{}
 		}
-		fIn := not // yes = inside function definition
-		st := 0    // func def start
-		fun := 0   // don't worry the fun will increase!
+		fIn := not  // yes = inside function definition
+		st := 0     // func def start
+		fun := 0    // don't worry the fun will increase!
 		reload = -1 // index to be launched to
 		rpl = reload
 		do, To := 0, 0
@@ -677,7 +677,7 @@ start:
 			<-carryOn
 		}
 		mutes := []int{} // new mute group
-		inout := not // bool for dot syntax
+		inout := not     // bool for dot syntax
 
 	input:
 		for { // input loop
@@ -752,20 +752,20 @@ start:
 				operands = strings.Split(o, ",")
 				if !f && len(operands) > 1 {
 					clr("only functions can have multiple operands")
-				if ext {
-					ext = not
-					continue start
-				}
+					if ext {
+						ext = not
+						continue start
+					}
 					continue
 				}
 				wav := wmap[opd] && op == "wav" // wavs can start with a number
 				if strings.ContainsAny(o[:1], "+-.0123456789") && !wav && !f {
 					if num.Ber, num.Is = parseType(o, op); !num.Is {
 						clr("")
-				if ext {
-					ext = not
-					continue start
-				}
+						if ext {
+							ext = not
+							continue start
+						}
 						continue input // parseType will report error
 					}
 				}
@@ -794,7 +794,6 @@ start:
 			case ">":
 				inout = not
 			}
-
 
 			if f { // parse function
 				function := make(listing, len(funcs[op].Body))
@@ -833,7 +832,6 @@ start:
 					case "out", ">":
 						out[function[i].Opd] = struct{}{}
 					}
-
 				}
 				m := 0
 				switch M {
@@ -1132,8 +1130,8 @@ start:
 					m = &priorMutes // alter saved mutes if paused
 				}
 				for _, i := range mutes {
-					(*m)[i] = 1 - (*m)[i] // toggle mute
-					unsolo[i] = (*m)[i] // toggle status for unsolo
+					(*m)[i] = 1 - (*m)[i]          // toggle mute
+					unsolo[i] = (*m)[i]            // toggle status for unsolo
 					display.Mute[i] = (*m)[i] == 0 // convert binary to boolean and display
 					if solo == i && (*m)[i] == 0 { // if muting solo'd listing reset solo
 						solo = -1
@@ -1181,7 +1179,7 @@ start:
 				}
 				if solo == i { // unsolo index given by operand
 					for i := range mute { // i is shadowed
-						(*m)[i] = unsolo[i] // restore all other mutes
+						(*m)[i] = unsolo[i]            // restore all other mutes
 						display.Mute[i] = (*m)[i] == 0 // update display
 					}
 					solo = -1 // unset solo index
@@ -1192,8 +1190,8 @@ start:
 							display.Mute[i] = not
 							continue
 						}
-						unsolo[ii] = (*m)[ii] // save all mutes
-						(*m)[ii] = 0 // mute all listings
+						unsolo[ii] = (*m)[ii]  // save all mutes
+						(*m)[ii] = 0           // mute all listings
 						display.Mute[ii] = yes // display as muted
 					}
 					solo = i // save index of solo
@@ -1363,7 +1361,7 @@ start:
 					if started {
 						<-stop
 					}
-					save([]listing{listing{operation{Op: advisory}}}, "displaylisting.json")
+					save([]listing{{operation{Op: advisory}}}, "displaylisting.json")
 					p("Stopped")
 					close(infoff)
 					if funcsave && !save(funcs, "functions.json") {
@@ -1389,7 +1387,7 @@ start:
 					if started && !display.Paused {
 						for i := range mute { // save, and mute all
 							priorMutes[i] = mute[i] // save mutes for resume play
-							mute[i] = 0 // here, mute is dual-purposed to gracefully turn off listings
+							mute[i] = 0             // here, mute is dual-purposed to gracefully turn off listings
 						}
 						time.Sleep(150 * time.Millisecond) // wait for mutes
 						pause <- yes
@@ -1443,7 +1441,7 @@ start:
 					msg("___Mem Stats:___")
 					msg("Alloc: %v", stats.Alloc)
 					msg("Sys: %v", stats.Sys)
-					msg("Live: %v", stats.Mallocs - stats.Frees)
+					msg("Live: %v", stats.Mallocs-stats.Frees)
 				case "mc": // mouse curve, exp or lin
 					mc = !mc
 				case "muff": // Mute Off
@@ -1517,7 +1515,6 @@ start:
 			if !ext {
 				msg(" ")
 			}
-
 		}
 		// end of input
 
@@ -2047,7 +2044,7 @@ func SoundEngine(file *os.File, bits int) {
 	//w := file
 	output := func(w io.Writer, f float64) {
 		//binary.Write(w, BYTE_ORDER, int16(f))
-		w.Write([]byte{byte(uint32(f)), byte(uint32(f)>>8)})
+		w.Write([]byte{byte(uint32(f)), byte(uint32(f) >> 8)})
 	}
 	switch bits {
 	case 8:
@@ -2060,7 +2057,7 @@ func SoundEngine(file *os.File, bits int) {
 	case 32:
 		output = func(w io.Writer, f float64) {
 			//binary.Write(w, BYTE_ORDER, int32(f))
-			w.Write([]byte{byte(uint32(f)), byte(uint32(f)>>8), byte(uint32(f)>>16), byte(uint32(f)>>24)})
+			w.Write([]byte{byte(uint32(f)), byte(uint32(f) >> 8), byte(uint32(f) >> 16), byte(uint32(f) >> 24)})
 		}
 	default:
 		msg("unable to write to soundcard!")
@@ -2098,15 +2095,15 @@ func SoundEngine(file *os.File, bits int) {
 		hpf160, x160 float64 // limiter detection
 		lpf50, lpf510,
 		deemph float64 // de-emphasis
-		α             = 1 / (SampleRate/(2*Pi*6.3) + 1) // co-efficient for setmix
-		hroom         = (convFactor - 1.0) / convFactor // headroom for positive dither
-		c, mixF       float64 = 4,4                          // mix factor
+		α                     = 1 / (SampleRate/(2*Pi*6.3) + 1) // co-efficient for setmix
+		hroom                 = (convFactor - 1.0) / convFactor // headroom for positive dither
+		c, mixF       float64 = 4, 4                            // mix factor
 		pd            int
 		nyfL, nyfR    float64                                    // nyquist filtering
 		nyfC          float64 = 1 / (1 + 1/(Tau*2e4/SampleRate)) // coefficient
 		L, R, sides   float64
 		setmixDefault = 320 / SampleRate
-		current int
+		current       int
 	)
 	no *= 77777777777 // force overflow
 	defer func() {    // fail gracefully
@@ -2122,14 +2119,14 @@ func SoundEngine(file *os.File, bits int) {
 			n := runtime.Stack(buf[:], false)
 			msg("%s", buf[:n]) // print stack trace to infoDisplay*/
 			if current > len(transfer.Listing)-1 {
-				current = len(transfer.Listing)-1
+				current = len(transfer.Listing) - 1
 			}
 			if current < 0 {
 				break
 			}
 			// this doesn't handle immediate panics well, despite above bounds checks
 			transfer.Listing[current] = listing{operation{Op: "deleted", Opn: 31}} // delete listing
-			transfer.Signals[current][0] = 0                              // silence listing
+			transfer.Signals[current][0] = 0                                       // silence listing
 			info <- sf("listing deleted: %d", current)
 		}
 		fade := Pow(FDOUT, 1/(MIN_FADE*SampleRate*float64(DS)))
@@ -2235,15 +2232,15 @@ func SoundEngine(file *os.File, bits int) {
 		}
 
 		mo := mouse
-		mx = mx + (mo.X - mx) * 0.0026 // lpf @ ~20Hz
-		my = my + (mo.Y - my) * 0.0013
+		mx = mx + (mo.X-mx)*0.0026 // lpf @ ~20Hz
+		my = my + (mo.Y-my)*0.0013
 
 		for i, list := range listings {
 			for _, ii := range daisyChains {
 				sigs[i][ii] = sigs[(i+len(sigs)-1)%len(sigs)][ii]
 			}
-			m[i] = m[i] + (mute[i] - m[i]) * 0.0013 // anti-click filter @ ~10hz
-			lv[i] = lv[i] + (level[i] - lv[i]) * 0.125  // @ 1091hz
+			m[i] = m[i] + (mute[i]-m[i])*0.0013    // anti-click filter @ ~10hz
+			lv[i] = lv[i] + (level[i]-lv[i])*0.125 // @ 1091hz
 			// skip muted/deleted listing
 			if (muteSkip && mute[i] == 0 && m[i] < 1e-6) || list[0].Opn == 31 {
 				continue
@@ -2333,7 +2330,7 @@ func SoundEngine(file *os.File, bits int) {
 					tapes[i][n%TLlen] = th[i] // record head
 					tl := SampleRate * TAPE_LENGTH
 					//t := Abs(Min(1/sigs[i][o.N], tl))
-					t := Mod((1/sigs[i][o.N]), tl)
+					t := Mod((1 / sigs[i][o.N]), tl)
 					if sigs[i][o.N] == 0 {
 						t = 0
 					}
@@ -2485,7 +2482,6 @@ func SoundEngine(file *os.File, bits int) {
 						for n, z := range zz { // n, z are shadowed
 							w := (1 - Cos(Tau*float64(n)*N1)) * 0.5 // Hann
 							ifftArray[i][n] = w * real(z) * invN2
-
 						}
 					}
 					if n%N == N2+1 && n >= N {
@@ -2493,7 +2489,6 @@ func SoundEngine(file *os.File, bits int) {
 						for n, z := range zz { // n, z are shadowed
 							w := (1 - Cos(Tau*float64(n)*N1)) * 0.5 // Hann
 							ifft2[i][n] = w * real(z) * invN2
-
 						}
 					}
 					if !ffrz[i] {
@@ -2623,7 +2618,7 @@ func SoundEngine(file *os.File, bits int) {
 		x = dac
 		dac = hpf
 		c += 16 / (c*c + 4.77)
-		mixF = mixF + (Abs(c) - mixF) * 0.00026 // ~2Hz @ 48kHz // * 4.36e-5 // 3s @ 48kHz
+		mixF = mixF + (Abs(c)-mixF)*0.00026 // ~2Hz @ 48kHz // * 4.36e-5 // 3s @ 48kHz
 		dac /= mixF
 		sides /= c
 		c = 0
@@ -2635,11 +2630,11 @@ func SoundEngine(file *os.File, bits int) {
 			x160 = dac
 			{
 				d := 4 * dac / (1 + Abs(dac*4)) // tanh approximation
-				lpf50 = lpf50 + (d-lpf50) * 0.006536
-				lpf510 = lpf510 + (lpf50-lpf510) * 0.006536
+				lpf50 = lpf50 + (d-lpf50)*0.006536
+				lpf510 = lpf510 + (lpf50-lpf510)*0.006536
 				deemph = lpf510 * 0.667
 			}
-			det := Abs(32*hpf2560 + 5.657*hpf160 + dac) * 0.8
+			det := Abs(32*hpf2560+5.657*hpf160+dac) * 0.8
 			if det > l {
 				l = det // MC
 				h = release
@@ -2661,11 +2656,11 @@ func SoundEngine(file *os.File, bits int) {
 			}
 		}
 		no.ise()
-		dither = float64(no) * invMaxUint 
+		dither = float64(no) * invMaxUint
 		no.ise()
-		dither += float64(no)* invMaxUint
+		dither += float64(no) * invMaxUint
 		dac *= hroom
-		dac += dither / convFactor // dither dac value ±1 from xorshift lfsr
+		dac += dither / convFactor       // dither dac value ±1 from xorshift lfsr
 		if abs := Abs(dac); abs > peak { // peak detect
 			peak = abs
 		}
@@ -2675,8 +2670,8 @@ func SoundEngine(file *os.File, bits int) {
 			peak = 0
 		}
 		sides = Max(-0.5, Min(0.5, sides))
-		L = clip(dac + sides) * convFactor // clip will display info
-		R = clip(dac - sides) * convFactor
+		L = clip(dac+sides) * convFactor // clip will display info
+		R = clip(dac-sides) * convFactor
 		t = time.Since(lastTime)
 		for i := 0; i < DS; i++ { // write sample(s) to soundcard
 			nyfL = nyfL + nyfC*(L-nyfL)
@@ -2721,14 +2716,14 @@ func SoundEngine(file *os.File, bits int) {
 	}
 }
 func clip(in float64) float64 { // hard clip
-		if in > 1 {
-			in = 1
-			display.Clip = yes
-		} else if in < -1 {
-			in = -1
-			display.Clip = yes
-		}
-		return in
+	if in > 1 {
+		in = 1
+		display.Clip = yes
+	} else if in < -1 {
+		in = -1
+		display.Clip = yes
+	}
+	return in
 }
 
 var sineTab = make([]float64, int(SampleRate))
@@ -2795,16 +2790,16 @@ func (n *noise) ise() {
 
 func mod(x, y float64) float64 {
 	return Mod(x, y)
-	m := int(MaxInt32*x)
+	/*m := int(MaxInt32*x)
 	m %= int(MaxInt32*y) // dirty mod
-	return float64(m)/MaxInt32
+	return float64(m)/MaxInt32*/
 }
 
 const (
-	N  = 2 << 12
-	N2 = N >> 1 // fft window size
+	N     = 2 << 12
+	N2    = N >> 1 // fft window size
 	invN2 = 1.0 / N2
-	N1 = 1.0 / (N-1)
+	N1    = 1.0 / (N - 1)
 )
 
 func fft(y [N]complex128, s float64) [N]complex128 {

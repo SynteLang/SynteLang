@@ -58,6 +58,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	. "math" // don't do this!
@@ -584,7 +585,7 @@ func main() {
 
 	go func() { // poll '.temp/*.syt' modified time and reload if changed
 		l := 0
-		stat := make([]time.Time, l)
+		stat := make([]time.Time, 0)
 		for {
 			time.Sleep(32361 * time.Microsecond) // coarse loop timing
 			lockLoad <- struct{}{}
@@ -594,7 +595,7 @@ func main() {
 			for i := 0; i < l; i++ {
 				f := sf(".temp/%d.syt", i)
 				st, rm := os.Stat(f)
-				if e(rm) || st.ModTime() == stat[i] {
+				if e(rm) || st.ModTime().Equal(stat[i]) {
 					continue
 				}
 				if stat[i].IsZero() { // initialise new listings for next loop
@@ -667,8 +668,8 @@ start:
 		fun := 0    // don't worry the fun will increase!
 		reload = -1 // index to be launched to
 		rpl = reload
-		do, To := 0, 0
-		clr := func(s string, i ...interface{}) { // alternative to msg func in lieu of proper error handling
+		do, to := 0, 0
+		clr := func(s string, i ...any) { // alternative to msg func in lieu of proper error handling
 			for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
 				<-tokens
 			}
@@ -772,8 +773,8 @@ start:
 			}
 			for do > 1 { // one done below
 				tokens <- token{op, -1, not}
-				d := strings.ReplaceAll(opd, "{i}", sf("%d", To-do+1))
-				d = strings.ReplaceAll(d, "{i+1}", sf("%d", To-do+2))
+				d := strings.ReplaceAll(opd, "{i}", sf("%d", to-do+1))
+				d = strings.ReplaceAll(d, "{i+1}", sf("%d", to-do+2))
 				if t2 := operators[op]; t2.Opd { // to avoid weird blank opds being sent
 					tokens <- token{d, -1, not}
 				}
@@ -936,10 +937,10 @@ start:
 			switch op {
 			case "out", "out+", ".out", ">":
 				_, in := out[opd]
-				ExpSig := not
+				expSig := not
 				for i := lenReserved; i < lenReserved+lenExported; i++ {
 					if reserved[i] == opd {
-						ExpSig = yes
+						expSig = yes
 					}
 				}
 				switch {
@@ -950,7 +951,7 @@ start:
 						continue start
 					}
 					continue
-				case in && opd[:1] != "^" && opd != "dac" && !ExpSig && op != "out+":
+				case in && opd[:1] != "^" && opd != "dac" && !expSig && op != "out+":
 					clr("%sduplicate output to signal, c'est interdit%s", italic, reset)
 					if ext {
 						ext = not
@@ -1023,7 +1024,6 @@ start:
 				operators[name] = ops{Opd: hasOpd}
 				funcs[name] = fn{Body: newListing[st+1:]}
 				msg("%sfunction %s%s%s ready%s.", italic, reset, name, italic, reset)
-				fIn = not
 				if funcsave {
 					if !save(funcs, "functions.json") {
 						msg("function not saved!")
@@ -1031,7 +1031,7 @@ start:
 						msg("%sfunction saved%s", italic, reset)
 					}
 				}
-				continue start
+				continue start // fIn will be reset on start
 			case "fade":
 				if !num.Is {
 					msg("%snot a valid number%s", italic, reset)
@@ -1288,12 +1288,9 @@ start:
 					msg("unable to access '%s': %s", dir, rr)
 					continue
 				}
-				extn := ""
-				switch dir {
-				case "./wavs":
+				extn := ".syt"
+				if dir == "./wavs" {
 					extn = ".wav"
-				default:
-					extn = ".syt"
 				}
 				ls := ""
 				for _, file := range files {
@@ -1340,7 +1337,7 @@ start:
 					continue
 				}
 				msg("%snext operation repeated%s %dx", italic, reset, do)
-				To = do
+				to = do
 				continue
 			case ":":
 				if opd == "p" { // toggle pause/play
@@ -1820,8 +1817,8 @@ func decodeWavs() wavs {
 			continue
 		}
 		data := make([]byte, 44+8*WAV_LENGTH) // enough for 32bit stereo @ WAV_LENGTH
-		n, rr := io.ReadFull(r, data)
-		if rr == io.ErrUnexpectedEOF {
+		n, err := io.ReadFull(r, data)
+		if errors.Is(err, io.ErrUnexpectedEOF) {
 			data = data[:n] // truncate silent data
 		} else if e(rr) {
 			msg("error reading: %s %s", file, rr)
@@ -1868,7 +1865,7 @@ func decodeWavs() wavs {
 			continue
 		}
 		l := len(file)
-		wav.Name = strings.Replace(file[:l-4], " ", "", -1)
+		wav.Name = strings.ReplaceAll(file[:l-4], " ", "")
 		w = append(w, wav)
 		r.Close()
 		t := float64(len(wav.Data)) / float64(SR)
@@ -1886,16 +1883,16 @@ func decodeWavs() wavs {
 
 func decode[S int16 | int32](rb *bytes.Reader, file string, samples []S, factor float64, to, channels int) []float64 {
 	rr := binary.Read(rb, binary.LittleEndian, &samples)
-	if e(rr) && rr != io.ErrUnexpectedEOF {
+	if e(rr) && !errors.Is(rr, io.ErrUnexpectedEOF) {
 		msg("error decoding: %s %s", file, rr)
 		return nil
 	}
 	// convert to syntə format
 	wav := make([]float64, 0, to)
 	for i := 0; i < to-channels+1; i += channels {
-		s := 0.0
+		var s float64
 		if channels == 2 {
-			s = (float64(samples[i]) + float64(samples[i+1])) / (2 * factor)
+			s = (float64(samples[i]) + float64(samples[i+1])) / (2 * factor) // convert to mono
 		} else {
 			s = float64(samples[i]) / factor
 		}
@@ -1906,7 +1903,7 @@ func decode[S int16 | int32](rb *bytes.Reader, file string, samples []S, factor 
 
 // quick and basic decode of mouse bytes
 func mouseRead() {
-	file := ""
+	var file string
 	switch runtime.GOOS {
 	case "freebsd":
 		file = "/dev/bpsm0"
@@ -2041,23 +2038,23 @@ func SoundEngine(file *os.File, bits int) {
 	defer close(stop)
 	w := bufio.NewWriterSize(file, 256)
 	defer w.Flush()
-	//w := file
+	//w := file // unbuffered alternative
 	output := func(w io.Writer, f float64) {
 		//binary.Write(w, BYTE_ORDER, int16(f))
-		w.Write([]byte{byte(uint32(f)), byte(uint32(f) >> 8)})
+		w.Write([]byte{byte(uint32(f)), byte(uint32(f) >> 8)}) // errors ignored
 	}
 	switch bits {
 	case 8:
 		output = func(w io.Writer, f float64) {
-			binary.Write(w, BYTE_ORDER, int8(f))
-			//w.Write([]byte{byte(f)})
+			//binary.Write(w, BYTE_ORDER, int8(f))
+			w.Write([]byte{byte(f)}) // errors ignored
 		}
 	case 16:
 		// already assigned
 	case 32:
 		output = func(w io.Writer, f float64) {
 			//binary.Write(w, BYTE_ORDER, int32(f))
-			w.Write([]byte{byte(uint32(f)), byte(uint32(f) >> 8), byte(uint32(f) >> 16), byte(uint32(f) >> 24)})
+			w.Write([]byte{byte(uint32(f)), byte(uint32(f) >> 8), byte(uint32(f) >> 16), byte(uint32(f) >> 24)}) // errors ignored
 		}
 	default:
 		msg("unable to write to soundcard!")
@@ -2100,7 +2097,7 @@ func SoundEngine(file *os.File, bits int) {
 		c, mixF       float64 = 4, 4                            // mix factor
 		pd            int
 		nyfL, nyfR    float64                                    // nyquist filtering
-		nyfC          float64 = 1 / (1 + 1/(Tau*2e4/SampleRate)) // coefficient
+		nyfC          float64 = 1 / (1 + 1/(Tau*2e4/SampleRate)) // coefficient, filter needs cleaner implementation
 		L, R, sides   float64
 		setmixDefault = 320 / SampleRate
 		current       int
@@ -2150,18 +2147,17 @@ func SoundEngine(file *os.File, bits int) {
 		stacks[i] = stack
 	}
 	wavs := make([][]float64, len(transfer.Wavs), MAX_WAVS)
-	tapes := make([][]float64, 0, 26)
 	copy(listings, transfer.Listing)
 	copy(sigs, transfer.Signals)
 	copy(wavs, transfer.Wavs)
-	tapes = make([][]float64, len(transfer.Listing))
+	tapes := make([][]float64, len(transfer.Listing), 26)
 	for i := range tapes { // i is shadowed
 		tapes[i] = make([]float64, TLlen)
 	}
-	tf := make([]float64, len(transfer.Listing)+31)
-	th := make([]float64, len(transfer.Listing)+31)
-	tx := make([]float64, len(transfer.Listing)+31)
-	pan := make([]float64, len(transfer.Listing)+31)
+	tf := make([]float64, len(transfer.Listing), len(transfer.Listing)+31)
+	th := make([]float64, len(transfer.Listing), len(transfer.Listing)+31)
+	tx := make([]float64, len(transfer.Listing), len(transfer.Listing)+31)
+	pan := make([]float64, len(transfer.Listing), len(transfer.Listing)+31)
 	accepted <- yes
 	type st8 int
 	const (
@@ -2685,10 +2681,10 @@ func SoundEngine(file *os.File, bits int) {
 		rate -= rates[(n+1)%RATE]
 		if n%RATE == 0 && n > RATE<<2 { // don't restart in first four time frames
 			display.Load = rate / RATE
-			if (float64(display.Load) > 1e9/SampleRate || ds) && SampleRate > 22050 {
+			switch {
+			case (float64(display.Load) > 1e9/SampleRate || ds) && SampleRate > 22050:
 				ds = not
 				DS <<= 1
-				nyfC = 1 / (1 + (float64(DS*DS) / Pi)) // coefficient is non-linear
 				SampleRate /= 2
 				display.SR = SampleRate
 				fade = Pow(FDOUT, 1/(MIN_FADE*SampleRate))
@@ -2696,11 +2692,10 @@ func SoundEngine(file *os.File, bits int) {
 				sineTab = make([]float64, int(SampleRate))
 				calcSineTab()
 				panic(overload)
-			} else if float64(display.Load) > 1e9/SampleRate {
+			case float64(display.Load) > 1e9/SampleRate:
 				panic(rateLimit)
-			} else if DS > 1 && float64(display.Load) < 33e8/SampleRate && n > 100000 { // holdoff for ~4secs x DS
+			case DS > 1 && float64(display.Load) < 33e8/SampleRate && n > 100000: // holdoff for ~4secs x DS
 				DS >>= 1
-				nyfC = 1 / (1 + (float64(DS*DS) / Pi)) // coefficient is non-linear
 				SampleRate *= 2
 				display.SR = SampleRate
 				fade = Pow(FDOUT, 1/(MIN_FADE*SampleRate))
@@ -2824,7 +2819,7 @@ func fft(y [N]complex128, s float64) [N]complex128 {
 	return y
 }
 
-func load(data interface{}, f string) {
+func load(data any, f string) {
 	Json, rr := os.ReadFile(f)
 	rr2 := json.Unmarshal(Json, data)
 	if e(rr) || e(rr2) {
@@ -2832,7 +2827,7 @@ func load(data interface{}, f string) {
 	}
 }
 
-func save(data interface{}, f string) bool {
+func save(data any, f string) bool {
 	Json, rr := json.MarshalIndent(data, "", "\t")
 	rr2 := os.WriteFile(f, Json, 0644)
 	if e(rr) || e(rr2) {
@@ -2846,14 +2841,14 @@ func save(data interface{}, f string) bool {
 func p(i ...any) {
 	fmt.Println(i...)
 }
-func pf(s string, i ...interface{}) {
+func pf(s string, i ...any) {
 	fmt.Printf(s, i...)
 }
 
-var sf func(string, ...interface{}) string = fmt.Sprintf
+var sf func(string, ...any) string = fmt.Sprintf
 
 // msg sends a formatted string to info display
-func msg(s string, i ...interface{}) {
+func msg(s string, i ...any) {
 	info <- fmt.Sprintf(s, i...)
 	<-carryOn
 }

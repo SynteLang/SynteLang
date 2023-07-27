@@ -136,7 +136,7 @@ func main() {
 				if display.Clip {
 					unprotected = fmt.Sprintf("%sUnprotected%s", invert, reset)
 				} else {
-					unprotected = fmt.Sprintf("Unprotected")
+					unprotected = "Unprotected"
 				}
 			} else {
 				unprotected = ""
@@ -174,7 +174,7 @@ func main() {
 			VU += fmt.Sprintf("\r           %s%s%s|", green, dB, reset)
 			nn := int(vu * 20)
 			for i := 0; i < nn; i++ {
-				VU += fmt.Sprintf("|")
+				VU += "|"
 			}
 
 			fmt.Printf("\033[H\033[2J")

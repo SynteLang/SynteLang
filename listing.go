@@ -1,5 +1,5 @@
 /*	listing.go displays active listings while Syntə is running
-	Data transfered via './displaylisting.json'
+	Data transferred via './displaylisting.json'
 	File emptied on exit. Check '/recordings' folder to see played listings by timestamp
 	Press enter to exit
 */

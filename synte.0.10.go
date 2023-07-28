@@ -1642,10 +1642,10 @@ func parseType(expr, op string) (n float64, b bool) {
 		if n, b = evaluateExpr(expr[:len(expr)-3]); !b {
 			return 0, false
 		}
-		if n > 300 {
+		if n > 300 && op == "in" {
 			msg("gabber territory")
 		}
-		if n > 3000 {
+		if n > 3000 && op == "in" {
 			msg("%.fbpm? You're 'aving a larf mate", n)
 			return 0, false
 		}

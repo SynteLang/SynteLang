@@ -517,7 +517,7 @@
 		]
 	},
 	"chorus": {
-		"Comment": "",
+		"Comment": "first argument is speed, second is depth",
 		"Body": [
 			{
 				"Op": "out",
@@ -526,10 +526,6 @@
 			{
 				"Op": "in",
 				"Opd": "@"
-			},
-			{
-				"Op": "out",
-				"Opd": "^freq"
 			},
 			{
 				"Op": "+",

@@ -237,6 +237,7 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"/*":      {yes, 0}, // non-breaking comments, nop
 	"m+":      {yes, 0}, // add to mute group
 	".":       {yes, 0}, // alternate between in and out
+	"gain":    {yes, 0}, // set overall mono gain before limiter
 }
 
 type operation struct {
@@ -281,6 +282,7 @@ var (
 	rs       bool  // root-sync between running instances
 
 	daisyChains []int // list of exported signals to be daisy-chained
+	gain = 1.0
 )
 
 var ( // misc
@@ -602,6 +604,7 @@ func main() {
 					stat[i] = st.ModTime()
 					continue
 				}
+				// the following could be replaced with `tokens <- {sf("rld %s",i), i, yes}?
 				inputF, rr := os.Open(f)
 				if e(rr) {
 					continue // skip missing listings without warning
@@ -609,6 +612,7 @@ func main() {
 				if !display.Paused { // mute before reload
 					priorMutes[i] = mute[i]
 					mute[i] = 0
+					display.Mute[i] = mute[i] == 0
 					time.Sleep(50 * time.Millisecond) // wait for mutes
 				}
 				s := bufio.NewScanner(inputF)
@@ -617,6 +621,7 @@ func main() {
 					tokens <- token{s.Text(), i, yes}
 				}
 				inputF.Close()
+				// // //
 				stat[i] = st.ModTime()
 			}
 			<-lockLoad
@@ -1073,7 +1078,6 @@ start:
 						continue input
 					}
 				}
-				newListing = append(newListing, listing{{Op: "push"}, {Op: "in", Opd: sf("%v", NOISE_FREQ)}, {Op: "out", Opd: "^freq"}, {Op: "pop"}}...)
 			case "degrade":
 				if len(transfer.Listing) == 0 {
 					msg("%scan't use degrade in first listing%s", italic, reset)
@@ -1211,6 +1215,11 @@ start:
 						msg("%soperand not valid:%s %s", italic, reset, opd)
 						continue
 					}
+					/*if !display.Paused { // mute before reload
+						priorMutes[i] = mute[i]
+						mute[i] = 0
+						time.Sleep(50 * time.Millisecond) // wait for mutes
+					}*/
 					reload = n
 					opd = ".temp/" + opd
 				case "apd":
@@ -1338,6 +1347,12 @@ start:
 				}
 				msg("%snext operation repeated%s %dx", italic, reset, do)
 				to = do
+				continue
+			case "gain":
+				if n, ok := parseType(opd, op); ok {
+					gain *= n
+					msg("%sgain set to %s%.2gdb", italic, 20*Log10(gain), reset)
+				}
 				continue
 			case ":":
 				if opd == "p" { // toggle pause/play
@@ -1596,6 +1611,7 @@ start:
 			transmit <- yes
 			<-accepted
 			mute[reload] = priorMutes[reload]
+			display.Mute[reload] = mute[reload] == 0
 		}
 		<-lockLoad
 		if !started {
@@ -2436,7 +2452,7 @@ func SoundEngine(file *os.File, bits int) {
 					d := a - peakfreq[i]
 					//peakfreq[i] += d * α * (a / peakfreq[i])
 					peakfreq[i] += d * α * (30 * Abs(d) * a / peakfreq[i])
-					r *= Min(1, 70/(peakfreq[i]*SampleRate+20)) // ignoring density
+					r *= Min(1, 75/(peakfreq[i]*SampleRate+20)) // ignoring density
 					//r *= Min(1, Sqrt(80/(peakfreq[i]*SampleRate+20)))
 				case 35: // "print"
 					pd++ // unnecessary?
@@ -2616,7 +2632,8 @@ func SoundEngine(file *os.File, bits int) {
 		c += 16 / (c*c + 4.77)
 		mixF = mixF + (Abs(c)-mixF)*0.00026 // ~2Hz @ 48kHz // * 4.36e-5 // 3s @ 48kHz
 		dac /= mixF
-		sides /= c
+		sides /= mixF
+		dac *= gain
 		c = 0
 		if protected { // limiter
 			// apply premphasis to detection

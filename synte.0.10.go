@@ -117,7 +117,12 @@ const (
 	MAX_FADE       = 120    // 120s
 )
 
-var convFactor = float64(MaxInt16) // checked below
+var (
+	convFactor = float64(MaxInt16) // checked below
+	SampleRate float64 = SAMPLE_RATE
+	BYTE_ORDER         = binary.LittleEndian // not allowed in constants
+	TLlen      int     = SAMPLE_RATE * TAPE_LENGTH
+)
 
 // terminal colours, eg. sf("%stest%s test", yellow, reset)
 const (
@@ -260,6 +265,12 @@ var transfer struct { // make this a slice of structs?
 	Wavs    [][]float64 // sample
 }
 
+type token struct {
+	tk     string
+	reload int
+	ext    bool
+}
+
 // communication variables
 var (
 	stop     = make(chan struct{}) // confirm on close()
@@ -278,22 +289,17 @@ var (
 	ds       bool  // instigate downsampling
 	restart  bool  // controls whether listing is saved to temp on launch
 	reload   = -1  // launch to index, or append if less than zero
-	ext      = not // loading external listing state
 	rs       bool  // root-sync between running instances
 
 	daisyChains []int // list of exported signals to be daisy-chained
-	gain = 1.0
-)
+	fade       = Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
+	protected  = yes                               // redundant
+	release    = Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
+	DS         = 1                                 // down-sample
+	ct         = 8.0                               // individual listing clip threshold
+	gain       = 1.0
 
-var ( // misc
-	SampleRate float64 = SAMPLE_RATE
-	BYTE_ORDER         = binary.LittleEndian // not allowed in constants
-	TLlen      int     = SAMPLE_RATE * TAPE_LENGTH
-	fade       float64 = Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
-	protected          = yes                               // redundant
-	release    float64 = Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
-	DS                 = 1                                 // down-sample
-	ct                 = 8.0                               // individual listing clip threshold
+	tokens = make(chan token, 2<<12) // arbitrary capacity, will block input in extreme circumstances
 )
 
 type noise uint64
@@ -341,6 +347,12 @@ type wavs []struct {
 	Data []float64
 }
 
+const (
+	retry = iota
+	cancel
+	tokenPairRead
+)
+
 const advisory = `
 Protect your hearing when listening to any audio on a system capable of
 more than 85dB SPL
@@ -373,104 +385,22 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 	save([]listing{{operation{Op: advisory}}}, "displaylisting.json")
-	// open audio output (everything is a file...)
-	file := "/dev/dsp"
-	soundcard, rr := os.OpenFile(file, os.O_WRONLY, 0644)
-	if e(rr) {
-		p(rr)
-		p("soundcard not available, shutting down...")
-		time.Sleep(3 * time.Second)
-		os.Exit(1)
-	}
-	defer soundcard.Close()
 
-	// set bit format
-	var req uint32 = SNDCTL_DSP_SETFMT
-	var data uint32 = SELECTED_FMT
-	_, _, ern := syscall.Syscall(
-		syscall.SYS_IOCTL,
-		uintptr(soundcard.Fd()),
-		uintptr(req),
-		uintptr(unsafe.Pointer(&data)),
-	)
-	if ern != 0 {
-		p("set format:", ern)
-		time.Sleep(time.Second)
+	var sc soundcard
+	{
+		var	success bool
+		sc, success = setupSoundCard("/dev/dsp")
+		if !success {
+			p("unable to setup soundcard")
+			sc.file.Close()
+			return
+		}
 	}
-	if data != SELECTED_FMT {
-		info <- "Bit format not available! Change requested format in file"
-	}
-	format := 16
-	switch {
-	case data == AFMT_S16_LE:
-		convFactor = MaxInt16
-	case data == AFMT_S32_LE:
-		convFactor = MaxInt32
-		format = 32
-	case data == AFMT_S8:
-		convFactor = MaxInt8
-		format = 8
-	default:
-		p("\n--Incompatible bit format! Change requested format in file--\n")
-		os.Exit(1)
-	}
-
-	// set channels here, stereo or mono
-	req = SNDCTL_DSP_CHANNELS
-	data = CHANNELS
-	_, _, ern = syscall.Syscall(
-		syscall.SYS_IOCTL,
-		uintptr(soundcard.Fd()),
-		uintptr(req),
-		uintptr(unsafe.Pointer(&data)),
-	)
-	if ern != 0 {
-		p("channels error") // do something else here
-		time.Sleep(time.Second)
-	}
-	if data != CHANNELS {
-		p("\n--requested channels not accepted--")
-		os.Exit(1)
-	}
-	channels := ""
-	switch data {
-	case STEREO:
-		channels = "stereo"
-	case MONO:
-		channels = "mono"
-	default:
-		// report error
-	}
-
-	// set sample rate
-	req = SNDCTL_DSP_SPEED
-	data = SAMPLE_RATE
-	_, _, ern = syscall.Syscall(
-		syscall.SYS_IOCTL,
-		uintptr(soundcard.Fd()),
-		uintptr(req),
-		uintptr(unsafe.Pointer(&data)),
-	)
-	if ern != 0 {
-		p("set rate:", ern) // do something else here
-		time.Sleep(time.Second)
-	}
-	SampleRate = float64(data)
-	if data != SAMPLE_RATE {
-		info <- "\n--requested sample rate not accepted--"
-		info <- sf("new sample rate: %vHz\n\n", SampleRate)
-		time.Sleep(time.Second)
-	}
-	display.SR = SampleRate // fixed at initial rate
-
-	go SoundEngine(soundcard, format)
-	go infoDisplay()
-	go mouseRead()
+	defer sc.file.Close()
+	SampleRate, convFactor = sc.sampleRate, sc.convFactor
 
 	// process wavs
 	wavSlice := decodeWavs()
-	info <- sf("")
-
 	transfer.Wavs = make([][]float64, 0, len(wavSlice))
 	wmap := map[string]bool{}
 	wavNames := ""
@@ -479,55 +409,14 @@ func main() {
 		wmap[w.Name] = yes
 		transfer.Wavs = append(transfer.Wavs, w.Data)
 	}
-	//signals slice with reserved signals
-	reserved := []string{ // order is important
-		"dac",
-		"", // nil signal for unused operand
-		"pitch",
-		"tempo",
-		"mousex",
-		"mousey",
-		"butt1",
-		"butt3",
-		"butt2",
-		"grid",
-		"sync",
-	}
-	// add 12 reserved signals for inter-list signals
-	lenReserved := len(reserved)     // use this as starting point for exported signals
-	daisyChains = []int{2, 3, 9, 10} // pitch,tempo,grid,sync
-	for i := 0; i < EXPORTED_LIMIT; i++ {
-		reserved = append(reserved, sf("***%d", i+lenReserved)) // placeholder
-	}
-	lenExported := 0
-	sg := map[string]float64{} // signals map
-	var sig []float64          // local signals
-	funcs := make(map[string]fn)
-	// load functions from files and assign to funcs
-	load(&funcs, "functions.json")
-	for k, f := range funcs { // add funcs to operators map
-		hasOpd := not
-		for _, o := range f.Body {
-			if o.Opd == "@" { // set but don't reset
-				hasOpd = yes
-			}
-		}
-		operators[k] = ops{Opd: hasOpd}
-	}
-	var funcsave bool
-	dispListings := []listing{}
-	code := &dispListings              // code sent to listings.go
-	priorMutes := []float64{}          // to save mutes for recall after pause/play
-	solo := -1                         // index of most recent solo
-	unsolo := []float64{}              // snapshot of mutes before solo
+
+	go SoundEngine(sc.file, sc.format)
+	go infoDisplay()
+	go mouseRead()
+
 	lockLoad := make(chan struct{}, 1) // mutex on transferring listings
-	type token struct {
-		tk     string
-		reload int
-		ext    bool
-	}
-	tokens := make(chan token, 2<<12) // arbitrary capacity, will block input in extreme circumstances
-	usage := loadUsage()              // local usage telemetry
+	dispListings := []listing{}		  // required for go-routines below
+	priorMutes := []float64{}          // to save mutes for recall after pause/play
 
 	go func() { // watchdog, anonymous to use variables in scope
 		// This function will restart the sound engine and reload listings using new sample rate
@@ -537,7 +426,7 @@ func main() {
 				return
 			}
 			stop = make(chan struct{})
-			go SoundEngine(soundcard, format)
+			go SoundEngine(sc.file, sc.format)
 			TLlen = int(SampleRate * TAPE_LENGTH)
 			lockLoad <- struct{}{}
 			for len(tokens) > 0 { // empty incoming tokens
@@ -628,6 +517,47 @@ func main() {
 		}
 	}()
 
+	// local state:
+	reserved := []string{ // order is important
+		"dac",
+		"", // nil signal for unused operand
+		"pitch",
+		"tempo",
+		"mousex",
+		"mousey",
+		"butt1",
+		"butt3",
+		"butt2",
+		"grid",
+		"sync",
+	}
+	lenReserved := len(reserved)     // use this as starting point for exported signals
+	daisyChains = []int{2, 3, 9, 10} // pitch,tempo,grid,sync
+	for i := 0; i < EXPORTED_LIMIT; i++ { // add 12 reserved signals for inter-list signals
+		reserved = append(reserved, sf("***%d", i+lenReserved)) // placeholder
+	}
+	lenExported := 0
+	sg := map[string]float64{} // signals map
+	var sig []float64          // local signals
+	funcs := make(map[string]fn)
+	// load functions from files and assign to funcs
+	load(&funcs, "functions.json")
+	for k, f := range funcs { // add funcs to operators map
+		hasOpd := not
+		for _, o := range f.Body {
+			if o.Opd == "@" { // set but don't reset
+				hasOpd = yes
+			}
+		}
+		operators[k] = ops{Opd: hasOpd}
+	}
+	var funcsave bool
+	code := &dispListings // code sent to listings.go
+	solo := -1            // index of most recent solo
+	unsolo := []float64{} // snapshot of mutes before solo
+	usage := loadUsage()  // local usage telemetry
+	ext   := not          // loading external listing state
+
 start:
 	for { // main loop
 		newListing := listing{} // local listing, these could be merged into a struct
@@ -654,7 +584,7 @@ start:
 			"third":    Pow(2, 1.0/3),   // major, equal temperament ≈ 1.25 (4:5)
 			"seventh":  Pow(2, 11.0/12), // major, equal temperament ≈ 1.875 (8:15)
 		}
-		for i, w := range wavSlice {
+		for i, w := range wavSlice { // add to sg map, with current sample rate
 			sg[w.Name] = float64(i)
 			sg["l."+w.Name] = float64(len(w.Data)-1) / (WAV_TIME * SampleRate)
 			sg["r."+w.Name] = float64(DS) / float64(len(w.Data))
@@ -675,6 +605,9 @@ start:
 		rpl = reload
 		do, to := 0, 0
 		clr := func(s string, i ...any) { // alternative to msg func in lieu of proper error handling
+			if reload > -1 {
+				mute[reload] = priorMutes[reload]
+			}
 			for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
 				<-tokens
 			}
@@ -694,87 +627,22 @@ start:
 				// time taken to compile and launch. This is not critical as restart only controls file save.
 				restart = not
 			}
-			if !ext {
-				pf("%s\033[H\033[2J", reset) // this clears prior error messages!
-				pf(">  %dbit %2gkHz %s\n", format, SampleRate/1000, channels)
-				pf("%sSyntə%s running...\n", cyan, reset)
-				pf("Always protect your ears above +85dB SPL\n\n")
-				if len(wavNames) > 0 {
-					pf(" %swavs:%s %s\n\n", italic, reset, wavNames)
-				}
-				l := len(dispListings)
-				if reload > -1 {
-					l = reload
-				}
-				pf("\n%s%d%s:", cyan, l, reset)
-				for i, o := range dispListing {
-					switch dispListing[i].Op {
-					case "in", "pop", "index", "[", "]", "from", "all":
-						pf("\t  %s%s %s%s\n", yellow, o.Op, o.Opd, reset)
-					default:
-						if _, f := funcs[dispListing[i].Op]; f {
-							pf("\t\u21AA %s%s %s%s%s\n", magenta, o.Op, yellow, o.Opd, reset)
-							continue
-						}
-						pf("\t\u21AA %s%s %s%s\n", yellow, o.Op, o.Opd, reset)
-					}
-				}
-			}
+			displayHeader(sc, wavNames, dispListing, dispListings, ext, funcs)
 			var num struct {
 				Ber float64
 				Is  bool
 			}
-			var op, opd string
-			if !ext {
-				pf("\t  ")
-			}
-			t := <-tokens
-			op, reload, ext = t.tk, t.reload, t.ext
-			if (len(op) > 2 && byte(op[1]) == 91) || op == "_" || op == "" {
-				continue
-			}
-			op = strings.TrimSuffix(op, ",") // to allow comma separation of tokens
-			op2, in := operators[op]
-			if !in {
-				clr("%soperator or function doesn't exist:%s '%s'", italic, reset, op)
-				if ext {
-					ext = not
-					continue start
-				}
-				continue
-			}
-			_, f := funcs[op]
-			usage[op] += 1
-			var operands = []string{}
-			if op2.Opd { // parse second token
-				t := <-tokens
-				opd, reload, ext = t.tk, t.reload, t.ext
-				opd = strings.TrimSuffix(opd, ",") // to allow comma separation of tokens
-				if opd == "_" || opd == "" {
-					continue
-				}
-				o := strings.ReplaceAll(opd, "{i}", sf("%d", 0))
-				o = strings.ReplaceAll(o, "{i+1}", sf("%d", 0))
-				operands = strings.Split(o, ",")
-				if !f && len(operands) > 1 {
-					clr("only functions can have multiple operands")
-					if ext {
-						ext = not
-						continue start
-					}
-					continue
-				}
-				wav := wmap[opd] && op == "wav" // wavs can start with a number
-				if strings.ContainsAny(o[:1], "+-.0123456789") && !wav && !f {
-					if num.Ber, num.Is = parseType(o, op); !num.Is {
-						clr("")
-						if ext {
-							ext = not
-							continue start
-						}
-						continue input // parseType will report error
-					}
-				}
+			var (
+				op, opd string
+				result int
+				operands []string
+				f bool
+			)
+			switch op, opd, operands, num, f, ext, result = readTokenPair(reload, ext, funcs, usage, wmap, clr); result {
+			case retry:
+				continue input
+			case cancel:
+				continue start
 			}
 			for do > 1 { // one done below
 				tokens <- token{op, -1, not}
@@ -1182,9 +1050,12 @@ start:
 					m = &priorMutes // alter saved mutes if paused
 				}
 				if solo == i { // unsolo index given by operand
-					for i := range mute { // i is shadowed
-						(*m)[i] = unsolo[i]            // restore all other mutes
-						display.Mute[i] = (*m)[i] == 0 // update display
+					for ii := range mute { // i is shadowed
+						if i == ii {
+							continue
+						}
+						(*m)[ii] = unsolo[ii]            // restore all other mutes
+						display.Mute[ii] = (*m)[ii] == 0 // update display
 					}
 					solo = -1 // unset solo index
 				} else { // solo index given by operand
@@ -1340,6 +1211,7 @@ start:
 					continue
 				}
 			case "do":
+				var rr error
 				do, rr = strconv.Atoi(opd)
 				if e(rr) { // returns do as zero
 					msg("%soperand not an integer%s", italic, reset)
@@ -1351,7 +1223,7 @@ start:
 			case "gain":
 				if n, ok := parseType(opd, op); ok {
 					gain *= n
-					msg("%sgain set to %s%.2gdb", italic, 20*Log10(gain), reset)
+					msg("%sgain set to %s%.2gdb", italic, reset, 20*Log10(gain))
 				}
 				continue
 			case ":":
@@ -1469,7 +1341,7 @@ start:
 					rs = yes
 					msg("%snext launch will sync to root instance%s", italic, reset)
 				default:
-					msg("%sunrecognised mode%s", italic, reset)
+					msg("%sunrecognised mode: %s%s", italic, reset, opd)
 				}
 				continue
 			}
@@ -1630,6 +1502,164 @@ start:
 		}
 	}
 	saveUsage(usage)
+}
+
+type soundcard struct {
+	file *os.File
+	channels string
+	sampleRate float64
+	format int
+	convFactor float64
+}
+
+func setupSoundCard(file string ) (sc soundcard, success bool) {
+	// open audio output (everything is a file...)
+	var rr error
+	sc.file, rr = os.OpenFile(file, os.O_WRONLY, 0644)
+	if e(rr) {
+		p(rr)
+		p("soundcard not available, shutting down...")
+		time.Sleep(3 * time.Second)
+		return sc, not
+	}
+
+	// set bit format
+	var req uint32 = SNDCTL_DSP_SETFMT
+	var data uint32 = SELECTED_FMT
+	_, _, ern := syscall.Syscall(
+		syscall.SYS_IOCTL,
+		uintptr(sc.file.Fd()),
+		uintptr(req),
+		uintptr(unsafe.Pointer(&data)),
+	)
+	if ern != 0 {
+		p("set format:", ern)
+		return sc, not
+	}
+	if data != SELECTED_FMT {
+		info <- "Bit format not available! Change requested format in file"
+	}
+	sc.format = 16
+	switch {
+	case data == AFMT_S16_LE:
+		sc.convFactor = MaxInt16
+	case data == AFMT_S32_LE:
+		sc.convFactor = MaxInt32
+		sc.format = 32
+	case data == AFMT_S8:
+		sc.convFactor = MaxInt8
+		sc.format = 8
+	default:
+		p("\n--Incompatible bit format!--\nChange requested format in file--\n")
+		return sc, not
+	}
+
+	// set channels here, stereo or mono
+	req = SNDCTL_DSP_CHANNELS
+	data = CHANNELS
+	_, _, ern = syscall.Syscall(
+		syscall.SYS_IOCTL,
+		uintptr(sc.file.Fd()),
+		uintptr(req),
+		uintptr(unsafe.Pointer(&data)),
+	)
+	if ern != 0 || data != CHANNELS {
+		p("\n--requested channels not accepted--")
+		return sc, not
+	}
+	switch data {
+	case STEREO:
+		sc.channels = "stereo"
+	case MONO:
+		sc.channels = "mono"
+	default:
+		p("\n--Incompatible channels! Change requested format in file--\n")
+		return sc, not
+	}
+
+	// set sample rate
+	req = SNDCTL_DSP_SPEED
+	data = SAMPLE_RATE
+	_, _, ern = syscall.Syscall(
+		syscall.SYS_IOCTL,
+		uintptr(sc.file.Fd()),
+		uintptr(req),
+		uintptr(unsafe.Pointer(&data)),
+	)
+	if ern != 0 {
+		p("set rate:", ern) // do something else here
+		time.Sleep(time.Second)
+	}
+	sc.sampleRate = float64(data)
+	if data != SAMPLE_RATE {
+		info <- "--requested sample rate not accepted--"
+		info <- sf("new sample rate: %vHz", sc.sampleRate)
+	}
+	display.SR = sc.sampleRate // fixed at initial rate
+	return sc, yes
+}
+
+func readTokenPair(
+	reload int,
+	ext bool,
+	funcs map[string]fn,
+	usage map[string]int,
+	wmap map[string]bool,
+	clr func(s string, i ...any),
+	) (op, opd string,
+	operands []string,
+	num struct {
+		Ber float64
+		Is  bool
+	},
+	f bool,
+	newExt bool,
+	result int) {
+	t := <-tokens
+	op, reload, ext = t.tk, t.reload, t.ext
+	if (len(op) > 2 && byte(op[1]) == 91) || op == "_" || op == "" {
+		return op, opd, operands, num, f, ext, retry
+	}
+	op = strings.TrimSuffix(op, ",") // to allow comma separation of tokens
+	op2, in := operators[op]
+	if !in {
+		clr("%soperator or function doesn't exist:%s '%s'", italic, reset, op)
+		if ext {
+			return op, opd, operands, num, f, not, cancel
+		}
+		return op, opd, operands, num, f, ext, retry
+	}
+	_, f = funcs[op]
+	usage[op] += 1
+	if op2.Opd { // parse second token
+		t := <-tokens
+		opd, reload, ext = t.tk, t.reload, t.ext
+		opd = strings.TrimSuffix(opd, ",") // to allow comma separation of tokens
+		if opd == "_" || opd == "" {
+			return op, opd, operands, num, f, ext, retry
+		}
+		o := strings.ReplaceAll(opd, "{i}", "0")
+		o = strings.ReplaceAll(o, "{i+1}", "0")
+		operands = strings.Split(o, ",")
+		if !f && len(operands) > 1 {
+			clr("only functions can have multiple operands")
+			if ext {
+				return op, opd, operands, num, f, not, cancel
+			}
+			return op, opd, operands, num, f, ext, retry
+		}
+		wav := wmap[opd] && op == "wav" // wavs can start with a number
+		if strings.ContainsAny(o[:1], "+-.0123456789") && !wav && !f {
+			if num.Ber, num.Is = parseType(o, op); !num.Is {
+				clr("")
+				if ext {
+					return op, opd, operands, num, f, not, cancel
+				}
+				return op, opd, operands, num, f, ext, retry // parseType will report error
+			}
+		}
+	}
+	return op, opd, operands, num, f, ext, tokenPairRead
 }
 
 // parseType() evaluates conversion of types
@@ -1894,6 +1924,7 @@ func decodeWavs() wavs {
 	if len(w) == 0 {
 		return nil
 	}
+	info <- sf("")
 	return w
 }
 
@@ -2115,7 +2146,7 @@ func SoundEngine(file *os.File, bits int) {
 		nyfL, nyfR    float64                                    // nyquist filtering
 		nyfC          float64 = 1 / (1 + 1/(Tau*2e4/SampleRate)) // coefficient, filter needs cleaner implementation
 		L, R, sides   float64
-		setmixDefault = 320 / SampleRate
+		setmixDefault = 2400 / SampleRate
 		current       int
 	)
 	no *= 77777777777 // force overflow
@@ -2631,6 +2662,7 @@ func SoundEngine(file *os.File, bits int) {
 		dac = hpf
 		c += 16 / (c*c + 4.77)
 		mixF = mixF + (Abs(c)-mixF)*0.00026 // ~2Hz @ 48kHz // * 4.36e-5 // 3s @ 48kHz
+		// mixF must not be zero, but this is not yet enforced nor proven
 		dac /= mixF
 		sides /= mixF
 		dac *= gain
@@ -2930,4 +2962,35 @@ func saveUsage(u map[string]int) {
 	if rr := os.WriteFile("usage.txt", []byte(data), 0666); e(rr) {
 		//msg("%v", rr)
 	}
+}
+
+func displayHeader(sc soundcard, wavNames string, dispListing listing, dispListings []listing, ext bool, funcs map[string]fn) {
+	if ext {
+		return
+	}
+	pf("%s\033[H\033[2J", reset) // this clears prior error messages!
+	pf(">  %dbit %2gkHz %s\n", sc.format, SampleRate/1000, sc.channels)
+	pf("%sSyntə%s running...\n", cyan, reset)
+	pf("Always protect your ears above +85dB SPL\n\n")
+	if len(wavNames) > 0 {
+		pf(" %swavs:%s %s\n\n", italic, reset, wavNames)
+	}
+	l := len(dispListings)
+	if reload > -1 {
+		l = reload
+	}
+	pf("\n%s%d%s:", cyan, l, reset)
+	for i, o := range dispListing {
+		switch dispListing[i].Op {
+		case "in", "pop", "index", "[", "]", "from", "all":
+			pf("\t  %s%s %s%s\n", yellow, o.Op, o.Opd, reset)
+		default:
+			if _, f := funcs[dispListing[i].Op]; f {
+				pf("\t\u21AA %s%s %s%s%s\n", magenta, o.Op, yellow, o.Opd, reset)
+				continue
+			}
+			pf("\t\u21AA %s%s %s%s\n", yellow, o.Op, o.Opd, reset)
+		}
+	}
+	pf("\t  ")
 }

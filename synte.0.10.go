@@ -241,7 +241,6 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"deleted": {not, 0}, // for internal use
 	"/*":      {yes, 0}, // non-breaking comments, nop
 	"m+":      {yes, 0}, // add to mute group
-	".":       {yes, 0}, // alternate between in and out
 	"gain":    {yes, 0}, // set overall mono gain before limiter
 }
 
@@ -615,7 +614,6 @@ start:
 			<-carryOn
 		}
 		mutes := []int{} // new mute group
-		inout := not     // bool for dot syntax
 
 	input:
 		for { // input loop
@@ -657,19 +655,6 @@ start:
 			opd = strings.ReplaceAll(opd, "{i}", sf("%d", 0))
 			opd = strings.ReplaceAll(opd, "{i+1}", sf("%d", 1))
 
-			switch {
-			case op == "." && !inout:
-				op = "<"
-			case op == "." && inout:
-				op = ">"
-			}
-			switch op {
-			case "<":
-				inout = yes
-			case ">":
-				inout = not
-			}
-
 			if f { // parse function
 				var function listing
 				var ok bool
@@ -699,6 +684,11 @@ start:
 						unsolo = append(unsolo, 0)
 						display.Mute = append(display.Mute, yes)
 						level = append(level, 1)
+					} else {
+						mute[reload] = 0
+						priorMutes[reload] = 0
+						unsolo[reload] = 0
+						display.Mute[reload] = yes
 					}
 					break input
 				case "//":
@@ -1286,6 +1276,11 @@ start:
 					unsolo = append(unsolo, 0)
 					display.Mute = append(display.Mute, yes)
 					level = append(level, 1)
+				} else {
+					mute[reload] = 0
+					priorMutes[reload] = 0
+					unsolo[reload] = 0
+					display.Mute[reload] = yes
 				}
 				break input
 			case "//":
@@ -2509,9 +2504,12 @@ func SoundEngine(file *os.File, bits int) {
 				case 38: // "pan", ".pan"
 					pan[int(sigs[i][o.N])] = Max(-1, Min(1, r))
 				case 39: // "all"
-					// r := 0 // TODO
+					// r := 0 // allow mixing in of preceding listing
 					c := -3.0                   // to avoid being mixed twice
-					for ii := 0; ii < i; ii++ { // only read from prior listings
+					for ii := range listings {
+						if ii == i { // ignore current listing
+							continue
+						}
 						r += sigs[ii][0]
 						c += m[ii]
 					}

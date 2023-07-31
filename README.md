@@ -571,7 +571,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	print	|		no   	|		prints value of input to info display and passes through unchanged to next operation. Timing is a random point in an interval approximately 341ms to 682ms
 |	index	|		no   	|		outputs index of current listing
 |	//		|		yes   	|		does nothing, use to display comments. Separate words with underscores like_this_etc. Remainder of listing will be skipped, use as a single line listing
-|	all		|		no   	|		output is sum of all preceding listings, regardless of whether they have been muted
+|	all		|		no   	|		output is sum of all listings including preceding listing, but not including its own output. Not affected by mutes
 |	.out	|		yes   	|		use to end silent listing, for use with signals `tempo`, `pitch`, `grid`, or Exported signals.
 |	jl0		|		yes   	|		jump if less than zero. The next n number of operations are skipped if input is less than or equal to zero, where n is given by operand.  Bear in mind that this number of skips includes all the operations within any functions within the listing. The final operation in a listing will always execute. An operand of zero is no jump. Added for fun in a vague attempt to make syntə turing-complete
 |	pan		|		yes   	|		input (limited to ±1) sets the stereo pan of the listing given by operand (which must be a number, similarly to `level`). Positive input pans left and negative input pans right. The pan curve chosen ensures neither channel is boosted at full pan, while mono sounds remain at unity gain in both channels. This is achieved by turning down the mono channel while pan increases. Because of this a sound with modulated (changing) pan summed to mono will fluctuate in volume, so we recommend modulating with a signal `pan` on stereo playback systems only. That is to say - for full mono compatiblity only apply static `pan` (input is unchanging) at most. But don't worry as this is somewhat of a niche concern. Pan will persist after deletion
@@ -969,7 +969,7 @@ The work in this file and all others in this repository is now licenced. See the
 
 This semi-permissive licence has been chosen to reflect the fact that this implementation is a prototype only and has no commercial value.  
 Suggestions, including improvements to the code are welcome.  
-If you would like to fork the code for more radical changes then we wholeheartly suggest you instead write a unique live coding platform from scratch. The file is of an order of only two and a half thousand lines of code after all, and the learning experience will be invaluable to you.   
+If you would like to fork the code for more radical changes then we wholeheartly suggest you instead write a unique live coding platform from scratch. The file is of an order of only three thousand lines of code after all, and the learning experience will be invaluable to you.   
 Please get in touch if you have further questions.  
 
 ### Influences and other live-coding environments

@@ -537,7 +537,6 @@ func main() {
 		reserved = append(reserved, sf("***%d", i+lenReserved)) // placeholder
 	}
 	lenExported := 0
-	sg := map[string]float64{} // signals map
 	var sig []float64          // local signals
 	funcs := make(map[string]fn)
 	// load functions from files and assign to funcs
@@ -564,7 +563,7 @@ start:
 		dispListing := listing{}
 		sig = make([]float64, len(reserved), 30) // capacity is nominal
 		// signals map with predefined constants, mutable
-		sg = map[string]float64{ // reset sg map
+		sg := map[string]float64{ // reset sg map
 			"ln2":      Ln2,
 			"ln3":      Log(3),
 			"ln5":      Log(5),
@@ -627,7 +626,9 @@ start:
 				// time taken to compile and launch. This is not critical as restart only controls file save.
 				restart = not
 			}
-			displayHeader(sc, wavNames, dispListing, dispListings, ext, funcs)
+			if !ext {
+				displayHeader(sc, wavNames, dispListing, dispListings, funcs)
+			}
 			var num struct {
 				Ber float64
 				Is  bool
@@ -638,7 +639,7 @@ start:
 				operands []string
 				f bool
 			)
-			switch op, opd, operands, num, f, ext, result = readTokenPair(reload, ext, funcs, usage, wmap, clr); result {
+			switch op, opd, operands, num, f, reload, ext, result = readTokenPair(funcs, usage, wmap, clr); result {
 			case retry:
 				continue input
 			case cancel:
@@ -670,116 +671,15 @@ start:
 			}
 
 			if f { // parse function
-				function := make(listing, len(funcs[op].Body))
-				copy(function, funcs[op].Body)
-				s := sf(".%d", fun)
-				type mm struct{ at, at1, at2 bool }
-				M := mm{}
-				for i, o := range function {
-					if len(o.Opd) == 0 {
-						continue
-					}
-					switch o.Opd {
-					case "dac", "tempo", "pitch", "grid", "sync": // should be all reserved?
-						continue
-					case "@":
-						M.at = yes
-					case "@1":
-						M.at1 = yes
-					case "@2":
-						M.at2 = yes
-					}
-					if _, r := sg[o.Opd]; r {
-						continue
-					}
-					switch o.Opd[:1] {
-					case "^", "@":
-						continue
-					}
-					if strings.ContainsAny(o.Opd[:1], "+-.0123456789") {
-						if _, ok := parseType(o.Opd, o.Op); ok {
-							continue
-						}
-					}
-					function[i].Opd += s // rename signal
-					switch o.Op {
-					case "out", ">":
-						out[function[i].Opd] = struct{}{}
-					}
-				}
-				m := 0
-				switch M {
-				case mm{not, not, not}:
-					// nop
-				case mm{yes, not, not}:
-					m = 1
-				case mm{yes, yes, not}:
-					m = 2
-				case mm{yes, yes, yes}:
-					m = 3
-				default:
-					clr("malformed function") // probably not needed
-					if ext {
-						ext = not
-						continue start
-					}
+				var function listing
+				var ok bool
+				function, ok = parseFunction(funcs, op, fun, sg, out, clr, operands)
+				switch {
+				case !ok && !ext:
 					continue input
-				}
-				l := len(operands)
-				if m < l {
-					switch {
-					case l-m == 1:
-						msg("%slast operand ignored%s", italic, reset)
-					case l-m > 1:
-						msg("%slast %d operands ignored%s", italic, l-m, reset)
-					}
-				}
-				if m > l {
-					switch {
-					case m == 1:
-						clr("%sthe function requires an operand%s", italic, reset)
-						if ext {
-							ext = not
-							continue start
-						}
-						continue
-					case m > 1:
-						clr("%sthe function requires %d operands%s", italic, m, reset)
-						if ext {
-							ext = not
-							continue start
-						}
-						continue
-					}
-				}
-				for i, opd := range operands { // opd shadowed
-					if operands[i] == "" {
-						clr("empty argument %d", i+1)
-						if ext {
-							ext = not
-							continue start
-						}
-						continue input
-					}
-					if strings.ContainsAny(opd[:1], "+-.0123456789") {
-						if _, ok := parseType(opd, ""); !ok {
-							continue input // parseType will report error
-						}
-					}
-				}
-				for i, o := range function {
-					if len(o.Opd) == 0 {
-						continue
-					}
-					switch o.Opd {
-					case "@":
-						o.Opd = operands[0]
-					case "@1":
-						o.Opd = operands[1]
-					case "@2":
-						o.Opd = operands[2]
-					}
-					function[i] = o
+				case !ok && ext:
+					ext = not
+					continue start
 				}
 				fun++
 				dispListing = append(dispListing, operation{Op: op, Opd: opd}) // only display name
@@ -1086,11 +986,6 @@ start:
 						msg("%soperand not valid:%s %s", italic, reset, opd)
 						continue
 					}
-					/*if !display.Paused { // mute before reload
-						priorMutes[i] = mute[i]
-						mute[i] = 0
-						time.Sleep(50 * time.Millisecond) // wait for mutes
-					}*/
 					reload = n
 					opd = ".temp/" + opd
 				case "apd":
@@ -1600,66 +1495,181 @@ func setupSoundCard(file string ) (sc soundcard, success bool) {
 }
 
 func readTokenPair(
-	reload int,
-	ext bool,
-	funcs map[string]fn,
-	usage map[string]int,
-	wmap map[string]bool,
-	clr func(s string, i ...any),
-	) (op, opd string,
-	operands []string,
-	num struct {
-		Ber float64
-		Is  bool
-	},
-	f bool,
-	newExt bool,
-	result int) {
+		funcs map[string]fn,
+		usage map[string]int,
+		wmap map[string]bool,
+		clr func(s string, i ...any),
+	) ( op, opd string,
+		operands []string,
+		num struct {
+			Ber float64
+			Is  bool
+		},
+		f bool,
+		newReload int,
+		newExt bool,
+		result int,
+	) {
 	t := <-tokens
+	var (
+		reload int
+		ext bool
+	)
 	op, reload, ext = t.tk, t.reload, t.ext
 	if (len(op) > 2 && byte(op[1]) == 91) || op == "_" || op == "" {
-		return op, opd, operands, num, f, ext, retry
+		return op, opd, operands, num, f, reload, ext, retry
 	}
 	op = strings.TrimSuffix(op, ",") // to allow comma separation of tokens
 	op2, in := operators[op]
 	if !in {
 		clr("%soperator or function doesn't exist:%s '%s'", italic, reset, op)
 		if ext {
-			return op, opd, operands, num, f, not, cancel
+			return op, opd, operands, num, f, reload, not, cancel
 		}
-		return op, opd, operands, num, f, ext, retry
+		return op, opd, operands, num, f, reload, ext, retry
 	}
 	_, f = funcs[op]
 	usage[op] += 1
-	if op2.Opd { // parse second token
-		t := <-tokens
-		opd, reload, ext = t.tk, t.reload, t.ext
-		opd = strings.TrimSuffix(opd, ",") // to allow comma separation of tokens
-		if opd == "_" || opd == "" {
-			return op, opd, operands, num, f, ext, retry
+	if !op2.Opd {
+		return op, opd, operands, num, f, reload, ext, tokenPairRead
+	}
+	// parse second token
+	t = <-tokens
+	opd, reload, ext = t.tk, t.reload, t.ext
+	opd = strings.TrimSuffix(opd, ",") // to allow comma separation of tokens
+	if opd == "_" || opd == "" {
+		return op, opd, operands, num, f, reload, ext, retry
+	}
+	o := strings.ReplaceAll(opd, "{i}", "0")
+	o = strings.ReplaceAll(o, "{i+1}", "0")
+	operands = strings.Split(o, ",")
+	if !f && len(operands) > 1 {
+		clr("only functions can have multiple operands")
+		if ext {
+			return op, opd, operands, num, f, reload, not, cancel
 		}
-		o := strings.ReplaceAll(opd, "{i}", "0")
-		o = strings.ReplaceAll(o, "{i+1}", "0")
-		operands = strings.Split(o, ",")
-		if !f && len(operands) > 1 {
-			clr("only functions can have multiple operands")
+		return op, opd, operands, num, f, reload, ext, retry
+	}
+	wav := wmap[opd] && op == "wav" // wavs can start with a number
+	if strings.ContainsAny(o[:1], "+-.0123456789") && !wav && !f {
+		if num.Ber, num.Is = parseType(o, op); !num.Is {
+			clr("")
 			if ext {
-				return op, opd, operands, num, f, not, cancel
+				return op, opd, operands, num, f, reload, not, cancel
 			}
-			return op, opd, operands, num, f, ext, retry
+			return op, opd, operands, num, f, reload, ext, retry // parseType will report error
 		}
-		wav := wmap[opd] && op == "wav" // wavs can start with a number
-		if strings.ContainsAny(o[:1], "+-.0123456789") && !wav && !f {
-			if num.Ber, num.Is = parseType(o, op); !num.Is {
-				clr("")
-				if ext {
-					return op, opd, operands, num, f, not, cancel
-				}
-				return op, opd, operands, num, f, ext, retry // parseType will report error
+	}
+	return op, opd, operands, num, f, reload, ext, tokenPairRead
+}
+
+func parseFunction(
+		funcs map[string]fn,
+		op string,
+		fun int,
+		sg map[string]float64,
+		out map[string]struct{},
+		clr func(s string, i ...any),
+		operands []string,
+	) (function listing,
+		result bool,
+	) {
+	function = make(listing, len(funcs[op].Body))
+	copy(function, funcs[op].Body)
+	s := sf(".%d", fun)
+	type mm struct{ at, at1, at2 bool }
+	m := mm{}
+	for i, o := range function {
+		if len(o.Opd) == 0 {
+			continue
+		}
+		switch o.Opd {
+		case "dac", "tempo", "pitch", "grid", "sync": // should be all reserved?
+			continue
+		case "@":
+			m.at = yes
+		case "@1":
+			m.at1 = yes
+		case "@2":
+			m.at2 = yes
+		}
+		if _, r := sg[o.Opd]; r {
+			continue
+		}
+		switch o.Opd[:1] {
+		case "^", "@":
+			continue
+		}
+		if strings.ContainsAny(o.Opd[:1], "+-.0123456789") {
+			if _, ok := parseType(o.Opd, o.Op); ok {
+				continue
+			}
+		}
+		function[i].Opd += s // rename signal
+		switch o.Op {
+		case "out", ">":
+			out[function[i].Opd] = struct{}{}
+		}
+	}
+	mmm := 0
+	switch m {
+	case mm{not, not, not}:
+		// nop
+	case mm{yes, not, not}:
+		mmm = 1
+	case mm{yes, yes, not}:
+		mmm = 2
+	case mm{yes, yes, yes}:
+		mmm = 3
+	default:
+		clr("malformed function") // probably not needed
+		return nil, not
+	}
+	l := len(operands)
+	if mmm < l {
+		switch {
+		case l-mmm == 1:
+			msg("%slast operand ignored%s", italic, reset)
+		case l-mmm > 1:
+			msg("%slast %d operands ignored%s", italic, l-mmm, reset)
+		}
+	}
+	if mmm > l {
+		switch {
+		case mmm == 1:
+			clr("%sthe function requires an operand%s", italic, reset)
+			return nil, not
+		case mmm > 1:
+			clr("%sthe function requires %d operands%s", italic, mmm, reset)
+			return nil, not
+		}
+	}
+	for i, opd := range operands { // opd shadowed
+		if operands[i] == "" {
+			clr("empty argument %d", i+1)
+			return nil, not
+		}
+		if strings.ContainsAny(opd[:1], "+-.0123456789") {
+			if _, ok := parseType(opd, ""); !ok {
+				return nil, not // parseType will report error
 			}
 		}
 	}
-	return op, opd, operands, num, f, ext, tokenPairRead
+	for i, o := range function {
+		if len(o.Opd) == 0 {
+			continue
+		}
+		switch o.Opd {
+		case "@":
+			o.Opd = operands[0]
+		case "@1":
+			o.Opd = operands[1]
+		case "@2":
+			o.Opd = operands[2]
+		}
+		function[i] = o
+	}
+	return function, yes
 }
 
 // parseType() evaluates conversion of types
@@ -1882,8 +1892,8 @@ func decodeWavs() wavs {
 			msg("neither mono nor stereo: %s %s", file, rr)
 			continue
 		}
-		SR := binary.LittleEndian.Uint32(data[24:28])
-		if SR%22050 != 0 && SR%48000 != 0 {
+		sr := binary.LittleEndian.Uint32(data[24:28])
+		if sr%22050 != 0 && sr%48000 != 0 {
 			msg("Warning: non-standard sample rate: %s", file)
 			time.Sleep(time.Second)
 		}
@@ -1914,12 +1924,12 @@ func decodeWavs() wavs {
 		wav.Name = strings.ReplaceAll(file[:l-4], " ", "")
 		w = append(w, wav)
 		r.Close()
-		t := float64(len(wav.Data)) / float64(SR)
+		t := float64(len(wav.Data)) / float64(sr)
 		c := "stereo"
 		if channels == 1 {
 			c = "mono  "
 		}
-		info <- sf("%s\t%2dbit  %3gkHz  %s  %.3gs", file, bits, float64(SR)/1000, c, t)
+		info <- sf("%s\t%2dbit  %3gkHz  %s  %.3gs", file, bits, float64(sr)/1000, c, t)
 	}
 	if len(w) == 0 {
 		return nil
@@ -1967,7 +1977,7 @@ func mouseRead() {
 	}
 	defer mf.Close()
 	m := bufio.NewReader(mf)
-	bytes := make([]byte, 3)
+	bytes := make([]byte, 3) // shadows package name
 	mx, my := 0.0, 0.0
 	for {
 		_, rr := io.ReadFull(m, bytes)
@@ -2056,13 +2066,13 @@ func rootSync() bool {
 	s := not
 	info <- "> waiting to sync"
 	for {
-		Json, rr := os.ReadFile(f)
+		j, rr := os.ReadFile(f)
 		if e(rr) {
 			info <- sf("error reading: %v", rr)
 			rs = not
 			return false
 		}
-		json.Unmarshal(Json, &d) // too many spurious errors
+		json.Unmarshal(j, &d) // too many spurious errors
 		if d.Sync && !s {
 			break
 		}
@@ -2128,7 +2138,7 @@ func SoundEngine(file *os.File, bits int) {
 		n      int // loop counter
 
 		rate     time.Duration = time.Duration(7292) // loop timer, initialised to approximate resting rate
-		lastTime time.Time     = time.Now()
+		lastTime time.Time
 		rates    [RATE]time.Duration
 		t        time.Duration
 		s        float64 = 1 // sync=0
@@ -2869,16 +2879,16 @@ func fft(y [N]complex128, s float64) [N]complex128 {
 }
 
 func load(data any, f string) {
-	Json, rr := os.ReadFile(f)
-	rr2 := json.Unmarshal(Json, data)
+	j, rr := os.ReadFile(f)
+	rr2 := json.Unmarshal(j, data)
 	if e(rr) || e(rr2) {
 		msg("Error loading '%s': %v %v", f, rr, rr2)
 	}
 }
 
 func save(data any, f string) bool {
-	Json, rr := json.MarshalIndent(data, "", "\t")
-	rr2 := os.WriteFile(f, Json, 0644)
+	j, rr := json.MarshalIndent(data, "", "\t")
+	rr2 := os.WriteFile(f, j, 0644)
 	if e(rr) || e(rr2) {
 		msg("Error saving '%s': %v %v", f, rr, rr2)
 		return false
@@ -2960,14 +2970,11 @@ func saveUsage(u map[string]int) {
 		}
 	}
 	if rr := os.WriteFile("usage.txt", []byte(data), 0666); e(rr) {
-		//msg("%v", rr)
+		msg("%v", rr)
 	}
 }
 
-func displayHeader(sc soundcard, wavNames string, dispListing listing, dispListings []listing, ext bool, funcs map[string]fn) {
-	if ext {
-		return
-	}
+func displayHeader(sc soundcard, wavNames string, dispListing listing, dispListings []listing, funcs map[string]fn) {
 	pf("%s\033[H\033[2J", reset) // this clears prior error messages!
 	pf(">  %dbit %2gkHz %s\n", sc.format, SampleRate/1000, sc.channels)
 	pf("%sSyntə%s running...\n", cyan, reset)

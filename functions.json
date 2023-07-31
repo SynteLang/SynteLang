@@ -2317,7 +2317,7 @@
 		]
 	},
 	"res": {
-		"Comment": "",
+		"Comment": "resonant low-pass filter (frequency, resonance)",
 		"Body": [
 			{
 				"Op": "+",
@@ -2448,12 +2448,12 @@
 				"Opd": "y.2"
 			},
 			{
-				"Op": "tanh",
-				"Opd": ""
-			},
-			{
 				"Op": "mul",
 				"Opd": "@1"
+			},
+			{
+				"Op": "tanh",
+				"Opd": ""
 			},
 			{
 				"Op": "out",
@@ -2462,10 +2462,6 @@
 			{
 				"Op": "in",
 				"Opd": "b.1"
-			},
-			{
-				"Op": "mul",
-				"Opd": "0.25"
 			}
 		]
 	},

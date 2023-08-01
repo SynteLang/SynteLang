@@ -193,7 +193,6 @@ var operators = map[string]ops{ // would be nice if switch indexes could be gene
 	"setmix": {yes, 34}, // set sensible level
 	"print":  {not, 35}, // print input to info display
 	"\\":     {yes, 36}, // "\"
-	//	"degrade": ops{yes, 37}, // deprecated
 	"pan":    {yes, 38}, // vary pan of a listing
 	".pan":   {yes, 38}, // alias, launches listing
 	"all":    {not, 39}, // receive output of all preceding listings
@@ -836,12 +835,6 @@ start:
 						continue input
 					}
 				}
-			case "degrade":
-				if len(transfer.Listing) == 0 {
-					msg("%scan't use degrade in first listing%s", italic, reset)
-					continue
-				}
-				msg("%sno register is safe...%s", italic, reset)
 			case "erase", "e":
 				n, rr := strconv.Atoi(opd)
 				if e(rr) {

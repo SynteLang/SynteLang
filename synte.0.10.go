@@ -598,7 +598,7 @@ start:
 		rpl = reload
 		do, to := 0, 0
 		clr := func(s string, i ...any) { // alternative to msg func in lieu of proper error handling
-			if reload > -1 {
+			if reload > -1 && reload < len(transfer.Listing) {
 				mute[reload] = priorMutes[reload]
 			}
 			for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
@@ -662,37 +662,10 @@ start:
 					continue start
 				}
 				fun++
-				dispListing = append(dispListing, operation{Op: op, Opd: opd}) // only display name
 				newListing = append(newListing, function...)
-				if fIn {
-					continue
-				}
-				switch o := newListing[len(newListing)-1]; o.Op {
-				case "out", ">":
-					if o.Opd == "dac" {
-						break input
-					}
-				case ".out", ".>sync", ".level", ".pan":
-					if reload < 0 || reload > len(transfer.Listing)-1 {
-						mute = append(mute, 0)
-						priorMutes = append(priorMutes, 0)
-						unsolo = append(unsolo, 0)
-						display.Mute = append(display.Mute, yes)
-						level = append(level, 1)
-					} else {
-						mute[reload] = 0
-						priorMutes[reload] = 0
-						unsolo[reload] = 0
-						display.Mute[reload] = yes
-					}
-					break input
-				case "//":
-					break input
-				}
-				continue
 			}
 
-			switch op {
+			switch op { // speed up compilation by skipping functions and unchecked operations?
 			case "out", "out+", ".out", ">":
 				_, in := out[opd]
 				expSig := not
@@ -1245,20 +1218,20 @@ start:
 			}
 
 			// add to listing
-			if len(dispListing) == 0 || op != "mix" && dispListing[len(dispListing)-1].Op != "mix" {
-				dispListing = append(dispListing, operation{Op: op, Opd: opd})
+			dispListing = append(dispListing, operation{Op: op, Opd: opd})
+			if !f { // don't add function name to listing
+				newListing = append(newListing, operation{Op: op, Opd: opd})
 			}
-			newListing = append(newListing, operation{Op: op, Opd: opd})
 			if fIn {
 				continue
 			}
 			// break and launch
-			switch op {
+			switch o := newListing[len(newListing)-1]; o.Op {
 			case "out", ">":
-				if opd == "dac" {
+				if o.Opd == "dac" {
 					break input
 				}
-			case ".out", ".>sync", ".level", ".pan": // override mutes and levels below
+			case ".out", ".>sync", ".level", ".pan": // override mutes and levels below, for silent listings
 				if reload < 0 || reload > len(transfer.Listing)-1 {
 					mute = append(mute, 0)
 					priorMutes = append(priorMutes, 0)

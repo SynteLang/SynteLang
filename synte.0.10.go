@@ -384,15 +384,11 @@ func main() {
 	}
 	save([]listing{{operation{Op: advisory}}}, "displaylisting.json")
 
-	var sc soundcard
-	{
-		var	success bool
-		sc, success = setupSoundCard("/dev/dsp")
-		if !success {
-			p("unable to setup soundcard")
-			sc.file.Close()
-			return
-		}
+	sc, success := setupSoundCard("/dev/dsp")
+	if !success {
+		p("unable to setup soundcard")
+		sc.file.Close()
+		return
 	}
 	defer sc.file.Close()
 	SampleRate, convFactor = sc.sampleRate, sc.convFactor

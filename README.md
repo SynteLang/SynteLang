@@ -130,13 +130,13 @@ Common operations are `+`, `mul`, `in`, `out`.
 The `osc` function outputs a ramp wave (increasing series of values up to 1, then restarts.)  
 `osc` accepts a frequency in hertz (from the preceding operation.)
 
-Most values apart from frequencies are between -1 and 1 for audio and 0 to 1 for control/modulation. This might seem like a limited range; however, incredibly small fractions down to a number with over 300 zeros after the decimal place are possible. You won't need to handle such numbers, but if you want to experiment they can be input using the syntax `1e-3` which would represent one thousandth, or 3 millionths would be 3e-6 etc. You may also input a number as a fraction such as `in 1/3.14` etc. 
+Most values apart from frequencies are between -1 and 1 for audio and 0 to 1 for control/modulation. This might seem like a limited range; however, incredibly small fractions down to a number with over 300 zeros after the decimal place are possible. You won't need to handle such numbers, but if you want to experiment they can be input using the syntax `1e-3` which would represent one thousandth, or 3 millionths would be `3e-6` etc. You may also input a number as a fraction such as `in 1/3.14` etc. 
 Any values greater than 1 or less than -1 will be clipped by the output resulting in distortion. Think of this as slicing off the tops of waveforms that are too loud. Most of the time you won't need to worry about keeping within range though.
 
 In the syntə code example above, the output of the `osc` function is *shaped* by the sine operator. The sine operator does not produce a sound tone by itself.
 
 `dac` is a special signal name which sends the output to the soundcard of your computer. Typing `out dac` ends a listing and sends it to the sound engine to perform computations.  
-Most listings end in `out dac`, so it can only be used once. `dac` stands for digital audio converter, which is the technical name for anything that takes a series of digitally represented numbers and converts them into audio. A listing that generates signals for other listings but no sound directly can end with the `.out` operator, or you can also use the `.` function which sends zero to the soundcard. ◊  
+Most listings end in `out dac`, so it can only be used once. `dac` stands for digital audio converter, which is the technical name for anything that takes a series of digitally represented numbers and converts them into audio. A listing that generates signals for other listings but no sound directly can end with the `.out` operator.
 
 You will probably want to use the function `mix` which contains `out dac` and so will also end a necklace. `mix` will set the level based on the frequency of the most recent osc function within the listing to ensure output limiting doesn't take place (which may reduce the bass response). However, for listings that pass through using `from` it is better to use `out dac`.
 

@@ -118,7 +118,7 @@ const (
 )
 
 var (
-	convFactor = float64(MaxInt16) // checked below
+	convFactor         = float64(MaxInt16) // checked below
 	SampleRate float64 = SAMPLE_RATE
 	BYTE_ORDER         = binary.LittleEndian // not allowed in constants
 	TLlen      int     = SAMPLE_RATE * TAPE_LENGTH
@@ -283,19 +283,19 @@ var (
 	infoff   = make(chan struct{}) // shut-off info display (and external input)
 	mute     []float64             // should really be in transfer struct?
 	level    []float64
-	muteSkip bool  // don't calculate muted listings
-	ds       bool  // instigate downsampling
-	restart  bool  // controls whether listing is saved to temp on launch
-	reload   = -1  // launch to index, or append if less than zero
-	rs       bool  // root-sync between running instances
+	muteSkip bool // don't calculate muted listings
+	ds       bool // instigate downsampling
+	restart  bool // controls whether listing is saved to temp on launch
+	reload   = -1 // launch to index, or append if less than zero
+	rs       bool // root-sync between running instances
 
 	daisyChains []int // list of exported signals to be daisy-chained
-	fade       = Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
-	protected  = yes                               // redundant
-	release    = Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
-	DS         = 1                                 // down-sample
-	ct         = 8.0                               // individual listing clip threshold
-	gain       = 1.0
+	fade        = Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
+	protected   = yes                               // redundant
+	release     = Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
+	DS          = 1                                 // down-sample
+	ct          = 8.0                               // individual listing clip threshold
+	gain        = 1.0
 
 	tokens = make(chan token, 2<<12) // arbitrary capacity, will block input in extreme circumstances
 )
@@ -409,7 +409,7 @@ func main() {
 	go mouseRead()
 
 	lockLoad := make(chan struct{}, 1) // mutex on transferring listings
-	dispListings := []listing{}		  // required for go-routines below
+	dispListings := []listing{}        // required for go-routines below
 	priorMutes := []float64{}          // to save mutes for recall after pause/play
 
 	go func() { // watchdog, anonymous to use variables in scope
@@ -525,13 +525,13 @@ func main() {
 		"grid",
 		"sync",
 	}
-	lenReserved := len(reserved)     // use this as starting point for exported signals
-	daisyChains = []int{2, 3, 9, 10} // pitch,tempo,grid,sync
+	lenReserved := len(reserved)          // use this as starting point for exported signals
+	daisyChains = []int{2, 3, 9, 10}      // pitch,tempo,grid,sync
 	for i := 0; i < EXPORTED_LIMIT; i++ { // add 12 reserved signals for inter-list signals
 		reserved = append(reserved, sf("***%d", i+lenReserved)) // placeholder
 	}
 	lenExported := 0
-	var sig []float64          // local signals
+	var sig []float64 // local signals
 	funcs := make(map[string]fn)
 	// load functions from files and assign to funcs
 	load(&funcs, "functions.json")
@@ -549,7 +549,7 @@ func main() {
 	solo := -1            // index of most recent solo
 	unsolo := []float64{} // snapshot of mutes before solo
 	usage := loadUsage()  // local usage telemetry
-	ext   := not          // loading external listing state
+	ext := not            // loading external listing state
 
 start:
 	for { // main loop
@@ -627,10 +627,10 @@ start:
 				Is  bool
 			}
 			var (
-				op, opd string
-				result int
+				op, opd  string
+				result   int
 				operands []string
-				f bool
+				f        bool
 			)
 			switch op, opd, operands, num, f, reload, ext, result = readTokenPair(funcs, usage, wmap, clr); result {
 			case retry:
@@ -1357,14 +1357,14 @@ start:
 }
 
 type soundcard struct {
-	file *os.File
-	channels string
+	file       *os.File
+	channels   string
 	sampleRate float64
-	format int
+	format     int
 	convFactor float64
 }
 
-func setupSoundCard(file string ) (sc soundcard, success bool) {
+func setupSoundCard(file string) (sc soundcard, success bool) {
 	// open audio output (everything is a file...)
 	var rr error
 	sc.file, rr = os.OpenFile(file, os.O_WRONLY, 0644)
@@ -1452,25 +1452,25 @@ func setupSoundCard(file string ) (sc soundcard, success bool) {
 }
 
 func readTokenPair(
-		funcs map[string]fn,
-		usage map[string]int,
-		wmap map[string]bool,
-		clr func(s string, i ...any),
-	) ( op, opd string,
-		operands []string,
-		num struct {
-			Ber float64
-			Is  bool
-		},
-		f bool,
-		newReload int,
-		newExt bool,
-		result int,
-	) {
+	funcs map[string]fn,
+	usage map[string]int,
+	wmap map[string]bool,
+	clr func(s string, i ...any),
+) (op, opd string,
+	operands []string,
+	num struct {
+		Ber float64
+		Is  bool
+	},
+	f bool,
+	newReload int,
+	newExt bool,
+	result int,
+) {
 	t := <-tokens
 	var (
 		reload int
-		ext bool
+		ext    bool
 	)
 	op, reload, ext = t.tk, t.reload, t.ext
 	if (len(op) > 2 && byte(op[1]) == 91) || op == "_" || op == "" {
@@ -1521,16 +1521,16 @@ func readTokenPair(
 }
 
 func parseFunction(
-		funcs map[string]fn,
-		op string,
-		fun int,
-		sg map[string]float64,
-		out map[string]struct{},
-		clr func(s string, i ...any),
-		operands []string,
-	) (function listing,
-		result bool,
-	) {
+	funcs map[string]fn,
+	op string,
+	fun int,
+	sg map[string]float64,
+	out map[string]struct{},
+	clr func(s string, i ...any),
+	operands []string,
+) (function listing,
+	result bool,
+) {
 	function = make(listing, len(funcs[op].Body))
 	copy(function, funcs[op].Body)
 	s := sf(".%d", fun)
@@ -2467,7 +2467,7 @@ func SoundEngine(file *os.File, bits int) {
 					pan[int(sigs[i][o.N])] = Max(-1, Min(1, r))
 				case 39: // "all"
 					// r := 0 // allow mixing in of preceding listing
-					c := -3.0                   // to avoid being mixed twice
+					c := -3.0 // to avoid being mixed twice
 					for ii := range listings {
 						if ii == i { // ignore current listing
 							continue

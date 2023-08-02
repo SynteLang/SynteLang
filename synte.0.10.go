@@ -268,6 +268,7 @@ type token struct {
 	reload int
 	ext    bool
 }
+type muteSlice []float64
 
 // communication variables
 var (
@@ -281,7 +282,7 @@ var (
 	info     = make(chan string, 96) // arbitrary buffer length, 48000Hz = 960 x 50Hz
 	carryOn  = make(chan bool)
 	infoff   = make(chan struct{}) // shut-off info display (and external input)
-	mute     []float64             // should really be in transfer struct?
+	mutes     muteSlice             // should really be in transfer struct?
 	level    []float64
 	muteSkip bool // don't calculate muted listings
 	ds       bool // instigate downsampling
@@ -314,22 +315,22 @@ var mouse = struct {
 }
 var mc = yes
 
-type disp struct {
-	On      bool
+type disp struct { // indicates:
+	On      bool // Syntə is running
 	Mode    string // func add fon/foff
-	Vu      float64
-	Clip    bool
-	Load    time.Duration
-	Info    string
-	MouseX  float64
-	MouseY  float64
-	Protect bool
-	Paused  bool
-	Mute    []bool
-	SR      float64
-	GR      bool
-	Sync    bool
-	Verbose bool
+	Vu      float64 // output sound level
+	Clip    bool // sound engine has clipped on output
+	Load    time.Duration // sound engine loop time used
+	Info    string // messages sent from msg()
+	MouseX  float64 // mouse X coordinate
+	MouseY  float64 // mouse Y coordinate
+	Protect bool // redundant
+	Paused  bool // sound engine is paused
+	Mute    []bool // mutes of all listings
+	SR      float64 // current sample rate (not shown)
+	GR      bool // limiter is in effect
+	Sync    bool // sync pulse sent
+	Verbose bool // show unrolled functions - all operations
 }
 
 var display = disp{
@@ -345,7 +346,7 @@ type wavs []struct {
 	Data []float64
 }
 
-const (
+const ( // used in token parsing
 	retry = iota
 	cancel
 	tokenPairRead
@@ -410,7 +411,7 @@ func main() {
 
 	lockLoad := make(chan struct{}, 1) // mutex on transferring listings
 	dispListings := []listing{}        // required for go-routines below
-	priorMutes := []float64{}          // to save mutes for recall after pause/play
+	priorMutes := muteSlice{}          // to save mutes for recall after pause/play
 
 	go func() { // watchdog, anonymous to use variables in scope
 		// This function will restart the sound engine and reload listings using new sample rate
@@ -487,24 +488,8 @@ func main() {
 					stat[i] = st.ModTime()
 					continue
 				}
-				// the following could be replaced with `tokens <- {sf("rld %s",i), i, yes}?
-				inputF, rr := os.Open(f)
-				if e(rr) {
-					continue // skip missing listings without warning
-				}
-				if !display.Paused { // mute before reload
-					priorMutes[i] = mute[i]
-					mute[i] = 0
-					display.Mute[i] = mute[i] == 0
-					time.Sleep(50 * time.Millisecond) // wait for mutes
-				}
-				s := bufio.NewScanner(inputF)
-				s.Split(bufio.ScanWords)
-				for s.Scan() {
-					tokens <- token{s.Text(), i, yes}
-				}
-				inputF.Close()
-				// // //
+				tokens <- token{"rld", i, yes}
+				tokens <- token{sf("%d", i), i, yes}
 				stat[i] = st.ModTime()
 			}
 			<-lockLoad
@@ -599,7 +584,7 @@ start:
 		do, to := 0, 0
 		clr := func(s string, i ...any) { // alternative to msg func in lieu of proper error handling
 			if reload > -1 && reload < len(transfer.Listing) {
-				mute[reload] = priorMutes[reload]
+				mutes.set(reload, priorMutes[reload])
 			}
 			for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
 				<-tokens
@@ -608,7 +593,7 @@ start:
 			info <- fmt.Sprintf(s, i...)
 			<-carryOn
 		}
-		mutes := []int{} // new mute group
+		muteGroup := []int{} // new mute group
 
 	input:
 		for { // input loop
@@ -711,14 +696,13 @@ start:
 					msg("%sindex out of range%s", italic, reset)
 					continue
 				}
-				mute[n] = 0 // wintermute
-				display.Mute[n] = yes
+				mutes.set(n, mute) // wintermute
 				if display.Paused { // play resumed to enact deletion in sound engine
-					for i := range mute { // restore mutes
+					for i := range mutes { // restore mutes
 						if i == n {
 							continue
 						}
-						mute[i] = priorMutes[i]
+						mutes[i] = priorMutes[i] // not displayed
 					}
 					<-pause
 					display.Paused = not
@@ -845,18 +829,17 @@ start:
 					continue
 				}
 				if op == "m+" {
-					mutes = append(mutes, i) // add to mute group
+					muteGroup = append(muteGroup, i) // add to mute group
 					continue
 				}
-				mutes = append(mutes, i)
-				m := &mute
+				muteGroup = append(muteGroup, i)
+				m := &mutes
 				if display.Paused && i < len(transfer.Listing) {
 					m = &priorMutes // alter saved mutes if paused
 				}
-				for _, i := range mutes {
-					(*m)[i] = 1 - (*m)[i]          // toggle mute
-					unsolo[i] = (*m)[i]            // toggle status for unsolo
-					display.Mute[i] = (*m)[i] == 0 // convert binary to boolean and display
+				for _, i := range muteGroup {
+					m.set(i, 1-(*m)[i]) // toggle
+					unsolo[i] = (*m)[i] // save status for unsolo
 					if solo == i && (*m)[i] == 0 { // if muting solo'd listing reset solo
 						solo = -1
 					}
@@ -867,7 +850,7 @@ start:
 					op, opd = "out", "dac"
 					break
 				}
-				mutes = []int{}
+				muteGroup = []int{}
 				continue
 			case "level", ".level", "pan", ".pan":
 				if len(transfer.Listing) == 0 {
@@ -897,29 +880,26 @@ start:
 					msg("operand out of range")
 					continue
 				}
-				m := &mute
+				m := &mutes
 				if display.Paused {
 					m = &priorMutes // alter saved mutes if paused
 				}
 				if solo == i { // unsolo index given by operand
-					for ii := range mute { // i is shadowed
+					for ii := range mutes { // i is shadowed
 						if i == ii {
 							continue
 						}
-						(*m)[ii] = unsolo[ii]            // restore all other mutes
-						display.Mute[ii] = (*m)[ii] == 0 // update display
+						m.set(ii, unsolo[ii]) // restore all other mutes
 					}
 					solo = -1 // unset solo index
 				} else { // solo index given by operand
-					for ii := range mute {
+					for ii := range mutes {
 						if ii == i {
-							(*m)[i] = 1 // unmute solo'd index
-							display.Mute[i] = not
+							m.set(i, unmute) // unmute solo'd index
 							continue
 						}
 						unsolo[ii] = (*m)[ii]  // save all mutes
-						(*m)[ii] = 0           // mute all listings
-						display.Mute[ii] = yes // display as muted
+						m.set(ii, mute) // mute all other listings
 					}
 					solo = i // save index of solo
 				}
@@ -949,6 +929,12 @@ start:
 					msg("%v", rr)
 					reload = -1
 					continue
+				}
+				// if reloaded listing doesn't compile, current listing will remain muted:
+				if !display.Paused && reload < len(mutes) { // mute before reload
+					priorMutes[reload] = mutes[reload] // save mute status
+					mutes.set(reload, mute)
+					time.Sleep(25 * time.Millisecond) // wait for mutes
 				}
 				s := bufio.NewScanner(inputF)
 				s.Split(bufio.ScanWords)
@@ -982,9 +968,8 @@ start:
 					msg("no running listings")
 					continue
 				}
-				for i := range mute {
-					mute[i] = 1
-					display.Mute[i] = not
+				for i := range mutes {
+					mutes.set(i, unmute)
 				}
 				continue
 			case "from":
@@ -1116,9 +1101,9 @@ start:
 					msg("%sfunctions saved%s", italic, reset)
 				case "pause":
 					if started && !display.Paused {
-						for i := range mute { // save, and mute all
-							priorMutes[i] = mute[i] // save mutes for resume play
-							mute[i] = 0             // here, mute is dual-purposed to gracefully turn off listings
+						for i := range mutes { // save, and mute all
+							priorMutes[i] = mutes[i] // save mutes for resume play
+							mutes[i] = 0             // here, mute is dual-purposed to gracefully turn off listings
 						}
 						time.Sleep(150 * time.Millisecond) // wait for mutes
 						pause <- yes
@@ -1130,8 +1115,8 @@ start:
 					if !display.Paused {
 						continue
 					}
-					for i := range mute { // restore mutes
-						mute[i] = priorMutes[i]
+					for i := range mutes { // restore mutes
+						mutes[i] = priorMutes[i]
 						priorMutes[i] = 1 // set to avoid muted listings when reload
 					}
 					<-pause
@@ -1233,16 +1218,15 @@ start:
 				}
 			case ".out", ".>sync", ".level", ".pan": // override mutes and levels below, for silent listings
 				if reload < 0 || reload > len(transfer.Listing)-1 {
-					mute = append(mute, 0)
+					mutes = append(mutes, 0)
 					priorMutes = append(priorMutes, 0)
 					unsolo = append(unsolo, 0)
 					display.Mute = append(display.Mute, yes)
 					level = append(level, 1)
 				} else {
-					mute[reload] = 0
 					priorMutes[reload] = 0
 					unsolo[reload] = 0
-					display.Mute[reload] = yes
+					mutes.set(reload, mute)
 				}
 				break input
 			case "//":
@@ -1295,8 +1279,8 @@ start:
 		}
 
 		if display.Paused { // resume play on launch if paused
-			for i := range mute { // restore mutes
-				mute[i] = priorMutes[i]
+			for i := range mutes { // restore mutes
+				mutes[i] = priorMutes[i]
 				priorMutes[i] = 1
 			}
 			<-pause
@@ -1308,8 +1292,8 @@ start:
 			dispListings = append(dispListings, dispListing)
 			transfer.Listing = append(transfer.Listing, newListing)
 			transfer.Signals = append(transfer.Signals, sig)
-			if len(mute) < len(transfer.Listing) { // not if restarting
-				mute = append(mute, 1)
+			if len(mutes) < len(transfer.Listing) { // not if restarting
+				mutes = append(mutes, 1)
 				priorMutes = append(priorMutes, 1)
 				unsolo = append(unsolo, 1)
 				display.Mute = append(display.Mute, not)
@@ -1334,8 +1318,7 @@ start:
 			transfer.Signals[reload] = sig
 			transmit <- yes
 			<-accepted
-			mute[reload] = priorMutes[reload]
-			display.Mute[reload] = mute[reload] == 0
+			mutes.set(reload, priorMutes[reload])
 		}
 		<-lockLoad
 		if !started {
@@ -1354,6 +1337,15 @@ start:
 		}
 	}
 	saveUsage(usage)
+}
+
+const (
+	mute = iota // 0
+	unmute      // 1
+)
+func (m *muteSlice) set(i int, v float64) { 
+	display.Mute[i] = v == 0 // convert to bool
+	(*m)[i] = v
 }
 
 type soundcard struct {
@@ -2249,10 +2241,10 @@ func SoundEngine(file *os.File, bits int) {
 			for _, ii := range daisyChains {
 				sigs[i][ii] = sigs[(i+len(sigs)-1)%len(sigs)][ii]
 			}
-			m[i] = m[i] + (mute[i]-m[i])*0.0013    // anti-click filter @ ~10hz
+			m[i] = m[i] + (mutes[i]-m[i])*0.0013    // anti-click filter @ ~10hz
 			lv[i] = lv[i] + (level[i]-lv[i])*0.125 // @ 1091hz
 			// skip muted/deleted listing
-			if (muteSkip && mute[i] == 0 && m[i] < 1e-6) || list[0].Opn == 31 {
+			if (muteSkip && mutes[i] == 0 && m[i] < 1e-6) || list[0].Opn == 31 {
 				continue
 			}
 			// mouse values

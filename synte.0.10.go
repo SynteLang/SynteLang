@@ -2900,9 +2900,6 @@ type pair struct {
 }
 type pairs []pair
 
-func (p pairs) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
-func (p pairs) Len() int           { return len(p) }
-func (p pairs) Less(i, j int) bool { return p[i].Value > p[j].Value }
 func saveUsage(u map[string]int) {
 	p := make(pairs, len(u))
 	i := 0
@@ -2910,7 +2907,7 @@ func saveUsage(u map[string]int) {
 		p[i] = pair{k, v}
 		i++
 	}
-	sort.Sort(p)
+	sort.Slice(p, func(i, j int) bool { return p[i].Value > p[j].Value })
 	data := ""
 	for _, s := range p {
 		data += sf("%s %d\n", s.Key, s.Value)

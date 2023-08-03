@@ -616,12 +616,13 @@ start:
 			}
 			var num number
 			var (
-				op, opd  string
-				result   int
-				operands []string
-				f        bool
+				op, opd      string
+				result       int
+				operands     []string
+				opIsFunction bool
 			)
-			switch op, opd, operands, num, f, reload, ext, result = readTokenPair(funcs, usage, wmap, clr); result {
+			switch op, opd, operands, num, opIsFunction,
+				reload, ext, result = readTokenPair(funcs, usage, wmap, clr); result {
 			case retry:
 				continue input
 			case cancel:
@@ -639,7 +640,7 @@ start:
 			opd = strings.ReplaceAll(opd, "{i}", sf("%d", 0))
 			opd = strings.ReplaceAll(opd, "{i+1}", sf("%d", 1))
 
-			if f { // parse function
+			if opIsFunction { // parse function
 				var function listing
 				var ok bool
 				function, ok = parseFunction(funcs, op, fun, sg, out, clr, operands)
@@ -897,12 +898,12 @@ start:
 				}
 				s := bufio.NewScanner(inputF)
 				s.Split(bufio.ScanWords)
-				// clear dispListing and newListing here
 				for s.Scan() {
 					tokens <- token{s.Text(), reload, yes}
 				}
 				inputF.Close()
-				continue
+				tokens <- token{"_", -1, not} // reset header
+				continue start
 			case "release":
 				if opd == "time" {
 					msg("%slimiter release is:%s %.4gms", italic, reset,
@@ -916,10 +917,9 @@ start:
 				release = Pow(125e-6, v)
 				reportFloatSet("limiter "+op, v) // report embellished
 				continue
-			case "unmute": // should be in modes?
-				if len(transfer.Listing) == 0 {
-					msg("no running listings")
-					continue
+			case "unmute": // slated for removal
+				if _, ok := parseIndex("0", len(transfer.Listing)); !ok { // zero is a dummy
+					continue // error reported by parseIndex
 				}
 				for i := range mutes {
 					mutes.set(i, unmute)
@@ -1151,7 +1151,7 @@ start:
 
 			// add to listing
 			dispListing = append(dispListing, operation{Op: op, Opd: opd})
-			if !f { // don't add function name to listing
+			if !opIsFunction {
 				newListing = append(newListing, operation{Op: op, Opd: opd})
 			}
 			if fIn {
@@ -1297,7 +1297,7 @@ func (m *muteSlice) set(i int, v float64) {
 
 func parseIndex(operand string, l int) (int, bool) {
 	if l < 1 {
-		msg("%snothing to %s%s", italic, reset, operand)
+		msg("%snothing to %s%s", italic, operand, reset)
 		return 0, not
 	}
 	n, rr := strconv.Atoi(operand)

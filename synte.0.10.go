@@ -897,6 +897,7 @@ start:
 				}
 				s := bufio.NewScanner(inputF)
 				s.Split(bufio.ScanWords)
+				// clear dispListing and newListing here
 				for s.Scan() {
 					tokens <- token{s.Text(), reload, yes}
 				}
@@ -1482,14 +1483,16 @@ func readTokenPair(
 		return op, opd, operands, num, f, reload, ext, retry
 	}
 	wav := wmap[opd] && op == "wav" // wavs can start with a number
-	if strings.ContainsAny(o[:1], "+-.0123456789") && !wav && !f {
-		if num.Ber, num.Is = parseType(o, op); !num.Is {
-			clr("")
-			if ext {
-				return op, opd, operands, num, f, reload, not, cancel
-			}
-			return op, opd, operands, num, f, reload, ext, retry // parseType will report error
+	//if strings.ContainsAny(o[:1], "+-.0123456789") && !wav && !f {
+	if !strings.ContainsAny(o[:1], "+-.0123456789") || wav || f {
+		return op, opd, operands, num, f, reload, ext, tokenPairRead
+	}
+	if num.Ber, num.Is = parseType(o, op); !num.Is {
+		clr("")
+		if ext {
+			return op, opd, operands, num, f, reload, not, cancel
 		}
+		return op, opd, operands, num, f, reload, ext, retry // parseType will report error
 	}
 	return op, opd, operands, num, f, reload, ext, tokenPairRead
 }
@@ -2385,7 +2388,7 @@ func SoundEngine(file *os.File, bits int) {
 					r = float64(i)
 				case 25: // "<sync"
 					r *= s
-					r += (1 - s) * sigs[i][o.N] // phase offset
+					r += (1 - s) * (1-sigs[i][o.N]) // phase offset
 				case 26: // ">sync", ".>sync"
 					switch { // syncSt8 is a slice to make multiple >sync operations independent
 					case r <= 0 && syncSt8[i] == run: // edge-detect

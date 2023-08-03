@@ -115,6 +115,8 @@ const (
 	FDOUT          = 1e-5
 	MIN_FADE       = 175e-3 // 175ms
 	MAX_FADE       = 120    // 120s
+	MIN_RELEASE    = 50e-3  // 50ms
+	MAX_RELEASE    = 50     // 50s
 )
 
 var (
@@ -351,6 +353,11 @@ const ( // used in token parsing
 	cancel
 	tokenPairRead
 )
+
+type number struct {
+	Ber float64
+	Is bool
+}
 
 const advisory = `
 Protect your hearing when listening to any audio on a system capable of
@@ -607,10 +614,7 @@ start:
 			if !ext {
 				displayHeader(sc, wavNames, dispListing, dispListings, funcs)
 			}
-			var num struct {
-				Ber float64
-				Is  bool
-			}
+			var num number
 			var (
 				op, opd  string
 				result   int
@@ -687,14 +691,9 @@ start:
 				}
 				out[opd] = struct{}{}
 			case "del", ".del", "d":
-				n, rr := strconv.Atoi(opd)
-				if e(rr) {
-					msg("%soperand not an integer%s", italic, reset)
-					continue
-				}
-				if n > len(transfer.Listing)-1 || n < 0 {
-					msg("%sindex out of range%s", italic, reset)
-					continue
+				n, ok := parseIndex(opd, len(transfer.Listing)-1)
+				if !ok {
+					continue // error reported by parseIndex
 				}
 				mutes.set(n, mute) // wintermute
 				if display.Paused { // play resumed to enact deletion in sound engine
@@ -748,24 +747,12 @@ start:
 				}
 				continue start // fIn will be reset on start
 			case "fade":
-				if !num.Is {
-					msg("%snot a valid number%s", italic, reset)
+				fd, ok := parseFloat(num, 1/(MAX_FADE * SampleRate), 1/(MIN_FADE * SampleRate))
+				if !ok { // error reported by parseFloat
 					continue
 				}
-				fd := num.Ber
-				ft := 1 / (fd * SampleRate)
-				if ft < MIN_FADE { // minimum fade time
-					fd = 1 / (MIN_FADE * SampleRate)
-				}
-				if ft > MAX_FADE { // maximum fade time
-					fd = 1 / (MAX_FADE * SampleRate)
-				}
-				if ft < 1 {
-					msg("%sfade set to%s %.3gms", italic, reset, 1/(fd*SampleRate)*1e3)
-				} else {
-					msg("%sfade set to%s %.3gs", italic, reset, 1/(fd*SampleRate))
-				}
 				fade = Pow(FDOUT, fd) // approx -100dB in t=fd
+				reportFloatSet(op, fd)
 				continue
 			case "pop":
 				p := 0
@@ -789,21 +776,13 @@ start:
 					}
 				}
 			case "erase", "e":
-				n, rr := strconv.Atoi(opd)
-				if e(rr) {
-					msg("%soperand not an integer%s", italic, reset)
-					continue
-				}
-				if n < 0 {
-					continue
-				}
-				if n > len(dispListing) {
-					msg("%snumber greater than length of necklace%s", italic, reset)
-					continue
+				n, ok := parseIndex(opd, len(dispListing))
+				if !ok {
+					continue // error reported by parseIndex
 				}
 				for i := 0; i < len(dispListing)-n; i++ { // recompile
 					tokens <- token{dispListing[i].Op, -1, yes}
-					if len(dispListing[i].Opd) > 0 {
+					if len(dispListing[i].Opd) > 0 { // dodgy?
 						tokens <- token{dispListing[i].Opd, -1, yes}
 					}
 				}
@@ -819,14 +798,9 @@ start:
 					continue
 				}
 			case "mute", ".mute", "m", "m+":
-				i, rr := strconv.Atoi(opd)
-				if e(rr) {
-					msg("%soperand not an integer%s", italic, reset)
-					continue
-				}
-				if i < 0 || i > len(transfer.Listing)-1 {
-					msg("listing index does not exist")
-					continue
+				i, ok := parseIndex(opd, len(transfer.Listing)-1)
+				if !ok {
+					continue // error reported by parseIndex
 				}
 				if op == "m+" {
 					muteGroup = append(muteGroup, i) // add to mute group
@@ -852,31 +826,16 @@ start:
 				}
 				muteGroup = []int{}
 				continue
-			case "level", ".level", "pan", ".pan":
-				if len(transfer.Listing) == 0 {
-					msg("no running listings")
-					continue
-				}
-				i, rr := strconv.Atoi(opd)
-				if e(rr) {
-					msg("operand not an integer")
-					continue
-				}
-				if i < 0 || i > len(transfer.Listing) { // includes current listing to be launched
-					msg("index doesn't exist")
-					continue
+			case "level", ".level", "pan", ".pan": // listing can level or pan itself
+				if _, ok := parseIndex(opd, len(transfer.Listing)); !ok {
+					continue // error reported by parseIndex
 				}
 			case "solo", ".solo", "s":
-				if len(transfer.Listing) == 0 {
-					msg("no running listings")
-					continue
+				i, ok := parseIndex(opd, len(transfer.Listing))
+				if !ok {
+					continue // error reported by parseIndex
 				}
-				i, rr := strconv.Atoi(opd)
-				if e(rr) {
-					msg("operand not an integer")
-					continue
-				}
-				if i < 0 || i > len(transfer.Listing) || (i == len(transfer.Listing) && op[:1] != ".") {
+				if i == len(transfer.Listing) && op != ".solo" {
 					msg("operand out of range")
 					continue
 				}
@@ -913,7 +872,7 @@ start:
 			case "load", "ld", "rld", "r", "apd":
 				switch op {
 				case "rld", "r":
-					n, rr := strconv.Atoi(opd)
+					n, rr := strconv.Atoi(opd) // allow any index, no bounds check
 					if e(rr) {
 						msg("%soperand not valid:%s %s", italic, reset, opd)
 						continue
@@ -949,19 +908,12 @@ start:
 						-1000/(Log(release)*SampleRate/Log(8000)))
 					continue
 				}
-				if !num.Is {
-					msg("not a number")
+				v, ok := parseFloat(num, 1/(MAX_RELEASE*SampleRate), 1/(MIN_RELEASE*SampleRate))
+				if !ok { // error reported by parseFloat
 					continue
 				}
-				v := num.Ber
-				if v < 1.041e-6 { // ~20s
-					v = 1.041e-6
-				}
-				if v > 1.04e-3 { // ~5ms
-					v = 1.04e-3
-				}
-				release = Pow(8000, -v)
-				msg("%slimiter release set to:%s %.fms", italic, reset, 1000/(v*SampleRate))
+				release = Pow(125e-6, v)
+				reportFloatSet("limiter "+op, v) // report embellished
 				continue
 			case "unmute": // should be in modes?
 				if len(transfer.Listing) == 0 {
@@ -973,9 +925,8 @@ start:
 				}
 				continue
 			case "from":
-				if len(transfer.Listing) == 0 {
-					msg("no running listings")
-					continue
+				if _, ok := parseIndex(opd, len(transfer.Listing)-1); !ok {
+					continue // error reported by parseIndex
 				}
 			case "noise":
 				newListing = append(newListing, listing{{Op: "push"}, {Op: "in", Opd: sf("%v", NOISE_FREQ)}, {Op: "out", Opd: "^freq"}, {Op: "pop"}}...)
@@ -1020,27 +971,22 @@ start:
 				msg("")
 				continue
 			case "ct":
-				if n, ok := parseType(opd, op); ok {
+				if n, ok := parseType(opd, op); ok { // permissive, no bounds check
 					ct = n
 					msg("%sclip threshold set to %.3g%s", italic, ct, reset)
 				}
 				continue
 			case "rpl":
-				n, rr := strconv.Atoi(opd)
-				if e(rr) {
-					msg("%soperand not an integer%s", italic, reset)
-					continue
-				}
-				if n < 0 || n >= len(transfer.Listing) {
-					continue
+				n, ok := parseIndex(opd, len(transfer.Listing)-1)
+				if !ok {
+					continue // error reported by parseIndex
 				}
 				reload = n
 				msg("%swill replace listing %s%d%s on launch%s", italic, reset, n, italic, reset)
 				continue
-			case "all":
-				if len(transfer.Listing) == 0 {
-					msg("all is meaningless in first listing")
-					continue
+			case "all": // check if no listings; no operand to check, zero is dummy value
+				if _, ok := parseIndex("0", len(transfer.Listing)); !ok {
+					continue // error reported by parseIndex
 				}
 			case "do":
 				var rr error
@@ -1348,6 +1294,45 @@ func (m *muteSlice) set(i int, v float64) {
 	(*m)[i] = v
 }
 
+func parseIndex(operand string, l int) (int, bool) {
+	if l < 1 {
+		msg("%snothing to %s%s", italic, reset, operand)
+		return 0, not
+	}
+	n, rr := strconv.Atoi(operand)
+	if e(rr) {
+		msg("%soperand not an integer%s", italic, reset)
+		return 0, not
+	}
+	if n < 0 || n > l {
+		msg("%soperand out of range%s", italic, reset)
+		return 0, not
+	}
+	return n, yes
+}
+
+func parseFloat(num number, lowerBound, upperBound float64) (v float64, ok bool) {
+	if !num.Is {
+		msg("not a number")
+		return 0, not
+	}
+	v = num.Ber
+	if v < lowerBound { // ~20s
+		v = lowerBound
+	}
+	if v > upperBound { // ~5ms
+		v = upperBound
+	}
+	return v, yes
+}
+func reportFloatSet(op string, f float64) {
+	if f > 1 / SampleRate {
+		msg("%s%s set to%s %.3gms", italic, op, reset, 1e3/(f*SampleRate))
+		return
+	}
+	msg("%s%s set to%s %.3gs", italic, op, reset, 1/(f*SampleRate))
+}
+
 type soundcard struct {
 	file       *os.File
 	channels   string
@@ -1450,10 +1435,7 @@ func readTokenPair(
 	clr func(s string, i ...any),
 ) (op, opd string,
 	operands []string,
-	num struct {
-		Ber float64
-		Is  bool
-	},
+	num number,
 	f bool,
 	newReload int,
 	newExt bool,
@@ -1725,7 +1707,7 @@ func parseType(expr, op string) (n float64, b bool) {
 func nyquist(n float64, e string) bool {
 	ny := 2e4 / SampleRate
 	if bounds(n, ny) {
-		msg("'%s' is an %sinaudible frequency >20kHz%s", e, italic, reset)
+		msg("'%s' %sis an inaudible frequency >20kHz%s", e, italic, reset)
 		if bounds(n, 1) {
 			msg(" and frequency out of range, not accepted")
 			return false
@@ -2105,7 +2087,7 @@ func SoundEngine(file *os.File, bits int) {
 		nyfL, nyfR    float64                                    // nyquist filtering
 		nyfC          float64 = 1 / (1 + 1/(Tau*2e4/SampleRate)) // coefficient, filter needs cleaner implementation
 		L, R, sides   float64
-		setmixDefault = 2400 / SampleRate
+		setmixDefault = 800 / SampleRate
 		current       int
 	)
 	no *= 77777777777 // force overflow
@@ -2624,7 +2606,6 @@ func SoundEngine(file *os.File, bits int) {
 		dac = hpf
 		c += 16 / (c*c + 4.77)
 		mixF = mixF + (Abs(c)-mixF)*0.00026 // ~2Hz @ 48kHz // * 4.36e-5 // 3s @ 48kHz
-		// mixF must not be zero, but this is not yet enforced nor proven
 		dac /= mixF
 		sides /= mixF
 		dac *= gain

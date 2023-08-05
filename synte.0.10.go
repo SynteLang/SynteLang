@@ -140,110 +140,16 @@ const ( // aliases
 	yes = true
 	not = false
 )
+const (
+	put = iota
+	get
+)
 
-type ops struct {
-	Opd bool
-	N   int
+type number struct {
+	Ber float64
+	Is  bool
 }
-
-var operators = map[string]ops{ // would be nice if switch indexes could be generated from a common root
-	// bool indicates if operand used
-	"+":      {yes, 1},  // add
-	"out":    {yes, 2},  // send to named signal
-	".out":   {yes, 2},  // alias of out
-	">":      {yes, 2},  // alias of out
-	"out+":   {yes, 3},  // add to named signal
-	">+":     {yes, 3},  // alias of out+
-	"in":     {yes, 4},  // input numerical value or receive from named signal
-	"<":      {yes, 4},  // alias of in
-	"sine":   {not, 5},  // shape linear input to sine
-	"mod":    {yes, 6},  // output = input MOD operand
-	"gt":     {yes, 7},  // greater than
-	"lt":     {yes, 8},  // less than
-	"mul":    {yes, 9},  // multiply
-	"*":      {yes, 9},  // alias of mul
-	"x":      {yes, 9},  // alias of mul
-	"abs":    {not, 10}, // absolute
-	"tanh":   {not, 11}, // hyperbolic tangent
-	"pow":    {yes, 12}, // power
-	"base":   {yes, 13}, // operand to the power of input
-	"clip":   {yes, 14}, // clip input
-	"noise":  {not, 15}, // white noise source
-	"push":   {not, 16}, // push to listing stack
-	"pop":    {not, 17}, // pop from listing stack
-	"(":      {not, 16}, // alias of push
-	")":      {not, 17}, // alias of pop
-	"tape":   {yes, 18}, // listing tape loop
-	"--":     {yes, 19}, // subtract from operand
-	"tap":    {yes, 20}, // tap from loop
-	"f2c":    {not, 21}, // convert frequency to co-efficient
-	"wav":    {yes, 22}, // play wav file
-	"8bit":   {yes, 23}, // quantise input
-	"index":  {not, 24}, // index of listing // change to signal?
-	"<sync":  {yes, 25}, // receive sync pulse
-	">sync":  {not, 26}, // send sync pulse
-	".>sync": {not, 26}, // alias, launches listing
-	"jl0":    {yes, 27}, // jump if less than zero
-	"level":  {yes, 28}, // vary level of a listing
-	".level": {yes, 28}, // alias, launches listing
-	"from":   {yes, 29}, // reveive output from a listing
-	"sgn":    {not, 30}, // sign of input
-	//	"deleted":      ops{yes, 31}, // specified below
-	"/":      {yes, 32}, // division
-	"sub":    {yes, 33}, // subtract operand
-	"-":      {yes, 33}, // alias of sub
-	"setmix": {yes, 34}, // set sensible level
-	"print":  {not, 35}, // print input to info display
-	"\\":     {yes, 36}, // "\"
-	"pan":    {yes, 38}, // vary pan of a listing
-	".pan":   {yes, 38}, // alias, launches listing
-	"all":    {not, 39}, // receive output of all preceding listings
-	"fft":    {not, 40}, // create fourier transform
-	"ifft":   {not, 41}, // receive from fourier representation
-	"fftrnc": {yes, 42}, // truncate spectrum
-	"shfft":  {yes, 43}, // shift spectrum
-	"ffrz":   {yes, 44}, // freeze-hold spectrum
-	"gafft":  {yes, 45}, // gate spectrum
-	"rev":    {not, 46}, // reverse spectrum
-	"ffltr":  {yes, 47}, // apply weighted average filter to spectrum
-	"ffzy":   {not, 48}, // rotate phases by random values
-	"ffaze":  {yes, 49}, // rotate phases by operand
-	"reu":    {not, 50}, // reverse each half of complex spectrum
-
-	// specials
-	"]":       {not, 0}, // end function input
-	":":       {yes, 0}, // command
-	"fade":    {yes, 0}, // set fade out
-	"del":     {yes, 0}, // delete a listing
-	"erase":   {yes, 0}, // erase a listing
-	"mute":    {yes, 0}, // mute a listing
-	"m":       {yes, 0}, // alias of mute
-	"solo":    {yes, 0}, // solo a listing
-	"release": {yes, 0}, // set limiter release
-	"unmute":  {not, 0}, // unmute all listings
-	".mute":   {yes, 0}, // alias, launches listing
-	".del":    {yes, 0}, // alias, launches listing
-	".solo":   {yes, 0}, // alias, launches listing
-	"//":      {yes, 0}, // comments
-	"load":    {yes, 0}, // load listing by filename
-	"ld":      {yes, 0}, // alias of load
-	"[":       {yes, 0}, // begin function input
-	"ls":      {yes, 0}, // list listings
-	"ct":      {yes, 0}, // individual clip threshold
-	"rld":     {yes, 0}, // reload a listing
-	"r":       {yes, 0}, // alias of rld
-	"rpl":     {yes, 0}, // replace a listing
-	".rpl":    {yes, 0}, // launch listing in place of another
-	"s":       {yes, 0}, // alias of solo
-	"e":       {yes, 0}, // alias of erase
-	"apd":     {yes, 0}, // launch index to new listing
-	"do":      {yes, 0}, // repeat next operation [operand] times
-	"d":       {yes, 0}, // alias of del
-	"deleted": {not, 0}, // for internal use
-	"/*":      {yes, 0}, // non-breaking comments, nop
-	"m+":      {yes, 0}, // add to mute group
-	"gain":    {yes, 0}, // set overall mono gain before limiter
-}
+type clear func(s string, i ...any) int
 
 type operation struct {
 	Op  string // operator
@@ -256,6 +162,126 @@ type listing []operation
 type fn struct {
 	Comment string
 	Body    listing
+}
+
+type newOperation struct {
+	operator, operand string
+	operands          []string
+	num               number
+	isFunction        bool
+}
+
+type localState struct {
+	inOut func(int, string) bool
+	clr   clear
+	newOperation
+	// tbd
+}
+
+type processor func(*localState) int
+
+type operatorParticulars struct {
+	Opd     bool // indicates if has operand
+	N       int  // index for sound engine switch
+	process processor
+}
+
+var operators = map[string]operatorParticulars{ // would be nice if switch indexes could be generated from a common root
+	"+":      {yes, 1, noCheck},              // add
+	"out":    {yes, 2, checkOut},             // send to named signal
+	".out":   {yes, 2, checkOut},             // alias of out
+	">":      {yes, 2, checkOut},             // alias of out
+	"out+":   {yes, 3, checkOut},             // add to named signal
+	">+":     {yes, 3, checkOut},             // alias of out+
+	"in":     {yes, 4, noCheck},              // input numerical value or receive from named signal
+	"<":      {yes, 4, noCheck},              // alias of in
+	"sine":   {not, 5, noCheck},              // shape linear input to sine
+	"mod":    {yes, 6, noCheck},              // output = input MOD operand
+	"gt":     {yes, 7, noCheck},              // greater than
+	"lt":     {yes, 8, noCheck},              // less than
+	"mul":    {yes, 9, noCheck},              // multiply
+	"*":      {yes, 9, noCheck},              // alias of mul
+	"x":      {yes, 9, noCheck},              // alias of mul
+	"abs":    {not, 10, noCheck},             // absolute
+	"tanh":   {not, 11, noCheck},             // hyperbolic tangent
+	"pow":    {yes, 12, noCheck},             // power
+	"base":   {yes, 13, noCheck},             // operand to the power of input
+	"clip":   {yes, 14, noCheck},             // clip input
+	"noise":  {not, 15, noCheck},             // white noise source
+	"push":   {not, 16, noCheck},             // push to listing stack
+	"pop":    {not, 17, noCheck},             // pop from listing stack
+	"(":      {not, 16, noCheck},             // alias of push
+	")":      {not, 17, noCheck},             // alias of pop
+	"tape":   {yes, 18, noCheck},             // listing tape loop
+	"--":     {yes, 19, noCheck},             // subtract from operand
+	"tap":    {yes, 20, noCheck},             // tap from loop
+	"f2c":    {not, 21, noCheck},             // convert frequency to co-efficient
+	"wav":    {yes, 22, noCheck},             // play wav file
+	"8bit":   {yes, 23, noCheck},             // quantise input
+	"index":  {not, 24, noCheck},             // index of listing // change to signal?
+	"<sync":  {yes, 25, noCheck},             // receive sync pulse
+	">sync":  {not, 26, noCheck},             // send sync pulse
+	".>sync": {not, 26, noCheck},             // alias, launches listing
+	"jl0":    {yes, 27, noCheck},             // jump if less than zero
+	"level":  {yes, 28, checkIndexIncl}, // vary level of a listing
+	".level": {yes, 28, checkIndexIncl}, // alias, launches listing
+	"from":   {yes, 29, checkIndex},          // receive output from a listing
+	"sgn":    {not, 30, noCheck},             // sign of input
+	//	"deleted":      {yes, 31, noCheck}, // specified below
+	"/":      {yes, 32, noCheck},             // division
+	"sub":    {yes, 33, noCheck},             // subtract operand
+	"-":      {yes, 33, noCheck},             // alias of sub
+	"setmix": {yes, 34, noCheck},             // set sensible level
+	"print":  {not, 35, noCheck},             // print input to info display
+	"\\":     {yes, 36, noCheck},             // "\"
+	"pan":    {yes, 38, checkIndexIncl}, // vary pan of a listing
+	".pan":   {yes, 38, checkIndexIncl}, // alias, launches listing
+	"all":    {not, 39, checkIndex},          // receive output of all preceding listings
+	"fft":    {not, 40, noCheck},             // create fourier transform
+	"ifft":   {not, 41, noCheck},             // receive from fourier representation
+	"fftrnc": {yes, 42, noCheck},             // truncate spectrum
+	"shfft":  {yes, 43, noCheck},             // shift spectrum
+	"ffrz":   {yes, 44, noCheck},             // freeze-hold spectrum
+	"gafft":  {yes, 45, noCheck},             // gate spectrum
+	"rev":    {not, 46, noCheck},             // reverse spectrum
+	"ffltr":  {yes, 47, noCheck},             // apply weighted average filter to spectrum
+	"ffzy":   {not, 48, noCheck},             // rotate phases by random values
+	"ffaze":  {yes, 49, noCheck},             // rotate phases by operand
+	"reu":    {not, 50, noCheck},             // reverse each half of complex spectrum
+
+	// specials
+	"]":       {not, 0, noCheck},      // end function input
+	":":       {yes, 0, noCheck},      // command
+	"fade":    {yes, 0, checkFade},    // set fade out
+	"del":     {yes, 0, noCheck},      // delete a listing
+	"erase":   {yes, 0, noCheck},      // erase a listing
+	"mute":    {yes, 0, noCheck},      // mute a listing
+	"m":       {yes, 0, noCheck},      // alias of mute
+	"solo":    {yes, 0, noCheck},      // solo a listing
+	"release": {yes, 0, checkRelease}, // set limiter release
+	"unmute":  {not, 0, unmuteAll},    // unmute all listings
+	".mute":   {yes, 0, noCheck},      // alias, launches listing
+	".del":    {yes, 0, noCheck},      // alias, launches listing
+	".solo":   {yes, 0, noCheck},      // alias, launches listing
+	"//":      {yes, 0, noCheck},      // comments
+	"load":    {yes, 0, noCheck},      // load listing by filename
+	"ld":      {yes, 0, noCheck},      // alias of load
+	"[":       {yes, 0, noCheck},      // begin function input
+	"ls":      {yes, 0, ls},           // list listings
+	"ct":      {yes, 0, adjustClip},   // individual clip threshold
+	"rld":     {yes, 0, noCheck},      // reload a listing
+	"r":       {yes, 0, noCheck},      // alias of rld
+	"rpl":     {yes, 0, noCheck},      // replace a listing
+	".rpl":    {yes, 0, noCheck},      // launch listing in place of another
+	"s":       {yes, 0, noCheck},      // alias of solo
+	"e":       {yes, 0, noCheck},      // alias of erase
+	"apd":     {yes, 0, noCheck},      // launch index to new listing
+	"do":      {yes, 0, noCheck},      // repeat next operation [operand] times
+	"d":       {yes, 0, noCheck},      // alias of del
+	"deleted": {not, 0, noCheck},      // for internal use
+	"/*":      {yes, 0, noCheck},      // non-breaking comments, nop
+	"m+":      {yes, 0, noCheck},      // add to mute group
+	"gain":    {yes, 0, adjustGain},   // set overall mono gain before limiter
 }
 
 // 'global' transfer variable
@@ -288,7 +314,6 @@ var (
 	level    []float64
 	muteSkip bool // don't calculate muted listings
 	ds       bool // instigate downsampling
-	restart  bool // controls whether listing is saved to temp on launch
 	reload   = -1 // launch to index, or append if less than zero
 	rs       bool // root-sync between running instances
 
@@ -302,6 +327,25 @@ var (
 
 	tokens = make(chan token, 2<<12) // arbitrary capacity, will block input in extreme circumstances
 )
+
+/*
+type direct struct {
+	started bool // latches
+	exit bool	 // initiate shutdown
+	mutes mutesSlice // move to transfer struct?
+	level []float64 // move to transfer struct?
+	reload = -1
+	muteSkip,
+	ds,
+	rs bool // root-sync between running instances
+	daisyChains []int // list of exported signals to be daisy-chained
+	fade        = Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
+	protected   = yes                               // redundant
+	release     = Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
+	DS          = 1                                 // down-sample amount
+	ct          = 8.0                               // individual listing clip threshold
+	gain        = 1.0
+} //*/
 
 type noise uint64
 
@@ -349,15 +393,10 @@ type wavs []struct {
 }
 
 const ( // used in token parsing
-	retry = iota
-	cancel
-	tokenPairRead
+	startNewOperation = iota
+	startNewListing
+	nextOperation
 )
-
-type number struct {
-	Ber float64
-	Is  bool
-}
 
 const advisory = `
 Protect your hearing when listening to any audio on a system capable of
@@ -399,7 +438,7 @@ func main() {
 		return
 	}
 	defer sc.file.Close()
-	SampleRate, convFactor = sc.sampleRate, sc.convFactor
+	SampleRate, convFactor = sc.sampleRate, sc.convFactor // change later
 
 	// process wavs
 	wavSlice := decodeWavs()
@@ -419,6 +458,7 @@ func main() {
 	lockLoad := make(chan struct{}, 1) // mutex on transferring listings
 	dispListings := []listing{}        // required for go-routines below
 	priorMutes := muteSlice{}          // to save mutes for recall after pause/play
+	restart := not                     // controls whether listing is saved to temp on launch
 
 	go func() { // watchdog, anonymous to use variables in scope
 		// This function will restart the sound engine and reload listings using new sample rate
@@ -504,7 +544,7 @@ func main() {
 	}()
 
 	// local state:
-	reserved := []string{ // order is important
+	reservedSignalNames := []string{ // order is important
 		"dac",
 		"", // nil signal for unused operand
 		"pitch",
@@ -517,13 +557,13 @@ func main() {
 		"grid",
 		"sync",
 	}
-	lenReserved := len(reserved)          // use this as starting point for exported signals
-	daisyChains = []int{2, 3, 9, 10}      // pitch,tempo,grid,sync
-	for i := 0; i < EXPORTED_LIMIT; i++ { // add 12 reserved signals for inter-list signals
-		reserved = append(reserved, sf("***%d", i+lenReserved)) // placeholder
+	lenReserved := len(reservedSignalNames) // use this as starting point for exported signals
+	daisyChains = []int{2, 3, 9, 10}        // pitch,tempo,grid,sync
+	for i := 0; i < EXPORTED_LIMIT; i++ {   // add 12 reserved signals for inter-list signals
+		reservedSignalNames = append(reservedSignalNames, sf("***%d", i+lenReserved)) // placeholder
 	}
 	lenExported := 0
-	var sig []float64 // local signals
+	var newSignals []float64 // local signals
 	funcs := make(map[string]fn)
 	// load functions from files and assign to funcs
 	load(&funcs, "functions.json")
@@ -534,7 +574,7 @@ func main() {
 				hasOpd = yes
 			}
 		}
-		operators[k] = ops{Opd: hasOpd}
+		operators[k] = operatorParticulars{Opd: hasOpd, process: noCheck}
 	}
 	var funcsave bool
 	code := &dispListings // code sent to listings.go
@@ -545,11 +585,12 @@ func main() {
 
 start:
 	for { // main loop
+		s := localState{}
 		newListing := listing{} // local listing, these could be merged into a struct
 		dispListing := listing{}
-		sig = make([]float64, len(reserved), 30) // capacity is nominal
+		newSignals = make([]float64, len(reservedSignalNames), 30) // capacity is nominal
 		// signals map with predefined constants, mutable
-		sg := map[string]float64{ // reset sg map
+		signals := map[string]float64{ // reset and add predefined signals
 			"ln2":      Ln2,
 			"ln3":      Log(3),
 			"ln5":      Log(5),
@@ -569,19 +610,28 @@ start:
 			"third":    Pow(2, 1.0/3),   // major, equal temperament ≈ 1.25 (4:5)
 			"seventh":  Pow(2, 11.0/12), // major, equal temperament ≈ 1.875 (8:15)
 		}
-		for i, w := range wavSlice { // add to sg map, with current sample rate
-			sg[w.Name] = float64(i)
-			sg["l."+w.Name] = float64(len(w.Data)-1) / (WAV_TIME * SampleRate)
-			sg["r."+w.Name] = float64(DS) / float64(len(w.Data))
+		for i, w := range wavSlice { // add to signals map, with current sample rate
+			signals[w.Name] = float64(i)
+			signals["l."+w.Name] = float64(len(w.Data)-1) / (WAV_TIME * SampleRate)
+			signals["r."+w.Name] = float64(DS) / float64(len(w.Data))
 		}
 		TLlen = int(SampleRate * TAPE_LENGTH)
 		out := map[string]struct{}{} // to check for multiple outs to same signal name
-		for _, v := range reserved {
+		s.inOut = func(i int, s string) (ok bool) {
+			switch i {
+			case get:
+				_, ok = out[s]
+			case put:
+				out[s] = struct{}{}
+			}
+			return
+		}
+		for _, v := range reservedSignalNames {
 			switch v {
 			case "tempo", "pitch", "grid", "sync":
 				continue
 			}
-			out[v] = struct{}{}
+			s.inOut(put, v)
 		}
 		fIn := not  // yes = inside function definition
 		st := 0     // func def start
@@ -589,7 +639,7 @@ start:
 		reload = -1 // index to be launched to
 		rpl = reload
 		do, to := 0, 0
-		clr := func(s string, i ...any) { // alternative to msg func in lieu of proper error handling
+		clr := func(s string, i ...any) int { // must be type: clear
 			if reload > -1 && reload < len(transfer.Listing) {
 				mutes.set(reload, priorMutes[reload])
 			}
@@ -599,7 +649,12 @@ start:
 			rpl = reload
 			info <- fmt.Sprintf(s, i...)
 			<-carryOn
+			if ext {
+				return startNewListing
+			}
+			return startNewOperation
 		}
+		s.clr = clr
 		muteGroup := []int{} // new mute group
 
 	input:
@@ -614,36 +669,32 @@ start:
 			if !ext {
 				displayHeader(sc, wavNames, dispListing, dispListings, funcs)
 			}
-			var num number
-			var (
-				op, opd      string
-				result       int
-				operands     []string
-				opIsFunction bool
-			)
-			switch op, opd, operands, num, opIsFunction,
-				reload, ext, result = readTokenPair(funcs, usage, wmap, clr); result {
-			case retry:
+			var result int
+			switch s.newOperation, reload, ext, result = readTokenPair(funcs, usage, wmap, clr); result {
+			case startNewOperation:
 				continue input
-			case cancel:
+			case startNewListing:
+				ext = not
 				continue start
 			}
-			for do > 1 { // one done below
-				tokens <- token{op, -1, not}
-				d := strings.ReplaceAll(opd, "{i}", sf("%d", to-do+1))
+			operator, operand := s.operator, s.operand // replace later
+
+			for do > 1 {                               // one done below
+				tokens <- token{operator, -1, not}
+				d := strings.ReplaceAll(operand, "{i}", sf("%d", to-do+1))
 				d = strings.ReplaceAll(d, "{i+1}", sf("%d", to-do+2))
-				if t2 := operators[op]; t2.Opd { // to avoid weird blank opds being sent
+				if t2 := operators[operator]; t2.Opd { // to avoid weird blank opds being sent
 					tokens <- token{d, -1, not}
 				}
 				do--
 			}
-			opd = strings.ReplaceAll(opd, "{i}", sf("%d", 0))
-			opd = strings.ReplaceAll(opd, "{i+1}", sf("%d", 1))
+			operand = strings.ReplaceAll(operand, "{i}", sf("%d", 0))
+			operand = strings.ReplaceAll(operand, "{i+1}", sf("%d", 1))
 
-			if opIsFunction { // parse function
+			if s.isFunction {
 				var function listing
 				var ok bool
-				function, ok = parseFunction(funcs, op, fun, sg, out, clr, operands)
+				function, ok = parseFunction(funcs, fun, signals, out, s)
 				switch {
 				case !ok && !ext:
 					continue input
@@ -655,46 +706,17 @@ start:
 				newListing = append(newListing, function...)
 			}
 
-			_, in := out[opd] ///
-			//checkOperand(in, )
-			switch op { // speed up compilation by skipping functions and unchecked operations?
-			case "out", "out+", ".out", ">":
-				_, in := out[opd] ///
-				expSig := not
-				for i := lenReserved; i < lenReserved+lenExported; i++ { // clarify/remove this
-					if reserved[i] == opd {
-						expSig = yes
-					}
-				}
-				switch {
-				case num.Is:
-					clr("%soutput to number not permitted%s", italic, reset)
-					if ext {
-						ext = not
-						continue start
-					}
-					continue
-				case in && opd[:1] != "^" && opd != "dac" && !expSig && op != "out+":
-					clr("%sduplicate output to signal, c'est interdit%s", italic, reset)
-					if ext {
-						ext = not
-						continue start
-					}
-					continue
-				case opd == "@":
-					clr("%scan't send to @, represents function operand%s", italic, reset)
-					if ext {
-						ext = not
-						continue start
-					}
-					continue
-				case opd == "dac" && len(newListing) == 0:
-					// drop silently
-					continue
-				}
-				out[opd] = struct{}{}
+			// process operators
+			switch r := operators[operator].process(&s); r {
+			case startNewOperation:
+				continue input
+			case startNewListing:
+				continue start
+			}
+
+			switch operator { // these need to be crowbarred in processor functions
 			case "del", ".del", "d":
-				n, ok := parseIndex(opd, len(transfer.Listing)-1)
+				n, ok := parseIndex(s, len(transfer.Listing)-1)
 				if !ok {
 					continue // error reported by parseIndex
 				}
@@ -719,10 +741,10 @@ start:
 					msg("%slisting display not updated, check %s'displaylisting.json'%s exists%s",
 						italic, reset, italic, reset)
 				}
-				if op[:1] == "." && len(newListing) > 0 {
+				if operator[:1] == "." && len(newListing) > 0 {
 					dispListing = append(dispListing, operation{Op: "mix"})
 					newListing = append(newListing, operation{Op: "setmix", Opd: "^freq"}) // hacky
-					op, opd = "out", "dac"
+					operator, operand = "out", "dac"
 					break
 				}
 				continue
@@ -738,7 +760,7 @@ start:
 					}
 				}
 				name := newListing[st].Opd
-				operators[name] = ops{Opd: hasOpd}
+				operators[name] = operatorParticulars{Opd: hasOpd, process: noCheck}
 				funcs[name] = fn{Body: newListing[st+1:]}
 				msg("%sfunction %s%s%s ready%s.", italic, reset, name, italic, reset)
 				if funcsave {
@@ -749,14 +771,6 @@ start:
 					}
 				}
 				continue start // fIn will be reset on start
-			case "fade":
-				fd, ok := parseFloat(num, 1/(MAX_FADE*SampleRate), 1/(MIN_FADE*SampleRate))
-				if !ok { // error reported by parseFloat
-					continue
-				}
-				fade = Pow(FDOUT, fd) // approx -100dB in t=fd
-				reportFloatSet(op, fd)
-				continue
 			case "pop":
 				p := 0
 				for _, o := range newListing {
@@ -779,7 +793,7 @@ start:
 					}
 				}
 			case "erase", "e":
-				n, ok := parseIndex(opd, len(dispListing))
+				n, ok := parseIndex(s, len(dispListing))
 				if !ok {
 					continue // error reported by parseIndex
 				}
@@ -792,7 +806,7 @@ start:
 				tokens <- token{"", -1, not}
 				continue start
 			case "wav":
-				if !wmap[opd] && opd != "@" {
+				if !wmap[operand] && operand != "@" {
 					clr("%sname isn't in wav list%s", italic, reset)
 					if ext {
 						ext = not
@@ -801,11 +815,11 @@ start:
 					continue
 				}
 			case "mute", ".mute", "m", "m+":
-				i, ok := parseIndex(opd, len(transfer.Listing)-1)
+				i, ok := parseIndex(s, len(transfer.Listing)-1)
 				if !ok {
 					continue // error reported by parseIndex
 				}
-				if op == "m+" {
+				if operator == "m+" {
 					muteGroup = append(muteGroup, i) // add to mute group
 					continue
 				}
@@ -821,24 +835,20 @@ start:
 						solo = -1
 					}
 				}
-				if op[:1] == "." && len(newListing) > 0 {
+				if operator[:1] == "." && len(newListing) > 0 {
 					dispListing = append(dispListing, operation{Op: "mix"})
 					newListing = append(newListing, operation{Op: "setmix", Opd: "^freq"}) // hacky
-					op, opd = "out", "dac"
+					operator, operand = "out", "dac"
 					break
 				}
 				muteGroup = []int{}
 				continue
-			case "level", ".level", "pan", ".pan": // listing can level or pan itself
-				if _, ok := parseIndex(opd, len(transfer.Listing)); !ok {
-					continue // error reported by parseIndex
-				}
 			case "solo", ".solo", "s":
-				i, ok := parseIndex(opd, len(transfer.Listing))
+				i, ok := parseIndex(s, len(transfer.Listing))
 				if !ok {
 					continue // error reported by parseIndex
 				}
-				if i == len(transfer.Listing) && op != ".solo" {
+				if i == len(transfer.Listing) && operator != ".solo" {
 					msg("operand out of range")
 					continue
 				}
@@ -865,28 +875,28 @@ start:
 					}
 					solo = i // save index of solo
 				}
-				if op[:1] == "." && len(newListing) > 0 {
+				if operator[:1] == "." && len(newListing) > 0 {
 					dispListing = append(dispListing, operation{Op: "mix"})
 					newListing = append(newListing, operation{Op: "setmix", Opd: "^freq"}) // hacky
-					op, opd = "out", "dac"
+					operator, operand = "out", "dac"
 					break
 				}
 				continue
 			case "load", "ld", "rld", "r", "apd":
-				switch op {
+				switch operator {
 				case "rld", "r":
-					n, rr := strconv.Atoi(opd) // allow any index, no bounds check
+					n, rr := strconv.Atoi(operand) // allow any index, no bounds check
 					if e(rr) {
-						msg("%soperand not valid:%s %s", italic, reset, opd)
+						msg("%soperand not valid:%s %s", italic, reset, operand)
 						continue
 					}
 					reload = n
-					opd = ".temp/" + opd
+					operand = ".temp/" + operand
 				case "apd":
 					reload = -1
-					opd = ".temp/" + opd
+					operand = ".temp/" + operand
 				}
-				inputF, rr := os.Open(opd + ".syt")
+				inputF, rr := os.Open(operand + ".syt")
 				if e(rr) {
 					msg("%v", rr)
 					reload = -1
@@ -906,37 +916,12 @@ start:
 				inputF.Close()
 				tokens <- token{"_", -1, not} // reset header
 				continue start
-			case "release":
-				if opd == "time" {
-					msg("%slimiter release is:%s %.4gms", italic, reset,
-						-1000/(Log(release)*SampleRate/Log(8000)))
-					continue
-				}
-				v, ok := parseFloat(num, 1/(MAX_RELEASE*SampleRate), 1/(MIN_RELEASE*SampleRate))
-				if !ok { // error reported by parseFloat
-					continue
-				}
-				release = Pow(125e-6, v)
-				reportFloatSet("limiter "+op, v) // report embellished
-				continue
-			case "unmute": // slated for removal
-				if _, ok := parseIndex("0", len(transfer.Listing)); !ok { // zero is a dummy
-					continue // error reported by parseIndex
-				}
-				for i := range mutes {
-					mutes.set(i, unmute)
-				}
-				continue
-			case "from":
-				if _, ok := parseIndex(opd, len(transfer.Listing)-1); !ok {
-					continue // error reported by parseIndex
-				}
 			case "noise":
 				newListing = append(newListing, listing{{Op: "push"}, {Op: "in", Opd: sf("%v", NOISE_FREQ)}, {Op: "out", Opd: "^freq"}, {Op: "pop"}}...)
 			case "[":
-				if _, ok := funcs[opd]; ok {
+				if _, ok := funcs[operand]; ok {
 					msg("%swill overwrite existing function!%s", red, reset)
-				} else if _, ok := operators[opd]; ok {
+				} else if _, ok := operators[operand]; ok {
 					msg("%sduplicate of extant operator, use another name%s", italic, reset)
 					continue
 				}
@@ -944,56 +929,9 @@ start:
 				fIn = yes
 				msg("%sbegin function definition,%s", italic, reset)
 				msg("%suse @ for operand signal%s", italic, reset)
-			case "ls":
-				if opd == "l" {
-					opd += "istings"
-				}
-				dir := "./" + opd
-				files, rr := os.ReadDir(dir)
-				if e(rr) {
-					msg("unable to access '%s': %s", dir, rr)
-					continue
-				}
-				extn := ".syt"
-				if dir == "./wavs" {
-					extn = ".wav"
-				}
-				ls := ""
-				for _, file := range files {
-					f := file.Name()
-					if filepath.Ext(f) != extn {
-						continue
-					}
-					ls += f[:len(f)-4] + "  "
-				}
-				if len(ls) == 0 {
-					msg("no files")
-					continue
-				}
-				msg("%s", ls)
-				msg("")
-				continue
-			case "ct":
-				if n, ok := parseType(opd, op); ok { // permissive, no bounds check
-					ct = n
-					msg("%sclip threshold set to %.3g%s", italic, ct, reset)
-				}
-				continue
-			case "rpl":
-				n, ok := parseIndex(opd, len(transfer.Listing)-1)
-				if !ok {
-					continue // error reported by parseIndex
-				}
-				reload = n
-				msg("%swill replace listing %s%d%s on launch%s", italic, reset, n, italic, reset)
-				continue
-			case "all": // check if no listings; no operand to check, zero is dummy value
-				if _, ok := parseIndex("0", len(transfer.Listing)); !ok {
-					continue // error reported by parseIndex
-				}
 			case "do":
 				var rr error
-				do, rr = strconv.Atoi(opd)
+				do, rr = strconv.Atoi(operand)
 				if e(rr) { // returns do as zero
 					msg("%soperand not an integer%s", italic, reset)
 					continue
@@ -1001,22 +939,16 @@ start:
 				msg("%snext operation repeated%s %dx", italic, reset, do)
 				to = do
 				continue
-			case "gain":
-				if n, ok := parseType(opd, op); ok {
-					gain *= n
-					msg("%sgain set to %s%.2gdb", italic, reset, 20*Log10(gain))
-				}
-				continue
 			case ":":
-				if opd == "p" { // toggle pause/play
+				if operand == "p" { // toggle pause/play
 					switch {
 					case display.Paused:
-						opd = "play"
+						operand = "play"
 					default:
-						opd = "pause"
+						operand = "pause"
 					}
 				}
-				switch opd {
+				switch operand {
 				case "exit", "q":
 					p("\nexiting...")
 					if display.Paused {
@@ -1122,7 +1054,7 @@ start:
 					rs = yes
 					msg("%snext launch will sync to root instance%s", italic, reset)
 				default:
-					msg("%sunrecognised mode: %s%s", italic, reset, opd)
+					msg("%sunrecognised mode: %s%s", italic, reset, operand)
 				}
 				continue
 			}
@@ -1130,31 +1062,27 @@ start:
 
 			// process exported signals
 			alreadyIn := not
-			for _, v := range reserved {
-				if v == opd {
-					alreadyIn = yes // signal already exported
+			for _, v := range reservedSignalNames {
+				if v == operand {
+					alreadyIn = yes // signal already exported or reserved
 				}
 			}
-			_, inSg := sg[opd]
-			r := 0
-			if len(opd) > 1 && opd[:1] == "'" {
-				r = 1
-			}
-			if !inSg && !alreadyIn && !num.Is && !fIn && op != "//" && unicode.IsUpper([]rune(opd)[r]) {
+			_, inSg := signals[operand]
+			if !inSg && !alreadyIn && !s.num.Is && !fIn && operator != "//" && isUppercaseInitial(operand) {
 				if lenExported > EXPORTED_LIMIT {
 					msg("we've ran out of exported signals :(")
 					continue
 				}
-				reserved[lenReserved+lenExported] = opd
+				reservedSignalNames[lenReserved+lenExported] = operand
 				daisyChains = append(daisyChains, lenReserved+lenExported)
 				lenExported++
-				msg("%s%s added to exported signals%s", opd, italic, reset)
+				msg("%s%s added to exported signals%s", operand, italic, reset)
 			}
 
 			// add to listing
-			dispListing = append(dispListing, operation{Op: op, Opd: opd})
-			if !opIsFunction {
-				newListing = append(newListing, operation{Op: op, Opd: opd})
+			dispListing = append(dispListing, operation{Op: operator, Opd: operand})
+			if !s.isFunction {
+				newListing = append(newListing, operation{Op: operator, Opd: operand})
 			}
 			if fIn {
 				continue
@@ -1188,11 +1116,11 @@ start:
 		// end of input
 
 		for _, o := range newListing {
-			if _, in := sg[o.Opd]; in || len(o.Opd) == 0 {
+			if _, in := signals[o.Opd]; in || len(o.Opd) == 0 {
 				continue
 			}
-			if strings.ContainsAny(o.Opd[:1], "+-.0123456789") { // wavs already in sg map
-				sg[o.Opd], _ = parseType(o.Opd, o.Op) // number assigned, error checked above
+			if strings.ContainsAny(o.Opd[:1], "+-.0123456789") { // wavs already in signals map
+				signals[o.Opd], _ = parseType(o.Opd, o.Op) // number assigned, error checked above
 			} else { // assign initial value
 				i := 0
 				if o.Opd[:1] == "^" {
@@ -1200,23 +1128,23 @@ start:
 				}
 				switch o.Opd[i : i+1] {
 				case "'":
-					sg[o.Opd] = 1
+					signals[o.Opd] = 1
 				case "\"":
-					sg[o.Opd] = 0.5
+					signals[o.Opd] = 0.5
 				default:
-					sg[o.Opd] = 0
+					signals[o.Opd] = 0
 				}
 			}
 		}
 
-		i := len(sig)          // to ignore reserved signals
-		for k, v := range sg { // assign signals to slice from map
-			sig = append(sig, v)
+		i := len(newSignals)        // to ignore reserved signals
+		for k, v := range signals { // assign signals to slice from map
+			newSignals = append(newSignals, v)
 			for ii, o := range newListing {
 				if o.Opd == k {
 					o.N = i
 				}
-				for i, pre := range reserved { // reserved signals are added in order
+				for i, pre := range reservedSignalNames { // reserved signals are added in order
 					if o.Opd == pre {
 						o.N = i // shadowed
 					}
@@ -1240,7 +1168,7 @@ start:
 		if reload < 0 || reload > len(transfer.Listing)-1 {
 			dispListings = append(dispListings, dispListing)
 			transfer.Listing = append(transfer.Listing, newListing)
-			transfer.Signals = append(transfer.Signals, sig)
+			transfer.Signals = append(transfer.Signals, newSignals)
 			if len(mutes) < len(transfer.Listing) { // not if restarting
 				mutes = append(mutes, 1)
 				priorMutes = append(priorMutes, 1)
@@ -1264,7 +1192,7 @@ start:
 		} else { // reloaded listing isn't saved to '.temp/'
 			dispListings[reload] = dispListing
 			transfer.Listing[reload] = newListing
-			transfer.Signals[reload] = sig
+			transfer.Signals[reload] = newSignals
 			transmit <- yes
 			<-accepted
 			mutes.set(reload, priorMutes[reload])
@@ -1287,481 +1215,6 @@ start:
 	}
 	saveUsage(usage)
 }
-func checkOperand(
-	assignedToOut bool,
-	lenReserved, lenExported int,
-) {
-	in := assignedToOut
-	switch op { // speed up compilation by skipping functions and unchecked operations?
-	case "out", "out+", ".out", ">":
-		_, in := out[opd] ///
-		expSig := not
-		for i := lenReserved; i < lenReserved+lenExported; i++ { // clarify/remove this
-			if reserved[i] == opd {
-				expSig = yes
-			}
-		}
-		switch {
-		case num.Is:
-			clr("%soutput to number not permitted%s", italic, reset)
-			if ext {
-				ext = not
-				continue start
-			}
-			continue
-		case in && opd[:1] != "^" && opd != "dac" && !expSig && op != "out+":
-			clr("%sduplicate output to signal, c'est interdit%s", italic, reset)
-			if ext {
-				ext = not
-				continue start
-			}
-			continue
-		case opd == "@":
-			clr("%scan't send to @, represents function operand%s", italic, reset)
-			if ext {
-				ext = not
-				continue start
-			}
-			continue
-		case opd == "dac" && len(newListing) == 0:
-			// drop silently
-			continue
-		}
-		out[opd] = struct{}{}
-	case "del", ".del", "d":
-		n, ok := parseIndex(opd, len(transfer.Listing)-1)
-		if !ok {
-			continue // error reported by parseIndex
-		}
-		mutes.set(n, mute)  // wintermute
-		if display.Paused { // play resumed to enact deletion in sound engine
-			for i := range mutes { // restore mutes
-				if i == n {
-					continue
-				}
-				mutes[i] = priorMutes[i] // not displayed
-			}
-			<-pause
-			display.Paused = not
-		}
-		time.Sleep(150 * time.Millisecond) // wait for envelope to complete
-		transfer.Listing[n] = listing{operation{Op: "deleted", Opn: 31}}
-		transfer.Signals[n][0] = 0 // silence listing
-		dispListings[n] = listing{operation{Op: "deleted"}}
-		transmit <- yes
-		<-accepted
-		if !save(*code, "displaylisting.json") {
-			msg("%slisting display not updated, check %s'displaylisting.json'%s exists%s",
-				italic, reset, italic, reset)
-		}
-		if op[:1] == "." && len(newListing) > 0 {
-			dispListing = append(dispListing, operation{Op: "mix"})
-			newListing = append(newListing, operation{Op: "setmix", Opd: "^freq"}) // hacky
-			op, opd = "out", "dac"
-			break
-		}
-		continue
-	case "]":
-		if !fIn || len(newListing[st+1:]) < 1 {
-			msg("%sno function definition%s", italic, reset)
-			continue
-		}
-		hasOpd := not
-		for _, o := range newListing[st+1:] {
-			if o.Opd == "@" { // set but don't reset
-				hasOpd = yes
-			}
-		}
-		name := newListing[st].Opd
-		operators[name] = ops{Opd: hasOpd}
-		funcs[name] = fn{Body: newListing[st+1:]}
-		msg("%sfunction %s%s%s ready%s.", italic, reset, name, italic, reset)
-		if funcsave {
-			if !save(funcs, "functions.json") {
-				msg("function not saved!")
-			} else {
-				msg("%sfunction saved%s", italic, reset)
-			}
-		}
-		continue start // fIn will be reset on start
-	case "fade":
-		fd, ok := parseFloat(num, 1/(MAX_FADE*SampleRate), 1/(MIN_FADE*SampleRate))
-		if !ok { // error reported by parseFloat
-			continue
-		}
-		fade = Pow(FDOUT, fd) // approx -100dB in t=fd
-		reportFloatSet(op, fd)
-		continue
-	case "pop":
-		p := 0
-		for _, o := range newListing {
-			if o.Op == "push" {
-				p++
-			}
-			if o.Op == "pop" {
-				p--
-			}
-		}
-		if p <= 0 {
-			msg("%spop before push%s", italic, reset)
-			continue
-		}
-	case "tape":
-		for _, o := range newListing {
-			if o.Op == "tape" {
-				msg("%sonly one tape per listing%s", italic, reset)
-				continue input
-			}
-		}
-	case "erase", "e":
-		n, ok := parseIndex(opd, len(dispListing))
-		if !ok {
-			continue // error reported by parseIndex
-		}
-		for i := 0; i < len(dispListing)-n; i++ { // recompile
-			tokens <- token{dispListing[i].Op, -1, yes}
-			if len(dispListing[i].Opd) > 0 { // dodgy?
-				tokens <- token{dispListing[i].Opd, -1, yes}
-			}
-		}
-		tokens <- token{"", -1, not}
-		continue start
-	case "wav":
-		if !wmap[opd] && opd != "@" {
-			clr("%sname isn't in wav list%s", italic, reset)
-			if ext {
-				ext = not
-				continue start
-			}
-			continue
-		}
-	case "mute", ".mute", "m", "m+":
-		i, ok := parseIndex(opd, len(transfer.Listing)-1)
-		if !ok {
-			continue // error reported by parseIndex
-		}
-		if op == "m+" {
-			muteGroup = append(muteGroup, i) // add to mute group
-			continue
-		}
-		muteGroup = append(muteGroup, i)
-		m := &mutes
-		if display.Paused && i < len(transfer.Listing) {
-			m = &priorMutes // alter saved mutes if paused
-		}
-		for _, i := range muteGroup {
-			m.set(i, 1-(*m)[i])            // toggle
-			unsolo[i] = (*m)[i]            // save status for unsolo
-			if solo == i && (*m)[i] == 0 { // if muting solo'd listing reset solo
-				solo = -1
-			}
-		}
-		if op[:1] == "." && len(newListing) > 0 {
-			dispListing = append(dispListing, operation{Op: "mix"})
-			newListing = append(newListing, operation{Op: "setmix", Opd: "^freq"}) // hacky
-			op, opd = "out", "dac"
-			break
-		}
-		muteGroup = []int{}
-		continue
-	case "level", ".level", "pan", ".pan": // listing can level or pan itself
-		if _, ok := parseIndex(opd, len(transfer.Listing)); !ok {
-			continue // error reported by parseIndex
-		}
-	case "solo", ".solo", "s":
-		i, ok := parseIndex(opd, len(transfer.Listing))
-		if !ok {
-			continue // error reported by parseIndex
-		}
-		if i == len(transfer.Listing) && op != ".solo" {
-			msg("operand out of range")
-			continue
-		}
-		m := &mutes
-		if display.Paused {
-			m = &priorMutes // alter saved mutes if paused
-		}
-		if solo == i { // unsolo index given by operand
-			for ii := range mutes { // i is shadowed
-				if i == ii {
-					continue
-				}
-				m.set(ii, unsolo[ii]) // restore all other mutes
-			}
-			solo = -1 // unset solo index
-		} else { // solo index given by operand
-			for ii := range mutes {
-				if ii == i {
-					m.set(i, unmute) // unmute solo'd index
-					continue
-				}
-				unsolo[ii] = (*m)[ii] // save all mutes
-				m.set(ii, mute)       // mute all other listings
-			}
-			solo = i // save index of solo
-		}
-		if op[:1] == "." && len(newListing) > 0 {
-			dispListing = append(dispListing, operation{Op: "mix"})
-			newListing = append(newListing, operation{Op: "setmix", Opd: "^freq"}) // hacky
-			op, opd = "out", "dac"
-			break
-		}
-		continue
-	case "load", "ld", "rld", "r", "apd":
-		switch op {
-		case "rld", "r":
-			n, rr := strconv.Atoi(opd) // allow any index, no bounds check
-			if e(rr) {
-				msg("%soperand not valid:%s %s", italic, reset, opd)
-				continue
-			}
-			reload = n
-			opd = ".temp/" + opd
-		case "apd":
-			reload = -1
-			opd = ".temp/" + opd
-		}
-		inputF, rr := os.Open(opd + ".syt")
-		if e(rr) {
-			msg("%v", rr)
-			reload = -1
-			continue
-		}
-		// if reloaded listing doesn't compile, current listing will remain muted:
-		if !display.Paused && reload < len(mutes) { // mute before reload
-			priorMutes[reload] = mutes[reload] // save mute status
-			mutes.set(reload, mute)
-			time.Sleep(25 * time.Millisecond) // wait for mutes
-		}
-		s := bufio.NewScanner(inputF)
-		s.Split(bufio.ScanWords)
-		for s.Scan() {
-			tokens <- token{s.Text(), reload, yes}
-		}
-		inputF.Close()
-		tokens <- token{"_", -1, not} // reset header
-		continue start
-	case "release":
-		if opd == "time" {
-			msg("%slimiter release is:%s %.4gms", italic, reset,
-				-1000/(Log(release)*SampleRate/Log(8000)))
-			continue
-		}
-		v, ok := parseFloat(num, 1/(MAX_RELEASE*SampleRate), 1/(MIN_RELEASE*SampleRate))
-		if !ok { // error reported by parseFloat
-			continue
-		}
-		release = Pow(125e-6, v)
-		reportFloatSet("limiter "+op, v) // report embellished
-		continue
-	case "unmute": // slated for removal
-		if _, ok := parseIndex("0", len(transfer.Listing)); !ok { // zero is a dummy
-			continue // error reported by parseIndex
-		}
-		for i := range mutes {
-			mutes.set(i, unmute)
-		}
-		continue
-	case "from":
-		if _, ok := parseIndex(opd, len(transfer.Listing)-1); !ok {
-			continue // error reported by parseIndex
-		}
-	case "noise":
-		newListing = append(newListing, listing{{Op: "push"}, {Op: "in", Opd: sf("%v", NOISE_FREQ)}, {Op: "out", Opd: "^freq"}, {Op: "pop"}}...)
-	case "[":
-		if _, ok := funcs[opd]; ok {
-			msg("%swill overwrite existing function!%s", red, reset)
-		} else if _, ok := operators[opd]; ok {
-			msg("%sduplicate of extant operator, use another name%s", italic, reset)
-			continue
-		}
-		st = len(newListing) // because current input hasn't been added yet
-		fIn = yes
-		msg("%sbegin function definition,%s", italic, reset)
-		msg("%suse @ for operand signal%s", italic, reset)
-	case "ls":
-		if opd == "l" {
-			opd += "istings"
-		}
-		dir := "./" + opd
-		files, rr := os.ReadDir(dir)
-		if e(rr) {
-			msg("unable to access '%s': %s", dir, rr)
-			continue
-		}
-		extn := ".syt"
-		if dir == "./wavs" {
-			extn = ".wav"
-		}
-		ls := ""
-		for _, file := range files {
-			f := file.Name()
-			if filepath.Ext(f) != extn {
-				continue
-			}
-			ls += f[:len(f)-4] + "  "
-		}
-		if len(ls) == 0 {
-			msg("no files")
-			continue
-		}
-		msg("%s", ls)
-		msg("")
-		continue
-	case "ct":
-		if n, ok := parseType(opd, op); ok { // permissive, no bounds check
-			ct = n
-			msg("%sclip threshold set to %.3g%s", italic, ct, reset)
-		}
-		continue
-	case "rpl":
-		n, ok := parseIndex(opd, len(transfer.Listing)-1)
-		if !ok {
-			continue // error reported by parseIndex
-		}
-		reload = n
-		msg("%swill replace listing %s%d%s on launch%s", italic, reset, n, italic, reset)
-		continue
-	case "all": // check if no listings; no operand to check, zero is dummy value
-		if _, ok := parseIndex("0", len(transfer.Listing)); !ok {
-			continue // error reported by parseIndex
-		}
-	case "do":
-		var rr error
-		do, rr = strconv.Atoi(opd)
-		if e(rr) { // returns do as zero
-			msg("%soperand not an integer%s", italic, reset)
-			continue
-		}
-		msg("%snext operation repeated%s %dx", italic, reset, do)
-		to = do
-		continue
-	case "gain":
-		if n, ok := parseType(opd, op); ok {
-			gain *= n
-			msg("%sgain set to %s%.2gdb", italic, reset, 20*Log10(gain))
-		}
-		continue
-	case ":":
-		if opd == "p" { // toggle pause/play
-			switch {
-			case display.Paused:
-				opd = "play"
-			default:
-				opd = "pause"
-			}
-		}
-		switch opd {
-		case "exit", "q":
-			p("\nexiting...")
-			if display.Paused {
-				<-pause
-			}
-			exit = yes
-			if started {
-				<-stop
-			}
-			save([]listing{{operation{Op: advisory}}}, "displaylisting.json")
-			p("Stopped")
-			close(infoff)
-			if funcsave && !save(funcs, "functions.json") {
-				msg("functions not saved!")
-				continue start
-			}
-			time.Sleep(30 * time.Millisecond) // wait for infoDisplay to finish
-			break start
-		case "erase", "e":
-			continue start
-		case "foff":
-			funcsave = not
-			display.Mode = "off"
-		case "fon":
-			funcsave = yes
-			display.Mode = "on"
-			if !save(funcs, "functions.json") {
-				msg("functions not saved!")
-				continue
-			}
-			msg("%sfunctions saved%s", italic, reset)
-		case "pause":
-			if started && !display.Paused {
-				for i := range mutes { // save, and mute all
-					priorMutes[i] = mutes[i] // save mutes for resume play
-					mutes[i] = 0             // here, mute is dual-purposed to gracefully turn off listings
-				}
-				time.Sleep(150 * time.Millisecond) // wait for mutes
-				pause <- yes
-				display.Paused = yes
-			} else if !started {
-				msg("%snot started%s", italic, reset)
-			}
-		case "play":
-			if !display.Paused {
-				continue
-			}
-			for i := range mutes { // restore mutes
-				mutes[i] = priorMutes[i]
-				priorMutes[i] = 1 // set to avoid muted listings when reload
-			}
-			<-pause
-			display.Paused = not
-		case "unprotected":
-			msg("unavailable")
-			//protected = !protected
-		case "clear", "c":
-			msg("clear")
-		case "verbose":
-			switch code {
-			case &dispListings:
-				code = &transfer.Listing
-			case &transfer.Listing:
-				code = &dispListings
-			}
-			display.Verbose = !display.Verbose
-			if !save(*code, "displaylisting.json") {
-				msg("%slisting display not updated, check %s'displaylisting.json'%s exists%s",
-					italic, reset, italic, reset)
-			}
-		case "stats":
-			if !started {
-				continue
-			}
-			stats := new(debug.GCStats)
-			debug.ReadGCStats(stats)
-			msg("___GC statistics:___")
-			msg("No.: %v", stats.NumGC)
-			msg("Tot.: %v", stats.PauseTotal)
-			msg("Avg.: %v", stats.PauseTotal/time.Duration(stats.NumGC))
-		case "mstat":
-			if !started {
-				continue
-			}
-			stats := new(runtime.MemStats)
-			runtime.ReadMemStats(stats)
-			msg("___Mem Stats:___")
-			msg("Alloc: %v", stats.Alloc)
-			msg("Sys: %v", stats.Sys)
-			msg("Live: %v", stats.Mallocs-stats.Frees)
-		case "mc": // mouse curve, exp or lin
-			mc = !mc
-		case "muff": // Mute Off
-			muteSkip = !muteSkip
-			s := "no"
-			if muteSkip {
-				s = "yes"
-			}
-			msg("%smute skip:%s %v", italic, reset, s)
-		case "ds":
-			ds = yes // not intended to be invoked while paused
-		case "rs": // root sync
-			rs = yes
-			msg("%snext launch will sync to root instance%s", italic, reset)
-		default:
-			msg("%sunrecognised mode: %s%s", italic, reset, opd)
-		}
-		continue
-	}
-}
 
 const (
 	mute   = iota // 0
@@ -1773,12 +1226,15 @@ func (m *muteSlice) set(i int, v float64) {
 	(*m)[i] = v
 }
 
-func parseIndex(operand string, l int) (int, bool) {
+func parseIndex(s localState, l int) (int, bool) {
 	if l < 1 {
-		msg("%snothing to %s%s", italic, operand, reset)
+		msg("%snothing to %s%s", italic, reset, s.operator)
 		return 0, not
 	}
-	n, rr := strconv.Atoi(operand)
+	if s.operand == "" { // ignore checks for empty operands, iffy?
+		return 0, yes
+	}
+	n, rr := strconv.Atoi(s.operand)
 	if e(rr) {
 		msg("%soperand not an integer%s", italic, reset)
 		return 0, not
@@ -1796,10 +1252,10 @@ func parseFloat(num number, lowerBound, upperBound float64) (v float64, ok bool)
 		return 0, not
 	}
 	v = num.Ber
-	if v < lowerBound { // ~20s
+	if v < lowerBound {
 		v = lowerBound
 	}
-	if v > upperBound { // ~5ms
+	if v > upperBound {
 		v = upperBound
 	}
 	return v, yes
@@ -1911,83 +1367,64 @@ func readTokenPair(
 	funcs map[string]fn,
 	usage map[string]int,
 	wmap map[string]bool,
-	clr func(s string, i ...any),
-) (op, opd string,
-	operands []string,
-	num number,
-	f bool,
-	newReload int,
-	newExt bool,
+	clr clear,
+) (o newOperation,
+	reload int,
+	ext bool,
 	result int,
 ) {
 	t := <-tokens
-	var (
-		reload int
-		ext    bool
-	)
-	op, reload, ext = t.tk, t.reload, t.ext
-	if (len(op) > 2 && byte(op[1]) == 91) || op == "_" || op == "" {
-		return op, opd, operands, num, f, reload, ext, retry
+	o.operator, reload, ext = t.tk, t.reload, t.ext
+	if (len(o.operator) > 2 && byte(o.operator[1]) == 91) || o.operator == "_" || o.operator == "" {
+		return o, reload, ext, startNewOperation
 	}
-	op = strings.TrimSuffix(op, ",") // to allow comma separation of tokens
-	op2, in := operators[op]
+	o.operator = strings.TrimSuffix(o.operator, ",") // to allow comma separation of tokens
+	op2, in := operators[o.operator]
 	if !in {
-		clr("%soperator or function doesn't exist:%s '%s'", italic, reset, op)
-		if ext {
-			return op, opd, operands, num, f, reload, not, cancel
-		}
-		return op, opd, operands, num, f, reload, ext, retry
+		r := clr("%soperator or function doesn't exist:%s %s", italic, reset, o.operator)
+		return o, reload, ext, r
 	}
-	_, f = funcs[op]
-	usage[op] += 1
+	_, o.isFunction = funcs[o.operator]
+	usage[o.operator] += 1
 	if !op2.Opd {
-		return op, opd, operands, num, f, reload, ext, tokenPairRead
+		return o, reload, ext, nextOperation
 	}
 	// parse second token
 	t = <-tokens
-	opd, reload, ext = t.tk, t.reload, t.ext
-	opd = strings.TrimSuffix(opd, ",") // to allow comma separation of tokens
-	if opd == "_" || opd == "" {
-		return op, opd, operands, num, f, reload, ext, retry
+	o.operand, reload, ext = t.tk, t.reload, t.ext
+	o.operand = strings.TrimSuffix(o.operand, ",") // to allow comma separation of tokens
+	if o.operand == "_" || o.operand == "" {
+		return o, reload, ext, startNewOperation
 	}
-	o := strings.ReplaceAll(opd, "{i}", "0")
-	o = strings.ReplaceAll(o, "{i+1}", "0")
-	operands = strings.Split(o, ",")
-	if !f && len(operands) > 1 {
-		clr("only functions can have multiple operands")
-		if ext {
-			return op, opd, operands, num, f, reload, not, cancel
-		}
-		return op, opd, operands, num, f, reload, ext, retry
+	s := strings.ReplaceAll(o.operand, "{i}", "0")
+	s = strings.ReplaceAll(s, "{i+1}", "0")
+	o.operands = strings.Split(s, ",")
+	if !o.isFunction && len(o.operands) > 1 {
+		r := clr("only functions can have multiple operands")
+		return o, reload, ext, r
 	}
-	wav := wmap[opd] && op == "wav" // wavs can start with a number
-	//if strings.ContainsAny(o[:1], "+-.0123456789") && !wav && !f {
-	if !strings.ContainsAny(o[:1], "+-.0123456789") || wav || f {
-		return op, opd, operands, num, f, reload, ext, tokenPairRead
+	wav := wmap[o.operand] && o.operator == "wav" // wavs can start with a number
+	if !strings.ContainsAny(s[:1], "+-.0123456789") || wav || o.isFunction {
+		return o, reload, ext, nextOperation
 	}
-	if num.Ber, num.Is = parseType(o, op); !num.Is {
-		clr("")
-		if ext {
-			return op, opd, operands, num, f, reload, not, cancel
-		}
-		return op, opd, operands, num, f, reload, ext, retry // parseType will report error
+	if o.num.Ber, o.num.Is = parseType(s, o.operator); !o.num.Is {
+		r := clr("")
+		return o, reload, ext, r // parseType will report error
 	}
-	return op, opd, operands, num, f, reload, ext, tokenPairRead
+	return o, reload, ext, nextOperation
 }
 
 func parseFunction(
 	funcs map[string]fn,
-	op string,
 	fun int,
-	sg map[string]float64,
+	signals map[string]float64,
 	out map[string]struct{},
-	clr func(s string, i ...any),
-	operands []string,
+	ls localState,
 ) (function listing,
 	result bool,
 ) {
-	function = make(listing, len(funcs[op].Body))
-	copy(function, funcs[op].Body)
+	function = make(listing, len(funcs[ls.operator].Body))
+	copy(function, funcs[ls.operator].Body)
 	s := sf(".%d", fun)
 	type mm struct{ at, at1, at2 bool }
 	m := mm{}
@@ -2005,7 +1442,7 @@ func parseFunction(
 		case "@2":
 			m.at2 = yes
 		}
-		if _, r := sg[o.Opd]; r {
+		if _, r := signals[o.Opd]; r {
 			continue
 		}
 		switch o.Opd[:1] {
@@ -2034,10 +1471,10 @@ func parseFunction(
 	case mm{yes, yes, yes}:
 		mmm = 3
 	default:
-		clr("malformed function") // probably not needed
+		ls.clr("malformed function") // probably not needed
 		return nil, not
 	}
-	l := len(operands)
+	l := len(ls.operands)
 	if mmm < l {
 		switch {
 		case l-mmm == 1:
@@ -2049,16 +1486,16 @@ func parseFunction(
 	if mmm > l {
 		switch {
 		case mmm == 1:
-			clr("%sthe function requires an operand%s", italic, reset)
+			ls.clr("%sthe function requires an operand%s", italic, reset)
 			return nil, not
 		case mmm > 1:
-			clr("%sthe function requires %d operands%s", italic, mmm, reset)
+			ls.clr("%sthe function requires %d operands%s", italic, mmm, reset)
 			return nil, not
 		}
 	}
-	for i, opd := range operands { // opd shadowed
-		if operands[i] == "" {
-			clr("empty argument %d", i+1)
+	for i, opd := range ls.operands { // opd shadowed
+		if ls.operands[i] == "" {
+			ls.clr("empty argument %d", i+1)
 			return nil, not
 		}
 		if strings.ContainsAny(opd[:1], "+-.0123456789") {
@@ -2073,11 +1510,11 @@ func parseFunction(
 		}
 		switch o.Opd {
 		case "@":
-			o.Opd = operands[0]
+			o.Opd = ls.operands[0]
 		case "@1":
-			o.Opd = operands[1]
+			o.Opd = ls.operands[1]
 		case "@2":
-			o.Opd = operands[2]
+			o.Opd = ls.operands[2]
 		}
 		function[i] = o
 	}
@@ -2086,12 +1523,6 @@ func parseFunction(
 
 // parseType() evaluates conversion of types
 func parseType(expr, op string) (n float64, b bool) {
-	switch op { // ignore for following commands
-	case "mute", ".mute", "del", ".del", "d", "solo", ".solo", "load", "save", "m", "rld", "r", "rpl", "s", "ld", "ls", "[", "do", "apd": // this is a bit messy, we don't care what value is - commands handled in input loop
-		return 0, true
-	default:
-		// process expression below
-	}
 	switch {
 	case len(expr) > 1 && expr[len(expr)-1:] == "!":
 		if n, b = evaluateExpr(expr[:len(expr)-1]); !b {
@@ -2169,17 +1600,12 @@ func parseType(expr, op string) (n float64, b bool) {
 		if n, b = evaluateExpr(expr); !b {
 			return 0, false
 		}
-		switch op {
-		case "from", "level", ".level", "count", "/":
-			// allow high values for these operators
-		default:
-			if Abs(n) > 64 {
-				msg("%.3g exceeds sensible values, use a type", n)
-				return 0, false
-			}
+		if Abs(n) > 64 {
+			msg("%.3g exceeds sensible values, use a type", n)
+			return 0, false
 		}
 	}
-	if IsInf(n, 0) || n != n { // ideally check for zero in specific cases
+	if IsInf(n, 0) || n != n { // ideally also check for zero in specific cases
 		msg("number not useful")
 		return 0, false
 	}
@@ -3411,4 +2837,141 @@ func displayHeader(sc soundcard, wavNames string, dispListing listing, dispListi
 		}
 	}
 	pf("\t  ")
+}
+
+// operationParticulars process field functions
+// These must be of type processor func(*localState) int
+
+func noCheck(_ *localState) int {
+	return nextOperation
+}
+
+func checkOut(s *localState) int {
+	switch {
+	case s.num.Is:
+		return s.clr("%soutput to number not permitted%s", italic, reset)
+	case s.inOut(get, s.operator) && s.operand[:1] != "^" && s.operand != "dac" && s.operator != "out+":
+		return s.clr("%sduplicate output to signal, c'est interdit%s", italic, reset)
+	case s.operand == "@":
+		return s.clr("%scan't send to @, represents function operand%s", italic, reset)
+	}
+	if !isUppercaseInitial(s.operand) {
+		s.inOut(put, s.operand)
+	}
+	return nextOperation
+}
+func checkIndexIncl(s *localState) int { // eg. listing can level or pan itself
+	if _, ok := parseIndex(*s, len(transfer.Listing)); !ok {
+		return startNewOperation // error reported by parseIndex
+	}
+	return nextOperation
+}
+func checkIndex(s *localState) int {
+	if _, ok := parseIndex(*s, len(transfer.Listing)-1); !ok {
+		return startNewOperation // error reported by parseIndex
+	}
+	return nextOperation
+}
+func enactRpl(s *localState) int {
+	reload := checkIndex(s)
+	msg("%swill replace listing %s%d%s on launch%s", italic, reset, reload, italic, reset)
+	return startNewOperation
+}
+
+func unmuteAll(s *localState) int { // slated for removal
+	if _, ok := parseIndex(*s, len(transfer.Listing)); !ok {
+		return startNewOperation
+	}
+	for i := range mutes {
+		mutes.set(i, unmute)
+	}
+	return startNewOperation
+}
+
+func ls(s *localState) int {
+	if s.operand == "l" {
+		s.operand += "istings"
+	}
+	dir := "./" + s.operand
+	files, rr := os.ReadDir(dir)
+	if e(rr) {
+		msg("unable to access '%s': %s", dir, rr)
+		return startNewOperation
+	}
+	extn := ".syt"
+	if dir == "./wavs" {
+		extn = ".wav"
+	}
+	ls := ""
+	for _, file := range files {
+		f := file.Name()
+		if filepath.Ext(f) != extn {
+			continue
+		}
+		ls += f[:len(f)-4] + "  "
+	}
+	if len(ls) == 0 {
+		msg("no files")
+		return startNewOperation
+	}
+	msg("%s", ls)
+	msg("")
+	return startNewOperation
+}
+
+func checkFade(s *localState) int {
+	fd, ok := parseFloat(s.num, 1/(MAX_FADE*SampleRate), 1/(MIN_FADE*SampleRate))
+	if !ok { // error reported by parseFloat
+		return startNewOperation
+	}
+	fade = Pow(FDOUT, fd) // approx -100dB in t=fd
+	reportFloatSet(s.operator, fd)
+	return startNewOperation
+}
+
+func checkRelease(s *localState) int {
+	if s.operand == "time" {
+		msg("%slimiter release is:%s %.4gms", italic, reset,
+			-1000/(Log(release)*SampleRate/Log(8000)))
+		return startNewOperation
+	}
+	v, ok := parseFloat(s.num, 1/(MAX_RELEASE*SampleRate), 1/(MIN_RELEASE*SampleRate))
+	if !ok { // error reported by parseFloat
+		return startNewOperation
+	}
+	release = Pow(125e-6, v)
+	reportFloatSet("limiter "+s.operator, v) // report embellished
+	return startNewOperation
+}
+
+func adjustGain(s *localState) int {
+	if n, ok := parseType(s.operand, s.operator); ok {
+		gain *= n
+		if Abs(Log10(gain)) < 1e-12 { // hacky
+			gain = 1
+		}
+		msg("%sgain set to %s%.2gdb", italic, reset, 20*Log10(gain))
+	}
+	return startNewOperation
+}
+func adjustClip(s *localState) int {
+	if n, ok := parseType(s.operand, s.operator); ok { // permissive, no bounds check
+		ct = n
+		msg("%sclip threshold set to %.3g%s", italic, ct, reset)
+	}
+	return startNewOperation
+}
+
+func isUppercaseInitial(operand string) bool {
+	switch len(operand) {
+	case 0:
+		return not
+	case 1:
+		return unicode.IsUpper([]rune(operand)[0])
+	}
+	r := 0
+	if operand[:1] == "'" || operand[:1] == "^" {
+		r = 1
+	}
+	return unicode.IsUpper([]rune(operand)[r])
 }

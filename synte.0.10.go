@@ -140,10 +140,7 @@ const ( // aliases
 	yes = true
 	not = false
 )
-const (
-	put = iota
-	get
-)
+var assigned = struct{}{}
 
 type operation struct {
 	Op  string // operator
@@ -173,7 +170,7 @@ type newOperation struct {
 
 type listingState struct {
 	createListing
-	inOut func(int, string) bool
+	out map[string]struct{}
 	clr   clear
 	newOperation
 	fIn bool // yes = inside function definition
@@ -232,7 +229,7 @@ var operators = map[string]operatorParticulars{ // would be nice if switch index
 	"base":   {yes, 13, noCheck},        // operand to the power of input
 	"clip":   {yes, 14, noCheck},        // clip input
 	"noise":  {not, 15, setNoiseFreq},   // white noise source
-	"push":   {not, 16, checkPushPop},   // push to listing stack
+	"push":   {not, 16, noCheck},   // push to listing stack
 	"pop":    {not, 17, checkPushPop},   // pop from listing stack
 	"(":      {not, 16, noCheck},        // alias of push
 	")":      {not, 17, noCheck},        // alias of pop
@@ -500,8 +497,8 @@ func main() {
 					tokens <- token{"dac", -1, yes}
 					continue
 				}
-				for s.Scan() {
-					tokens <- token{s.Text(), -1, yes}
+				for s.Scan() { // listings dumped into tokens chan
+					tokens <- token{s.Text(), -1, yes} // tokens could block here, theoretically
 				}
 				inputF.Close()
 			}
@@ -510,7 +507,7 @@ func main() {
 			t.dispListings = nil
 			transmit <- yes
 			<-accepted
-			restart = yes
+			restart = yes // don't save temp files
 			<-lockLoad
 			msg("%s>>> Sound Engine restarted%s", italic, reset)
 		}
@@ -626,29 +623,21 @@ start:
 			signals["l."+w.Name] = float64(len(w.Data)-1) / (WAV_TIME * SampleRate)
 			signals["r."+w.Name] = float64(DS) / float64(len(w.Data))
 		}
-		TLlen = int(SampleRate * TAPE_LENGTH)       // necessary?
-		out := map[string]struct{}{}                // to check for multiple outs to same signal name
-		t.inOut = func(i int, s string) (ok bool) { // just put out map into listingState?
-			switch i {
-			case get:
-				_, ok = out[s]
-			case put:
-				out[s] = struct{}{}
-			}
-			return
-		}
+		TLlen = int(SampleRate * TAPE_LENGTH) // necessary?
+		t.out = make(map[string]struct{}, 30) // to check for multiple outs to same signal name
 		for _, v := range reservedSignalNames {
 			switch v {
 			case "tempo", "pitch", "grid", "sync":
 				continue
 			}
-			t.inOut(put, v)
+			t.out[v] = assigned
 		}
 		reload = -1 // index to be launched to
 		rpl = reload
+		// the purpose of clr is to reset the input if error while receiving tokens from external source
 		t.clr = func(s string, i ...any) int { // must be type: clear
 			if reload > -1 && reload < len(transfer.Listing) {
-				mutes.set(reload, t.priorMutes[reload])
+				mutes.set(reload, t.priorMutes[reload]) // restore mute state for reloaded listing
 			}
 			for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
 				<-tokens
@@ -666,8 +655,7 @@ start:
 		for { // input loop
 			t.newOperation = newOperation{}
 			if len(tokens) == 0 {
-				// not strictly correct. restart only becomes true on an empty token channel,
-				// no files saved to temp while restart is true,
+				// Not strictly correct. No files saved to temp while restart is true,
 				// tokens will be empty at completion of restart unless received from stdin within
 				// time taken to compile and launch. This is not critical as restart only controls file save.
 				restart = not
@@ -700,7 +688,7 @@ start:
 			case yes:
 				var function listing
 				var ok bool
-				function, ok = parseFunction(t, signals, out)
+				function, ok = parseFunction(t, signals, t.out)
 				switch {
 				case !ok && !ext:
 					continue input
@@ -1081,7 +1069,7 @@ func readTokenPair(
 		return reload, ext, nextOperation
 	}
 	if t.num.Ber, t.num.Is = parseType(s, t.operator); !t.num.Is {
-		r := t.clr("not a number")
+		r := t.clr("")
 		return reload, ext, r // parseType will report error
 	}
 	return reload, ext, nextOperation
@@ -1090,7 +1078,7 @@ func readTokenPair(
 func parseFunction(
 	t systemState,
 	signals map[string]float64,
-	out map[string]struct{},
+	out map[string]struct{}, // implictly de-referenced
 ) (function listing,
 	result bool,
 ) {
@@ -1128,7 +1116,7 @@ func parseFunction(
 		function[i].Opd += s // rename signal
 		switch o.Op {
 		case "out", ">":
-			out[function[i].Opd] = struct{}{}
+			out[function[i].Opd] = assigned
 		}
 	}
 	mmm := 0
@@ -2523,16 +2511,17 @@ func noCheck(_ *systemState) int {
 }
 
 func checkOut(s *systemState) int {
+	_, in := s.out[s.operand]
 	switch {
 	case s.num.Is:
 		return s.clr("%soutput to number not permitted%s", italic, reset)
-	case s.inOut(get, s.operator) && s.operand[:1] != "^" && s.operand != "dac" && s.operator != "out+":
-		return s.clr("%sduplicate output to signal, c'est interdit%s", italic, reset)
+	case in && s.operand[:1] != "^" && s.operand != "dac" && s.operator != "out+" && s.operator != ">+":
+		return s.clr("%s: %sduplicate output to signal, c'est interdit%s", s.operand, italic, reset)
 	case s.operand == "@":
 		return s.clr("%scan't send to @, represents function operand%s", italic, reset)
 	}
 	if !isUppercaseInitial(s.operand) {
-		s.inOut(put, s.operand)
+		s.out[s.operand] = assigned
 	}
 	return nextOperation
 }
@@ -2574,10 +2563,6 @@ func checkPushPop(s *systemState) int {
 		}
 	}
 	if p <= 0 {
-		msg("%spop without push%s", italic, reset)
-		return startNewOperation
-	}
-	if p > 1 {
 		msg("%sno push to pop%s", italic, reset)
 		return startNewOperation
 	}
@@ -2610,10 +2595,10 @@ func eraseOperations(s *systemState) int {
 }
 
 func checkWav(s *systemState) int {
-	if !s.wmap[s.operand] && s.operand != "@" {
-		return s.clr("%sname isn't in wav list%s", italic, reset)
+	if s.wmap[s.operand] || (s.operand == "@" && s.fIn) {
+		return nextOperation
 	}
-	return nextOperation
+	return s.clr("%s %sisn't in wav list%s", s.operand, italic, reset)
 }
 
 func pausedState(s *systemState) *muteSlice {
@@ -2875,7 +2860,7 @@ func enactDelete(s *systemState) int {
 	if display.Paused { // play resumed to enact deletion in sound engine
 		for i := range mutes { // restore mutes
 			if i == n {
-				return startNewOperation
+				continue
 			}
 			mutes[i] = s.priorMutes[i] // not displayed
 		}

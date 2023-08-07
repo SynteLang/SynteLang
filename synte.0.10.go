@@ -156,7 +156,7 @@ type listing []operation
 type createListing struct {
 	newListing  listing
 	dispListing listing
-	newSignals  []float64
+	// newSignals  []float64
 }
 
 type number struct {
@@ -197,7 +197,6 @@ type systemState struct {
 	code         *[]listing
 	solo         int
 	unsolo       muteSlice
-	restart      bool
 	listingState
 	hasOperand map[string]bool
 }
@@ -288,7 +287,7 @@ var operators = map[string]operatorParticulars{ // would be nice if switch index
 	".mute":   {yes, 0, enactMute},           // alias, launches listing
 	".del":    {yes, 0, enactDelete},         // alias, launches listing
 	".solo":   {yes, 0, enactSolo},           // alias, launches listing
-	"//":      {yes, 0, noCheck},             // comments
+	"//":      {yes, 0, checkComment},        // comments
 	"load":    {yes, 0, loadReloadAppend},    // load listing by filename
 	"ld":      {yes, 0, loadReloadAppend},    // alias of load
 	"[":       {yes, 0, beginFunctionDefine}, // begin function input
@@ -581,7 +580,7 @@ func main() {
 	for k, o := range operators {
 		t.hasOperand[k] = o.Opd
 	}
-	for k, f := range t.funcs { // add funcs to operators map
+	for k, f := range t.funcs {
 		h := not
 		for _, o := range f.Body {
 			if o.Opd == "@" { // set but don't reset
@@ -2351,10 +2350,10 @@ func mod(x, y float64) float64 {
 }
 
 const (
-	N     = 2 << 12
-	N2    = N >> 1 // fft window size
-	invN2 = 1.0 / N2
-	N1    = 1.0 / (N - 1)
+	N     = 2 << 12       // fft window size
+	N2    = N >> 1        // half fft window
+	invN2 = 1.0 / N2      // scale factor
+	N1    = 1.0 / (N - 1) // scale factor
 )
 
 func fft(y [N]complex128, s float64) [N]complex128 {
@@ -2992,6 +2991,14 @@ func adjustClip(s *systemState) int {
 		msg("%sclip threshold set to %.3g%s", italic, ct, reset)
 	}
 	return startNewOperation
+}
+
+func checkComment(s *systemState) int {
+	if len(s.newListing) > 0 {
+		msg("%sa comment has to be the first and only operation of a listing...%s", italic, reset)
+		return startNewOperation
+	}
+	return nextOperation
 }
 
 func isUppercaseInitial(operand string) bool {

@@ -1064,8 +1064,9 @@ func readTokenPair(
 		r := t.clr("only functions can have multiple operands")
 		return reload, ext, r
 	}
-	wav := t.wmap[t.operand] && t.operator == "wav" // wavs can start with a number
-	if !strings.ContainsAny(s[:1], "+-.0123456789") || wav || t.isFunction {
+	pass := t.wmap[t.operand] && t.operator == "wav" // wavs can start with a number
+	pass = pass || t.operator == "ls" || t.operator == "load" // to allow dotfiles
+	if !strings.ContainsAny(s[:1], "+-.0123456789") || pass || t.isFunction {
 		return reload, ext, nextOperation
 	}
 	if t.num.Ber, t.num.Is = parseType(s, t.operator); !t.num.Is {
@@ -2676,8 +2677,17 @@ func loadReloadAppend(t *systemState) int {
 			msg("%soperand not valid:%s %s", italic, reset, t.operand)
 			return startNewOperation
 		}
+		if n < 0 {
+			n = 0
+		}
 		reload = n
 		t.operand = ".temp/" + t.operand
+		// if reloaded listing doesn't compile, current listing will remain muted:
+		if !display.Paused && reload < len(mutes) { // mute before reload
+			t.priorMutes[reload] = mutes[reload] // save mute status
+			mutes.set(reload, mute)
+			time.Sleep(25 * time.Millisecond) // wait for mutes
+		}
 	case "apd":
 		reload = -1
 		t.operand = ".temp/" + t.operand
@@ -2687,12 +2697,6 @@ func loadReloadAppend(t *systemState) int {
 		msg("%v", rr)
 		reload = -1
 		return startNewOperation
-	}
-	// if reloaded listing doesn't compile, current listing will remain muted:
-	if !display.Paused && reload < len(mutes) { // mute before reload
-		t.priorMutes[reload] = mutes[reload] // save mute status
-		mutes.set(reload, mute)
-		time.Sleep(25 * time.Millisecond) // wait for mutes
 	}
 	s := bufio.NewScanner(inputF)
 	s.Split(bufio.ScanWords)
@@ -2970,13 +2974,17 @@ func checkRelease(s *systemState) int {
 }
 
 func adjustGain(s *systemState) int {
-	if n, ok := parseType(s.operand, s.operator); ok {
+	if s.operand == "zero" {
+		gain = 1
+	} else if n, ok := parseType(s.operand, s.operator); ok { // fails silently
 		gain *= n
 		if Abs(Log10(gain)) < 1e-12 { // hacky
 			gain = 1
+		} else if gain < 0.05 { // lower bound ~ -26db
+			gain = 0.05
 		}
-		msg("%sgain set to %s%.2gdb", italic, reset, 20*Log10(gain))
 	}
+	msg("%sgain set to %s%.2gdb", italic, reset, 20*Log10(gain))
 	return startNewOperation
 }
 func adjustClip(s *systemState) int {

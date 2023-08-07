@@ -145,12 +145,6 @@ const (
 	get
 )
 
-type number struct {
-	Ber float64
-	Is  bool
-}
-type clear func(s string, i ...any) int
-
 type operation struct {
 	Op  string // operator
 	Opd string // operand
@@ -165,6 +159,11 @@ type createListing struct {
 	newSignals  []float64
 }
 
+type number struct {
+	Ber float64
+	Is  bool
+}
+
 type newOperation struct {
 	operator, operand string
 	operands          []string
@@ -172,11 +171,10 @@ type newOperation struct {
 	isFunction        bool
 }
 
-type localState struct {
+type listingState struct {
 	createListing
-	priorMutes muteSlice // hacky
-	inOut      func(int, string) bool
-	clr        clear
+	inOut func(int, string) bool
+	clr   clear
 	newOperation
 	fIn bool // yes = inside function definition
 	st, // func def start
@@ -200,7 +198,8 @@ type systemState struct {
 	solo         int
 	unsolo       muteSlice
 	restart      bool
-	localState
+	listingState
+	hasOperand map[string]bool
 }
 
 type processor func(*systemState) int
@@ -212,6 +211,7 @@ type operatorParticulars struct {
 }
 
 var operators = map[string]operatorParticulars{ // would be nice if switch indexes could be generated from a common root
+	//name  operand N  process           comment
 	"+":      {yes, 1, noCheck},         // add
 	"out":    {yes, 2, checkOut},        // send to named signal
 	".out":   {yes, 2, checkOut},        // alias of out
@@ -359,7 +359,7 @@ var mouse = struct {
 	X: 1,
 	Y: 1,
 }
-var mc = yes
+var mc = yes // mouse curve: not=linear, yes=exponential
 
 type disp struct { // indicates:
 	On      bool          // Syntə is running
@@ -406,6 +406,8 @@ const ( // used in token parsing
 	exitNow
 	nextOperation
 )
+
+type clear func(s string, i ...any) int
 
 const advisory = `
 Protect your hearing when listening to any audio on a system capable of
@@ -574,16 +576,20 @@ func main() {
 	lenExported := 0
 	var newSignals []float64 // local signals
 	t.funcs = make(map[string]fn)
-	// load functions from files and assign to funcs
 	load(&t.funcs, "functions.json")
+	t.hasOperand = make(map[string]bool, len(operators)+len(t.funcs))
+	for k, o := range operators {
+		t.hasOperand[k] = o.Opd
+	}
 	for k, f := range t.funcs { // add funcs to operators map
-		hasOpd := not
+		h := not
 		for _, o := range f.Body {
 			if o.Opd == "@" { // set but don't reset
-				hasOpd = yes
+				h = yes
+				break
 			}
 		}
-		operators[k] = operatorParticulars{Opd: hasOpd, process: noCheck}
+		t.hasOperand[k] = h
 	}
 	usage := loadUsage() // local usage telemetry
 	ext := not           // loading external listing state
@@ -593,7 +599,7 @@ func main() {
 
 start:
 	for { // main loop
-		t.localState = localState{}
+		t.listingState = listingState{}
 		newSignals = make([]float64, len(reservedSignalNames), 30) // capacity is nominal
 		// signals map with predefined constants, mutable
 		signals := map[string]float64{ // reset and add predefined signals
@@ -621,9 +627,9 @@ start:
 			signals["l."+w.Name] = float64(len(w.Data)-1) / (WAV_TIME * SampleRate)
 			signals["r."+w.Name] = float64(DS) / float64(len(w.Data))
 		}
-		TLlen = int(SampleRate * TAPE_LENGTH) // needs to be moved to go routine
-		out := map[string]struct{}{}          // to check for multiple outs to same signal name
-		t.inOut = func(i int, s string) (ok bool) {
+		TLlen = int(SampleRate * TAPE_LENGTH)       // necessary?
+		out := map[string]struct{}{}                // to check for multiple outs to same signal name
+		t.inOut = func(i int, s string) (ok bool) { // just put out map into listingState?
 			switch i {
 			case get:
 				_, ok = out[s]
@@ -683,7 +689,7 @@ start:
 				tokens <- token{t.operator, -1, not}
 				d := strings.ReplaceAll(t.operand, "{i}", sf("%d", t.to-t.do+1))
 				d = strings.ReplaceAll(d, "{i+1}", sf("%d", t.to-t.do+2))
-				if t2 := operators[t.operator]; t2.Opd { // to avoid weird blank opds being sent
+				if y := t.hasOperand[t.operator]; y { // to avoid weird blank opds being sent
 					tokens <- token{d, -1, not}
 				}
 				t.do--
@@ -691,7 +697,8 @@ start:
 			t.operand = strings.ReplaceAll(t.operand, "{i}", sf("%d", 0))
 			t.operand = strings.ReplaceAll(t.operand, "{i+1}", sf("%d", 1))
 
-			if t.isFunction {
+			switch t.isFunction {
+			case yes:
 				var function listing
 				var ok bool
 				function, ok = parseFunction(t, signals, out)
@@ -704,35 +711,15 @@ start:
 				}
 				t.fun++
 				t.newListing = append(t.newListing, function...)
-			}
-			if t.operator == "[" { // hack to avoid cyclical reference
-				if _, ok := operators[t.operand]; ok {
-					msg("%sduplicate of extant operator, use another name%s", italic, reset)
+			default:
+				switch r := operators[t.operator].process(&t); r {
+				case startNewOperation:
 					continue input
-				}
-			}
-
-			// process operators
-			switch r := operators[t.operator].process(&t); r {
-			case startNewOperation:
-				continue input
-			case startNewListing:
-				if t.operator != "[" {
+				case startNewListing:
 					continue start
+				case exitNow:
+					break start
 				}
-				// hack to avoid cyclical reference
-				hasOpd := not
-				for _, o := range t.newListing[t.st+1:] {
-					if o.Opd == "@" { // set but don't reset
-						hasOpd = yes
-						break
-					}
-				}
-				name := t.newListing[t.st].Opd
-				operators[name] = operatorParticulars{Opd: hasOpd, process: noCheck}
-				continue start
-			case exitNow:
-				break start
 			}
 
 			// process exported signals
@@ -888,7 +875,7 @@ start:
 				italic, reset, italic, reset)
 		}
 	}
-	saveUsage(usage)
+	saveUsage(usage, t)
 }
 
 const (
@@ -901,7 +888,7 @@ func (m *muteSlice) set(i int, v float64) {
 	(*m)[i] = v
 }
 
-func parseIndex(s localState, l int) (int, bool) {
+func parseIndex(s listingState, l int) (int, bool) {
 	if l < 1 {
 		msg("%snothing to %s%s", italic, reset, s.operator)
 		return 0, not
@@ -1056,14 +1043,15 @@ func readTokenPair(
 		t.operator = ":"
 		return reload, ext, nextOperation
 	}
-	op2, in := operators[t.operator]
+	hO, in := t.hasOperand[t.operator]
 	if !in {
 		r := t.clr("%soperator or function doesn't exist:%s %s", italic, reset, t.operator)
 		return reload, ext, r
 	}
 	_, t.isFunction = t.funcs[t.operator]
-	usage[t.operator] += 1
-	if !op2.Opd {
+	usage[t.operator] += 1 // this will count operations with rejected operands
+
+	if !hO {
 		return reload, ext, nextOperation
 	}
 	// parse second token
@@ -2461,7 +2449,7 @@ type pair struct {
 }
 type pairs []pair
 
-func saveUsage(u map[string]int) {
+func saveUsage(u map[string]int, t systemState) {
 	p := make(pairs, len(u))
 	i := 0
 	for k, v := range u {
@@ -2474,9 +2462,16 @@ func saveUsage(u map[string]int) {
 		data += sf("%s %d\n", s.Key, s.Value)
 	}
 	data += "\nunused:\n"
+	data += "\n~operators~\n"
 	for op := range operators {
 		if _, in := u[op]; !in {
 			data += sf("%s\n", op)
+		}
+	}
+	data += "\n~functions~\n"
+	for f := range t.funcs {
+		if _, in := u[f]; !in {
+			data += sf("%s\n", f)
 		}
 	}
 	if rr := os.WriteFile("usage.txt", []byte(data), 0666); e(rr) {
@@ -2512,7 +2507,7 @@ func displayHeader(sc soundcard, wavNames string, t systemState) {
 	pf("\t  ")
 }
 
-// operationParticulars process field functions
+// operatorParticulars process field functions
 // These must be of type processor func(*systemState) int
 
 func noCheck(_ *systemState) int {
@@ -2539,7 +2534,15 @@ func endFunctionDefine(t *systemState) int {
 		msg("%sno function definition%s", italic, reset)
 		return startNewOperation
 	}
+	h := not
+	for _, o := range t.newListing[t.st+1:] {
+		if o.Opd == "@" { // set but don't reset
+			h = yes
+			break
+		}
+	}
 	name := t.newListing[t.st].Opd
+	t.hasOperand[name] = h
 	t.funcs[name] = fn{Body: t.newListing[t.st+1:]}
 	msg("%sfunction %s%s%s ready%s.", italic, reset, name, italic, reset)
 	if t.funcsave {
@@ -2584,7 +2587,7 @@ func tapeUnique(s *systemState) int {
 }
 
 func eraseOperations(s *systemState) int {
-	n, ok := parseIndex(s.localState, len(s.dispListing))
+	n, ok := parseIndex(s.listingState, len(s.dispListing))
 	if !ok {
 		return startNewOperation // error reported by parseIndex
 	}
@@ -2613,7 +2616,7 @@ func pausedState(s *systemState) *muteSlice {
 }
 
 func enactMute(s *systemState) int {
-	i, ok := parseIndex(s.localState, len(transfer.Listing)-1)
+	i, ok := parseIndex(s.listingState, len(transfer.Listing)-1)
 	if !ok {
 		return startNewOperation // error reported by parseIndex
 	}
@@ -2638,7 +2641,7 @@ func enactMute(s *systemState) int {
 }
 
 func enactSolo(s *systemState) int {
-	i, ok := parseIndex(s.localState, len(transfer.Listing))
+	i, ok := parseIndex(s.listingState, len(transfer.Listing))
 	if !ok {
 		return startNewOperation // error reported by parseIndex
 	}
@@ -2716,6 +2719,9 @@ func setNoiseFreq(s *systemState) int {
 func beginFunctionDefine(s *systemState) int {
 	if _, ok := s.funcs[s.operand]; ok {
 		msg("%swill overwrite existing function!%s", red, reset)
+	} else if _, ok := s.hasOperand[s.operand]; ok { // using this map to avoid cyclic reference of operators
+		msg("%sduplicate of extant operator, use another name%s", italic, reset)
+		return startNewOperation // only return early if not a function and in hasOperand map
 	}
 	s.st = len(s.newListing) // because current input hasn't been added yet
 	s.fIn = yes
@@ -2853,7 +2859,7 @@ func modeSet(s *systemState) int {
 }
 
 func enactDelete(s *systemState) int {
-	n, ok := parseIndex(s.localState, len(transfer.Listing)-1)
+	n, ok := parseIndex(s.listingState, len(transfer.Listing)-1)
 	if !ok {
 		return startNewOperation
 	}
@@ -2885,14 +2891,14 @@ func enactDelete(s *systemState) int {
 }
 
 func checkIndexIncl(s *systemState) int { // eg. listing can level or pan itself
-	if _, ok := parseIndex(s.localState, len(transfer.Listing)); !ok {
+	if _, ok := parseIndex(s.listingState, len(transfer.Listing)); !ok {
 		return startNewOperation // error reported by parseIndex
 	}
 	return nextOperation
 }
 
 func checkIndex(s *systemState) int {
-	if _, ok := parseIndex(s.localState, len(transfer.Listing)-1); !ok {
+	if _, ok := parseIndex(s.listingState, len(transfer.Listing)-1); !ok {
 		return startNewOperation // error reported by parseIndex
 	}
 	return nextOperation
@@ -2905,7 +2911,7 @@ func enactRpl(s *systemState) int {
 }
 
 func unmuteAll(s *systemState) int { // slated for removal
-	if _, ok := parseIndex(s.localState, len(transfer.Listing)); !ok {
+	if _, ok := parseIndex(s.listingState, len(transfer.Listing)); !ok {
 		return startNewOperation
 	}
 	for i := range mutes {

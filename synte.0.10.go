@@ -148,8 +148,8 @@ const (
 type operation struct {
 	Op  string // operator
 	Opd string // operand
-	N   int    `json:"-"`
-	Opn int    `json:"-"`
+	N   int    `json:"-"` // signal number
+	Opn int    `json:"-"` // operation switch index
 }
 type listing []operation
 
@@ -839,17 +839,7 @@ start:
 			}
 			transmit <- yes
 			<-accepted
-			if !restart { // hacky conditional
-				// save listing as <n>.syt for the reload
-				f := sf(".temp/%d.syt", len(transfer.Listing)-1)
-				content := ""
-				for _, d := range t.dispListing {
-					content += d.Op + " " + d.Opd + "\n"
-				}
-				if rr := os.WriteFile(f, []byte(content), 0666); e(rr) {
-					msg("%v", rr)
-				}
-			}
+			saveTempFile(restart, t) // skipped if restarting
 		} else { // reloaded listing isn't saved to '.temp/'
 			t.dispListings[reload] = t.dispListing
 			transfer.Listing[reload] = t.newListing
@@ -875,6 +865,25 @@ start:
 		}
 	}
 	saveUsage(usage, t)
+}
+
+func saveTempFile(r bool, t systemState) {
+	if r { // hacky conditional
+		return
+	}
+	// save listing as <n>.syt for the reload
+	f := sf(".temp/%d.syt", len(transfer.Listing)-1)
+	content := ""
+	for _, d := range t.dispListing {
+		content += d.Op
+		if y := t.hasOperand[d.Op]; y {
+			content += " " + d.Opd
+		}
+		content += "\n"
+	}
+	if rr := os.WriteFile(f, []byte(content), 0666); e(rr) {
+		msg("%v", rr)
+	}
 }
 
 const (

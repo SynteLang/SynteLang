@@ -2785,7 +2785,7 @@
 		]
 	},
 	"slew": {
-		"Comment": "swings to the input at a rate given by operand. Intended for pulses/square waves.",
+		"Comment": "swings to the input at a rate given by operand. Intended for pulses/square waves. Maximum slew rate is 2% of the sample rate, typically this would be less than 1khz",
 		"Body": [
 			{
 				"Op": "out",
@@ -2806,6 +2806,10 @@
 			{
 				"Op": "mul",
 				"Opd": "@"
+			},
+			{
+				"Op": "clip",
+				"Opd": "0.02"
 			},
 			{
 				"Op": "+",

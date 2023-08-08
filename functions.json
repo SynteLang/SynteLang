@@ -2747,8 +2747,8 @@
 			}
 		]
 	},
-	"slew": {
-		"Comment": "slew generator. Swings to the input at a rate given by operand. Intended for pulses/square waves. Try 150hz to reduce clicks on vca signals ( i.e. when multiplying audio values). If slewing to a number greater than zero and less than previous input the jump will be immediate. If the signal crosses zero from positive to negative it will slew as expected. May be updated for a cleaner implementation in future.  ",
+	"slaw": {
+		"Comment": "imperfect slew generator. Swings to the input at a rate given by operand. Intended for pulses/square waves. If slewing to a number between zero and previous input the jump will be immediate. If the signal crosses zero from positive to negative it will slew as expected. ",
 		"Body": [
 			{
 				"Op": "out",
@@ -2781,6 +2781,39 @@
 			{
 				"Op": "out",
 				"Opd": "c"
+			}
+		]
+	},
+	"slew": {
+		"Comment": "swings to the input at a rate given by operand. Intended for pulses/square waves.",
+		"Body": [
+			{
+				"Op": "out",
+				"Opd": "a"
+			},
+			{
+				"Op": "gt",
+				"Opd": "b"
+			},
+			{
+				"Op": "mul",
+				"Opd": "2"
+			},
+			{
+				"Op": "-",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "@"
+			},
+			{
+				"Op": "+",
+				"Opd": "b"
+			},
+			{
+				"Op": "out",
+				"Opd": "b"
 			}
 		]
 	},

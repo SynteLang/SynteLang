@@ -2785,22 +2785,18 @@
 		]
 	},
 	"slew": {
-		"Comment": "swings to the input at a rate given by operand. Intended for pulses/square waves. Maximum slew rate is 2% of the sample rate, typically this would be less than 1khz",
+		"Comment": "swings to the input at a rate given by operand. Intended for pulses/square waves. Maximum slew rate is 1% of the sample rate, typically this would be less than 500hz. Internal comparator gain is 40x (less than it could be) to provide a smooth landing and mitigate any oscillations",
 		"Body": [
 			{
-				"Op": "out",
-				"Opd": "a"
-			},
-			{
-				"Op": "gt",
+				"Op": "-",
 				"Opd": "b"
 			},
 			{
 				"Op": "mul",
-				"Opd": "2"
+				"Opd": "40"
 			},
 			{
-				"Op": "-",
+				"Op": "clip",
 				"Opd": "1"
 			},
 			{
@@ -2809,7 +2805,7 @@
 			},
 			{
 				"Op": "clip",
-				"Opd": "0.02"
+				"Opd": "0.01"
 			},
 			{
 				"Op": "+",

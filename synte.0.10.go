@@ -884,48 +884,6 @@ func (m *muteSlice) set(i int, v float64) {
 	(*m)[i] = v
 }
 
-func parseIndex(s listingState, l int) (int, bool) {
-	if l < 1 {
-		msg("%snothing to %s%s", italic, reset, s.operator)
-		return 0, not
-	}
-	if s.operand == "" { // ignore checks for empty operands, iffy?
-		return 0, yes
-	}
-	n, rr := strconv.Atoi(s.operand)
-	if e(rr) {
-		msg("%soperand not an integer%s", italic, reset)
-		return 0, not
-	}
-	if n < 0 || n > l {
-		msg("%soperand out of range%s", italic, reset)
-		return 0, not
-	}
-	return n, yes
-}
-
-func parseFloat(num number, lowerBound, upperBound float64) (v float64, ok bool) {
-	if !num.Is {
-		msg("not a number")
-		return 0, not
-	}
-	v = num.Ber
-	if v < lowerBound {
-		v = lowerBound
-	}
-	if v > upperBound {
-		v = upperBound
-	}
-	return v, yes
-}
-func reportFloatSet(op string, f float64) {
-	if f > 1/SampleRate {
-		msg("%s%s set to%s %.3gms", italic, op, reset, 1e3/(f*SampleRate))
-		return
-	}
-	msg("%s%s set to%s %.3gs", italic, op, reset, 1/(f*SampleRate))
-}
-
 type soundcard struct {
 	file       *os.File
 	channels   string
@@ -1862,7 +1820,6 @@ func SoundEngine(file *os.File, bits int) {
 					case sigs[i][o.N] > 0:
 						r = Max(-sigs[i][o.N], Min(sigs[i][o.N], r))
 					case sigs[i][o.N] < 0:
-						//r = Min(-sigs[i][o.N], Max(sigs[i][o.N], r))
 						r = Min(-sigs[i][o.N], Max(sigs[i][o.N], r))
 					}
 				case 15: // "noise"
@@ -1924,9 +1881,8 @@ func SoundEngine(file *os.File, bits int) {
 					c1 := od1*0.26126047291143606 + od2*0.24778879018226652
 					c2 := ev1*-0.213439787561776841 + ev2*0.21303593243799016
 					r += (c2*z+c1)*z + c0
-				case 21: // "f2c"
+				case 21: // "f2c" // r = 1 / (1 + 1/(Tau*r))
 					r = Abs(r)
-					//r = 1 / (1 + 1/(Tau*r))
 					r *= Tau
 					r /= (r + 1)
 				case 22: // "wav"
@@ -2172,7 +2128,7 @@ func SoundEngine(file *os.File, bits int) {
 		x = dac
 		dac = hpf
 		c += 16 / (c*c + 4.77)
-		mixF = mixF + (Abs(c)-mixF)*0.00026 // ~2Hz @ 48kHz // * 4.36e-5 // 3s @ 48kHz
+		mixF = mixF + (Abs(c)-mixF)*0.00026 // ~2Hz @ 48kHz
 		dac /= mixF
 		sides /= mixF
 		dac *= gain
@@ -2580,6 +2536,26 @@ func tapeUnique(s *systemState) int {
 	return nextOperation
 }
 
+func parseIndex(s listingState, l int) (int, bool) {
+	if l < 1 {
+		msg("%snothing to %s%s", italic, reset, s.operator)
+		return 0, not
+	}
+	if s.operand == "" { // ignore checks for empty operands, iffy?
+		return 0, yes
+	}
+	n, rr := strconv.Atoi(s.operand)
+	if e(rr) {
+		msg("%soperand not an integer%s", italic, reset)
+		return 0, not
+	}
+	if n < 0 || n > l {
+		msg("%soperand out of range%s", italic, reset)
+		return 0, not
+	}
+	return n, yes
+}
+
 func eraseOperations(s *systemState) int {
 	n, ok := parseIndex(s.listingState, len(s.dispListing))
 	if !ok {
@@ -2946,6 +2922,28 @@ func ls(s *systemState) int {
 	msg("%s", ls)
 	msg("")
 	return startNewOperation
+}
+
+func parseFloat(num number, lowerBound, upperBound float64) (v float64, ok bool) {
+	if !num.Is {
+		msg("not a number")
+		return 0, not
+	}
+	v = num.Ber
+	if v < lowerBound {
+		v = lowerBound
+	}
+	if v > upperBound {
+		v = upperBound
+	}
+	return v, yes
+}
+func reportFloatSet(op string, f float64) {
+	if f > 1/SampleRate {
+		msg("%s%s set to%s %.3gms", italic, op, reset, 1e3/(f*SampleRate))
+		return
+	}
+	msg("%s%s set to%s %.3gs", italic, op, reset, 1/(f*SampleRate))
 }
 
 func checkFade(s *systemState) int {

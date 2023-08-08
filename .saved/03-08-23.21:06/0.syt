@@ -1,0 +1,12 @@
+>sync 
+in 135bpm
+out tempo
+/ 4
+posc 0
+trn 8
+smooth 
+out vca
+mul 185hz
+sino 
+mul vca
+mix 

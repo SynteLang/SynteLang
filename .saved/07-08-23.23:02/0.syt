@@ -1,0 +1,12 @@
+in wavR
+osc
+mul 0.01
++ 0.5
+wav 808St8
+mul 30
+lpf 1hz
+lpf 1s
+slew 4000ms
+wav 808St8
+mul -6db
+out dac

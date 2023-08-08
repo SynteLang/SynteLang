@@ -1,0 +1,13 @@
+in tempo
+/ 16
+sq
+mul 0.2
++ 1
+out ch
+in 7hz
+sino
+mul 0.01
+base 2
+mul 330/2hz
+mul ch
+.out pitch

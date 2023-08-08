@@ -1,0 +1,14 @@
+>sync 
+in tempo
+/ 4
+posc 3/4
+trn 24
+mul 2
+clip 0
+noise 
+hpf 1khz
+hpf 1khz
+lpf 1khz
+mul 22db
+tanh
+mix 

@@ -113,7 +113,7 @@ const (
 	EXPORTED_LIMIT = 12
 	NOISE_FREQ     = 0.0625 // 3kHz @ 48kHz Sample rate
 	FDOUT          = 1e-4
-	MIN_FADE       = 175e-3 // 175ms
+	MIN_FADE       = 75e-3 // 175ms
 	MAX_FADE       = 120    // 120s
 	MIN_RELEASE    = 50e-3  // 50ms
 	MAX_RELEASE    = 50     // 50s
@@ -188,7 +188,6 @@ type fn struct {
 
 type systemState struct {
 	dispListings []listing
-	priorMutes   muteSlice
 	wmap         map[string]bool
 	funcs        map[string]fn
 	funcsave     bool
@@ -637,9 +636,6 @@ start:
 		rpl = reload
 		// the purpose of clr is to reset the input if error while receiving tokens from external source
 		t.clr = func(s string, i ...any) int { // must be type: clear
-			if reload > -1 && reload < len(transfer.Listing) {
-				mutes.set(reload, t.priorMutes[reload]) // restore mute state for reloaded listing
-			}
 			for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
 				<-tokens
 			}
@@ -746,12 +742,10 @@ start:
 			case ".out", ".>sync", ".level", ".pan": // override mutes and levels below, for silent listings
 				if reload < 0 || reload > len(transfer.Listing)-1 {
 					mutes = append(mutes, 0)
-					t.priorMutes = append(t.priorMutes, 0)
 					t.unsolo = append(t.unsolo, 0)
 					display.Mute = append(display.Mute, yes)
 					level = append(level, 1)
 				} else {
-					t.priorMutes[reload] = 0
 					t.unsolo[reload] = 0
 					mutes.set(reload, mute)
 				}
@@ -806,10 +800,6 @@ start:
 		}
 
 		if display.Paused { // resume play on launch if paused
-			for i := range mutes { // restore mutes
-				mutes[i] = t.priorMutes[i]
-				t.priorMutes[i] = 1
-			}
 			<-pause
 			display.Paused = not
 		}
@@ -821,7 +811,6 @@ start:
 			transfer.Signals = append(transfer.Signals, newSignals)
 			if len(mutes) < len(transfer.Listing) { // not if restarting
 				mutes = append(mutes, 1)
-				t.priorMutes = append(t.priorMutes, 1)
 				t.unsolo = append(t.unsolo, 1)
 				display.Mute = append(display.Mute, not)
 				level = append(level, 1)
@@ -835,7 +824,6 @@ start:
 			transfer.Signals[reload] = newSignals
 			transmit <- yes
 			<-accepted
-			mutes.set(reload, t.priorMutes[reload])
 		}
 		<-lockLoad
 		if !started {
@@ -1615,6 +1603,8 @@ func SoundEngine(file *os.File, bits int) {
 		L, R, sides   float64
 		setmixDefault = 800 / SampleRate
 		current       int
+		p = 1.0
+		endPause int
 	)
 	no *= 77777777777 // force overflow
 	defer func() {    // fail gracefully
@@ -1696,12 +1686,8 @@ func SoundEngine(file *os.File, bits int) {
 	for {
 		select {
 		case <-pause:
-			pause <- not                // blocks until `: play`
-			for i := 0; i < 2400; i++ { // lead-in
-				output(w, nyfL) // left
-				output(w, nyfR) // right, remove if stereo not available
-			}
-			lastTime = time.Now() // restart loop timer
+			p = 0
+			endPause = n
 		case <-transmit:
 			listings = make([]listing, len(transfer.Listing))
 			copy(listings, transfer.Listing)
@@ -1735,6 +1721,14 @@ func SoundEngine(file *os.File, bits int) {
 		default:
 			// play
 		}
+		if p == 0 && endPause < n-2400 { // wait for 2,400 samples to enact pause
+			pause <- not // blocks until `: play`, bool is purely semantic
+			if exit {
+				break
+			}
+			p = 1
+			lastTime = time.Now()
+		}
 
 		if n%15127 == 0 { // arbitrary interval all-zeros protection for noise lfsr
 			no ^= 1 << 27
@@ -1748,7 +1742,7 @@ func SoundEngine(file *os.File, bits int) {
 			for _, ii := range daisyChains {
 				sigs[i][ii] = sigs[(i+len(sigs)-1)%len(sigs)][ii]
 			}
-			m[i] = m[i] + (mutes[i]-m[i])*0.0013   // anti-click filter @ ~10hz
+			m[i] = m[i] + (p*mutes[i]-m[i])*0.0013   // anti-click filter @ ~10hz
 			lv[i] = lv[i] + (level[i]-lv[i])*0.125 // @ 1091hz
 			// skip muted/deleted listing
 			if (muteSkip && mutes[i] == 0 && m[i] < 1e-6) || list[0].Opn == 31 {
@@ -2578,13 +2572,6 @@ func checkWav(s *systemState) int {
 	return s.clr("%s %sisn't in wav list%s", s.operand, italic, reset)
 }
 
-func pausedState(s *systemState) *muteSlice {
-	if display.Paused {
-		return &s.priorMutes
-	}
-	return &mutes
-}
-
 func enactMute(s *systemState) int {
 	i, ok := parseIndex(s.listingState, len(transfer.Listing)-1)
 	if !ok {
@@ -2595,11 +2582,10 @@ func enactMute(s *systemState) int {
 		return startNewOperation
 	}
 	s.muteGroup = append(s.muteGroup, i)
-	m := pausedState(s)
 	for _, i := range s.muteGroup {
-		m.set(i, 1-(*m)[i])              // toggle
-		s.unsolo[i] = (*m)[i]            // save status for unsolo
-		if s.solo == i && (*m)[i] == 0 { // if muting solo'd listing reset solo
+		mutes.set(i, 1-mutes[i])              // toggle
+		s.unsolo[i] = mutes[i]            // save status for unsolo
+		if s.solo == i && mutes[i] == 0 { // if muting solo'd listing reset solo
 			s.solo = -1
 		}
 	}
@@ -2619,23 +2605,22 @@ func enactSolo(s *systemState) int {
 		msg("operand out of range")
 		return startNewOperation
 	}
-	m := pausedState(s)
 	if s.solo == i { // unsolo index given by operand
 		for ii := range mutes { // i is shadowed
 			if i == ii {
 				continue
 			}
-			m.set(ii, s.unsolo[ii]) // restore all other mutes
+			mutes.set(ii, s.unsolo[ii]) // restore all other mutes
 		}
 		s.solo = -1 // unset solo index
 	} else { // solo index given by operand
 		for ii := range mutes {
 			if ii == i {
-				m.set(i, unmute) // unmute solo'd index
+				mutes.set(i, unmute) // unmute solo'd index
 				continue
 			}
-			s.unsolo[ii] = (*m)[ii] // save all mutes
-			m.set(ii, mute)         // mute all other listings
+			s.unsolo[ii] = mutes[ii] // save all mutes
+			mutes.set(ii, mute)         // mute all other listings
 		}
 		s.solo = i // save index of solo
 	}
@@ -2655,12 +2640,6 @@ func loadReloadAppend(t *systemState) int {
 		}
 		reload = n
 		t.operand = ".temp/" + t.operand
-		// if reloaded listing doesn't compile, current listing will remain muted:
-		if !display.Paused && reload < len(mutes) { // mute before reload
-			t.priorMutes[reload] = mutes[reload] // save mute status
-			mutes.set(reload, mute)
-			time.Sleep(25 * time.Millisecond) // wait for mutes
-		}
 	case "apd":
 		reload = -1
 		t.operand = ".temp/" + t.operand
@@ -2728,7 +2707,7 @@ func modeSet(s *systemState) int {
 		}
 		exit = yes
 		if started {
-			<-stop
+			<-stop // received when shutdown complete
 		}
 		save([]listing{{operation{Op: advisory}}}, "displaylisting.json")
 		p("Stopped")
@@ -2754,23 +2733,12 @@ func modeSet(s *systemState) int {
 		msg("%sfunctions saved%s", italic, reset)
 	case "pause":
 		if started && !display.Paused {
-			for i := range mutes { // save, and mute all
-				s.priorMutes[i] = mutes[i] // save mutes for resume play
-				mutes[i] = 0               // here, mute is dual-purposed to gracefully turn off listings
-			}
-			time.Sleep(150 * time.Millisecond) // wait for mutes
-			pause <- yes
+			pause <- yes // bool is purely semantic
 			display.Paused = yes
-		} else if !started {
-			msg("%snot started%s", italic, reset)
 		}
 	case "play":
 		if !display.Paused {
 			return startNewOperation
-		}
-		for i := range mutes { // restore mutes
-			mutes[i] = s.priorMutes[i]
-			s.priorMutes[i] = 1 // set to avoid muted listings when reload
 		}
 		<-pause
 		display.Paused = not
@@ -2835,12 +2803,6 @@ func enactDelete(s *systemState) int {
 	}
 	mutes.set(n, mute)  // wintermute
 	if display.Paused { // play resumed to enact deletion in sound engine
-		for i := range mutes { // restore mutes
-			if i == n {
-				continue
-			}
-			mutes[i] = s.priorMutes[i] // not displayed
-		}
 		<-pause
 		display.Paused = not
 	}

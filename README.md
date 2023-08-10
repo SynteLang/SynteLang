@@ -500,7 +500,7 @@ Here, we use the `exp` function to shape the inverted ramp wave from osc into an
 
 </Test>
 
-Although not particularly musical, this simple necklace illustrates mixing two signals and gating them (turning on and off) with a third signal which is a pulse wave. The `pulse` function can be used instead to gate a signal by a variable width. `slew 150` could be added before `out a` to smoothen the pulse for a less clicky sound.
+Although not particularly musical, this simple necklace illustrates mixing two signals and gating them (turning on and off) with a third signal which is a pulse wave. The `pulse` function can be used instead to gate a signal by a variable width. `slew 150hz` could be added before `out a` instead of `lpf 120hz`, both smoothen the pulse for a less clicky sound.
 
 **Euclidean Rhythm**
 
@@ -538,8 +538,8 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	+		|		yes		|		add previous result to operand, negate operand to subtract instead eg. `+ -1`  
 |	sine	|		no		|		apply sine mathematical function. Output = sine(2·Pi·input)  
 | 	mod		|		yes		|		modulo operator. Output is the remainder on division by operand
-|	gt		|		yes		|		result is 1 if greater than or equal to operand, 0 otherwise  
-|	lt		|		yes		|		result is 1 if less than or equal to operand, 0 otherwise
+|	gt		|		yes		|		result is 1 if greater than or equal to operand, 0 otherwise. For strictly greater than, use `lt` followed by `flip`  
+|	lt		|		yes		|		result is 1 if less than or equal to operand, 0 otherwise. For strictly less than, use `gt` followed by `flip`
 |	mul		|		yes		|		multiply operator
 |	abs		|		no		|		absolute value, all inputs become positive (removes negative sign)
 |	tanh	|		no		|		hyperbolic tangent, useful for 'soft clipping'
@@ -637,7 +637,7 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 |	pulse	|		yes		|		pulse generator with duty cycle (pulse width) set by operand. Output is between 0 and 1, follow by `cv2a` for audio out. `pulse 0` will give a one sample pulse, any operand greater than or equal to 1 will be silent, i.e. output continuous zero. `pulse 0.5` is a square wave like `sq`
 |	ramp	|		no		|		like `osc` but with an output suitable for audio, i.e. spans -1 to 1
 |	posc	|		yes		|		like `osc` but will retrigger on a sync pulse. Operand sets phase offset. Can also use `out ^z` to control the phase independently of sync.
-|	slew	|		yes		|		slew generator. Swings to the input at a rate given by operand. Intended for pulses/square waves. Try 150hz to reduce clicks on vca signals ( i.e. when multiplying audio values). If slewing to a number greater than zero and less than previous input the jump will be immediate. If the signal crosses zero from positive to negative it will slew as expected. May be updated for a cleaner implementation in future. 
+|	slew	|		yes		|		swings to the input at a rate given by operand. Intended for pulses/square waves.  Maximum slew rate is 1% of the sample rate, typically this would be less than 500hz
 |	T2		|		no		|		implements Chebyshev polynomial of the first kind. In plain english this means it will double the frequency of anything passed through it
 |	zx		|		no		|		detects negative-going zero-crossing of input. A preceding `ramp` will generate a single pulse of 1 at the end of its cycle.
 |	lmap	|		yes		|		implements the Logistic Map, modified to constrain the output to range [0,1] using `mod` (to prevent divergence at high values of r). Iterates on zero-crossing of the input. Operand is the r value, suggested between 3 and 4. Preceed with `ramp` and follow with `cv2a` for audio output

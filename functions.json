@@ -978,35 +978,55 @@
 		]
 	},
 	"down": {
-		"Comment": "slews downwards for decreasing signals, jumps immediately to an increasing or static (unchanging) signal value. Use with a narrow pulse to make a linear decay envelope. Descends at rate given by operand ",
+		"Comment": "",
 		"Body": [
-			{
-				"Op": "sub",
-				"Opd": "1"
-			},
 			{
 				"Op": "out",
 				"Opd": "a"
 			},
 			{
-				"Op": "in",
-				"Opd": "@"
+				"Op": "gt",
+				"Opd": "c"
 			},
 			{
 				"Op": "--",
-				"Opd": "b"
+				"Opd": "1"
 			},
 			{
-				"Op": "clip",
+				"Op": "out",
+				"Opd": "d"
+			},
+			{
+				"Op": "--",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
 				"Opd": "a"
 			},
 			{
 				"Op": "out",
-				"Opd": "b"
+				"Opd": "e"
+			},
+			{
+				"Op": "in",
+				"Opd": "c"
+			},
+			{
+				"Op": "-",
+				"Opd": "@"
+			},
+			{
+				"Op": "mul",
+				"Opd": "d"
 			},
 			{
 				"Op": "+",
-				"Opd": "1"
+				"Opd": "e"
+			},
+			{
+				"Op": "out",
+				"Opd": "c"
 			}
 		]
 	},
@@ -2785,7 +2805,7 @@
 		]
 	},
 	"slew": {
-		"Comment": "swings to the input at a rate given by operand. Intended for pulses/square waves. Maximum slew rate is 1% of the sample rate, typically this would be less than 500hz. Internal comparator gain is 40x (less than it could be) to provide a smooth landing and mitigate any oscillations",
+		"Comment": "swings to the input at a rate given by operand. Intended for pulses/square waves. Maximum slew rate is intentionally limited to 1% of the sample rate, typically this would be less than 500hz#. Internal comparator gain is 40x (less than it could be) to provide a smooth landing and mitigate any parasitic oscillation",
 		"Body": [
 			{
 				"Op": "-",
@@ -2800,12 +2820,20 @@
 				"Opd": "1"
 			},
 			{
-				"Op": "mul",
+				"Op": "out",
+				"Opd": "d"
+			},
+			{
+				"Op": "in",
 				"Opd": "@"
 			},
 			{
 				"Op": "clip",
 				"Opd": "0.01"
+			},
+			{
+				"Op": "mul",
+				"Opd": "d"
 			},
 			{
 				"Op": "+",

@@ -112,7 +112,7 @@ const (
 	MAX_WAVS       = 12
 	EXPORTED_LIMIT = 12
 	NOISE_FREQ     = 0.0625 // 3kHz @ 48kHz Sample rate
-	FDOUT          = 1e-5
+	FDOUT          = 1e-4
 	MIN_FADE       = 175e-3 // 175ms
 	MAX_FADE       = 120    // 120s
 	MIN_RELEASE    = 50e-3  // 50ms
@@ -140,6 +140,7 @@ const ( // aliases
 	yes = true
 	not = false
 )
+
 var assigned = struct{}{}
 
 type operation struct {
@@ -171,7 +172,7 @@ type newOperation struct {
 type listingState struct {
 	createListing
 	out map[string]struct{}
-	clr   clear
+	clr clear
 	newOperation
 	fIn bool // yes = inside function definition
 	st, // func def start
@@ -229,7 +230,7 @@ var operators = map[string]operatorParticulars{ // would be nice if switch index
 	"base":   {yes, 13, noCheck},        // operand to the power of input
 	"clip":   {yes, 14, noCheck},        // clip input
 	"noise":  {not, 15, setNoiseFreq},   // white noise source
-	"push":   {not, 16, noCheck},   // push to listing stack
+	"push":   {not, 16, noCheck},        // push to listing stack
 	"pop":    {not, 17, checkPushPop},   // pop from listing stack
 	"(":      {not, 16, noCheck},        // alias of push
 	")":      {not, 17, noCheck},        // alias of pop
@@ -336,7 +337,7 @@ var (
 	ds,
 	rs bool // root-sync between running instances
 	daisyChains []int // list of exported signals to be daisy-chained
-	fade        = Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
+	fade        = 1/(MIN_FADE*SAMPLE_RATE) //Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
 	release     = Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
 	DS          = 1                                 // down-sample amount
 	ct          = 8.0                               // individual listing clip threshold
@@ -1022,7 +1023,7 @@ func readTokenPair(
 		r := t.clr("only functions can have multiple operands")
 		return reload, ext, r
 	}
-	pass := t.wmap[t.operand] && t.operator == "wav" // wavs can start with a number
+	pass := t.wmap[t.operand] && t.operator == "wav"          // wavs can start with a number
 	pass = pass || t.operator == "ls" || t.operator == "load" // to allow dotfiles
 	if !strings.ContainsAny(s[:1], "+-.0123456789") || pass || t.isFunction {
 		return reload, ext, nextOperation
@@ -1640,7 +1641,6 @@ func SoundEngine(file *os.File, bits int) {
 			info <- sf("listing deleted: %d", current)
 		}
 		fade := Pow(FDOUT, 1/(MIN_FADE*SampleRate*float64(DS)))
-		//for i := 48000; i >= 0; i-- {
 		for {
 			dac0 *= fade
 			output(w, dac0) // left
@@ -2159,7 +2159,7 @@ func SoundEngine(file *os.File, bits int) {
 		if exit {
 			dac *= env // fade out
 			sides *= env
-			env *= fade
+			env -= fade
 			if Abs(peak) < FDOUT {
 				break
 			}
@@ -2200,7 +2200,7 @@ func SoundEngine(file *os.File, bits int) {
 				DS <<= 1
 				SampleRate /= 2
 				display.SR = SampleRate
-				fade = Pow(FDOUT, 1/(MIN_FADE*SampleRate))
+				fade = 1/(MIN_FADE*SAMPLE_RATE) //Pow(FDOUT, 1/(MIN_FADE*SampleRate))
 				release = Pow(8000, -1.0/(0.5*SampleRate)) // 500ms
 				sineTab = make([]float64, int(SampleRate))
 				calcSineTab()
@@ -2211,7 +2211,7 @@ func SoundEngine(file *os.File, bits int) {
 				DS >>= 1
 				SampleRate *= 2
 				display.SR = SampleRate
-				fade = Pow(FDOUT, 1/(MIN_FADE*SampleRate))
+				fade = 1/(MIN_FADE*SAMPLE_RATE) //Pow(FDOUT, 1/(MIN_FADE*SampleRate))
 				release = Pow(8000, -1.0/(0.5*SampleRate)) // 500ms
 				sineTab = make([]float64, int(SampleRate))
 				calcSineTab()
@@ -2649,12 +2649,9 @@ func loadReloadAppend(t *systemState) int {
 	switch t.operator {
 	case "rld", "r":
 		n, rr := strconv.Atoi(t.operand) // allow any index, no bounds check
-		if e(rr) {
+		if e(rr) || n < 0 {
 			msg("%soperand not valid:%s %s", italic, reset, t.operand)
 			return startNewOperation
-		}
-		if n < 0 {
-			n = 0
 		}
 		reload = n
 		t.operand = ".temp/" + t.operand
@@ -2951,7 +2948,7 @@ func checkFade(s *systemState) int {
 	if !ok { // error reported by parseFloat
 		return startNewOperation
 	}
-	fade = Pow(FDOUT, fd) // approx -100dB in t=fd
+	fade = fd //Pow(FDOUT, fd)
 	reportFloatSet(s.operator, fd)
 	return startNewOperation
 }

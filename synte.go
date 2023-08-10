@@ -1721,12 +1721,16 @@ func SoundEngine(file *os.File, bits int) {
 		default:
 			// play
 		}
-		if p == 0 && endPause < n-2400 { // wait for 2,400 samples to enact pause
+		if p == 0 && endPause < n-12000 {
 			pause <- not // blocks until `: play`, bool is purely semantic
 			if exit {
 				break
 			}
 			p = 1
+			for i := 0; i < 2400; i++ { // lead-in to prevent clicks
+				output(w, nyfL)
+				output(w, nyfR)
+			}
 			lastTime = time.Now()
 		}
 
@@ -2154,6 +2158,9 @@ func SoundEngine(file *os.File, bits int) {
 			dac *= env // fade out
 			sides *= env
 			env -= fade
+			if env < 0 {
+				env = 0
+			}
 			if Abs(peak) < FDOUT {
 				break
 			}
@@ -2702,10 +2709,10 @@ func modeSet(s *systemState) int {
 	switch s.operand {
 	case "exit", "q":
 		p("\nexiting...")
+		exit = yes
 		if display.Paused {
 			<-pause
 		}
-		exit = yes
 		if started {
 			<-stop // received when shutdown complete
 		}

@@ -1,0 +1,20 @@
+>sync
+in 2s
+syq 0
+mul 0.5
++ 1
+mul 130hz
+posc 0
+sine
++ c
+push
+lpf 600hz
+tape 123ms
+tap 73ms
+hpf 100hz
+lpf 600hz
+/ 1.6
+out c
+pop
+mul -6db
+mix

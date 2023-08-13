@@ -1,0 +1,21 @@
+in 10s
+out t
+osc
+flip
+exp 5
+smooth
+smooth
+out vca
+in 5.1
+out a
+\ 1
+mul t
+step a
+8bit 12
+base 2
+mul 440hz
+sino
+mul vca
+lpf 500hz
+lpf 500hz
+mix

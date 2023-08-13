@@ -1148,9 +1148,6 @@ func parseType(expr, op string) (n float64, b bool) {
 		if n, b = evaluateExpr(expr[:len(expr)-3]); !b {
 			return 0, false
 		}
-		if n > 300 && op == "in" {
-			msg("gabber territory")
-		}
 		if n > 3000 && op == "in" {
 			msg("%.fbpm? You're 'aving a larf mate", n)
 			return 0, false
@@ -1605,6 +1602,7 @@ func SoundEngine(file *os.File, bits int) {
 		current       int
 		p = 1.0
 		endPause int
+		pk float64 = 1
 	)
 	no *= 77777777777 // force overflow
 	defer func() {    // fail gracefully
@@ -2109,18 +2107,18 @@ func SoundEngine(file *os.File, bits int) {
 				panic(sf("listing: %d - overflow", i))
 			}
 			c += m[i] // add mute to mix factor
-			sigs[i][0] *= lv[i]
-			sides += pan[i] * (sigs[i][0] * 0.5) * m[i] * lv[i]
-			sigs[i][0] *= 1 - Abs(pan[i]*0.5)
-			mm := sigs[i][0] * m[i]
-			if mm > ct { // soft clip
-				mm = ct + tanh(mm-ct)
+			mid := sigs[i][0] * m[i] * lv[i]
+			if mid > ct { // soft clip
+				mid = ct + tanh(mid-ct)
 				display.Clip = yes
-			} else if mm < -ct {
-				mm = tanh(mm+ct) - ct
+			} else if mid < -ct {
+				mid = tanh(mid+ct) - ct
 				display.Clip = yes
 			}
-			dac += mm
+			pan[i] = Max(-1, Min(1, pan[i])) // to prevent overmodulation
+			sides += pan[i] * mid * 0.5
+			mid *= 1 - Abs(pan[i]*0.5)
+			dac += mid
 		}
 		hpf = (hpf + dac - x) * 0.9994 // hpf ≈ 4.6Hz
 		x = dac
@@ -2150,19 +2148,20 @@ func SoundEngine(file *os.File, bits int) {
 		}
 		dac /= l // VCA
 		sides /= l
-		dac += deemph
+		dac += deemph // low end path is mono only
 		h /= release
 		l = (l-1)*(1/(h+1/(1-release))+release) + 1 // snubbed decay curve
 		display.GR = l > 1+3e-4
 		if exit {
+			pk += (peak - pk) * 0.0003
+			if pk < FDOUT {
+				break // equivalent to return
+			}
 			dac *= env // fade out
 			sides *= env
 			env -= fade
-			if env < 0 {
+			if env < 0 { // in case env goes negative before pk < FDOUT
 				env = 0
-			}
-			if Abs(peak) < FDOUT {
-				break
 			}
 		}
 		no.ise()
@@ -2221,6 +2220,7 @@ func SoundEngine(file *os.File, bits int) {
 		}
 		dac0 = dac // dac0 holds output value for use when restarting
 		dac = 0
+		sides = 0
 		n++
 	}
 }

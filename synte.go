@@ -1602,7 +1602,6 @@ func SoundEngine(file *os.File, bits int) {
 		current       int
 		p = 1.0
 		endPause int
-		pk float64 = 1
 	)
 	no *= 77777777777 // force overflow
 	defer func() {    // fail gracefully
@@ -1630,7 +1629,7 @@ func SoundEngine(file *os.File, bits int) {
 		}
 		fade := Pow(FDOUT, 1/(MIN_FADE*SampleRate*float64(DS)))
 		for {
-			dac0 *= fade
+			dac0 *= fade // lpf
 			output(w, dac0) // left
 			output(w, dac0) // right
 			if Abs(dac0) < FDOUT {
@@ -2153,15 +2152,11 @@ func SoundEngine(file *os.File, bits int) {
 		l = (l-1)*(1/(h+1/(1-release))+release) + 1 // snubbed decay curve
 		display.GR = l > 1+3e-4
 		if exit {
-			pk += (peak - pk) * 0.0003
-			if pk < FDOUT {
-				break // equivalent to return
-			}
 			dac *= env // fade out
 			sides *= env
 			env -= fade
-			if env < 0 { // in case env goes negative before pk < FDOUT
-				env = 0
+			if env < 0 {
+				break // equivalent to: return
 			}
 		}
 		no.ise()

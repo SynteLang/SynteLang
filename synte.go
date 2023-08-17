@@ -630,6 +630,9 @@ start:
 			case "tempo", "pitch", "grid", "sync":
 				continue
 			}
+			if isUppercaseInitial(v) {
+				continue
+			}
 			t.out[v] = assigned
 		}
 		reload = -1 // index to be launched to
@@ -1040,7 +1043,7 @@ func parseFunction(
 			continue
 		}
 		switch o.Opd {
-		case "dac", "tempo", "pitch", "grid", "sync": // should be all reserved?
+		case "dac", "tempo", "pitch", "grid", "sync":
 			continue
 		case "@":
 			m.at = yes
@@ -1049,7 +1052,7 @@ func parseFunction(
 		case "@2":
 			m.at2 = yes
 		}
-		if _, r := signals[o.Opd]; r {
+		if _, in := signals[o.Opd]; in || isUppercaseInitial(o.Opd) {
 			continue
 		}
 		switch o.Opd[:1] {
@@ -2106,7 +2109,7 @@ func SoundEngine(file *os.File, bits int) {
 				panic(sf("listing: %d - overflow", i))
 			}
 			c += m[i] // add mute to mix factor
-			mid := sigs[i][0] * m[i] * lv[i]
+			mid := sigs[i][0] * m[i] * lv[i] // sigs[i][0] left intact for `from` operator
 			if mid > ct { // soft clip
 				mid = ct + tanh(mid-ct)
 				display.Clip = yes

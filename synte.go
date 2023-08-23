@@ -664,7 +664,7 @@ start:
 				displayHeader(sc, wavNames, t)
 			}
 			var result int
-			switch reload, ext, result = readTokenPair(&t, usage); result {
+			switch reload, ext, result = readTokenPair(&t); result {
 			case startNewOperation:
 				continue input
 			case startNewListing:
@@ -730,6 +730,7 @@ start:
 
 			// add to listing
 			t.dispListing = append(t.dispListing, operation{Op: t.operator, Opd: t.operand})
+			usage[t.operator] += 1
 			if !t.isFunction {
 				t.newListing = append(t.newListing, operation{Op: t.operator, Opd: t.operand})
 			}
@@ -971,13 +972,7 @@ func setupSoundCard(file string) (sc soundcard, success bool) {
 	return sc, yes
 }
 
-func readTokenPair(
-	t *systemState,
-	usage map[string]int,
-) (reload int,
-	ext bool,
-	result int,
-) {
+func readTokenPair(t *systemState) (reload int, ext bool, result int) {
 	tt := <-tokens
 	t.operator, reload, ext = tt.tk, tt.reload, tt.ext
 	if (len(t.operator) > 2 && byte(t.operator[1]) == 91) || t.operator == "_" || t.operator == "" {
@@ -995,7 +990,6 @@ func readTokenPair(
 		return reload, ext, r
 	}
 	_, t.isFunction = t.funcs[t.operator]
-	usage[t.operator] += 1 // this will count operations with rejected operands
 
 	if !hO {
 		return reload, ext, nextOperation
@@ -1030,9 +1024,7 @@ func parseFunction(
 	t systemState,
 	signals map[string]float64,
 	out map[string]struct{}, // implictly de-referenced
-) (function listing,
-	result bool,
-) {
+) (function listing, result bool) {
 	function = make(listing, len(t.funcs[t.operator].Body))
 	copy(function, t.funcs[t.operator].Body)
 	s := sf(".%d", t.fun)

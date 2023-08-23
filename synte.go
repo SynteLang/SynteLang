@@ -1467,7 +1467,14 @@ func infoDisplay() {
 	file := "infodisplay.json"
 	n := 1
 	s := 1
+	display.Info = "clear"
 	for {
+		if !save(display, file) {
+			pf("%sinfo display not updated, check file %s%s%s exists%s\n",
+				italic, reset, file, italic, reset)
+			time.Sleep(2 * time.Second)
+			return
+		}
 		select {
 		case display.Info = <-info:
 		case carryOn <- yes: // semaphore: received, continue
@@ -1477,11 +1484,6 @@ func infoDisplay() {
 			save(display, file)
 			return
 		default: // passthrough
-		}
-		if !save(display, file) {
-			pf("%sinfo display not updated, check file %s%s%s exists%s\n",
-				italic, reset, file, italic, reset)
-			time.Sleep(2 * time.Second)
 		}
 		time.Sleep(20 * time.Millisecond) // coarse loop timing
 		if display.Clip {

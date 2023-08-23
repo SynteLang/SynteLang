@@ -1687,6 +1687,271 @@
 			}
 		]
 	},
+	"interp": {
+		"Comment": "interpolated step function (3*x*x - 2*x*x*x). Used by `perlin` internally",
+		"Body": [
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "@"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "ov"
+			},
+			{
+				"Op": "--",
+				"Opd": "0.5"
+			},
+			{
+				"Op": "out",
+				"Opd": "sh"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "sh"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.2"
+			},
+			{
+				"Op": "--",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "'c.2"
+			},
+			{
+				"Op": "out",
+				"Opd": "sh.2"
+			},
+			{
+				"Op": "in",
+				"Opd": "b.2"
+			},
+			{
+				"Op": "out",
+				"Opd": "'c.2"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "-",
+				"Opd": "a.2"
+			},
+			{
+				"Op": "mul",
+				"Opd": "sh.2"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.2"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.2"
+			},
+			{
+				"Op": "mul",
+				"Opd": "ov"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "sgn",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "s.3"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "abs",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "a0.3"
+			},
+			{
+				"Op": "in",
+				"Opd": "ov"
+			},
+			{
+				"Op": "--",
+				"Opd": "0.5"
+			},
+			{
+				"Op": "out",
+				"Opd": "sh.3"
+			},
+			{
+				"Op": "in",
+				"Opd": "ov"
+			},
+			{
+				"Op": "mul",
+				"Opd": "ov"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "ov"
+			},
+			{
+				"Op": "mul",
+				"Opd": "2"
+			},
+			{
+				"Op": "out",
+				"Opd": "x3.3"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "3"
+			},
+			{
+				"Op": "-",
+				"Opd": "x3.3"
+			},
+			{
+				"Op": "out",
+				"Opd": "fx.3"
+			},
+			{
+				"Op": "in",
+				"Opd": "a1.3"
+			},
+			{
+				"Op": "-",
+				"Opd": "a0.3"
+			},
+			{
+				"Op": "mul",
+				"Opd": "fx.3"
+			},
+			{
+				"Op": "+",
+				"Opd": "a0.3"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "sh.3"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.0.3"
+			},
+			{
+				"Op": "--",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "'c.0.3"
+			},
+			{
+				"Op": "out",
+				"Opd": "sh.0.3"
+			},
+			{
+				"Op": "in",
+				"Opd": "b.0.3"
+			},
+			{
+				"Op": "out",
+				"Opd": "'c.0.3"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "-",
+				"Opd": "a.0.3"
+			},
+			{
+				"Op": "mul",
+				"Opd": "sh.0.3"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.0.3"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.0.3"
+			},
+			{
+				"Op": "out",
+				"Opd": "a1.3"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "s.3"
+			}
+		]
+	},
 	"intfr": {
 		"Comment": "non-linear feedback leads to radio-inteference sounding patterns ",
 		"Body": [
@@ -2043,6 +2308,299 @@
 			}
 		]
 	},
+	"perlin": {
+		"Comment": "basic implementation of one-dimensional perlin noise, operand sets grid spacing in hertz or seconds",
+		"Body": [
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "0.0625"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "noise",
+				"Opd": ""
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "@"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.0.0"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.0.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "ov.0"
+			},
+			{
+				"Op": "--",
+				"Opd": "1"
+			},
+			{
+				"Op": "-",
+				"Opd": "0.5"
+			},
+			{
+				"Op": "out",
+				"Opd": "sh.0"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "sh.0"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.2.0"
+			},
+			{
+				"Op": "--",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "'c.2.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "sh.2.0"
+			},
+			{
+				"Op": "in",
+				"Opd": "b.2.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "'c.2.0"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "-",
+				"Opd": "a.2.0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "sh.2.0"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.2.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.2.0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "ov.0"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "sgn",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "s.3.0"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "abs",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "a0.3.0"
+			},
+			{
+				"Op": "in",
+				"Opd": "ov.0"
+			},
+			{
+				"Op": "--",
+				"Opd": "0.5"
+			},
+			{
+				"Op": "out",
+				"Opd": "sh.3.0"
+			},
+			{
+				"Op": "in",
+				"Opd": "ov.0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "ov.0"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "ov.0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "2"
+			},
+			{
+				"Op": "out",
+				"Opd": "x3.3.0"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "3"
+			},
+			{
+				"Op": "-",
+				"Opd": "x3.3.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "fx.3.0"
+			},
+			{
+				"Op": "in",
+				"Opd": "a1.3.0"
+			},
+			{
+				"Op": "-",
+				"Opd": "a0.3.0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "fx.3.0"
+			},
+			{
+				"Op": "+",
+				"Opd": "a0.3.0"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "sh.3.0"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.0.3.0"
+			},
+			{
+				"Op": "--",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "'c.0.3.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "sh.0.3.0"
+			},
+			{
+				"Op": "in",
+				"Opd": "b.0.3.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "'c.0.3.0"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "-",
+				"Opd": "a.0.3.0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "sh.0.3.0"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.0.3.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.0.3.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "a1.3.0"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "s.3.0"
+			}
+		]
+	},
 	"pink": {
 		"Comment": "approximation of pinkening filter, low pass at -3db per octave ",
 		"Body": [
@@ -2291,8 +2849,16 @@
 		"Comment": "like `osc` but with an output suitable for audio, i.e. spans -1 to 1 ",
 		"Body": [
 			{
+				"Op": "mul",
+				"Opd": "4"
+			},
+			{
 				"Op": "out",
 				"Opd": "^freq"
+			},
+			{
+				"Op": "mul",
+				"Opd": "0.25"
 			},
 			{
 				"Op": "+",
@@ -2640,8 +3206,16 @@
 		"Comment": "saw wave, descending ramp. Output in range ±1 ",
 		"Body": [
 			{
+				"Op": "mul",
+				"Opd": "4"
+			},
+			{
 				"Op": "out",
 				"Opd": "^freq"
+			},
+			{
+				"Op": "mul",
+				"Opd": "0.25"
 			},
 			{
 				"Op": "+",
@@ -2847,6 +3421,167 @@
 			}
 		]
 	},
+	"smthstp": {
+		"Comment": "interpolates between stepped input, operand is distance from given point",
+		"Body": [
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "sgn",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "s"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "abs",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "a0"
+			},
+			{
+				"Op": "in",
+				"Opd": "@"
+			},
+			{
+				"Op": "in",
+				"Opd": "@"
+			},
+			{
+				"Op": "mul",
+				"Opd": "@"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "@"
+			},
+			{
+				"Op": "mul",
+				"Opd": "2"
+			},
+			{
+				"Op": "out",
+				"Opd": "x3"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "3"
+			},
+			{
+				"Op": "-",
+				"Opd": "x3"
+			},
+			{
+				"Op": "out",
+				"Opd": "fx"
+			},
+			{
+				"Op": "in",
+				"Opd": "a1"
+			},
+			{
+				"Op": "-",
+				"Opd": "a0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "fx"
+			},
+			{
+				"Op": "+",
+				"Opd": "a0"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "@"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.0"
+			},
+			{
+				"Op": "--",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "'c.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "sh.0"
+			},
+			{
+				"Op": "in",
+				"Opd": "b.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "'c.0"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "-",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "sh.0"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "a1"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "s"
+			}
+		]
+	},
 	"sq": {
 		"Comment": "square wave, equivalent to `pulse 0.5`, output is in range [0,1], contains `\u003csync` ",
 		"Body": [
@@ -2876,8 +3611,16 @@
 		"Comment": "square wave at audio levels, output is in range [-1,1] ",
 		"Body": [
 			{
+				"Op": "mul",
+				"Opd": "4"
+			},
+			{
 				"Op": "out",
 				"Opd": "^freq"
+			},
+			{
+				"Op": "mul",
+				"Opd": "0.25"
 			},
 			{
 				"Op": "+",

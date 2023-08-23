@@ -25,7 +25,7 @@ Protect your hearing when listening to *any* audio on a system capable of more t
 Wav playback  
 Mouse control   
 Telemetry / code display  
-Anything can be connected to anything else within a listing  
+Anything can be connected to anything else 
 Feedback permitted (see above)  
 Groups of operators can be defined, named and instantiated as functions (extensible)  
 Useful predefined functions  

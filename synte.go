@@ -1226,11 +1226,15 @@ func bounds(a, b float64) bool {
 }
 
 // evaluateExpr() does what it says on the tin
+// not designed to handle expressions containing eg. 1e-3-1e-2
 func evaluateExpr(expr string) (float64, bool) {
 	opds := []string{expr}
 	var rr error
 	var n, n2 float64
 	var op string
+	if n, rr = strconv.ParseFloat(opds[0], 64); !e(rr) { // early return
+		return n, true
+	}
 	for _, v := range []string{"*", "/", "+", "-"} {
 		if strings.Contains(strings.TrimPrefix(expr, "-"), v) {
 			opds = strings.SplitN(expr, v, 2)

@@ -117,6 +117,7 @@ const (
 	MAX_FADE       = 120    // 120s
 	MIN_RELEASE    = 50e-3  // 50ms
 	MAX_RELEASE    = 50     // 50s
+	twoInvMaxUint = 2.0 / MaxUint64
 )
 
 var (
@@ -1567,7 +1568,6 @@ func SoundEngine(file *os.File, bits int) {
 		overload   = "Sound Engine overloaded"
 		recovering = "Sound Engine recovering"
 		rateLimit  = "At sample rate limit"
-		invMaxUint = 1.0 / MaxUint64
 	)
 
 	var (
@@ -1819,8 +1819,7 @@ func SoundEngine(file *os.File, bits int) {
 						r = Min(-sigs[i][o.N], Max(sigs[i][o.N], r))
 					}
 				case 15: // "noise"
-					no.ise() // roll a fresh one
-					r *= (2*(float64(no)*invMaxUint) - 1)
+					r *= no.ise() // roll a fresh one
 					//if r > 0.9999 { panic("test") } // for testing
 				case 16: // "push"
 					stacks[i] = append(stacks[i], r)
@@ -2067,8 +2066,7 @@ func SoundEngine(file *os.File, bits int) {
 					if n%N2 == 0 && n >= N && !ffrz[i] {
 						for n := range z[i] {
 							r, θ := cmplx.Polar(z[i][n])
-							no.ise()
-							θ += (Tau * (float64(no)/MaxUint - 0.5))
+							θ += Pi * no.ise()
 							z[i][n] = cmplx.Rect(r, θ)
 						}
 					}
@@ -2161,6 +2159,11 @@ func SoundEngine(file *os.File, bits int) {
 				break // equivalent to: return
 			}
 		}
+		dither = no.ise()
+		dither += no.ise() // reliant on there being no dc bias 
+		dither *= 0.5
+		dac *= hroom
+		dac += dither / convFactor       // dither dac value ±1 from xorshift lfsr
 		if abs := Abs(dac); abs > peak { // peak detect
 			peak = abs
 		}
@@ -2169,12 +2172,6 @@ func SoundEngine(file *os.File, bits int) {
 		if peak < 0 {
 			peak = 0
 		}
-		no.ise()
-		dither = float64(no) * invMaxUint
-		no.ise()
-		dither += float64(no) * invMaxUint
-		dac *= hroom
-		dac += dither / convFactor       // dither dac value ±1 from xorshift lfsr
 		sides = Max(-0.5, Min(0.5, sides))
 		L = clip(dac+sides) * convFactor // clip will display info
 		R = clip(dac-sides) * convFactor
@@ -2288,10 +2285,11 @@ func tanh(x float64) float64 {
 	return ta + ((tb - ta) * xx)
 }
 
-func (n *noise) ise() {
+func (n *noise) ise() float64 {
 	*n ^= *n << 13
 	*n ^= *n >> 7
 	*n ^= *n << 17
+	return float64(*n) * twoInvMaxUint - 1
 }
 
 func mod(x, y float64) float64 {

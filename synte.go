@@ -2128,6 +2128,7 @@ func SoundEngine(file *os.File, bits int) {
 		dac /= mixF
 		sides /= mixF
 		dac *= gain
+		sides *= gain
 		c = 0
 		// limiter
 		hpf2560 = (hpf2560 + dac - x2560) * 0.749
@@ -2160,12 +2161,6 @@ func SoundEngine(file *os.File, bits int) {
 				break // equivalent to: return
 			}
 		}
-		no.ise()
-		dither = float64(no) * invMaxUint
-		no.ise()
-		dither += float64(no) * invMaxUint
-		dac *= hroom
-		dac += dither / convFactor       // dither dac value ±1 from xorshift lfsr
 		if abs := Abs(dac); abs > peak { // peak detect
 			peak = abs
 		}
@@ -2174,6 +2169,12 @@ func SoundEngine(file *os.File, bits int) {
 		if peak < 0 {
 			peak = 0
 		}
+		no.ise()
+		dither = float64(no) * invMaxUint
+		no.ise()
+		dither += float64(no) * invMaxUint
+		dac *= hroom
+		dac += dither / convFactor       // dither dac value ±1 from xorshift lfsr
 		sides = Max(-0.5, Min(0.5, sides))
 		L = clip(dac+sides) * convFactor // clip will display info
 		R = clip(dac-sides) * convFactor
@@ -2553,6 +2554,14 @@ func parseIndex(s listingState, l int) (int, bool) {
 	return n, yes
 }
 
+func excludeCurrent(op string, i, l int) bool {
+	if i > l-1 {
+		msg("%scan't %s current listing%s", italic, op, reset)
+		return yes
+	}
+	return not
+}
+
 func eraseOperations(s *systemState) int {
 	n, ok := parseIndex(s.listingState, len(s.dispListing))
 	if !ok {
@@ -2576,8 +2585,8 @@ func checkWav(s *systemState) int {
 }
 
 func enactMute(s *systemState) int {
-	i, ok := parseIndex(s.listingState, len(transfer.Listing)-1)
-	if !ok {
+	i, ok := parseIndex(s.listingState, len(transfer.Listing))
+	if !ok || excludeCurrent(s.operator, i, len(transfer.Listing)) {
 		return startNewOperation // error reported by parseIndex
 	}
 	if s.operator == "m+" {
@@ -2800,9 +2809,9 @@ func modeSet(s *systemState) int {
 }
 
 func enactDelete(s *systemState) int {
-	n, ok := parseIndex(s.listingState, len(transfer.Listing)-1)
-	if !ok {
-		return startNewOperation
+	n, ok := parseIndex(s.listingState, len(transfer.Listing))
+	if !ok || excludeCurrent(s.operator, n, len(transfer.Listing)) {
+		return startNewOperation // error reported by parseIndex
 	}
 	mutes.set(n, mute)  // wintermute
 	if display.Paused { // play resumed to enact deletion in sound engine
@@ -2833,7 +2842,8 @@ func checkIndexIncl(s *systemState) int { // eg. listing can level or pan itself
 }
 
 func checkIndex(s *systemState) int {
-	if _, ok := parseIndex(s.listingState, len(transfer.Listing)-1); !ok {
+	i, ok := parseIndex(s.listingState, len(transfer.Listing))
+	if !ok || excludeCurrent(s.operator, i, len(transfer.Listing)) {
 		return startNewOperation // error reported by parseIndex
 	}
 	return nextOperation

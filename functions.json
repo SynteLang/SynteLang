@@ -1030,6 +1030,75 @@
 			}
 		]
 	},
+	"dvd": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "lt",
+				"Opd": "0.5"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "gt",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "'b.0"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0"
+			},
+			{
+				"Op": "out",
+				"Opd": "'b.0"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "/",
+				"Opd": "@"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.1"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.1"
+			},
+			{
+				"Op": "gt",
+				"Opd": "0.5"
+			},
+			{
+				"Op": "--",
+				"Opd": "1"
+			}
+		]
+	},
 	"echo": {
 		"Comment": "repeated echo of input using `tape` internally. First operand is repeat interval (time), second operand is loop/feeback gain, \u003e1 is infinite repeats (may distort), 0 is no repeats and no output. Use in conjunction with `from` or mix in with original input ",
 		"Body": [
@@ -2308,6 +2377,15 @@
 			}
 		]
 	},
+	"pad": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "mul",
+				"Opd": "-4db"
+			}
+		]
+	},
 	"perlin": {
 		"Comment": "basic implementation of one-dimensional perlin noise, operand sets grid spacing in hertz or seconds",
 		"Body": [
@@ -2598,6 +2676,135 @@
 			{
 				"Op": "mul",
 				"Opd": "s.3.0"
+			}
+		]
+	},
+	"phaze": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "@"
+			},
+			{
+				"Op": "clip",
+				"Opd": "0"
+			},
+			{
+				"Op": "out",
+				"Opd": "d"
+			},
+			{
+				"Op": "in",
+				"Opd": "@1"
+			},
+			{
+				"Op": "clip",
+				"Opd": "0"
+			},
+			{
+				"Op": "out",
+				"Opd": "c"
+			},
+			{
+				"Op": "in",
+				"Opd": "v-1"
+			},
+			{
+				"Op": "out",
+				"Opd": "v-2"
+			},
+			{
+				"Op": "mul",
+				"Opd": "c"
+			},
+			{
+				"Op": "out",
+				"Opd": "cv-2"
+			},
+			{
+				"Op": "in",
+				"Opd": "v"
+			},
+			{
+				"Op": "out",
+				"Opd": "v-1"
+			},
+			{
+				"Op": "in",
+				"Opd": "c"
+			},
+			{
+				"Op": "clip",
+				"Opd": "0"
+			},
+			{
+				"Op": "--",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "d"
+			},
+			{
+				"Op": "out",
+				"Opd": "dc1"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "-",
+				"Opd": "dc1v"
+			},
+			{
+				"Op": "+",
+				"Opd": "cv-2"
+			},
+			{
+				"Op": "out",
+				"Opd": "v"
+			},
+			{
+				"Op": "mul",
+				"Opd": "c"
+			},
+			{
+				"Op": "mul",
+				"Opd": "-1"
+			},
+			{
+				"Op": "+",
+				"Opd": "dc1v"
+			},
+			{
+				"Op": "+",
+				"Opd": "v-2"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "v"
+			},
+			{
+				"Op": "mul",
+				"Opd": "dc1"
+			},
+			{
+				"Op": "out",
+				"Opd": "dc1v"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
 			}
 		]
 	},
@@ -3290,6 +3497,91 @@
 			{
 				"Op": "\\",
 				"Opd": "x"
+			}
+		]
+	},
+	"shift": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "out",
+				"Opd": "d"
+			},
+			{
+				"Op": "in",
+				"Opd": "a7"
+			},
+			{
+				"Op": "out",
+				"Opd": "q"
+			},
+			{
+				"Op": "in",
+				"Opd": "a6"
+			},
+			{
+				"Op": "out",
+				"Opd": "a7"
+			},
+			{
+				"Op": "in",
+				"Opd": "a5"
+			},
+			{
+				"Op": "out",
+				"Opd": "a6"
+			},
+			{
+				"Op": "in",
+				"Opd": "a4"
+			},
+			{
+				"Op": "out",
+				"Opd": "a5"
+			},
+			{
+				"Op": "in",
+				"Opd": "a3"
+			},
+			{
+				"Op": "out",
+				"Opd": "a4"
+			},
+			{
+				"Op": "in",
+				"Opd": "a2"
+			},
+			{
+				"Op": "out",
+				"Opd": "a3"
+			},
+			{
+				"Op": "in",
+				"Opd": "a1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a2"
+			},
+			{
+				"Op": "in",
+				"Opd": "a0"
+			},
+			{
+				"Op": "out",
+				"Opd": "a1"
+			},
+			{
+				"Op": "in",
+				"Opd": "d"
+			},
+			{
+				"Op": "out",
+				"Opd": "a0"
+			},
+			{
+				"Op": "in",
+				"Opd": "q"
 			}
 		]
 	},

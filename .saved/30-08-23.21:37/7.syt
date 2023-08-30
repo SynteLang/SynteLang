@@ -1,0 +1,13 @@
+in tempo
+/ 4
+sq
+flip
+out vca
+in tempo
+* 2
+posc 0
+flip
+exp 5
+noise
+mul vca
+mix

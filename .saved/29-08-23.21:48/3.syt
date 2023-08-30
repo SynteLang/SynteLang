@@ -1,0 +1,10 @@
+in tempo
+* 4
+posc 0
+lt 0.5
+out grid
+in tempo
+/ 16
+syq 0
+- 0.1
+.>sync

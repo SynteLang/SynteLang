@@ -1,0 +1,17 @@
+in 1.618hz
+sino
+mul 0.03
++ 1
+mul 23ms
+out t
+in pitch
+maj7
+/ 8
+out t2
+T2
++ t2
+out m
+tape t
+/ 2
++ m
+mix

@@ -1,0 +1,9 @@
+in tempo
+/ 4
+posc 0
+gt 0.75
+dvd 4
+mul 0.25
++ 1
+mul 330hz
+.out pitch

@@ -1,0 +1,29 @@
+in tempo
+posc 0.75
+lt 1/16
+smooth
+mul 0.7
+flip
+out v
+in tempo
+/ 4
+posc 0.75
+out s
+gt 1/16
+smooth
+mul v
+out vca
+in tempo
+mul 4
+posc 0
+lt 0.05
+down 50ms
+exp 4
+- 1/16
+mul vca
+mul s
+out vc
+in 2200hz
+sqr
+mul vc
+mix

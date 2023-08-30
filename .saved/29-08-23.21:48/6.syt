@@ -1,0 +1,25 @@
+in tempo
+/ 2
+posc 0.5
+flip
+exp 4
+- 1/16
+lpf 50hz
+out vca
+in tempo
+/ 8
+posc 0
+lt 0.5
+down 135*2bpm
+flip
+mul semitone
+mul 3
++ 1
+mul 110hz
+sino
+out m
+T2
+sum m
+mul vca
+pad
+mix

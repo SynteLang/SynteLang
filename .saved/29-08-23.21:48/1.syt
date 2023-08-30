@@ -1,0 +1,11 @@
+in tempo
+/ 4
+posc 0.75
+trn 8
+lpf 50hz
+out vca
+mul 165hz
+sino
+mul vca
+lpf 200hz
+mix

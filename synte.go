@@ -127,6 +127,12 @@ var (
 	TLlen      int     = SAMPLE_RATE * TAPE_LENGTH
 )
 
+var (
+	record bool
+	wavHeader = []byte{82, 73, 70, 70, 36, 228, 87, 0, 87, 65, 86, 69, 102, 109, 116, 32, 16, 0, 0, 0, 1, 0, 2, 0, 128, 187, 0, 0, 0, 238, 2, 0, 4, 0, 16, 0, 100, 97, 116, 97, 0, 228, 87, 0}
+	wavFile *os.File
+)
+
 // terminal colours, eg. sf("%stest%s test", yellow, reset)
 const (
 	reset   = "\x1b[0m"
@@ -304,6 +310,7 @@ var operators = map[string]operatorParticulars{ // would be nice if switch index
 	"/*":      {yes, 0, noCheck},             // non-breaking comments, nop
 	"m+":      {yes, 0, enactMute},           // add to mute group
 	"gain":    {yes, 0, adjustGain},          // set overall mono gain before limiter
+	"record":  {yes, 0, recordWav},           // commence recording of wav file
 }
 
 var transfer struct { // make this a slice of structs?
@@ -450,6 +457,10 @@ func main() {
 
 	t := systemState{} // s yorks
 
+	go infoDisplay()
+	go SoundEngine(sc.file, sc.format)
+	go mouseRead()
+
 	// process wavs
 	wavSlice := decodeWavs()
 	transfer.Wavs = make([][]float64, 0, len(wavSlice))
@@ -460,10 +471,6 @@ func main() {
 		t.wmap[w.Name] = yes
 		transfer.Wavs = append(transfer.Wavs, w.Data)
 	}
-
-	go SoundEngine(sc.file, sc.format)
-	go infoDisplay()
-	go mouseRead()
 
 	lockLoad := make(chan struct{}, 1) // mutex on transferring listings
 	restart := not                     // controls whether listing is saved to temp on launch
@@ -845,6 +852,9 @@ start:
 			msg("%slisting display not updated, check file %s'displaylisting.json'%s exists%s",
 				italic, reset, italic, reset)
 		}
+	}
+	if record {
+		wavFile.Close()
 	}
 	saveUsage(usage, t)
 }
@@ -2183,6 +2193,10 @@ func SoundEngine(file *os.File, bits int) {
 			nyfR = nyfR + nyfC*(R-nyfR)
 			output(w, nyfL) // left
 			output(w, nyfR) // right, remove if stereo not available
+			if record {
+				binary.Write(wavFile, binary.LittleEndian, int16(nyfL))
+				binary.Write(wavFile, binary.LittleEndian, int16(nyfR))
+			}
 		}
 		lastTime = time.Now()
 		rate += t
@@ -2964,6 +2978,7 @@ func adjustGain(s *systemState) int {
 	msg("%sgain set to %s%.2gdb", italic, reset, 20*Log10(gain))
 	return startNewOperation
 }
+
 func adjustClip(s *systemState) int {
 	if n, ok := parseType(s.operand, s.operator); ok { // permissive, no bounds check
 		ct = n
@@ -2992,4 +3007,25 @@ func isUppercaseInitial(operand string) bool {
 		r = 1
 	}
 	return unicode.IsUpper([]rune(operand)[r])
+}
+
+func recordWav(s *systemState) int {
+	/*if sc.sampleRate != 48000 || sc.format != 16 { // need to add soundcard to systemstate
+		msg("can only record at 16bit 48kHz")
+		return startNewOperation
+	}*/
+	f := s.operand + ".wav" // place in specific dir?
+	var rr error
+	wavFile, rr = os.Create(f)
+	if e(rr) {
+		msg("%v", rr)
+		return startNewOperation
+	}
+	wavFile.Write(wavHeader)
+	for i := 0; i < 9600; i++ {
+		binary.Write(wavFile, BYTE_ORDER, int16(0))
+	}
+	record = yes
+	msg("now recording to '%s', ends on exit", f)
+	return startNewOperation
 }

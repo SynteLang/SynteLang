@@ -542,8 +542,6 @@ You can find more examples of in the `.saved` directory.
 + [Editing running listings](#ed)
 + [Exported signals](#ex)
 
-The notation [a,b] is a closed interval, which means the numbers between a and b, including a and b.
-
 **List of operators**
 
 |  Operator	|Requires operand?| Notes                           |
@@ -741,6 +739,8 @@ The notation [a,b] is a closed interval, which means the numbers between a and b
 | stats		| display Go's automatic memory management pause times in info display
 
 
+The notation [a,b] is a closed interval, which means the numbers between a and b, including a and b.
+
 The input syntax is in EBNF:  
 	`operator " " [ [","] operand [","] " " ]`  
 An operand can be a name or a number where:  
@@ -756,6 +756,7 @@ The function syntax is:
 
 ---
 
+<br>
 <a name="det"></a>
 
 ## Exposition  
@@ -806,7 +807,7 @@ Each listing has a tape loop available which is accessed by the `tape` operator.
 
 <a name="ao"></a>
 ## Arithmetic operations
-An operand may be added in a listing of the form a/b or a*b where a and b are valid numbers and the result is divison and multiplication respectively. For example: typing  
+An operand may be added in a listing of the form a/b or a\*b where a and b are valid numbers and the result is divison and multiplication respectively. For example: typing  
 >
 	in 2/3  
 will result in  
@@ -965,6 +966,7 @@ Up to 12 signals may be exported for input to other listings. Indicate this by c
 
 ---
 
+<br>
 ## The Sound Engine
 Although it is not necessary to know how the sound engine works to perform or play with Syntə, it can be helpful to learn more about it so we'll give a brief outline here.  
 When a listing is send to the sound engine an internal copy is generated and added to the sequence of listings. The sound engine takes each listing in turn from 0 onwards and runs through it once to produce the value of the next sample, then it moves on to the next listing. Once it has computed all the listings the resulting samples are summed together and sent through the built-in limiter to ensure no loud surprises and the peak amplitude of the output is also sent to the info display. The resulting signal is converted to the correct format and sent to the soundcard in your computer, after which the whole process repeats.  
@@ -989,6 +991,7 @@ Please add a github issue for bug reports or feature requests.
 
 ---
 
+<br>
 ### A note on licensing
 The work in this file and all others in this repository is now licenced. See the licence.md file for details.  
 

@@ -59,7 +59,7 @@
 		]
 	},
 	"/b": {
-		"Comment": "",
+		"Comment": "creates a rising ramp in sync with a ramp sent to `sync` signal",
 		"Body": [
 			{
 				"Op": "in",
@@ -80,7 +80,7 @@
 		]
 	},
 	"3sum": {
-		"Comment": "",
+		"Comment": "output is sum of input and both operands",
 		"Body": [
 			{
 				"Op": "+",
@@ -705,7 +705,7 @@
 		]
 	},
 	"def": {
-		"Comment": "",
+		"Comment": "sends tempo and sync to other listings, first argument is tempo, second is number of beats which the sync wave spans. Launches listing",
 		"Body": [
 			{
 				"Op": "in",
@@ -738,7 +738,7 @@
 		]
 	},
 	"def_": {
-		"Comment": "",
+		"Comment": "like `def` but can be followed by other operators (doen't launch)",
 		"Body": [
 			{
 				"Op": "in",
@@ -978,7 +978,7 @@
 		]
 	},
 	"down": {
-		"Comment": "",
+		"Comment": "slews downwards for decreasing signals, jumps immediately to an increasing or static (unchanging) signal value. Use with a narrow pulse to make a linear decay envelope. Descends at rate given by operand",
 		"Body": [
 			{
 				"Op": "out",
@@ -1031,7 +1031,7 @@
 		]
 	},
 	"dvd": {
-		"Comment": "",
+		"Comment": "if input is a [0,1] square wave, will produce a square wave at half the frequency. Useful for breaking out of the constraint a sync loop",
 		"Body": [
 			{
 				"Op": "lt",
@@ -1363,7 +1363,7 @@
 		]
 	},
 	"excl": {
-		"Comment": "",
+		"Comment": "like clip, but removes signal betwen +/- operand, shifts the remaining up or down to zero",
 		"Body": [
 			{
 				"Op": "out",
@@ -2181,7 +2181,7 @@
 		]
 	},
 	"maj7": {
-		"Comment": "",
+		"Comment": "produces a major seventh chord of sines at frequency given by input",
 		"Body": [
 			{
 				"Op": "out",
@@ -2378,7 +2378,7 @@
 		]
 	},
 	"pad": {
-		"Comment": "",
+		"Comment": "reduces input by 4dB",
 		"Body": [
 			{
 				"Op": "mul",
@@ -2680,7 +2680,7 @@
 		]
 	},
 	"phaze": {
-		"Comment": "",
+		"Comment": "implements a basic phaser effect. 1st operand is centre frequency, second is bandwidth in [0,1]",
 		"Body": [
 			{
 				"Op": "push",
@@ -3011,6 +3011,155 @@
 			}
 		]
 	},
+	"pso": {
+		"Comment": "phase-shift oscillator, produces a sine wave. Not accurate in frequency response. Therectically lower computaional load than math.Sine()",
+		"Body": [
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "mul",
+				"Opd": "0.57739188"
+			},
+			{
+				"Op": "out",
+				"Opd": "f"
+			},
+			{
+				"Op": "in",
+				"Opd": "-85db"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "0.0625"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "noise",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "n"
+			},
+			{
+				"Op": "in",
+				"Opd": "'a"
+			},
+			{
+				"Op": "+",
+				"Opd": "n"
+			},
+			{
+				"Op": "clip",
+				"Opd": "1"
+			},
+			{
+				"Op": "-",
+				"Opd": "b.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "in",
+				"Opd": "f"
+			},
+			{
+				"Op": "f2c",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "+",
+				"Opd": "b.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.0"
+			},
+			{
+				"Op": "-",
+				"Opd": "b.1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.1"
+			},
+			{
+				"Op": "in",
+				"Opd": "f"
+			},
+			{
+				"Op": "f2c",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.1"
+			},
+			{
+				"Op": "+",
+				"Opd": "b.1"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.1"
+			},
+			{
+				"Op": "-",
+				"Opd": "b.2"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.2"
+			},
+			{
+				"Op": "in",
+				"Opd": "f"
+			},
+			{
+				"Op": "f2c",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.2"
+			},
+			{
+				"Op": "+",
+				"Opd": "b.2"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.2"
+			},
+			{
+				"Op": "mul",
+				"Opd": "-10"
+			},
+			{
+				"Op": "out",
+				"Opd": "'a"
+			}
+		]
+	},
 	"pulse": {
 		"Comment": "pulse generator with duty cycle (pulse width) set by operand. Output is between 0 and 1, follow by `cv2a` for audio out. `pulse 0` will give a one sample pulse, any operand greater than or equal to 1 will be silent, i.e. output continuous zero. `pulse 0.5` is a square wave like `sq` ",
 		"Body": [
@@ -3264,7 +3413,7 @@
 		]
 	},
 	"reverb": {
-		"Comment": "",
+		"Comment": "a basic reverb",
 		"Body": [
 			{
 				"Op": "push",
@@ -3476,7 +3625,7 @@
 		]
 	},
 	"sfcl": {
-		"Comment": "",
+		"Comment": "soft clipping",
 		"Body": [
 			{
 				"Op": "out",
@@ -3501,7 +3650,7 @@
 		]
 	},
 	"shift": {
-		"Comment": "",
+		"Comment": "an imperfect shift register",
 		"Body": [
 			{
 				"Op": "out",
@@ -4082,7 +4231,7 @@
 		]
 	},
 	"stmx": {
-		"Comment": "",
+		"Comment": "operand sets frequency for mix function",
 		"Body": [
 			{
 				"Op": "push",
@@ -4208,7 +4357,7 @@
 		]
 	},
 	"sum": {
-		"Comment": "",
+		"Comment": "output is sum of input and operand",
 		"Body": [
 			{
 				"Op": "+",
@@ -4238,7 +4387,7 @@
 		]
 	},
 	"syq": {
-		"Comment": "",
+		"Comment": "synchronised square wave, equivalent to `posc p, lt 0.5`",
 		"Body": [
 			{
 				"Op": "out",
@@ -4330,7 +4479,7 @@
 		]
 	},
 	"trn": {
-		"Comment": "",
+		"Comment": "shapes a rising ramp into a decay envelope. Operand is rate multiplier",
 		"Body": [
 			{
 				"Op": "mul",

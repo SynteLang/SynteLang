@@ -526,6 +526,22 @@ You can find more examples of in the `.saved` directory.
 <a name="ref"></a>
 ## Reference
 
++ [Sample playback](#sp)  
++ [Tape loop](#tl)
++ [Aritmetic operations](#ao)
++ [Type system](#ts)
++ [Signals](#sigs)
++ [CV and audio signal ranges](#CV)
++ [Channels](#ch)
++ [Synchronisation](#syn)
++ [Setting levels](#sl)
++ [Adding functions](#af)
++ [info.go and listing.go](#il)
++ [Hot tips](#ht)
++ [Performing with Synte](#ps)
++ [Editing running listings](#ed)
++ [Exported signals](#ex)
+
 The notation [a,b] is a closed interval, which means the numbers between a and b, including a and b.
 
 **List of operators**
@@ -738,7 +754,7 @@ Lists of operations may be composed into functions with multiple arguments.
 The function syntax is:  
 	`function [ " " operand [ "," operand ] [ "," operand ] ]` .  
 
-___
+---
 
 <a name="det"></a>
 
@@ -750,6 +766,7 @@ The language is intended to expand and suppliment the existing live-coding space
 
 Listings are asynchronous and will start immediately on submission to the sound engine. A `>sync` operation can be used to synchronise listings using `posc`, with any offset. 
 
+<a name="sp"></a>
 ## Sample Playback ◊  
 Any wav files placed in a folder named `wavs` will be loaded on startup. They need to be either 16, 24 or 32bit resolution and either stereo or mono PCM format files. You will need to adjust the frequency of playback for wavs with non-standard sample rates. The nominal playback frequency is given by the pre-defined constant `wavR` which you can use for normal playback like so:  
 >
@@ -783,11 +800,13 @@ By design only the first 4 seconds of any wav file will be loaded. Two reasons f
 
 Later on, the intention is to provide more flexibility in synchronising other necklaces to wav files using `l.wavname` signals. This has been partially implemented and would provide the possibility to sync to exact loop length samples. Likewise, you can use `r.wavname` in place of wavR. ◊  
 
+<a name="tl"></a>
 ## Tape loop ◊  
 Each listing has a tape loop available which is accessed by the `tape` operator. The tape loop is a rolling buffer of 1 second in length. The operand given sets the delay time of the intial tap. The loop can be additionally accessed by the tap operator, which will sum the new tap to its input. Multiple `tap` operators can be used. The use of multiple `tape` operators is undefined. Bear in mind that for modulating tap times (eg. for chorusing/detuning) only a small amount is required, and as time is inversely proportional to frequency this leads to large modulation times. For example `in 3hz, osc, sine, mul 30s, + 100ms, out t, ... tape t ...` An easier formulation is `in 3hz, osc, sine, mul 0.01, + 1, mul 100ms, out t, ... tape t ...`  
 
+<a name="ao"></a>
 ## Arithmetic operations
-An operand may be added in a listing of the form a/b or a\*b where a and b are valid numbers and the result is divison and multiplication respectively. For example: typing  
+An operand may be added in a listing of the form a/b or a*b where a and b are valid numbers and the result is divison and multiplication respectively. For example: typing  
 >
 	in 2/3  
 will result in  
@@ -795,6 +814,7 @@ will result in
 	in 0.666666666...  
 being added to the listing 
 
+<a name="ts"></a>
 ## Type system
 This is a fancy term for inputting numerical values with a unit of measurement. If you tell someone a duration you might say: "it will take three hours", you don't just say "it will take three". In a similar way Syntə expects to be told what the number you have input means. A number can be a frequency expressed in Hertz, a bpm (beats per minute), a time in seconds or milliseconds, or a decibel level (negative numbers reduce signal level, positive increases). For example:
 
@@ -820,16 +840,20 @@ Corresponding to: Hertz, Kilohertz, minutes, seconds, milliseconds, beats per mi
 
 In future this type system may be developed further to require a specific type for input to each operator, which will be converted on-the-fly. This will also enable the possibility of reducing the sample rate under heavy load, which has not been needed so far.  
 
+<a name="sigs"></a>
 ## Signals
 Signals are the way of passing values around outside of the main flow through the necklace. Signals which are named and not just numbers can be referred to as registers, because they *register* a value. Usually the initial value of a named signal is 0. If you want it to begin as 1, add ' to the name. So `a` becomes `'a`. Likewise you can use the double quotation mark " to have a default value of one half. If you want to be able to overwrite the value of a signal with `out` (more than once in a necklace), which is not normally possible, you can add ^ to the name. So `a` becomes `^a`. You can use both of these special symbols with a single signal, but the circumflex ^ must come first or it will be ignored.
 
+<a name="CV"></a>
 ## CV and audio signal ranges
 Varying numbers intended for output to the soundcard usually span the range [-1,+1]. CVs, or control voltages, which are used to control other parts of the signal chain and not produce sound directly typically span the range [0,1]. For instance the output of `ramp`, `saw` and `sine` which are intended to produce frequencies at audible rates (20 - 20,000Hz) all go between ±1, whereas `osc` which can be used to control a vca or the pitch of another oscillator spans between zero and 1. To make `osc` suitable for direct audio output you can use the cv2a function, which is exactly what `ramp` does. CV signals are generally slower and more rounded than audio signals. The `flip` function can be used to turn a CV upside-down, use `mul -1` to do the same for an audio signal (essentially what `saw` does).  
 
+<a name="ch"></a>
 ## Channels  
 Syntə produces the same audio on two channels (Left and Right) by default. Panning of a specific listing can be adjusted or modulated using the `pan` operator. The signal sent via `pan` is fed directly without any filtering - so smooth inputs are recommended. If in doubt, precede `pan` by `lpf 10hz`.  
 For those interested, the panning is facilitated by a mid-sides configuration internally. Each pan signal is passed though the limiter vca (the part that turns the sound down if too loud) but not through the limiter detection (the part that decides if the audio is too loud), thus the limiter may modulate the stereo width, but the stereo image should remain stable. As noted above, in the event you require full mono-compatibility it is best to avoid modulating the pan of any listing; however, static pans (eg. `in 1/2, pan 0`)should be ok.  
 
+<a name="syn"></a>
 ## Synchronisation    
 By default (and by design) when a listing is sent to the sound engine it starts immediately. The synchronisation operators `>sync` and `<sync` can be used to co-ordinate listings to play in time with one another. First, for a rhythmic element use the phase synchronised oscillator `posc` instead of osc. This contains a `<sync` operation which will reset the waveform when it receives a sync pulse. The `posc` operator requires a number betweeen 0 and 1 to offset the phase, you can use 0 to start with and experiment later. For reference 0.5 would result in a phase shift of 180°, 1 would be 360° etc. To send a sync pulse you can use `>sync` to synchronise all listings containing a `posc`. For `>sync` you can either simply:
 >
@@ -853,10 +877,12 @@ The synchronisation is somewhat rudementary, a world away from DAW/midi sequence
 UPDATE:
 A new synchronisation paradigm has been introduced for smoother DAW-like capabilities where required. There is a new built-in signal `sync` that can be used to send a varying waveform such as a ramp from `osc`. This can be received using `/b` which is similar to `posc`. `/b` takes two arguments - the first is the number of cycles in a given `sync` cycle, and the second is the phase offset of each. The output of `/b` is a ramp like `osc` which can be further shaped using eg. `flip, exp 5` or `trn 4`. The `b` in `/b` stands for bars or beats, the slash echoes a rising ramp waveform passed to `sync`. Synchronise listings using for example: `in 135bpm, / 8, osc, .out sync` and then something like `/b 8,0, ...` - where 8 is the number of beats in 2 bars of 4/4 time. The function `def` can be used instead to specify tempo and number of beats that the sync loop will span. ◊
 
+<a name="sl"></a>
 ## Setting levels
 
 The `level` operator is used to adjust the audio level of a running listing, like so: `in 0.5 level 2` which would set listing two to half the available level, whcih is -6dB. This level-setting listing may be deleted straightaway and the level will persist once set. Although intended for basic mixing of listings, you may modulate the level at rates up to 1200Hz. This is an arbitary limit set to reduce clicks produced by immediate large changes in volume, while still allowing frequency modulation. You need to use `.level` to end a necklace.
 
+<a name="af"></a>
 ## Adding functions
 If you find yourself reusing the same chunk of code multiple times, it is possible to define a named function which will instantiate that chunk of code. To begin, type `[` followed by the new name. Then type the listing as normal and at the end type `]` (no operand) which will complete the function add, the listing will then be restarted blank. This function won't be saved on exit but may be used as you wish during the current session. To permanently save a function which you feel will be useful in future type `: fon` before exiting and it will be saved to the 'functions.json' file in the folder on exit from Syntə. To go back to ephemeral functions (useful for experimentation) type `: foff`.  
 You may overwrite functions by typing in the same name.  
@@ -864,6 +890,7 @@ N.B. No signals are exported from inside funcions except `tempo`, `pitch, and `g
 The ability to make functions like this makes the language *extensible*, which means you are able to extend the language beyond what is written in this document. One of the project aims is to build up a library of abstractions in this way to make performance easier for beginners. However there is a limit to this, as just typing 'music' and stopping there would be quite boring!  
 An *abstraction* means wrapping up a bit of code into something simple to make it easier to use, for example the term 'global apartheid' is an abstraction of a system and history that involves many many processes, interconnections, organisations, trade-misinvoicing etc.
 
+<a name="il"></a>
 ## info.go and listing.go
 `info.go` is intended to run alongside Syntə to display useful information and error messages. The layout is as follows:
 ```
@@ -891,6 +918,7 @@ Syntə info *press enter to quit*                0s      <-- elapsed running tim
 Info display won't display the same message sent more than once in succession.  
 `listing.go` displays the currently running necklaces. Any that are muted will show in italics. In verbose mode the functions within a listing are 'unrolled', that is to say they are shown in terms of their atomic operations.
 
+<a name="ht"></a>
 ## Hot tips
 
 + use `slew 150hz` or `lpf 150hz` to smoothen a signal used for modulating volume with `mul`
@@ -905,6 +933,7 @@ Info display won't display the same message sent more than once in succession.
 + unsure which value/number to use? type `mousex` or `mousey` and experiment. Once you have settled on something that you can edit the relevant file in the `.temp/` directory and replace the mouse value with a number directly
 + other tips tba... ◊  
 
+<a name="ps"></a>
 ## Performing with Syntə
 To prepare the audio system:
 1. Set up the equipment and verify sound from Syntə is reaching the speakers using `in 440hz, osc, sine, mul 0.1, out dac`
@@ -925,10 +954,12 @@ To specifically test the bass level and evenness try:
 
 If the bass level fluctuates a lot at different frequencies and at different listing positions you should consider some using some bass trapping. This is because sound reflections between the walls will interfere and cancel out at low frequencies.
 
+<a name="ed"></a>
 ## Editing running listings
 All currently running listings can be found in the `.temp/` folder in the root directory (main project folder). The name of the file will be the index (a non-negative integer) with the file extension .syt, eg. `0.syt` , this file can be opened in any text editor. Once you have saved your edits the listing will be reloaded automatically on saving. It is best to do this with nothing typed in main Syntə input, as reload will be appended to current input and partially entered operations will cause confusion for the next line input once reload complete.  
 A TUI library or headless mode may replace this feature in future. No files are purged from `.temp/` on exit, so will remain indefinitely until overwritten one-by-one when each new listing is launched. ◊  
 
+<a name="ex"></a>
 ## Exported signals
 Up to 12 signals may be exported for input to other listings. Indicate this by capitalising the initial letter, eg. `out Env1`. This can then be used like any other signal, in the same manner as `tempo`, `pitch` and `grid`. These exported signals are daisy-chained in the same manner, so will propagate between listings in ascending order. This means that the signal will correspond to the preceding `out` in another listing.
 

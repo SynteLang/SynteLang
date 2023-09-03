@@ -893,7 +893,6 @@ func setupSoundCard(file string) (sc soundcard, success bool) {
 	if e(rr) {
 		p(rr)
 		p("soundcard not available, shutting down...")
-		time.Sleep(3 * time.Second)
 		return sc, not
 	}
 
@@ -1009,8 +1008,10 @@ func readTokenPair(t *systemState) (reload int, ext bool, result int) {
 		r := t.clr("only functions can have multiple operands")
 		return reload, ext, r
 	}
-	pass := t.wmap[t.operand] && t.operator == "wav"          // wavs can start with a number
-	pass = pass || t.operator == "ls" || t.operator == "load" // to allow dotfiles
+	pass := t.wmap[t.operand] && t.operator == "wav"
+	switch t.operator { // operand can start with a number
+	case "ls", "load", "//": pass = true
+	}
 	if !strings.ContainsAny(s[:1], "+-.0123456789") || pass || t.isFunction {
 		return reload, ext, nextOperation
 	}
@@ -1614,7 +1615,8 @@ func SoundEngine(file *os.File, bits int) {
 			msg("%ssample rate is now:%s %3gkHz", italic, reset, SampleRate/1000)
 		default:
 			msg("%v", p) // report runtime error to infoDisplay
-			/*var buf [4096]byte
+			//*
+			var buf [4096]byte
 			n := runtime.Stack(buf[:], false)
 			msg("%s", buf[:n]) // print stack trace to infoDisplay*/
 			if current > len(transfer.Listing)-1 {
@@ -1856,7 +1858,7 @@ func SoundEngine(file *os.File, bits int) {
 					r = (((c4*z+c3)*z+c2)*z+c1)*z + c0
 					tf[i] = (tf[i] + r) * 0.5 // roll off the top end @ 7640Hz
 					r = tf[i]
-				case 19:
+				case 19: // "--"
 					r = sigs[i][o.N] - r
 				case 20: // "tap"
 					tl := SampleRate * TAPE_LENGTH
@@ -2154,13 +2156,13 @@ func SoundEngine(file *os.File, bits int) {
 		if exit {
 			dac *= env // fade out
 			sides *= env
-			env -= fade
+			env -= fade // linear fade-out (perceived as logarithmic)
 			if env < 0 {
 				break // equivalent to: return
 			}
 		}
 		dither = no.ise()
-		dither += no.ise() // reliant on there being no dc bias 
+		dither += no.ise()
 		dither *= 0.5
 		dac *= hroom
 		dac += dither / convFactor       // dither dac value ±1 from xorshift lfsr

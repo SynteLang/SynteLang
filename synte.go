@@ -129,7 +129,7 @@ var (
 
 var (
 	record bool
-	wavHeader = []byte{82, 73, 70, 70, 36, 228, 87, 0, 87, 65, 86, 69, 102, 109, 116, 32, 16, 0, 0, 0, 1, 0, 2, 0, 128, 187, 0, 0, 0, 238, 2, 0, 4, 0, 16, 0, 100, 97, 116, 97, 0, 228, 87, 0}
+	wavHeader = []byte{82, 73, 70, 70, 36, 228, 87, 0, 87, 65, 86, 69, 102, 109, 116, 32, 16, 0, 0, 0, 1, 0, 2, 0, 128, 187, 0, 0, 0, 238, 2, 0, 4, 0, 16, 0, 100, 97, 116, 97, 0, 228, 87, 0} // 16bit signed PCM 48kHz
 	wavFile *os.File
 )
 
@@ -203,6 +203,7 @@ type systemState struct {
 	unsolo       muteSlice
 	listingState
 	hasOperand map[string]bool
+	sc         soundcard
 }
 
 type processor func(*systemState) int
@@ -455,7 +456,7 @@ func main() {
 	defer sc.file.Close()
 	SampleRate, convFactor = sc.sampleRate, sc.convFactor // change later
 
-	t := systemState{} // s yorks
+	t := systemState{sc: sc} // s yorks
 
 	go infoDisplay()
 	go SoundEngine(sc.file, sc.format)
@@ -3010,12 +3011,24 @@ func isUppercaseInitial(operand string) bool {
 }
 
 func recordWav(s *systemState) int {
-	/*if sc.sampleRate != 48000 || sc.format != 16 { // need to add soundcard to systemstate
+	if s.sc.sampleRate != 48000 || s.sc.format != 16 {
 		msg("can only record at 16bit 48kHz")
 		return startNewOperation
-	}*/
-	f := s.operand + ".wav" // place in specific dir?
-	var rr error
+	}
+	dir := "./audio-recordings/"
+	f := s.operand + ".wav"
+	files, rr := os.ReadDir(dir)
+	if e(rr) {
+		msg("unable to access '%s': %s", dir, rr)
+		return startNewOperation
+	}
+	for _, file := range files {
+		if file.Name() == f {
+			msg("file '%s' in %s already exists", f, dir)
+			return startNewOperation
+		}
+	}
+	f = dir + f
 	wavFile, rr = os.Create(f)
 	if e(rr) {
 		msg("%v", rr)

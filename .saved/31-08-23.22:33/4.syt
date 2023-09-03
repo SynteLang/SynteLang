@@ -1,0 +1,14 @@
+in 1.5hz
+sino
+mul 0.003
++ 1
+mul 73ms
+out t
+all
++ c
+/ 1.2
+tape t
+lpf 3khz
+out c
+mul -8db
+out dac

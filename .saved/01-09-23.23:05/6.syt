@@ -1,0 +1,25 @@
+>sync
+in 135bpm
+* 4
+syq 0
+out grid
+in 135bpm
+/ 4
+* 10
+syq 0.75
+s/h grid
+dirac
+down 100ms
+exp 5
+- 1/32
+lpf 1khz
+out vca
+in 0
+all
+mul vca
+hpf 2.5khz
+hpf 2.5khz
+hpf 3.5khz
+lpf 2.5khz
+mul 6db
+out dac

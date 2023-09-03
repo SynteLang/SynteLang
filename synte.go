@@ -437,7 +437,7 @@ func main() {
 		}
 		defer pprof.StopCPUProfile()
 	}
-	save([]listing{{operation{Op: advisory}}}, "displaylisting.json")
+	saveJson([]listing{{operation{Op: advisory}}}, "displaylisting.json")
 
 	sc, success := setupSoundCard("/dev/dsp")
 	if !success {
@@ -838,10 +838,10 @@ start:
 
 		timestamp := time.Now().Format("02-01-06.15:04")
 		f := "recordings/listing." + timestamp + ".json" // shadowed
-		if !save(t.newListing, f) {                      // save as plain text instead?
+		if !saveJson(t.newListing, f) {                      // save as plain text instead?
 			msg("%slisting not recorded, check 'recordings/' directory exists%s", italic, reset)
 		}
-		if !save(*t.code, "displaylisting.json") {
+		if !saveJson(*t.code, "displaylisting.json") {
 			msg("%slisting display not updated, check file %s'displaylisting.json'%s exists%s",
 				italic, reset, italic, reset)
 		}
@@ -1471,7 +1471,7 @@ func infoDisplay() {
 	s := 1
 	display.Info = "clear"
 	for {
-		if !save(display, file) {
+		if !saveJson(display, file) {
 			pf("%sinfo display not updated, check file %s%s%s exists%s\n",
 				italic, reset, file, italic, reset)
 			time.Sleep(2 * time.Second)
@@ -1483,7 +1483,7 @@ func infoDisplay() {
 		case <-infoff:
 			display.Info = sf("%sSyntə closed%s", italic, reset)
 			display.On = not // stops timer in info display
-			save(display, file)
+			saveJson(display, file)
 			return
 		default: // passthrough
 		}
@@ -1650,9 +1650,9 @@ func SoundEngine(file *os.File, bits int) {
 		stacks[i] = stack
 	}
 	wavs := make([][]float64, len(transfer.Wavs), MAX_WAVS)
-	copy(listings, transfer.Listing)
-	copy(sigs, transfer.Signals)
-	copy(wavs, transfer.Wavs)
+	copy(listings, transfer.Listing) // TODO: these don't properly de-reference because a slice of slices,
+	copy(sigs, transfer.Signals)     // listings need to be copied individually
+	copy(wavs, transfer.Wavs)        // for now it's not a problem, or the copying is not even necessary 
 	tapes := make([][]float64, len(transfer.Listing), 26)
 	for i := range tapes { // i is shadowed
 		tapes[i] = make([]float64, TLlen)
@@ -2338,11 +2338,18 @@ func load(data any, f string) {
 	}
 }
 
-func save(data any, f string) bool {
+func saveJson(data any, f string) bool {
 	j, rr := json.MarshalIndent(data, "", "\t")
-	rr2 := os.WriteFile(f, j, 0644)
-	if e(rr) || e(rr2) {
-		msg("Error saving '%s': %v %v", f, rr, rr2)
+	if e(rr) {
+		msg("Error encoding '%s': %v", f, rr) 
+		return false
+	}
+	return save(j, f)
+}
+
+func save(data []byte, file string) bool {
+	if rr := os.WriteFile(file, data, 0644); e(rr) {
+		msg("Error saving '%s': %v", file, rr)
 		return false
 	}
 	return true
@@ -2498,7 +2505,7 @@ func endFunctionDefine(t *systemState) int {
 	t.funcs[name] = fn{Body: t.newListing[t.st+1:]}
 	msg("%sfunction %s%s%s ready%s.", italic, reset, name, italic, reset)
 	if t.funcsave {
-		if !save(t.funcs, "functions.json") {
+		if !saveJson(t.funcs, "functions.json") {
 			msg("function not saved!")
 		} else {
 			msg("%sfunction saved%s", italic, reset)
@@ -2721,10 +2728,10 @@ func modeSet(s *systemState) int {
 		if started {
 			<-stop // received when shutdown complete
 		}
-		save([]listing{{operation{Op: advisory}}}, "displaylisting.json")
+		saveJson([]listing{{operation{Op: advisory}}}, "displaylisting.json")
 		p("Stopped")
 		close(infoff)
-		if s.funcsave && !save(s.funcs, "functions.json") {
+		if s.funcsave && !saveJson(s.funcs, "functions.json") {
 			msg("functions not saved!")
 			return startNewListing
 		}
@@ -2738,7 +2745,7 @@ func modeSet(s *systemState) int {
 	case "fon":
 		s.funcsave = yes
 		display.Mode = "on"
-		if !save(s.funcs, "functions.json") {
+		if !saveJson(s.funcs, "functions.json") {
 			msg("functions not saved!")
 			return startNewOperation
 		}
@@ -2764,7 +2771,7 @@ func modeSet(s *systemState) int {
 			s.code = &s.dispListings
 		}
 		display.Verbose = !display.Verbose
-		if !save(*s.code, "displaylisting.json") {
+		if !saveJson(*s.code, "displaylisting.json") {
 			msg("%slisting display not updated, check %s'displaylisting.json'%s exists%s",
 				italic, reset, italic, reset)
 		}
@@ -2824,7 +2831,7 @@ func enactDelete(s *systemState) int {
 	s.dispListings[n] = listing{operation{Op: "deleted"}}
 	transmit <- yes
 	<-accepted
-	if !save(*(s.code), "displaylisting.json") {
+	if !saveJson(*(s.code), "displaylisting.json") {
 		msg("%slisting display not updated, check %s'displaylisting.json'%s exists%s",
 			italic, reset, italic, reset)
 	}

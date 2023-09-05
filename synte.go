@@ -113,7 +113,7 @@ const (
 	EXPORTED_LIMIT = 12
 	NOISE_FREQ     = 0.0625 // 3kHz @ 48kHz Sample rate
 	FDOUT          = 1e-4
-	MIN_FADE       = 75e-3 // 175ms
+	MIN_FADE       = 125e-3 // 125ms
 	MAX_FADE       = 120    // 120s
 	MIN_RELEASE    = 50e-3  // 50ms
 	MAX_RELEASE    = 50     // 50s
@@ -161,7 +161,7 @@ type listing []operation
 type createListing struct {
 	newListing  listing
 	dispListing listing
-	// newSignals  []float64
+	newSignals  []float64
 }
 
 type number struct {
@@ -577,7 +577,6 @@ func main() {
 		reservedSignalNames = append(reservedSignalNames, sf("***%d", i+lenReserved)) // placeholder
 	}
 	lenExported := 0
-	var newSignals []float64 // local signals
 	t.funcs = make(map[string]fn)
 	load(&t.funcs, "functions.json")
 	t.hasOperand = make(map[string]bool, len(operators)+len(t.funcs))
@@ -603,7 +602,7 @@ func main() {
 start:
 	for { // main loop
 		t.listingState = listingState{}
-		newSignals = make([]float64, len(reservedSignalNames), 30) // capacity is nominal
+		t.newSignals = make([]float64, len(reservedSignalNames), 30) // capacity is nominal
 		// signals map with predefined constants, mutable
 		signals := map[string]float64{ // reset and add predefined signals
 			"ln2":      Ln2,
@@ -792,9 +791,9 @@ start:
 			}
 		}
 
-		i := len(newSignals)        // to ignore reserved signals
+		i := len(t.newSignals)        // to ignore reserved signals
 		for k, v := range signals { // assign signals to slice from map
-			newSignals = append(newSignals, v)
+			t.newSignals = append(t.newSignals, v)
 			for ii, o := range t.newListing {
 				if o.Opd == k {
 					o.N = i
@@ -819,7 +818,7 @@ start:
 		if reload < 0 || reload > len(transfer.Listing)-1 {
 			t.dispListings = append(t.dispListings, t.dispListing)
 			transfer.Listing = append(transfer.Listing, t.newListing)
-			transfer.Signals = append(transfer.Signals, newSignals)
+			transfer.Signals = append(transfer.Signals, t.newSignals)
 			if len(mutes) < len(transfer.Listing) { // not if restarting
 				mutes = append(mutes, 1)
 				t.unsolo = append(t.unsolo, 1)
@@ -832,7 +831,7 @@ start:
 		} else { // reloaded listing isn't saved to '.temp/'
 			t.dispListings[reload] = t.dispListing
 			transfer.Listing[reload] = t.newListing
-			transfer.Signals[reload] = newSignals
+			transfer.Signals[reload] = t.newSignals
 			transmit <- yes
 			<-accepted
 		}
@@ -1596,8 +1595,8 @@ func SoundEngine(file *os.File, bits int) {
 		lastTime time.Time
 		rates    [RATE]time.Duration
 		t        time.Duration
-		s        float64 = 1 // sync=0
 
+		s        float64 = 1 // sync=0
 		mx, my float64 = 1, 1 // mouse smooth intermediates
 		hpf, x float64        // DC-blocking high pass filter
 		hpf2560, x2560,
@@ -1613,8 +1612,7 @@ func SoundEngine(file *os.File, bits int) {
 		current       int
 		p = 1.0
 		endPause int
-		// buffer up to 50ms of samples (@ 48kHz), introduces latency
-		samples = make(chan stereoPair, 2400)
+		samples = make(chan stereoPair, 2400) // buffer up to 50ms of samples (@ 48kHz), introduces latency
 	)
 	no *= 77777777777 // force overflow
 	defer func() {    // fail gracefully

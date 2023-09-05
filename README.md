@@ -898,7 +898,7 @@ An *abstraction* means wrapping up a bit of code into something simple to make i
 Syntə info *press enter to quit*                0s      <-- elapsed running time in seconds. Also, a yellow dot indicates a sync event
 ╭───────────────────────────────────────────────────╮
 
-                                    Load: 0.00          <-- If the sound engine is overloaded, the sound engine will restart without warning
+                                    Load: 0.00          <-- If the sound engine is overloaded, the sound quality will degrade
 
 
 
@@ -977,7 +977,7 @@ The limiter reduces the level of audio above a peak value of 1 to avoid the poss
 The density distribution of pink noise is a good general approximation to expected frequency levels in audio (*Barrow, 1995*). The `mix` function also uses this as a guiding principle in setting a sensible level. Some adjustment may be required; however, the limiter will always kick in if internal levels are exceeded.  
 Because of the frequency dependent nature of the limiter detection, gain reduction may occur before the info display shows a high VU level. This is normal and you can adjust listings via the `level` operator to prevent higher frequencies from dominating the playback.  
 Between the limiter and the clipping stage before conversion, what is known as triangular dither is applied to the signal. This is a tiny amount of noise to mask rounding errors, but is probably overkill. Before the dither any envelopes associated with pausing or exiting are applied. These reduce the chances of pops or clicks.  
-The whole main loop of the sound engine has a timer to produce the 'load' value that shows how much work it is doing to create each sample for the soundcard. See info display section above. If enough listings are added and the sound engine is unable to perform all calculations in time before the next sample is due, glitches or dropouts in the output can occur. In order to avoid this if a high load is detected the sample rate will be halved automatically and the sound engine restarted. The sample rate won't be halved below 11025hz. In future if type conversions are added back in as part of making the language strongly typed, the sample rate will be able to dynamically adjust without restarting. The sound engine will also restart if a runtime or other error occurs and in this case will remove the previously added listing, as this is most likely to have caused the error. The listing will still be available in the `.temp/` directory to be amended and reloaded as desired.
+The whole main loop of the sound engine has a timer to produce the 'load' value that shows how much work it is doing to create each sample for the soundcard. See info display section above. If enough listings are added and the sound engine is unable to perform all calculations in time before the next sample is due, the sound quality and pitch accuracy with degrade. In future if type conversions are added back in as part of making the language strongly typed, the sample rate will be able to dynamically adjust to avoid overloading. The sound engine will also restart if a runtime or other error occurs and in this case will remove the previously added listing, as this is most likely to have caused the error. The listing will still be available in the `.temp/` directory to be amended and reloaded as desired.
 
 ## Synthesis and levels  
 

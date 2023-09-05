@@ -341,7 +341,6 @@ var (
 	mutes   muteSlice // move to transfer struct?
 	level   []float64 // move to transfer struct?
 	reload  = -1
-	//muteSkip,
 	ds,
 	rs bool // root-sync between running instances
 	daisyChains []int // list of exported signals to be daisy-chained
@@ -1759,11 +1758,6 @@ func SoundEngine(file *os.File, bits int) {
 			}
 			m[i] = m[i] + (p*mutes[i]-m[i])*0.0013   // anti-click filter @ ~10hz
 			lv[i] = lv[i] + (level[i]-lv[i])*0.125 // @ 1091hz
-			// skip muted/deleted listing
-			/*if (muteSkip && mutes[i] == 0 && m[i] < 1e-6) || list[0].Opn == 31 {
-				info <- sf("skipped: %d", i)
-				continue
-			}*/
 			// mouse values
 			sigs[i][4] = mx
 			sigs[i][5] = my
@@ -2790,13 +2784,6 @@ func modeSet(s *systemState) int {
 		msg("Live: %v", stats.Mallocs-stats.Frees)
 	case "mc": // mouse curve, exp or lin
 		mc = !mc
-	/*case "muff": // Mute Off
-		muteSkip = !muteSkip
-		s := "no"
-		if muteSkip {
-			s = "yes"
-		}
-		msg("%smute skip:%s %v", italic, reset, s)*/
 	case "ds":
 		ds = yes // not intended to be invoked while paused
 	case "rs": // root sync

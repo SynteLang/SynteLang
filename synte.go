@@ -341,13 +341,12 @@ var (
 	mutes   muteSlice // move to transfer struct?
 	level   []float64 // move to transfer struct?
 	reload  = -1
-	muteSkip,
+	//muteSkip,
 	ds,
 	rs bool // root-sync between running instances
 	daisyChains []int // list of exported signals to be daisy-chained
 	fade        = 1/(MIN_FADE*SAMPLE_RATE) //Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
 	release     = Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
-	DS          = 1                                 // down-sample amount
 	ct          = 8.0                               // individual listing clip threshold
 	gain        = 1.0
 )
@@ -630,7 +629,7 @@ start:
 		for i, w := range wavSlice { // add to signals map, with current sample rate
 			signals[w.Name] = float64(i)
 			signals["l."+w.Name] = float64(len(w.Data)-1) / (WAV_TIME * SampleRate)
-			signals["r."+w.Name] = float64(DS) / float64(len(w.Data))
+			signals["r."+w.Name] = 1.0 / float64(len(w.Data))
 		}
 		TLlen = int(SampleRate * TAPE_LENGTH) // necessary?
 		t.out = make(map[string]struct{}, 30) // to check for multiple outs to same signal name
@@ -1539,6 +1538,11 @@ func rootSync() bool {
 	return true
 }
 
+type stereoPair struct {
+	left,
+	right float64
+}
+
 // The Sound Engine does the bare minimum to generate audio
 // It is freewheeling, it won't block on the action of any other goroutine, only on IO, namely writing to soundcard
 // The latency and jitter of the audio output is entirely dependent on the soundcard and its OS driver,
@@ -1547,9 +1551,10 @@ func rootSync() bool {
 // The data transfer structures need a good clean up
 // Some work has been done on profiling, beyond design choices such as using slices instead of maps
 // Using floats is probably somewhat profligate, later on this may be converted to int type which would provide ample dynamic range
+// Now with glitch protection! IO handled in separate go routine
 func SoundEngine(file *os.File, bits int) {
 	defer close(stop)
-	w := bufio.NewWriterSize(file, 256)
+	w := bufio.NewWriterSize(file, 256) // need to establish whether buffering is necessary here
 	defer w.Flush()
 	//w := file // unbuffered alternative
 	output := func(w io.Writer, f float64) {
@@ -1576,17 +1581,13 @@ func SoundEngine(file *os.File, bits int) {
 
 	const (
 		Tau        = 2 * Pi
-		RATE       = 2 << 12
-		overload   = "Sound Engine overloaded"
-		recovering = "Sound Engine recovering"
-		rateLimit  = "At sample rate limit"
+		RATE       = 2 << 14 // lenient
 	)
 
 	var (
 		no     noise   = noise(time.Now().UnixNano())
 		l, h   float64 = 1, 2 // limiter, hold
 		dac    float64        // output
-		dac0   float64        // formatted output
 		env    float64 = 1    // for exit envelope
 		peak   float64        // vu meter
 		dither float64
@@ -1608,24 +1609,21 @@ func SoundEngine(file *os.File, bits int) {
 		hroom                 = (convFactor - 1.0) / convFactor // headroom for positive dither
 		c, mixF       float64 = 4, 4                            // mix factor
 		pd            int
-		nyfL, nyfR    float64                                    // nyquist filtering
-		nyfC          float64 = 1 / (1 + 1/(Tau*2e4/SampleRate)) // coefficient, filter needs cleaner implementation
-		L, R, sides   float64
+		sides   float64
 		setmixDefault = 800 / SampleRate
 		current       int
 		p = 1.0
 		endPause int
+		// buffer up to 50ms of samples (@ 48kHz), introduces latency
+		samples = make(chan stereoPair, 2400)
 	)
 	no *= 77777777777 // force overflow
 	defer func() {    // fail gracefully
 		switch p := recover(); p { // p is shadowed
 		case nil:
 			return // exit normally
-		case overload, recovering:
-			msg("%v", p)
-			msg("%ssample rate is now:%s %3gkHz", italic, reset, SampleRate/1000)
 		default:
-			msg("%v", p) // report runtime error to infoDisplay
+			msg("oops - %v", p) // report runtime error to infoDisplay
 			//*
 			var buf [4096]byte
 			n := runtime.Stack(buf[:], false)
@@ -1640,15 +1638,6 @@ func SoundEngine(file *os.File, bits int) {
 			transfer.Listing[current] = listing{operation{Op: "deleted", Opn: 31}} // delete listing
 			transfer.Signals[current][0] = 0                                       // silence listing
 			info <- sf("listing deleted: %d", current)
-		}
-		fade := Pow(FDOUT, 1/(MIN_FADE*SampleRate*float64(DS)))
-		for {
-			dac0 *= fade // lpf
-			output(w, dac0) // left
-			output(w, dac0) // right
-			if Abs(dac0) < FDOUT {
-				break
-			}
 		}
 	}()
 	stack := make([]float64, 0, 4)
@@ -1692,6 +1681,21 @@ func SoundEngine(file *os.File, bits int) {
 	z := make([][N]complex128, len(transfer.Listing), len(transfer.Listing)+33)
 	zf := make([][N]complex128, len(transfer.Listing), len(transfer.Listing)+33)
 	ffrz := make([]bool, len(transfer.Listing), len(transfer.Listing)+33)
+	go func() {
+		lpf := stereoPair{}
+		for env > 0 || n%1024 != 0 { // if samples channel runs empty insert zeros instead and filter heavily
+			select {
+			case s := <-samples:
+				lpf.stereoLpf(s, 0.5)
+			default:
+				lpf.stereoLpf(stereoPair{}, 0.0013)
+			}
+			L := clip(lpf.left) * convFactor
+			R := clip(lpf.right) * convFactor
+			output(w, L)
+			output(w, R)
+		}
+	}()
 
 	lastTime = time.Now()
 	for {
@@ -1738,10 +1742,6 @@ func SoundEngine(file *os.File, bits int) {
 				break
 			}
 			p = 1
-			for i := 0; i < 2400; i++ { // lead-in to prevent clicks
-				output(w, nyfL)
-				output(w, nyfR)
-			}
 			lastTime = time.Now()
 		}
 
@@ -1760,9 +1760,10 @@ func SoundEngine(file *os.File, bits int) {
 			m[i] = m[i] + (p*mutes[i]-m[i])*0.0013   // anti-click filter @ ~10hz
 			lv[i] = lv[i] + (level[i]-lv[i])*0.125 // @ 1091hz
 			// skip muted/deleted listing
-			if (muteSkip && mutes[i] == 0 && m[i] < 1e-6) || list[0].Opn == 31 {
+			/*if (muteSkip && mutes[i] == 0 && m[i] < 1e-6) || list[0].Opn == 31 {
+				info <- sf("skipped: %d", i)
 				continue
-			}
+			}*/
 			// mouse values
 			sigs[i][4] = mx
 			sigs[i][5] = my
@@ -2186,55 +2187,27 @@ func SoundEngine(file *os.File, bits int) {
 			peak = 0
 		}
 		sides = Max(-0.5, Min(0.5, sides))
-		L = clip(dac+sides) * convFactor // clip will display info
-		R = clip(dac-sides) * convFactor
-		t = time.Since(lastTime)
-		for i := 0; i < DS; i++ { // write sample(s) to soundcard
-			nyfL = nyfL + nyfC*(L-nyfL)
-			nyfR = nyfR + nyfC*(R-nyfR)
-			output(w, nyfL) // left
-			output(w, nyfR) // right, remove if stereo not available
-			if record {
-				binary.Write(wavFile, binary.LittleEndian, int16(nyfL))
-				binary.Write(wavFile, binary.LittleEndian, int16(nyfR))
-			}
+		if record {
+			L := Max(-1, Min(1, dac+sides)) * convFactor // clip will display info
+			R := Max(-1, Min(1, dac-sides)) * convFactor // clip will display info
+			binary.Write(wavFile, binary.LittleEndian, int16(L))
+			binary.Write(wavFile, binary.LittleEndian, int16(R))
 		}
+		t = time.Since(lastTime)
+		samples <- stereoPair{left: dac+sides, right: dac-sides}
 		lastTime = time.Now()
 		rate += t
 		rates[n%RATE] = t // rolling average buffer
 		rate -= rates[(n+1)%RATE]
-		if n%RATE == 0 && n > RATE<<2 { // don't restart in first four time frames
+		if n%RATE == 0 {
 			display.Load = rate / RATE
-			switch {
-			case (float64(display.Load) > 1e9/SampleRate || ds) && SampleRate > 22050:
-				ds = not
-				DS <<= 1
-				SampleRate /= 2
-				display.SR = SampleRate
-				fade = 1/(MIN_FADE*SAMPLE_RATE) //Pow(FDOUT, 1/(MIN_FADE*SampleRate))
-				release = Pow(8000, -1.0/(0.5*SampleRate)) // 500ms
-				sineTab = make([]float64, int(SampleRate))
-				calcSineTab()
-				panic(overload)
-			case float64(display.Load) > 1e9/SampleRate:
-				panic(rateLimit)
-			case DS > 1 && float64(display.Load) < 33e8/SampleRate && n > 100000: // holdoff for ~4secs x DS
-				DS >>= 1
-				SampleRate *= 2
-				display.SR = SampleRate
-				fade = 1/(MIN_FADE*SAMPLE_RATE) //Pow(FDOUT, 1/(MIN_FADE*SampleRate))
-				release = Pow(8000, -1.0/(0.5*SampleRate)) // 500ms
-				sineTab = make([]float64, int(SampleRate))
-				calcSineTab()
-				panic(recovering)
-			}
 		}
-		dac0 = dac // dac0 holds output value for use when restarting
 		dac = 0
 		sides = 0
 		n++
 	}
 }
+
 func clip(in float64) float64 { // hard clip
 	if in > 1 {
 		in = 1
@@ -2244,6 +2217,11 @@ func clip(in float64) float64 { // hard clip
 		display.Clip = yes
 	}
 	return in
+}
+
+func (y *stereoPair) stereoLpf(x stereoPair, coeff float64) {
+	(*y).left += (x.left-(*y).left)*coeff
+	(*y).right += (x.right-(*y).right)*coeff
 }
 
 var sineTab = make([]float64, int(SampleRate))
@@ -2812,13 +2790,13 @@ func modeSet(s *systemState) int {
 		msg("Live: %v", stats.Mallocs-stats.Frees)
 	case "mc": // mouse curve, exp or lin
 		mc = !mc
-	case "muff": // Mute Off
+	/*case "muff": // Mute Off
 		muteSkip = !muteSkip
 		s := "no"
 		if muteSkip {
 			s = "yes"
 		}
-		msg("%smute skip:%s %v", italic, reset, s)
+		msg("%smute skip:%s %v", italic, reset, s)*/
 	case "ds":
 		ds = yes // not intended to be invoked while paused
 	case "rs": // root sync

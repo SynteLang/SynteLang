@@ -68,7 +68,8 @@ func main() {
 	var started bool
 	var exit bool
 	stop := make(chan struct{})
-	load := 0.0
+	load := ""
+	overload := 0
 
 	go func() { // anonymous to include above variables in scope
 		n := 0
@@ -110,17 +111,20 @@ func main() {
 
 			loadColour := ""
 			l := float64(display.Load) / (1e9 / display.SR)
-			if display.On && n%10 == 0 && !display.Paused {
-				//load = (load*24 + l) / 25
+			if started && overload == 0 {
+				load = fmt.Sprintf("%0.2f", l)
 			}
-			if 1.2*load < l || load > l*1.2 {
-				//load = l
+			if overload > 0 {
+				overload--
 			}
-			load = l
-			if load > 0.9 {
+			if l > 1 {
+				load = "OVLD"
+				overload = 50
+			}
+			if l > 0.9 {
 				loadColour = red
 			}
-			L := fmt.Sprintf("%s%0.2f%s", loadColour, load, reset)
+			L := loadColour + load + reset
 
 			if display.Info != messages[10].Content {
 				m := message{display.Info, time.Now()}

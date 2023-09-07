@@ -4,7 +4,7 @@
 	Press enter to exit
 */
 
-package main
+package listings
 
 import (
 	"encoding/json"

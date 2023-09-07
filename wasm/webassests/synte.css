@@ -13,12 +13,16 @@ body {
 	background-color: lightblue;
 	font-size: 14px;
 	margin: 0;
-	overflow: scroll;
 }
 
 #wrapper {
 	height: 100vh;
-	width: 100vw;
+	max-width: 100vw;
+	overflow: hidden
+}
+
+#header, #main, #listings {
+	max-width: 98vw;
 }
 
 #header, #main {
@@ -53,21 +57,28 @@ a:hover {
 }
 
 #main {
-	height:20em;
+	position: relative;
+	height: 50vmax;
+	max-height: calc(100% - 4em);
 	float: left;
 	clear: both;
 	padding: 0 0 1em 0;
 }
 
-textarea, #mousey {
-	height: 100%;
+#text, #mousey {
+	height: calc(100% - 2em);
+}
+
+#text {
+	float:left;
+	width: 45%;
+	clear: both;
 }
 
 textarea {
+	height: 100%;
+	width: 100%;
 	color: yellow;
-	clear: both;
-	float:left;
-	width: 45%;
 	overflow: scroll;
 	background-color: dimgray;
 	border-radius: 0.5em;
@@ -75,7 +86,6 @@ textarea {
 
 #mousey {
 	float:right;
-	position: relative;
 	width: 53%;
 }
 
@@ -86,17 +96,18 @@ textarea {
 
 #info {
 	bottom: 2em;
-	padding: 0 1ch;
+	padding: 1em 1ch;
 }
 
 #telem {
-	height: 1em;
 	bottom: 0;
+	height: 1em;
+	margin: 1em;
 	padding: 0 1ch;
 }
 
 span, button {
-	padding-right: 1ch;
+	margin-right: 1ch;
 }
 
 button {
@@ -106,10 +117,10 @@ button {
 }
 
 #listings {
-	min-width: var(--overall-width);
+	min-width: calc( var(--overall-width) * 0.6);
 	overflow: auto;
-	min-height: 50%;
-	margin: 0.5em;
+	min-height: calc(50% - 6em);
 	padding: 1em;
 	border: 1px solid gray;
+	overflow: scroll;
 }

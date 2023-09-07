@@ -107,18 +107,17 @@ textarea {
 #telem {
 	bottom: 0;
 	height: 1em;
-	margin: 1em;
+	margin: 1em 0;
 	padding: 0 1ch;
+	border: 1px solid gray;
 }
 
-span, button {
-	margin-right: 1ch;
-}
-
-button {
+#paused {
 	color: green;
-	background-color: lightgrey;
-	border-radius: 0.35em;
+}
+
+#my {
+	color: lightgrey;
 }
 
 #listings {
@@ -127,6 +126,6 @@ button {
 	min-height: calc(100vmin - 5em);
 	max-height: 40vh;
 	padding: 1em;
-	border: 1px solid red;
+	border: 1px solid grey;
 	overflow: scroll;
 }

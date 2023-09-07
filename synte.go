@@ -43,13 +43,14 @@
 // Go code in this file not suitable for reference or didactic purposes
 // This is a prototype
 
-// There are 6 goroutines (aside from main), they are:
+// There are 7 goroutines (aside from main), they are:
 // go SoundEngine(), blocks on write to soundcard input buffer, shutdown with ": exit"
 // go infoDisplay(), timed slowly at > 20ms, explicitly returned from on exit
 // go mouseRead(), blocks on mouse input, rechecks approx 20 samples later (at 48kHz)
 // go func(), anonymous restart watchdog, waits on close of stop channel
 // go func(), anonymous input from stdin, waits on user input
 // go func(), anonymous polling of 'temp/', timed slowly at > 84ms
+// go func(), anonymous, handles writing to soundcard within SoundEngine()
 
 package main
 
@@ -473,52 +474,6 @@ func main() {
 
 	lockLoad := make(chan struct{}, 1) // mutex on transferring listings
 	restart := not                     // controls whether listing is saved to temp on launch
-
-	go func() { // watchdog, anonymous to use variables in scope
-		// This function will restart the sound engine and reload listings using new sample rate
-		for {
-			<-stop // wait until stop channel closed
-			if exit {
-				return
-			}
-			stop = make(chan struct{})
-			go SoundEngine(sc.file, sc.format)
-			TLlen = int(sc.sampleRate * TAPE_LENGTH)
-			lockLoad <- struct{}{}
-			for len(tokens) > 0 { // empty incoming tokens
-				<-tokens
-			}
-			tokens <- token{"_", -1, yes}                // hack to restart input
-			for i := 0; i < len(transfer.Listing); i++ { // preload listings into tokens buffer
-				f := sf(".temp/%d.syt", i)
-				inputF, rr := os.Open(f)
-				if e(rr) {
-					msg("%v", rr)
-					break
-				}
-				s := bufio.NewScanner(inputF)
-				s.Split(bufio.ScanWords)
-				if transfer.Listing[i][0].Op == "deleted" { // hacky, to avoid undeleting listings
-					tokens <- token{"deleted", -1, yes}
-					tokens <- token{"out", -1, yes}
-					tokens <- token{"dac", -1, yes}
-					continue
-				}
-				for s.Scan() { // listings dumped into tokens chan
-					tokens <- token{s.Text(), -1, yes} // tokens could block here, theoretically
-				}
-				inputF.Close()
-			}
-			transfer.Listing = nil
-			transfer.Signals = nil
-			t.dispListings = nil
-			transmit <- yes
-			<-accepted
-			restart = yes // don't save temp files
-			<-lockLoad
-			msg("%s>>> Sound Engine restarted%s", italic, reset)
-		}
-	}()
 
 	rpl := -1   // synchronised to 'reload' at new listing start and if error
 	go func() { // scan stdin from goroutine to allow external concurrent input
@@ -2278,12 +2233,20 @@ func (n *noise) ise() float64 {
 	*n ^= *n << 17
 	return float64(*n) * twoInvMaxUint - 1
 }
-
+var invMaxInt32 = 1.0/MaxInt32
 func mod(x, y float64) float64 {
 	return Mod(x, y)
-	/*m := int(MaxInt32*x)
-	m %= int(MaxInt32*y) // dirty mod
-	return float64(m)/MaxInt32*/
+	pos := yes
+	if x < 0 {
+		pos = not
+		x = -x
+	}
+	m := uint32(MaxInt32*x/y)
+	//m %= uint32(MaxInt32*y) // dirty mod
+	if pos {
+		return float64(m)*invMaxInt32
+	}
+	return -float64(m)*invMaxInt32
 }
 
 const (
@@ -2840,7 +2803,7 @@ func enactRpl(s *systemState) int {
 	return startNewOperation
 }
 
-func unmuteAll(s *systemState) int { // slated for removal
+func unmuteAll(s *systemState) int {
 	if _, ok := parseIndex(s.listingState, len(transfer.Listing)); !ok {
 		return startNewOperation
 	}

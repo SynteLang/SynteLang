@@ -74,7 +74,6 @@ a:hover {
 	width: 50%;
 	max-width: 50vw;
 	clear: both;
-	border: 1px solid red;
 }
 
 textarea {
@@ -125,8 +124,9 @@ button {
 #listings {
 	min-width: 60vmin;
 	overflow: auto;
-	min-height: calc(50% - 6em);
+	min-height: calc(100vmin - 5em);
+	max-height: 40vh;
 	padding: 1em;
-	border: 1px solid gray;
+	border: 1px solid red;
 	overflow: scroll;
 }

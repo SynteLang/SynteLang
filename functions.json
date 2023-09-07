@@ -455,6 +455,103 @@
 			}
 		]
 	},
+	"blur": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "out",
+				"Opd": "a"
+			},
+			{
+				"Op": "in",
+				"Opd": "@"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "0.0625"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "noise",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "n"
+			},
+			{
+				"Op": "in",
+				"Opd": "@"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "0.0625"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "noise",
+				"Opd": ""
+			},
+			{
+				"Op": "out+",
+				"Opd": "n"
+			},
+			{
+				"Op": "in",
+				"Opd": "@"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "0.0625"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "noise",
+				"Opd": ""
+			},
+			{
+				"Op": "+",
+				"Opd": "n"
+			},
+			{
+				"Op": "+",
+				"Opd": "a"
+			}
+		]
+	},
 	"catch": {
 		"Comment": "output is zero until first sync pulse received, input is passed through to output thereafter. Use before last operation of a listing containing `posc` for a smooth launch ",
 		"Body": [

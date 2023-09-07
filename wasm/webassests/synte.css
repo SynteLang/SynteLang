@@ -102,6 +102,7 @@ span, button {
 button {
 	color: green;
 	background-color: lightgrey;
+	border-radius: 0.35em;
 }
 
 #listings {

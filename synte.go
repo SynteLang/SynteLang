@@ -47,9 +47,9 @@
 // go SoundEngine(), blocks on write to soundcard input buffer, shutdown with ": exit"
 // go infoDisplay(), timed slowly at > 20ms, explicitly returned from on exit
 // go mouseRead(), blocks on mouse input, rechecks approx 20 samples later (at 48kHz)
-// go func(), anonymous input from stdin, waits on user input
-// go func(), anonymous polling of 'temp/', timed slowly at > 84ms
-// go func(), anonymous, handles writing to soundcard within SoundEngine()
+// go readInput(), scan stdin from goroutine to allow external concurrent input, blocks on stdin
+// go reloadListing(), poll '.temp/*.syt' modified time and reload if changed, timed slowly at > 84ms
+// go func(), anonymous, handles writing to soundcard within SoundEngine(), blocks on write to soundcard
 
 package main
 
@@ -125,9 +125,7 @@ var (
 	SampleRate float64 = SAMPLE_RATE
 	BYTE_ORDER         = binary.LittleEndian // not allowed in constants
 	TLlen      int     = SAMPLE_RATE * TAPE_LENGTH
-)
 
-var (
 	record bool
 	wavHeader = []byte{82, 73, 70, 70, 36, 228, 87, 0, 87, 65, 86, 69, 102, 109, 116, 32, 16, 0, 0, 0, 1, 0, 2, 0, 128, 187, 0, 0, 0, 238, 2, 0, 4, 0, 16, 0, 100, 97, 116, 97, 0, 228, 87, 0} // 16bit signed PCM 48kHz
 	wavFile *os.File
@@ -406,6 +404,8 @@ var (
 	lockLoad = make(chan struct{}, 1) // mutex on transferring listings
 )
 
+var rpl = -1 // synchronised to 'reload' at new listing start and if error, hacky global
+
 const ( // used in token parsing
 	startNewOperation = iota
 	startNewListing
@@ -474,18 +474,8 @@ func main() {
 		transfer.Wavs = append(transfer.Wavs, w.Data)
 	}
 
-	restart := not                     // controls whether listing is saved to temp on launch
-
-	rpl := -1   // synchronised to 'reload' at new listing start and if error
-	go func() { // scan stdin from goroutine to allow external concurrent input
-		s := bufio.NewScanner(os.Stdin)
-		s.Split(bufio.ScanWords)
-		for {
-			s.Scan() // blocks on stdin
-			tokens <- token{s.Text(), rpl, not}
-		}
-	}()
-
+	restart := not     // controls whether listing is saved to temp on launch
+	go readInput()     // scan stdin from goroutine to allow external concurrent input
 	go reloadListing() // poll '.temp/*.syt' modified time and reload if changed
 
 	// set-up state
@@ -1444,6 +1434,17 @@ func infoDisplay() {
 	}
 }
 
+// scan stdin from goroutine to allow external concurrent input
+func readInput() {
+	s := bufio.NewScanner(os.Stdin)
+	s.Split(bufio.ScanWords)
+	for !exit {
+		s.Scan() // blocks on stdin
+		tokens <- token{s.Text(), rpl, not}
+	}
+}
+
+// poll '.temp/*.syt' modified time and reload if changed
 func reloadListing() {
 	l := 0
 	stat := make([]time.Time, 0)

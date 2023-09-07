@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=devicewidth, initial-scale=1.0">
+		<title>Syntə live-coding!</title>
+		<link rel="stylesheet" href="synte.css">
+	</head>
+	<body>
+		<div id='wrapper'>
+			<div id='header'>
+				<h1 id='title'>Syntə</h1>
+				<div id='nav'>
+					<a href=''>about</a>
+					<a href=''>examples</a>
+					<a href=''>docs</a>
+				</div>
+			</div>
+			<div id='main'>
+				<textarea>
+					type something here...
+				</textarea name="input" autofocus>
+				<div id='mousey'>
+					<div id='info'>
+						some info<br>
+						some error messages<br>
+					</div>
+					<div id='telem'>
+						<span id='vu'>VU |||||||   | </span> 
+						<button tpye="button"> ▷‖ </button>
+						<span id='load'> OVLD </span>
+						<span id='my'> mousey:1</span>
+					</div>
+				</div>
+			</div>
+			<div id='listings'>
+				0: in 300hz, sino, mix<br>
+				1: in 1hz, osc, flip, smooth, out vca<br>
+				&nbsp;&nbsp;&nbsp;in 85hz, sino, mul, vca, tanh, lpf 100hz, mix<br>
+				2: from 0, + c, tape 73ms, lpf 3khz, / 2, out c, out dac<br>
+			</div>
+		</div>
+
+		<script src="synte.js></script>
+	</body>
+</html>

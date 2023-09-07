@@ -1,0 +1,114 @@
+:root, ::backdrop {
+	--font-color: black;
+	--overall-width: 70ch;
+}
+
+html {
+	font-family: "Iosevka", "Source Code Pro", "Fira Code", "Roboto Mono", monospace;
+	/*scroll-behaviour: smooth;*/
+}
+
+body {
+	color: var(--font-color);
+	background-color: lightblue;
+	font-size: 14px;
+	margin: 0;
+	overflow: scroll;
+}
+
+#wrapper {
+	height: 100vh;
+	width: 100vw;
+}
+
+#header, #main {
+	width: var(--overall-width);
+}
+
+#header {
+	height: 2.5em;
+}
+
+h1 {
+	font-size: 16px;
+	float: left;
+	padding: 0em 2ch;
+}
+
+#nav {
+	float: right;
+	overflow: auto;
+	vertical-align: sub;
+	padding: 0.5em 2ch 0 2ch;
+}
+
+a, a:visited {
+	color: var(--font-color);
+	text-decoration: none;
+	padding: 0 1ch;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+#main {
+	height:20em;
+	float: left;
+	clear: both;
+	padding: 0 0 1em 0;
+}
+
+textarea, #mousey {
+	height: 100%;
+}
+
+textarea {
+	color: yellow;
+	clear: both;
+	float:left;
+	width: 45%;
+	overflow: scroll;
+	background-color: dimgray;
+	border-radius: 0.5em;
+}
+
+#mousey {
+	float:right;
+	position: relative;
+	width: 53%;
+}
+
+#info, #telem {
+	position: absolute;
+	width: 100%;
+}
+
+#info {
+	bottom: 2em;
+	padding: 0 1ch;
+}
+
+#telem {
+	height: 1em;
+	bottom: 0;
+	padding: 0 1ch;
+}
+
+span, button {
+	padding-right: 1ch;
+}
+
+button {
+	color: green;
+	background-color: lightgrey;
+}
+
+#listings {
+	min-width: var(--overall-width);
+	overflow: auto;
+	min-height: 50%;
+	margin: 0.5em;
+	padding: 1em;
+	border: 1px solid gray;
+}

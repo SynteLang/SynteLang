@@ -43,11 +43,10 @@
 // Go code in this file not suitable for reference or didactic purposes
 // This is a prototype
 
-// There are 7 goroutines (aside from main), they are:
+// There are 6 goroutines (aside from main), they are:
 // go SoundEngine(), blocks on write to soundcard input buffer, shutdown with ": exit"
 // go infoDisplay(), timed slowly at > 20ms, explicitly returned from on exit
 // go mouseRead(), blocks on mouse input, rechecks approx 20 samples later (at 48kHz)
-// go func(), anonymous restart watchdog, waits on close of stop channel
 // go func(), anonymous input from stdin, waits on user input
 // go func(), anonymous polling of 'temp/', timed slowly at > 84ms
 // go func(), anonymous, handles writing to soundcard within SoundEngine()
@@ -402,7 +401,10 @@ type token struct {
 	ext    bool
 }
 
-var tokens = make(chan token, 2<<12) // arbitrary capacity, will block input in extreme circumstances
+var (
+	tokens = make(chan token, 2<<12) // arbitrary capacity, will block input in extreme circumstances
+	lockLoad = make(chan struct{}, 1) // mutex on transferring listings
+)
 
 const ( // used in token parsing
 	startNewOperation = iota
@@ -472,7 +474,6 @@ func main() {
 		transfer.Wavs = append(transfer.Wavs, w.Data)
 	}
 
-	lockLoad := make(chan struct{}, 1) // mutex on transferring listings
 	restart := not                     // controls whether listing is saved to temp on launch
 
 	rpl := -1   // synchronised to 'reload' at new listing start and if error
@@ -485,32 +486,7 @@ func main() {
 		}
 	}()
 
-	go func() { // poll '.temp/*.syt' modified time and reload if changed
-		l := 0
-		stat := make([]time.Time, 0)
-		for {
-			time.Sleep(32361 * time.Microsecond) // coarse loop timing
-			lockLoad <- struct{}{}
-			for ; l < len(transfer.Listing); l++ {
-				stat = append(stat, time.Time{})
-			}
-			for i := 0; i < l; i++ {
-				f := sf(".temp/%d.syt", i)
-				st, rm := os.Stat(f)
-				if e(rm) || st.ModTime().Equal(stat[i]) {
-					continue
-				}
-				if stat[i].IsZero() { // initialise new listings for next loop
-					stat[i] = st.ModTime()
-					continue
-				}
-				tokens <- token{"rld", i, yes}
-				tokens <- token{sf("%d", i), i, yes}
-				stat[i] = st.ModTime()
-			}
-			<-lockLoad
-		}
-	}()
+	go reloadListing() // poll '.temp/*.syt' modified time and reload if changed
 
 	// set-up state
 	reservedSignalNames := []string{ // order is important
@@ -1465,6 +1441,33 @@ func infoDisplay() {
 			display.Sync = not
 			s = 0
 		}
+	}
+}
+
+func reloadListing() {
+	l := 0
+	stat := make([]time.Time, 0)
+	for {
+		time.Sleep(32361 * time.Microsecond) // coarse loop timing
+		lockLoad <- struct{}{}
+		for ; l < len(transfer.Listing); l++ {
+			stat = append(stat, time.Time{})
+		}
+		for i := 0; i < l; i++ {
+			f := sf(".temp/%d.syt", i)
+			st, rm := os.Stat(f)
+			if e(rm) || st.ModTime().Equal(stat[i]) {
+				continue
+			}
+			if stat[i].IsZero() { // initialise new listings for next loop
+				stat[i] = st.ModTime()
+				continue
+			}
+			tokens <- token{"rld", i, yes}
+			tokens <- token{sf("%d", i), i, yes}
+			stat[i] = st.ModTime()
+		}
+		<-lockLoad
 	}
 }
 

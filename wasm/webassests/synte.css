@@ -1,6 +1,5 @@
 :root, ::backdrop {
 	--font-color: black;
-	--overall-width: 70ch;
 }
 
 html {
@@ -22,11 +21,12 @@ body {
 }
 
 #header, #main, #listings {
-	max-width: 98vw;
+	max-width:100vw;
 }
 
 #header, #main {
-	width: var(--overall-width);
+	width: 70ch;
+	max-width: 100vw;
 }
 
 #header {
@@ -71,8 +71,10 @@ a:hover {
 
 #text {
 	float:left;
-	width: 45%;
+	width: 50%;
+	max-width: 50vw;
 	clear: both;
+	border: 1px solid red;
 }
 
 textarea {
@@ -85,8 +87,10 @@ textarea {
 }
 
 #mousey {
-	float:right;
-	width: 53%;
+	float: right;
+	width: 45%;
+	max-width: 45vw;
+	border: 1px solid grey;
 }
 
 #info, #telem {
@@ -95,8 +99,10 @@ textarea {
 }
 
 #info {
+	max-width: 45%;
 	bottom: 2em;
-	padding: 1em 1ch;
+	padding: 1em 0;
+	border: 1px solid gray;
 }
 
 #telem {
@@ -117,7 +123,7 @@ button {
 }
 
 #listings {
-	min-width: calc( var(--overall-width) * 0.6);
+	min-width: 60vmin;
 	overflow: auto;
 	min-height: calc(50% - 6em);
 	padding: 1em;

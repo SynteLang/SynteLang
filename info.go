@@ -1,7 +1,7 @@
 // info.go displays information about a running instance of Syntə
 // Press enter to quit
 
-package info
+package main
 
 import (
 	"encoding/json"

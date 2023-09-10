@@ -1,6 +1,6 @@
 //go:build js && wasm
 
-//  is an audio live coding environment
+// Syntə is an audio live coding environment
 // This file implements BSD and Linux specific functions for 64bit x86 
 
 package main
@@ -179,6 +179,16 @@ func loadFunctions(data *map[string]fn) {
 
 // used for saving info, listings, functions and code recordings (not audio)
 func saveJson(data any, f string) bool {
+	switch f {
+	case "displaylistings.json":
+		// write to a js.value
+	case "infodisplay.json":
+		// write to a js.value
+	case "functions.json":
+		msg("currently unable to save functions on this platfom")
+	default:
+		return false
+	}
 /*	j, rr := json.MarshalIndent(data, "", "\t")
 	if e(rr) {
 		msg("Error encoding '%s': %v", f, rr) 
@@ -408,6 +418,9 @@ func pf(s string, i ...any) {
 
 // poll '.temp/*.syt' modified time and reload if changed
 func reloadListing() {
+	// this can be called once an edited listing is launched
+	// or just ignored and relaunch handled separately after editing
+
 /*	l := 0
 	stat := make([]time.Time, 0)
 	for {
@@ -445,6 +458,8 @@ func displayHeader(sc soundcard, wavNames string, t systemState) {
 }
 
 func selectOutput(bits int) func(w io.Writer, f float64) {
+	// this should return a function that writes a slice of bytes to a webaudio api buffer 
+
 /*	output := func(w io.Writer, f float64) {
 		//binary.Write(w, BYTE_ORDER, int16(f))
 		w.Write([]byte{byte(uint32(f)), byte(uint32(f) >> 8)}) // errors ignored
@@ -504,5 +519,122 @@ func ls(s *systemState) int {
 	msg("%s", ls)
 	msg("")
 	return startNewOperation */
+}
+
+
+func saveTempFile(r bool, t systemState) {
+	return
+/*	if r { // hacky conditional
+		return
+	}
+	// save listing as <n>.syt for the reload
+	f := sf(".temp/%d.syt", len(transfer.Listing)-1)
+	content := ""
+	for _, d := range t.dispListing {
+		content += d.Op
+		if y := t.hasOperand[d.Op]; y {
+			content += " " + d.Opd
+		}
+		content += "\n"
+	}
+	if rr := os.WriteFile(f, []byte(content), 0666); e(rr) {
+		msg("%v", rr)
+	}*/
+}
+
+func loadUsage() map[string]int {
+	return nil
+	/*
+	u := map[string]int{}
+	f, rr := os.Open("usage.txt")
+	if e(rr) {
+		//msg("%v", rr)
+		return u
+	}
+	s := bufio.NewScanner(f)
+	s.Split(bufio.ScanWords)
+	for s.Scan() {
+		op := s.Text()
+		if op == "unused:" {
+			break
+		}
+		s.Scan()
+		n, rr := strconv.Atoi(s.Text())
+		if e(rr) {
+			//msg("usage: %v", rr)
+			continue
+		}
+		u[op] = n
+	}
+	return u*/
+}
+/*
+type pair struct {
+	Key   string
+	Value int
+}
+type pairs []pair
+*/
+func saveUsage(u map[string]int, t systemState) {
+	return
+/*	p := make(pairs, len(u))
+	i := 0
+	for k, v := range u {
+		p[i] = pair{k, v}
+		i++
+	}
+	sort.Slice(p, func(i, j int) bool { return p[i].Value > p[j].Value })
+	data := ""
+	for _, s := range p {
+		data += sf("%s %d\n", s.Key, s.Value)
+	}
+	data += "\nunused:\n"
+	data += "\n~operators~\n"
+	for op := range operators {
+		if _, in := u[op]; !in {
+			data += sf("%s\n", op)
+		}
+	}
+	data += "\n~functions~\n"
+	for f := range t.funcs {
+		if _, in := u[f]; !in {
+			data += sf("%s\n", f)
+		}
+	}
+	if rr := os.WriteFile("usage.txt", []byte(data), 0666); e(rr) {
+		msg("%v", rr)
+	}*/
+}
+
+func loadReloadAppend(t *systemState) int {
+	return startNewOperation
+	/*
+	switch t.operator {
+	case "rld", "r":
+		n, rr := strconv.Atoi(t.operand) // allow any index, no bounds check
+		if e(rr) || n < 0 {
+			msg("%soperand not valid:%s %s", italic, reset, t.operand)
+			return startNewOperation
+		}
+		reload = n
+		t.operand = ".temp/" + t.operand
+	case "apd":
+		reload = -1
+		t.operand = ".temp/" + t.operand
+	}
+	inputF, rr := os.Open(t.operand + ".syt")
+	if e(rr) {
+		msg("%v", rr)
+		reload = -1
+		return startNewOperation
+	}
+	s := bufio.NewScanner(inputF)
+	s.Split(bufio.ScanWords)
+	for s.Scan() {
+		tokens <- token{s.Text(), reload, yes}
+	}
+	inputF.Close()
+	tokens <- token{"_", -1, not} // reset header
+	return startNewListing*/
 }
 

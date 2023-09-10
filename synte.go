@@ -41,10 +41,11 @@
 // Go code in this file not suitable for reference or didactic purposes
 // This is a prototype
 
-// There are 6 goroutines (aside from main), they are:
+// There are 7 goroutines (aside from main), they are:
 // go SoundEngine(), blocks on write to soundcard input buffer, shutdown with ": exit"
 // go infoDisplay(), timed slowly at > 20ms, explicitly returned from on exit
 // go mouseRead(), blocks on mouse input, rechecks approx 20 samples later (at 48kHz)
+// go func(), anonymous restart watchdog, waits on close of stop channel
 // go readInput(), scan stdin from goroutine to allow external concurrent input, blocks on stdin
 // go reloadListing(), poll '.temp/*.syt' modified time and reload if changed, timed slowly at > 84ms
 // go func(), anonymous, handles writing to soundcard within SoundEngine(), blocks on write to soundcard
@@ -59,7 +60,6 @@ import (
 	"os"
 	"runtime"
 	"runtime/debug"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -446,6 +446,52 @@ func main() {
 	}
 
 	restart := not     // controls whether listing is saved to temp on launch
+
+	go func() { // watchdog, anonymous to use variables in scope
+		// This function will restart the sound engine in the event of a runtime panic
+		for {
+			<-stop // wait until stop channel closed
+			if exit { // don't restart if legitimate exit
+				return
+			}
+			stop = make(chan struct{})
+			go SoundEngine(sc.file, sc.format)
+			lockLoad <- struct{}{}
+			for len(tokens) > 0 { // empty incoming tokens
+				<-tokens
+			}
+			tokens <- token{"_", -1, yes}                // hack to restart input
+			for i := 0; i < len(transfer.Listing); i++ { // preload listings into tokens buffer
+				f := sf(".temp/%d.syt", i)
+				inputF, rr := os.Open(f)
+				if e(rr) {
+					msg("%v", rr)
+					break
+				}
+				s := bufio.NewScanner(inputF)
+				s.Split(bufio.ScanWords)
+				if transfer.Listing[i][0].Op == "deleted" { // hacky, to avoid undeleting listings
+					tokens <- token{"deleted", -1, yes}
+					tokens <- token{"out", -1, yes}
+					tokens <- token{"dac", -1, yes}
+					continue
+				}
+				for s.Scan() { // listings dumped into tokens chan
+					tokens <- token{s.Text(), -1, yes} // tokens could block here, theoretically
+				}
+				inputF.Close()
+			}
+			transfer.Listing = nil
+			transfer.Signals = nil
+			t.dispListings = nil
+			transmit <- yes
+			<-accepted
+			restart = yes // don't save temp files
+			<-lockLoad
+			msg("%s>>> Sound Engine restarted%s", italic, reset)
+		}
+	}()
+
 	go readInput()     // scan stdin from goroutine to allow external concurrent input
 	go reloadListing() // poll '.temp/*.syt' modified time and reload if changed
 
@@ -749,25 +795,6 @@ start:
 	saveUsage(usage, t)
 }
 
-func saveTempFile(r bool, t systemState) {
-	if r { // hacky conditional
-		return
-	}
-	// save listing as <n>.syt for the reload
-	f := sf(".temp/%d.syt", len(transfer.Listing)-1)
-	content := ""
-	for _, d := range t.dispListing {
-		content += d.Op
-		if y := t.hasOperand[d.Op]; y {
-			content += " " + d.Opd
-		}
-		content += "\n"
-	}
-	if rr := os.WriteFile(f, []byte(content), 0666); e(rr) {
-		msg("%v", rr)
-	}
-}
-
 const (
 	mute   = iota // 0
 	unmute        // 1
@@ -779,7 +806,7 @@ func (m *muteSlice) set(i int, v float64) {
 }
 
 type soundcard struct {
-	file       *os.File
+	file       *os.File // TODO: this needs to be changed
 	channels   string
 	sampleRate float64
 	format     int
@@ -1191,24 +1218,24 @@ func SoundEngine(file *os.File, bits int) {
 		endPause int
 		samples = make(chan stereoPair, 2400) // buffer up to 50ms of samples (@ 48kHz), introduces latency
 	)
+	defer close(samples)
 	no *= 77777777777 // force overflow
 	defer func() {    // fail gracefully
-		switch p := recover(); p { // p is shadowed
+		switch r := recover(); r {
 		case nil:
 			return // exit normally
 		default:
-			msg("oops - %v", p) // report runtime error to infoDisplay
-			//*
+			msg("oops - %v", r) // report error to infoDisplay
+			/*
 			var buf [4096]byte
 			n := runtime.Stack(buf[:], false)
 			msg("%s", buf[:n]) // print stack trace to infoDisplay*/
 			if current > len(transfer.Listing)-1 {
 				current = len(transfer.Listing) - 1
 			}
-			if current < 0 {
+			if current > len(transfer.Listing)-1 || len(transfer.Signals) < 1 {
 				break
 			}
-			// this doesn't handle immediate panics well, despite above bounds checks
 			transfer.Listing[current] = listing{operation{Op: "deleted", Opn: 31}} // delete listing
 			transfer.Signals[current][0] = 0                                       // silence listing
 			info <- sf("listing deleted: %d", current)
@@ -1255,11 +1282,13 @@ func SoundEngine(file *os.File, bits int) {
 	z := make([][N]complex128, len(transfer.Listing), len(transfer.Listing)+33)
 	zf := make([][N]complex128, len(transfer.Listing), len(transfer.Listing)+33)
 	ffrz := make([]bool, len(transfer.Listing), len(transfer.Listing)+33)
-	go func() {
+	go func() { // if samples channel runs empty insert zeros instead and filter heavily
 		lpf := stereoPair{}
-		for env > 0 || n%1024 != 0 { // if samples channel runs empty insert zeros instead and filter heavily
+		loop:
+		for env > 0 || n%1024 != 0 { // finish on end of buffer
 			select {
-			case s := <-samples:
+			case s, ok := <-samples:
+				if !ok { break loop }
 				lpf.stereoLpf(s, 0.5)
 			default:
 				lpf.stereoLpf(stereoPair{}, 0.0013)
@@ -1676,6 +1705,10 @@ func SoundEngine(file *os.File, bits int) {
 				}
 				op++
 			}
+			// This can introduce distortion, which is mitigated by mixF filter below
+			// Skipping loop early isn't really necessary, but it has been kept in as a source of character
+			// The distortion arises because c is not incremented by 1 for unmuted listings
+			// whose output is exactly zero, thereby modulating the mix factor
 			if sigs[i][0] == 0 {
 				continue
 			}
@@ -1912,67 +1945,6 @@ func e(rr error) bool {
 	return rr != nil
 }
 
-func loadUsage() map[string]int {
-	u := map[string]int{}
-	f, rr := os.Open("usage.txt")
-	if e(rr) {
-		//msg("%v", rr)
-		return u
-	}
-	s := bufio.NewScanner(f)
-	s.Split(bufio.ScanWords)
-	for s.Scan() {
-		op := s.Text()
-		if op == "unused:" {
-			break
-		}
-		s.Scan()
-		n, rr := strconv.Atoi(s.Text())
-		if e(rr) {
-			//msg("usage: %v", rr)
-			continue
-		}
-		u[op] = n
-	}
-	return u
-}
-
-type pair struct {
-	Key   string
-	Value int
-}
-type pairs []pair
-
-func saveUsage(u map[string]int, t systemState) {
-	p := make(pairs, len(u))
-	i := 0
-	for k, v := range u {
-		p[i] = pair{k, v}
-		i++
-	}
-	sort.Slice(p, func(i, j int) bool { return p[i].Value > p[j].Value })
-	data := ""
-	for _, s := range p {
-		data += sf("%s %d\n", s.Key, s.Value)
-	}
-	data += "\nunused:\n"
-	data += "\n~operators~\n"
-	for op := range operators {
-		if _, in := u[op]; !in {
-			data += sf("%s\n", op)
-		}
-	}
-	data += "\n~functions~\n"
-	for f := range t.funcs {
-		if _, in := u[f]; !in {
-			data += sf("%s\n", f)
-		}
-	}
-	if rr := os.WriteFile("usage.txt", []byte(data), 0666); e(rr) {
-		msg("%v", rr)
-	}
-}
-
 // operatorParticulars process field functions
 // These must be of type processor func(*systemState) int
 
@@ -2155,36 +2127,6 @@ func enactSolo(s *systemState) int {
 		tokens <- token{"mix", -1, not}
 	}
 	return startNewOperation
-}
-
-func loadReloadAppend(t *systemState) int {
-	switch t.operator {
-	case "rld", "r":
-		n, rr := strconv.Atoi(t.operand) // allow any index, no bounds check
-		if e(rr) || n < 0 {
-			msg("%soperand not valid:%s %s", italic, reset, t.operand)
-			return startNewOperation
-		}
-		reload = n
-		t.operand = ".temp/" + t.operand
-	case "apd":
-		reload = -1
-		t.operand = ".temp/" + t.operand
-	}
-	inputF, rr := os.Open(t.operand + ".syt")
-	if e(rr) {
-		msg("%v", rr)
-		reload = -1
-		return startNewOperation
-	}
-	s := bufio.NewScanner(inputF)
-	s.Split(bufio.ScanWords)
-	for s.Scan() {
-		tokens <- token{s.Text(), reload, yes}
-	}
-	inputF.Close()
-	tokens <- token{"_", -1, not} // reset header
-	return startNewListing
 }
 
 func setNoiseFreq(s *systemState) int {

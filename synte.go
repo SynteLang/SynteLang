@@ -1756,9 +1756,6 @@ func SoundEngine(file *os.File, bits int) {
 			lpf510 = lpf510 + (lpf50-lpf510)*0.006536
 			deemph = lpf510 * 0.667
 		}
-		// 7760hz, 1020hz, 254hz, 50hz
-		// 22db=12.5, 8db=2.5, 1db
-		//det := Abs(32*hpf2560+5.657*hpf160+dac) * 0.226 // apply pre-emphasis to detection
 		det := Abs(12.5*hpf2560+2.5*hpf160+dac) * 0.5 // 0.35 // apply pre-emphasis to detection
 		if det > l {
 			l = det // MC

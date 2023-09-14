@@ -1119,7 +1119,7 @@ func evaluateExpr(expr string) (float64, bool) {
 
 func infoDisplay() {
 	file := "infodisplay.json"
-	n := 1
+	c := 1
 	s := 1
 	display.Info = "clear"
 	for {
@@ -1141,18 +1141,18 @@ func infoDisplay() {
 		}
 		time.Sleep(20 * time.Millisecond) // coarse loop timing
 		if display.Clip {
-			n++
+			c++
 		}
-		if n > 20 { // clip timeout
+		if c > 20 { // clip timeout
 			display.Clip = not
-			n = 0
+			c = 1
 		}
 		if display.Sync {
 			s++
 		}
 		if s > 10 { // sync timeout
 			display.Sync = not
-			s = 0
+			s = 1
 		}
 	}
 }
@@ -1207,7 +1207,8 @@ func SoundEngine(file *os.File, bits int) {
 		hpf160, x160 float64 // limiter detection
 		lpf50, lpf510,
 		deemph float64 // de-emphasis
-		α                     = 1 / (SampleRate/(2*Pi*6.3) + 1) // co-efficient for setmix
+		//α                     = 30 * 1 / (SampleRate/(2*Pi*6.3) + 1) // co-efficient for setmix
+		α                     = 1 / (SampleRate/(2*Pi*194) + 1) // co-efficient for setmix
 		hroom                 = (convFactor - 1.0) / convFactor // headroom for positive dither
 		c, mixF       float64 = 4, 4                            // mix factor
 		pd            int
@@ -1553,9 +1554,9 @@ func SoundEngine(file *os.File, bits int) {
 					a := Abs(sigs[i][o.N])
 					d := a - peakfreq[i]
 					//peakfreq[i] += d * α * (a / peakfreq[i])
-					peakfreq[i] += d * α * (30 * Abs(d) * a / peakfreq[i])
-					r *= Min(1, 75/(peakfreq[i]*SampleRate+20)) // ignoring density
-					//r *= Min(1, Sqrt(80/(peakfreq[i]*SampleRate+20)))
+					peakfreq[i] += d * α * (Abs(d) * a / peakfreq[i])
+					//r *= Min(1, 140/(peakfreq[i]*SampleRate+20)) // ignoring density
+					r *= Min(1, Sqrt(140/(peakfreq[i]*SampleRate+20)))
 				case 35: // "print"
 					pd++ // unnecessary?
 					if (pd)%32768 == 0 && !exit {
@@ -1755,7 +1756,10 @@ func SoundEngine(file *os.File, bits int) {
 			lpf510 = lpf510 + (lpf50-lpf510)*0.006536
 			deemph = lpf510 * 0.667
 		}
-		det := Abs(32*hpf2560+5.657*hpf160+dac) * 0.8 // apply pre-emphasis to detection
+		// 7760hz, 1020hz, 254hz, 50hz
+		// 22db=12.5, 8db=2.5, 1db
+		//det := Abs(32*hpf2560+5.657*hpf160+dac) * 0.226 // apply pre-emphasis to detection
+		det := Abs(12.5*hpf2560+2.5*hpf160+dac) * 0.5 // 0.35 // apply pre-emphasis to detection
 		if det > l {
 			l = det // MC
 			h = release
@@ -1784,7 +1788,7 @@ func SoundEngine(file *os.File, bits int) {
 			peak = abs
 		}
 		display.Vu = peak
-		peak -= 8e-5 // meter ballistics, linear (effectively logarithmic decay in dB)
+		peak -= 5e-5 // meter ballistics, linear (effectively logarithmic decay in dB)
 		if peak < 0 {
 			peak = 0
 		}
@@ -1830,22 +1834,17 @@ var sineTab = make([]float64, int(SampleRate))
 const width = 2 << 16 // precision of tanh table
 var tanhTab = make([]float64, width)
 
-func calcSineTab() {
+func init() {
 	for i := range sineTab {
 		// using cosine, even function avoids negation for -ve x
 		sineTab[i] = Cos(2 * Pi * float64(i) / SampleRate)
 	}
 }
+
 func init() {
-	calcSineTab()
-}
-func calcTanhTab() {
 	for i := range tanhTab {
 		tanhTab[i] = Tanh(float64(i) / width)
 	}
-}
-func init() {
-	calcTanhTab()
 }
 
 func sine(x float64) float64 {
@@ -2365,15 +2364,21 @@ func checkRelease(s *systemState) int {
 func adjustGain(s *systemState) int {
 	if s.operand == "zero" {
 		gain = 1
-	} else if n, ok := parseType(s.operand, s.operator); ok { // fails silently
+		return startNewOperation
+	}
+	if s.operand == "is" {
+		msg("%sgain set to %s%.2gdb", italic, reset, 20*Log10(gain))
+		return startNewOperation
+	}
+	if n, ok := parseType(s.operand, s.operator); ok { // fails silently
 		gain *= n
 		if Abs(Log10(gain)) < 1e-12 { // hacky
 			gain = 1
 		} else if gain < 0.05 { // lower bound ~ -26db
 			gain = 0.05
 		}
+		msg("%sgain set to %s%.2gdb", italic, reset, 20*Log10(gain))
 	}
-	msg("%sgain set to %s%.2gdb", italic, reset, 20*Log10(gain))
 	return startNewOperation
 }
 

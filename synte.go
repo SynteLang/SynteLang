@@ -328,7 +328,7 @@ var (
 	daisyChains []int // list of exported signals to be daisy-chained
 	fade        = 1/(MIN_FADE*SAMPLE_RATE) //Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
 	release     = Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
-	ct          = 8.0                               // individual listing clip threshold
+	ct          = 2.0                               // individual listing clip threshold
 	gain        = 1.0
 )
 
@@ -1740,23 +1740,23 @@ func SoundEngine(file *os.File, bits int) {
 		dac = hpf
 		c += 16 / (c*c + 4.77)
 		mixF = mixF + (Abs(c)-mixF)*0.00026 // ~2Hz @ 48kHz
+		c = 0
 		dac /= mixF
 		sides /= mixF
 		dac *= gain
 		sides *= gain
-		c = 0
 		// limiter
 		hpf2560 = (hpf2560 + dac - x2560) * 0.749
 		x2560 = dac
 		hpf160 = (hpf160 + dac - x160) * 0.97948
 		x160 = dac
-		{ // parallel low end path
-			d := 4 * dac / (1 + Abs(dac*4)) // tanh approximation
-			lpf50 = lpf50 + (d-lpf50)*0.006536
-			lpf510 = lpf510 + (lpf50-lpf510)*0.006536
-			deemph = lpf510 * 0.667
-		}
-		det := Abs(12.5*hpf2560+2.5*hpf160+dac) * 0.5 // 0.35 // apply pre-emphasis to detection
+		// parallel low end path
+		lpf50 = lpf50 + (dac-lpf50)*0.006536
+		d := 4 * lpf50 / (1 + Abs(lpf50*4)) // tanh approximation
+		lpf510 = lpf510 + (d-lpf510)*0.006536
+		deemph = lpf510
+		 // apply pre-emphasis to detection
+		det := Abs(11.4*hpf2560+1.6*hpf160+dac) * 0.5
 		if det > l {
 			l = det // MC
 			h = release
@@ -1764,7 +1764,7 @@ func SoundEngine(file *os.File, bits int) {
 		}
 		dac /= l // VCA
 		sides /= l
-		dac += deemph // low end path is mono only
+		dac += deemph // low end path is mono only, may clip at output
 		h /= release
 		l = (l-1)*(1/(h+1/(1-release))+release) + 1 // snubbed decay curve
 		display.GR = l > 1+3e-4

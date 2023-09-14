@@ -54,7 +54,6 @@ func main() {
 	}
 	messages := make([]message, 11)
 
-	timeout := 2
 	clip := ""
 	unprotected := ""
 	paused := ""
@@ -145,17 +144,12 @@ func main() {
 			} else {
 				unprotected = ""
 			}
+			clip = ""
 			if display.Clip {
 				clip = red
-				timeout = 2
-			}
-			timeout--
-			if timeout < 0 {
-				timeout = 2
-				clip = ""
 			}
 			if display.GR {
-				GRhold = 10
+				GRhold = 5
 			}
 			gr := ""
 			if GRhold > 0 {
@@ -174,9 +168,10 @@ func main() {
 			}
 			n++
 			vu := 1 + (db / 2.5)
+			if vu > 1 { vu = 1 }
 			VU := fmt.Sprintf("\r          |                         %s|%s  %s", clip, reset, gr)
 			VU += fmt.Sprintf("\r           %s%s%s|", green, dB, reset)
-			nn := int(vu * 20)
+			nn := int(vu * 20 - 0.5)
 			for i := 0; i < nn; i++ {
 				VU += "|"
 			}

@@ -102,7 +102,7 @@ const (
 	EXPORTED_LIMIT = 12
 	NOISE_FREQ     = 0.0625 // 3kHz @ 48kHz Sample rate
 	FDOUT          = 1e-4
-	MIN_FADE       = 125e-3 // 125ms
+	MIN_FADE       = 175e-3 // 175ms
 	MAX_FADE       = 120    // 120s
 	MIN_RELEASE    = 50e-3  // 50ms
 	MAX_RELEASE    = 50     // 50s
@@ -1516,7 +1516,7 @@ func SoundEngine(file *os.File, bits int) {
 					r = float64(i)
 				case 25: // "<sync"
 					r *= s
-					r += (1 - s) * (1 - sigs[i][o.N]) // phase offset
+					r += (1 - s) * sigs[i][o.N] // phase offset
 				case 26: // ">sync", ".>sync"
 					switch { // syncSt8 is a slice to make multiple >sync operations independent
 					case r <= 0 && syncSt8[i] == run: // edge-detect

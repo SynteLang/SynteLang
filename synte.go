@@ -1322,7 +1322,7 @@ func SoundEngine(file *os.File, bits int) {
 				th = append(th, 0)
 				tx = append(tx, 0)
 				pan = append(pan, 0)
-				syncSt8 = append(syncSt8, 0)
+				syncSt8 = append(syncSt8, run)
 				peakfreq = append(peakfreq, setmixDefault)
 				stacks = append(stacks, stack)
 				fftArray = append(fftArray, [N]float64{})
@@ -2361,21 +2361,16 @@ func checkRelease(s *systemState) int {
 func adjustGain(s *systemState) int {
 	if s.operand == "zero" {
 		gain = 1
-		return startNewOperation
-	}
-	if s.operand == "is" {
-		msg("%sgain set to %s%.2gdb", italic, reset, 20*Log10(gain))
-		return startNewOperation
-	}
-	if n, ok := parseType(s.operand, s.operator); ok { // fails silently
+	} else if s.operand == "is" {
+	} else if n, ok := parseType(s.operand, s.operator); ok {
 		gain *= n
 		if Abs(Log10(gain)) < 1e-12 { // hacky
 			gain = 1
 		} else if gain < 0.05 { // lower bound ~ -26db
 			gain = 0.05
 		}
-		msg("%sgain set to %s%.2gdb", italic, reset, 20*Log10(gain))
 	}
+	msg("%sgain set to %s%.2gdb", italic, reset, 20*Log10(gain))
 	return startNewOperation
 }
 

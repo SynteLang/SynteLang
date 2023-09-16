@@ -263,7 +263,7 @@ func decodeWavs() wavs {
 		rb := bytes.NewReader(data[44:])
 		switch bits {
 		case 16:
-			wav.Data = decode(rb, file, make([]int16, to), float64(MaxInt16), to, channels)
+			wav.Data = decodeInt16(rb, file, make([]int16, to), float64(MaxInt16), to, channels)
 		case 24:
 			d := make([]byte, 0, len(data)*2)
 			for i := 44; i < len(data)-3; i += 3 { // byte stuffing
@@ -271,9 +271,9 @@ func decodeWavs() wavs {
 				d = append(d, word...)
 			}
 			rb = bytes.NewReader(d)
-			wav.Data = decode(rb, file, make([]int32, to), float64(MaxInt32), to, channels)
+			wav.Data = decodeInt32(rb, file, make([]int32, to), float64(MaxInt32), to, channels)
 		case 32:
-			wav.Data = decode(rb, file, make([]int32, to), float64(MaxInt32), to, channels)
+			wav.Data = decodeInt32(rb, file, make([]int32, to), float64(MaxInt32), to, channels)
 		default:
 			msg("%s: needs to be 32, 24 or 16 bit", file)
 			continue
@@ -296,7 +296,27 @@ func decodeWavs() wavs {
 	return w
 }
 
-func decode[S int16 | int32](rb *bytes.Reader, file string, samples []S, factor float64, to, channels int) []float64 {
+func decodeInt16(rb *bytes.Reader, file string, samples []int16, factor float64, to, channels int) []float64 {
+	rr := binary.Read(rb, binary.LittleEndian, &samples)
+	if e(rr) && !errors.Is(rr, io.ErrUnexpectedEOF) {
+		msg("error decoding: %s %s", file, rr)
+		return nil
+	}
+	// convert to syntə format
+	wav := make([]float64, 0, to)
+	for i := 0; i < to-channels+1; i += channels {
+		var s float64
+		if channels == 2 {
+			s = (float64(samples[i]) + float64(samples[i+1])) / (2 * factor) // convert to mono
+		} else {
+			s = float64(samples[i]) / factor
+		}
+		wav = append(wav, s)
+	}
+	return wav
+}
+
+func decodeInt32(rb *bytes.Reader, file string, samples []int32, factor float64, to, channels int) []float64 {
 	rr := binary.Read(rb, binary.LittleEndian, &samples)
 	if e(rr) && !errors.Is(rr, io.ErrUnexpectedEOF) {
 		msg("error decoding: %s %s", file, rr)

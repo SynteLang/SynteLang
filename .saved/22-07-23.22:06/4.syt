@@ -1,8 +1,8 @@
-. Bars
+in Bars
 /bsc 16,0
 lt 0.5
-. grid
-. Bars
+out grid
+in Bars
 /bsc 6,0
 lt 0.5
 s/h grid

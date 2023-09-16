@@ -9,5 +9,4 @@ mod ln2
 mul 2
 base 2.718281828
 mul 110hz
-out pitch
-. 
+.out pitch

@@ -6,5 +6,4 @@ lpf 200hz
 mul 0.125
 + 1
 mul 330hz
-out pitch
-. 
+.out pitch

@@ -3,5 +3,4 @@ once
 flip 
 + 1
 mul 60bpm
-out tempo
-. 
+.out tempo

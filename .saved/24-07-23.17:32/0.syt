@@ -1,8 +1,8 @@
-. 10s
+in 10s
 osc
 mul 3
 + 1
-. f
+out f
 in 1.5hz
 mul Phi
 mul Phi

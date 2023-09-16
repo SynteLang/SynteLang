@@ -628,11 +628,8 @@ start:
 			t.operand = strings.ReplaceAll(t.operand, "{i}", sf("%d", 0))
 			t.operand = strings.ReplaceAll(t.operand, "{i+1}", sf("%d", 1))
 
-			switch t.isFunction {
-			case yes:
-				var function listing
-				var ok bool
-				function, ok = parseFunction(t, signals, t.out)
+			if t.isFunction {
+				function, ok := parseFunction(t, signals, t.out)
 				switch {
 				case !ok && !ext:
 					continue input
@@ -642,7 +639,7 @@ start:
 				}
 				t.fun++
 				t.newListing = append(t.newListing, function...)
-			default:
+			} else {
 				switch r := operators[t.operator].process(&t); r {
 				case startNewOperation:
 					continue input

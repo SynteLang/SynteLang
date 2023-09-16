@@ -1,9 +1,9 @@
-. tempo
+in tempo
 / 8
 sq
 * 1
 + 1
-. r
+out r
 * 8
 out r2
 < Bars

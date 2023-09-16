@@ -5,5 +5,4 @@ flip
 exp 5
 lpf 1000hz
 mul mousey
-out Env
-. 
+.out Env

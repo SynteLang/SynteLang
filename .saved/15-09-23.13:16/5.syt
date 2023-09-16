@@ -1,0 +1,9 @@
+in 135bpm
+/ 3
+posc 0.75
+8bit 1.5
+out Ant
+smooth
+mul 3
++ 3
+.out Dec

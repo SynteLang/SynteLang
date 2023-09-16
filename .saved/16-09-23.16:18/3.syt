@@ -1,0 +1,21 @@
+in 7hz
+osc
+flip
+\ 1
+mul 135*3bpm
+out t
+from 1
+mul 3
+tanh
+hpf 150hz
+out g
+gt 0.3
+smooth
+mul g
++ c
+tape t
+lpf 3khz
+out c
+/ 4
+lpf 1550hz
+out dac

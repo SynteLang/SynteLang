@@ -856,7 +856,8 @@ For those interested, the panning is facilitated by a mid-sides configuration in
 
 <a name="syn"></a>
 ## Synchronisation    
-By default (and by design) when a listing is sent to the sound engine it starts immediately. The synchronisation operators `>sync` and `<sync` can be used to co-ordinate listings to play in time with one another. First, for a rhythmic element use the phase synchronised oscillator `posc` instead of osc. This contains a `<sync` operation which will reset the waveform when it receives a sync pulse. The `posc` operator requires a number betweeen 0 and 1 to offset the phase, you can use 0 to start with and experiment later. For reference 0.5 would result in a phase shift of 180°, 1 would be 360° etc. To send a sync pulse you can use `>sync` to synchronise all listings containing a `posc`. For `>sync` you can either simply:
+By default (and by design) when a listing is sent to the sound engine it starts immediately. The synchronisation operators `>sync` and `<sync` can be used to co-ordinate listings to play in time with one another. First, for a rhythmic element use the phase synchronised oscillator `posc` instead of osc. This contains a `<sync` operation which will reset the waveform when it receives a sync pulse. The `posc` operator requires a number betweeen 0 and 1 to offset the phase, you can use 0 to start with and experiment later. For reference 0.5 would result in a phase shift of 180°, 1 would be 360° etc. Phase will only be set once a sync pulse is received.  
+To send a sync pulse you can use `>sync` to synchronise all listings containing a `posc`. For `>sync` you can either simply:
 >
 	.>sync
 
@@ -866,12 +867,13 @@ which will send one pulse. The `.` allows `.>sync` to end a listing and send it 
 	ramp
 	.>sync
 
-which will send pulses at the frequency given, in this case 120bpm. `osc, gt 0.5` can be also be used in place of `ramp`, in general any signal which transistions to zero or less than zero (from greater than zero) at the desired sync point will work. `sq` begins at 1, so will trigger sync halfway through it's cycle.  
+which will send pulses at the frequency given, in this case 120bpm. `osc, gt 0.5` can be also be used in place of `ramp`, in general any signal which transistions to zero or less than zero (from greater than zero) at the desired sync point will work. `sq` begins at 1, so will trigger sync halfway through its cycle.  
 Muting a sync listing will have no effect on the synchronisation, as it is send via a separate channel.  
+A listing can be synced on launch by adding >sync at the top.  
 
 If you wish to launch a listing that only starts playing when the next `<sync` is received, use the `catch` function prior to the last operation, eg. `catch, mix`.  
 
-Sync pulses transmitted will be indicicated by a yellow dot at the top of the info display.  
+Sync pulses transmitted will be indicated by a yellow dot at the top of the info display.  
 
 The synchronisation is somewhat rudementary, a world away from DAW/midi sequencers, yet it has been designed to be raw and flexible in keeping with the Syntə philosophy. It also allows for a modicum of 'musicianship' as it is possible to submit listings in time with one another by hand (without sync) if you are that way inclined. Of course this is live coding which only intersects with music in general :)
 

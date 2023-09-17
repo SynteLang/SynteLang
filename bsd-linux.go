@@ -1,5 +1,7 @@
 //go:build (freebsd || linux) && amd64
 
+// +build freebsd linux
+
 //  is an audio live coding environment
 // This file implements BSD and Linux specific functions for 64bit x86 
 
@@ -174,7 +176,7 @@ func loadFunctions(data *map[string]fn) {
 }
 
 // used for saving info, listings, functions and code recordings (not audio)
-func saveJson(data any, f string) bool {
+func saveJson(data interface{}, f string) bool {
 	j, rr := json.MarshalIndent(data, "", "\t")
 	if e(rr) {
 		msg("Error encoding '%s': %v", f, rr) 
@@ -411,12 +413,12 @@ func readInput() {
 }
 
 // shorthand, prints to stdout
-func p(i ...any) {
+func p(i ...interface{}) {
 	fmt.Println(i...)
 }
 
 // shorthand, prints to stdout
-func pf(s string, i ...any) {
+func pf(s string, i ...interface{}) {
 	fmt.Printf(s, i...)
 }
 

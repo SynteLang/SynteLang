@@ -53,7 +53,7 @@ The ◊ symbol indicates a sentence or section that may need updating in future.
 **Requirements:**  
 >Computer with a soundcard (internal or external)  
 >OSS or ALSA sound driver (FreeBSD / Linux) ◊  
->Go programming language installed ◊  
+>Go programming language installed - requires at minimum version 1.16 ◊  
 >Desire to learn about audio synthesis  
 >Unicode support
 
@@ -144,7 +144,7 @@ You will probably want to use the function `mix` which contains `out dac` and so
 The `sino` function combines `osc` and `sine` so can be used in their place.
 
 Once you have added one listing in this way, you can add more.  
-Each listing has a number indicated at the beginning of the first line.  This is used to reference the listing for operators like `del` which silences a listing and removes all its code. Typing `: erase` removes all operations input to a listing so far and starts again from the top. Once a listing has been launched it will be saved in the `.temp/` directory and will relaunch if edited and saved.  
+Each listing has a number indicated at the beginning of the first line.  This is used to reference the listing for operators like `del` which silences a listing and removes all its code. When inputting a new listing, typing `: erase` removes all operations input so far and starts again from the top. Once a listing has been launched it will be saved in the `.temp/` directory and will relaunch if edited and saved.  
 
 You don't need to understand all of this right away. Everyone learns at different rates, and has a different learning style. Some need to experiment, some need a lot of detail, some by example etc. In future you may be able to find a workshop to attend if that is helpful too. If you want you can skip to the [Examples](#eg) section below to try out some listings directly.  
 

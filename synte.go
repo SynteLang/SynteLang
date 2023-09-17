@@ -397,7 +397,7 @@ const ( // used in token parsing
 	nextOperation
 )
 
-type clear func(s string, i ...any) int
+type clear func(s string, i ...interface{}) int
 
 const advisory = `
 Protect your hearing when listening to any audio on a system capable of
@@ -582,7 +582,7 @@ start:
 		reload = -1 // index to be launched to
 		rpl = reload
 		// the purpose of clr is to reset the input if error while receiving tokens from external source
-		t.clr = func(s string, i ...any) int { // must be type: clear
+		t.clr = func(s string, i ...interface{}) int { // must be type: clear
 			for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
 				<-tokens
 			}
@@ -1925,10 +1925,10 @@ func fft(y [N]complex128, s float64) [N]complex128 {
 	return y
 }
 
-var sf func(string, ...any) string = fmt.Sprintf
+var sf func(string, ...interface{}) string = fmt.Sprintf
 
 // msg sends a formatted string to info display
-func msg(s string, i ...any) {
+func msg(s string, i ...interface{}) {
 	info <- fmt.Sprintf(s, i...)
 	<-carryOn
 }

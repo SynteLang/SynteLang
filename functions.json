@@ -1654,7 +1654,7 @@
 		"Comment": "'bulb-element' emulator (untested) ◊   ",
 		"Body": [
 			{
-				"Op": "/",
+				"Op": "mul",
 				"Opd": "c"
 			},
 			{
@@ -1724,6 +1724,14 @@
 			{
 				"Op": "out",
 				"Opd": "b.1"
+			},
+			{
+				"Op": "\\",
+				"Opd": "1"
+			},
+			{
+				"Op": "clip",
+				"Opd": "1"
 			},
 			{
 				"Op": "out",

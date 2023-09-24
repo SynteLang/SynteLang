@@ -130,7 +130,8 @@ func main() {
 		if len(listing) < 1 {
 			continue
 		}
-		fmt.Printf("\t%s%s%s:\n\t\t  ", yellow, k, reset)
+		fmt.Printf("\t%s%s%s:\n  ", yellow, k, reset)
+		fmt.Printf("\t%s%s%s%s\n\t\t  ", yellow, italic, v.Comment, reset)
 		for i, v := range listing {
 			fmt.Printf("%s%s%s", magenta, v.Op, reset)
 			for n := 0; n < 5-len(v.Op); n++ {

@@ -1841,7 +1841,9 @@ func init() {
 	}
 }
 
+const Tau = 2*Pi
 func sine(x float64) float64 {
+	return Sin(Tau * x)
 	if x < 0 {
 		x = -x
 	}

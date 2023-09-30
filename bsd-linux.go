@@ -29,12 +29,11 @@ import (
 	"unsafe" // :D
 )
 
-// record indicates recording in progress
 var (
 	BYTE_ORDER  = binary.LittleEndian // not allowed in constants
-
+	// record indicates recording in progress
 	record bool
-	wavHeader = []byte{82, 73, 70, 70, 36, 228, 87, 0, 87, 65, 86, 69, 102, 109, 116, 32, 16, 0, 0, 0, 1, 0, 2, 0, 128, 187, 0, 0, 0, 238, 2, 0, 4, 0, 16, 0, 100, 97, 116, 97, 0, 228, 87, 0} // 16bit signed PCM 48kHz
+	wavHeader = []byte{82, 73, 70, 70, 36, 228, 87, 0, 87, 65, 86, 69, 102, 109, 116, 32, 16, 0, 0, 0, 1, 0, 2, 0, 128, 187, 0, 0, 0, 238, 2, 0, 4, 0, 16, 0, 100, 97, 116, 97, 0, 208, 221, 6} // 16bit signed PCM 48kHz
 	wavFile *os.File
 )
 
@@ -153,7 +152,9 @@ func recordWav(s *systemState) int {
 		binary.Write(wavFile, BYTE_ORDER, int16(0))
 	}
 	record = yes
-	msg("now recording to '%s', ends on exit", f)
+	msg("%snow recording to:%s", italic, reset)
+	msg("%s", f)
+	msg("%s(ends on exit)%s", italic, reset)
 	return startNewOperation
 }
 

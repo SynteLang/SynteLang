@@ -1291,8 +1291,8 @@ func SoundEngine(file *os.File, bits int) {
 			default:
 				lpf.stereoLpf(stereoPair{}, 0.0013)
 			}
-			L := clip(lpf.left) * convFactor
-			R := clip(lpf.right) * convFactor
+			L := clip(lpf.left) * convFactor // clip will display info
+			R := clip(lpf.right) * convFactor // clip will display info
 			output(w, L)
 			output(w, R)
 		}
@@ -1788,8 +1788,8 @@ func SoundEngine(file *os.File, bits int) {
 		}
 		sides = Max(-0.5, Min(0.5, sides))
 		if record {
-			L := Max(-1, Min(1, dac+sides)) * convFactor // clip will display info
-			R := Max(-1, Min(1, dac-sides)) * convFactor // clip will display info
+			L := Max(-1, Min(1, dac+sides)) * convFactor
+			R := Max(-1, Min(1, dac-sides)) * convFactor
 			writeWav(L, R)
 		}
 		t = time.Since(lastTime)

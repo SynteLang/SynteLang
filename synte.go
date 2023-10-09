@@ -102,7 +102,7 @@ const (
 	EXPORTED_LIMIT = 12
 	NOISE_FREQ     = 0.0625 // 3kHz @ 48kHz Sample rate
 	FDOUT          = 1e-4
-	MIN_FADE       = 175e-3 // 175ms
+	MIN_FADE       = 125e-3 // 125ms
 	MAX_FADE       = 120    // 120s
 	MIN_RELEASE    = 50e-3  // 50ms
 	MAX_RELEASE    = 50     // 50s
@@ -236,6 +236,8 @@ var operators = map[string]operatorParticulars{ // would be nice if switch index
 	"jl0":    {yes, 27, noCheck},        // jump if less than zero
 	"level":  {yes, 28, checkIndexIncl}, // vary level of a listing
 	".level": {yes, 28, checkIndexIncl}, // alias, launches listing
+	"lvl":    {yes, 28, checkIndexIncl}, // vary level of a listing
+	".lvl":   {yes, 28, checkIndexIncl}, // alias, launches listing
 	"from":   {yes, 29, checkIndex},     // receive output from a listing
 	"sgn":    {not, 30, noCheck},        // sign of input
 	//	"deleted":      {yes, 31, noCheck}, // specified below
@@ -328,7 +330,7 @@ var (
 	daisyChains []int // list of exported signals to be daisy-chained
 	fade        = 1/(MIN_FADE*SAMPLE_RATE) //Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
 	release     = Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
-	ct          = 2.0                               // individual listing clip threshold
+	ct          = 4.0                               // individual listing clip threshold
 	gain        = 1.0
 )
 
@@ -684,16 +686,14 @@ start:
 				if o.Opd == "dac" {
 					break input
 				}
-			case ".out", ".>sync", ".level", ".pan": // override mutes and levels below, for silent listings
+			case ".out", ".>sync", ".level", ".lvl", ".pan": // override mutes and levels below, for silent listings
 				if reload < 0 || reload > len(transfer.Listing)-1 {
 					mutes = append(mutes, 0)
 					t.unsolo = append(t.unsolo, 0)
 					display.Mute = append(display.Mute, yes)
 					level = append(level, 1)
-				} else {
-					t.unsolo[reload] = 0
-					mutes.set(reload, mute)
 				}
+				// reloaded listings handled below
 				break input
 			case "//":
 				break input
@@ -769,6 +769,13 @@ start:
 			transfer.Signals[reload] = t.newSignals
 			transmit <- yes
 			<-accepted
+			switch o := t.newListing[len(t.newListing)-1]; o.Op {
+			case ".out", ".>sync", ".level", ".lvl", ".pan":
+				t.unsolo[reload] = 0
+				mutes.set(reload, mute)
+			default:
+				mutes.set(reload, unmute)
+			}
 		}
 		<-lockLoad
 		if !started {
@@ -1569,13 +1576,13 @@ func SoundEngine(file *os.File, bits int) {
 					pan[int(sigs[i][o.N])] = Max(-1, Min(1, r))
 				case 39: // "all"
 					// r := 0 // allow mixing in of preceding listing
-					c := -3.0 // to avoid being mixed twice
+					c := 0.0 // to avoid being mixed twice
 					for ii := range listings {
 						if ii == i { // ignore current listing
 							continue
 						}
 						r += sigs[ii][0]
-						c += m[ii]
+						c++ // yikes
 					}
 					c = Max(c, 1)
 					r /= c
@@ -1735,7 +1742,8 @@ func SoundEngine(file *os.File, bits int) {
 		hpf = (hpf + dac - x) * 0.9994 // hpf ≈ 4.6Hz
 		x = dac
 		dac = hpf
-		c += 16 / (c*c + 4.77)
+		//c += 16 / (c*c + 4.77)
+		c += 50 / (c*c + 9.5)
 		mixF = mixF + (Abs(c)-mixF)*0.00026 // ~2Hz @ 48kHz
 		c = 0
 		dac /= mixF
@@ -2026,11 +2034,11 @@ func parseIndex(s listingState, l int) (int, bool) {
 	}
 	n, rr := strconv.Atoi(s.operand)
 	if e(rr) {
-		msg("%soperand not an integer%s", italic, reset)
+		msg("%s %snot an integer%s", s.operand, italic, reset)
 		return 0, not
 	}
 	if n < 0 || n > l {
-		msg("%soperand out of range%s", italic, reset)
+		msg("%s %sout of range%s", s.operand, italic, reset)
 		return 0, not
 	}
 	return n, yes
@@ -2104,7 +2112,7 @@ func enactSolo(s *systemState) int {
 			if i == ii {
 				continue
 			}
-			mutes.set(ii, s.unsolo[ii]) // restore all other mutes
+			mutes.set(ii, s.unsolo[ii]*(1-mutes[ii])) // restore all other mutes
 		}
 		s.solo = -1 // unset solo index
 	} else { // solo index given by operand

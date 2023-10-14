@@ -4649,6 +4649,31 @@
 			}
 		]
 	},
+	"x3": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "out",
+				"Opd": "x"
+			},
+			{
+				"Op": "mul",
+				"Opd": "x"
+			},
+			{
+				"Op": "mul",
+				"Opd": "x"
+			},
+			{
+				"Op": "mul",
+				"Opd": "@"
+			},
+			{
+				"Op": "+",
+				"Opd": "x"
+			}
+		]
+	},
 	"xvr": {
 		"Comment": "emulates class-B crossover distortion ",
 		"Body": [

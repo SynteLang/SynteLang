@@ -2046,7 +2046,7 @@ func parseIndex(s listingState, l int) (int, bool) {
 
 func excludeCurrent(op string, i, l int) bool {
 	if i > l-1 {
-		msg("%scan't %s current listing%s", italic, op, reset)
+		msg("%scan't %s current or non-extant listing:%s %d", italic, op, reset)
 		return yes
 	}
 	return not

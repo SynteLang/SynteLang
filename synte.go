@@ -332,6 +332,7 @@ var (
 	release     = Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
 	ct          = 4.0                               // individual listing clip threshold
 	gain        = 1.0
+	sqrt10      = Sqrt(0.1)
 )
 
 type noise uint64
@@ -1746,10 +1747,10 @@ func SoundEngine(file *os.File, bits int) {
 		c += 50 / (c*c + 9.5)
 		mixF = mixF + (Abs(c)-mixF)*0.00026 // ~2Hz @ 48kHz
 		c = 0
-		dac /= mixF
+		dac /= Sqrt(mixF)
 		sides /= mixF
-		dac *= gain
-		sides *= gain
+		dac *= gain * sqrt10
+		sides *= gain * sqrt10
 		// limiter
 		hpf2560 = (hpf2560 + dac - x2560) * 0.749
 		x2560 = dac

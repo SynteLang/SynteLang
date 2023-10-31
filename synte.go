@@ -55,7 +55,7 @@ package main
 import (
 	"bufio"
 	"fmt"
-	. "math" // don't do this!
+	"math"
 	"math/cmplx"
 	"os"
 	"runtime"
@@ -106,11 +106,11 @@ const (
 	MAX_FADE       = 120    // 120s
 	MIN_RELEASE    = 50e-3  // 50ms
 	MAX_RELEASE    = 50     // 50s
-	twoInvMaxUint = 2.0 / MaxUint64
+	twoInvMaxUint = 2.0 / math.MaxUint64
 )
 
 var (
-	convFactor         = float64(MaxInt16) // checked below
+	convFactor         = float64(math.MaxInt16) // checked below
 	SampleRate float64 = SAMPLE_RATE
 	TLlen      int     = SAMPLE_RATE * TAPE_LENGTH
 )
@@ -329,10 +329,10 @@ var (
 	rs bool // root-sync between running instances
 	daisyChains []int // list of exported signals to be daisy-chained
 	fade        = 1/(MIN_FADE*SAMPLE_RATE) //Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
-	release     = Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
+	release     = math.Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
 	ct          = 4.0                               // individual listing clip threshold
 	gain        = 1.0
-	sqrt10      = Sqrt(0.1)
+	sqrt10      = math.Sqrt(0.1)
 )
 
 type noise uint64
@@ -546,24 +546,24 @@ start:
 		t.newSignals = make([]float64, len(reservedSignalNames), 30) // capacity is nominal
 		// signals map with predefined constants, mutable
 		signals := map[string]float64{ // reset and add predefined signals
-			"ln2":      Ln2,
-			"ln3":      Log(3),
-			"ln5":      Log(5),
-			"E":        E,   // e
-			"Pi":       Pi,  // π
-			"Phi":      Phi, // φ
+			"ln2":      math.Ln2,
+			"ln3":      math.Log(3),
+			"ln5":      math.Log(5),
+			"E":        math.E,   // e
+			"Pi":       math.Pi,  // π
+			"Phi":      math.Phi, // φ
 			"invSR":    1 / SampleRate,
 			"SR":       SampleRate,
-			"Epsilon":  SmallestNonzeroFloat64, // ε, epsilon
+			"Epsilon":  math.SmallestNonzeroFloat64, // ε, epsilon
 			"wavR":     1.0 / (WAV_TIME * SampleRate),
-			"semitone": Pow(2, 1.0/12),
-			"Tau":      2 * Pi, // 2π
-			"ln7":      Log(7),
+			"semitone": math.Pow(2, 1.0/12),
+			"Tau":      2 * math.Pi, // 2π
+			"ln7":      math.Log(7),
 			"^freq":    NOISE_FREQ,      // default frequency for setmix, suitable for noise
 			"null":     0,               // only necessary if zero is banned in Syntə again
-			"fifth":    Pow(2, 7.0/12),  // equal temperament ≈ 1.5 (2:3)
-			"third":    Pow(2, 1.0/3),   // major, equal temperament ≈ 1.25 (4:5)
-			"seventh":  Pow(2, 11.0/12), // major, equal temperament ≈ 1.875 (8:15)
+			"fifth":    math.Pow(2, 7.0/12),  // equal temperament ≈ 1.5 (2:3)
+			"third":    math.Pow(2, 1.0/3),   // major, equal temperament ≈ 1.25 (4:5)
+			"seventh":  math.Pow(2, 11.0/12), // major, equal temperament ≈ 1.875 (8:15)
 		}
 		for i, w := range wavSlice { // add to signals map, with current sample rate
 			signals[w.Name] = float64(i)
@@ -1042,17 +1042,17 @@ func parseType(expr, op string) (n float64, b bool) {
 			return 0, false
 		}
 		n /= 20
-		n = Pow(10, n)
+		n = math.Pow(10, n)
 	default:
 		if n, b = evaluateExpr(expr); !b {
 			return 0, false
 		}
-		if Abs(n) > 64 {
+		if math.Abs(n) > 64 {
 			msg("%.3g exceeds sensible values, use a type", n)
 			return 0, false
 		}
 	}
-	if IsInf(n, 0) || n != n { // ideally also check for zero in specific cases
+	if math.IsInf(n, 0) || n != n { // ideally also check for zero in specific cases
 		msg("number not useful")
 		return 0, false
 	}
@@ -1187,7 +1187,7 @@ func SoundEngine(file *os.File, bits int) {
 	}
 
 	const (
-		Tau        = 2 * Pi
+		Tau        = 2 * math.Pi
 		RATE       = 2 << 14 // lenient
 	)
 
@@ -1213,7 +1213,7 @@ func SoundEngine(file *os.File, bits int) {
 		lpf50, lpf510,
 		deemph float64 // de-emphasis
 		//α                     = 30 * 1 / (SampleRate/(2*Pi*6.3) + 1) // co-efficient for setmix
-		α                     = 1 / (SampleRate/(2*Pi*194) + 1) // co-efficient for setmix
+		α                     = 1 / (SampleRate/(2*math.Pi*194) + 1) // co-efficient for setmix
 		hroom                 = (convFactor - 1.0) / convFactor // headroom for positive dither
 		c, mixF       float64 = 4, 4                            // mix factor
 		pd            int
@@ -1390,7 +1390,7 @@ func SoundEngine(file *os.File, bits int) {
 				case 4: // "in"
 					r = sigs[i][o.N]
 				case 5: // "sine"
-					//r = Sin(Tau * r)
+					//r = math.Sin(Tau * r)
 					r = sine(r)
 				case 6: // "mod"
 					r = mod(r, sigs[i][o.N])
@@ -1409,32 +1409,32 @@ func SoundEngine(file *os.File, bits int) {
 				case 9: // "mul", "x", "*":
 					r *= sigs[i][o.N]
 				case 10: // "abs"
-					r = Abs(r)
+					r = math.Abs(r)
 				case 11: // "tanh"
 					r = tanh(r)
 				case 12: // "pow"
-					if Signbit(sigs[i][o.N]) && r == 0 {
-						r = Copysign(1e-308, r) // inverse is within upper range of float
+					if math.Signbit(sigs[i][o.N]) && r == 0 {
+						r = math.Copysign(1e-308, r) // inverse is within upper range of float
 					}
-					r = Pow(r, sigs[i][o.N])
+					r = math.Pow(r, sigs[i][o.N])
 				case 13: // "base"
 					sg := sigs[i][o.N]
 					switch sg {
-					case E:
-						r = Exp(r)
+					case math.E:
+						r = math.Exp(r)
 					case 2:
-						r = Exp2(r)
+						r = math.Exp2(r)
 					default:
-						r = Pow(sg, r)
+						r = math.Pow(sg, r)
 					}
 				case 14: // "clip"
 					switch {
 					case sigs[i][o.N] == 0:
-						r = Max(0, Min(1, r))
+						r = math.Max(0, math.Min(1, r))
 					case sigs[i][o.N] > 0:
-						r = Max(-sigs[i][o.N], Min(sigs[i][o.N], r))
+						r = math.Max(-sigs[i][o.N], math.Min(sigs[i][o.N], r))
 					case sigs[i][o.N] < 0:
-						r = Min(-sigs[i][o.N], Max(sigs[i][o.N], r))
+						r = math.Min(-sigs[i][o.N], math.Max(sigs[i][o.N], r))
 					}
 				case 15: // "noise"
 					r *= no.ise() // roll a fresh one
@@ -1445,13 +1445,13 @@ func SoundEngine(file *os.File, bits int) {
 					r = stacks[i][len(stacks[i])-1]
 					stacks[i] = stacks[i][:len(stacks[i])-1]
 				case 18: // "tape"
-					r = Max(-1, Min(1, r)) // hard clip for cleaner reverbs
+					r = math.Max(-1, math.Min(1, r)) // hard clip for cleaner reverbs
 					th[i] = (th[i] + r - tx[i]) * 0.9994
 					tx[i] = r
 					tapes[i][n%TLlen] = th[i] // record head
 					tl := SampleRate * TAPE_LENGTH
-					//t := Abs(Min(1/sigs[i][o.N], tl))
-					t := Mod((1 / sigs[i][o.N]), tl)
+					//t := math.Abs(math.Min(1/sigs[i][o.N], tl))
+					t := math.Mod((1 / sigs[i][o.N]), tl)
 					if sigs[i][o.N] == 0 {
 						t = 0
 					}
@@ -1478,8 +1478,8 @@ func SoundEngine(file *os.File, bits int) {
 					r = sigs[i][o.N] - r
 				case 20: // "tap"
 					tl := SampleRate * TAPE_LENGTH
-					//t := Abs(Min(1/sigs[i][o.N], tl))
-					t := Min(Abs(1/sigs[i][o.N]), tl)
+					//t := math.Abs(math.Min(1/sigs[i][o.N], tl))
+					t := math.Min(math.Abs(1/sigs[i][o.N]), tl)
 					xa := (n + TLlen - int(t)) % TLlen
 					x := mod(float64(n+TLlen)-(t), tl)
 					ta0 := tapes[i][(n+TLlen-int(t)-1)%TLlen]
@@ -1495,12 +1495,12 @@ func SoundEngine(file *os.File, bits int) {
 					c2 := ev1*-0.213439787561776841 + ev2*0.21303593243799016
 					r += (c2*z+c1)*z + c0
 				case 21: // "f2c" // r = 1 / (1 + 1/(Tau*r))
-					r = Abs(r)
+					r = math.Abs(r)
 					r *= Tau
 					r /= (r + 1)
 				case 22: // "wav"
 					r += 1 // to allow negative input to reverse playback
-					r = Abs(r)
+					r = math.Abs(r)
 					l := len(wavs[int(sigs[i][o.N])])
 					r *= float64(l)
 					x1 := int(r) % l
@@ -1546,22 +1546,22 @@ func SoundEngine(file *os.File, bits int) {
 				case 29: // "from"
 					r = sigs[int(sigs[i][o.N])%len(sigs)][0]
 				case 30: // "sgn"
-					r = 1 - float64(Float64bits(r)>>62)
+					r = 1 - float64(math.Float64bits(r)>>62)
 				case 32: // "/"
 					if sigs[i][o.N] == 0 {
-						sigs[i][o.N] = Copysign(1e-308, sigs[i][o.N])
+						sigs[i][o.N] = math.Copysign(1e-308, sigs[i][o.N])
 					}
-					//r /= Max(0.1, Min(-0.1, sigs[i][o.N])) // alternative
+					//r /= math.Max(0.1, math.Min(-0.1, sigs[i][o.N])) // alternative
 					r /= sigs[i][o.N]
 				case 33: // "sub"
 					r -= sigs[i][o.N]
 				case 34: // "setmix"
-					a := Abs(sigs[i][o.N])
+					a := math.Abs(sigs[i][o.N])
 					d := a - peakfreq[i]
 					//peakfreq[i] += d * α * (a / peakfreq[i])
-					peakfreq[i] += d * α * (Abs(d) * a / peakfreq[i])
-					//r *= Min(1, 140/(peakfreq[i]*SampleRate+20)) // ignoring density
-					r *= Min(1, Sqrt(140/(peakfreq[i]*SampleRate+20)))
+					peakfreq[i] += d * α * (math.Abs(d) * a / peakfreq[i])
+					//r *= math.Min(1, 140/(peakfreq[i]*SampleRate+20)) // ignoring density
+					r *= math.Min(1, math.Sqrt(140/(peakfreq[i]*SampleRate+20)))
 				case 35: // "print"
 					pd++ // unnecessary?
 					if (pd)%32768 == 0 && !exit {
@@ -1570,11 +1570,11 @@ func SoundEngine(file *os.File, bits int) {
 					}
 				case 36: // "\\"
 					if r == 0 {
-						r = Copysign(1e-308, r)
+						r = math.Copysign(1e-308, r)
 					}
 					r = sigs[i][o.N] / r
 				case 38: // "pan", ".pan"
-					pan[int(sigs[i][o.N])] = Max(-1, Min(1, r))
+					pan[int(sigs[i][o.N])] = math.Max(-1, math.Min(1, r))
 				case 39: // "all"
 					// r := 0 // allow mixing in of preceding listing
 					c := 0.0 // to avoid being mixed twice
@@ -1585,7 +1585,7 @@ func SoundEngine(file *os.File, bits int) {
 						r += sigs[ii][0]
 						c++ // yikes
 					}
-					c = Max(c, 1)
+					c = math.Max(c, 1)
 					r /= c
 				case 40: // "fft"
 					fftArray[i][n%N] = r
@@ -1594,7 +1594,7 @@ func SoundEngine(file *os.File, bits int) {
 						var zz [N]complex128
 						for n := range fftArray[i] { // n is shadowed
 							ww := float64(n) * N1
-							w := Pow(1-ww*ww, 1.25) // modified Welch
+							w := math.Pow(1-ww*ww, 1.25) // modified Welch
 							zz[n] = complex(w*fftArray[i][(n+nn)%N], 0)
 						}
 						z[i] = fft(zz, 1)
@@ -1603,14 +1603,14 @@ func SoundEngine(file *os.File, bits int) {
 					if n%N == 0 && n >= N {
 						zz := fft(z[i], -1)
 						for n, z := range zz { // n, z are shadowed
-							w := (1 - Cos(Tau*float64(n)*N1)) * 0.5 // Hann
+							w := (1 - math.Cos(Tau*float64(n)*N1)) * 0.5 // Hann
 							ifftArray[i][n] = w * real(z) * invN2
 						}
 					}
 					if n%N == N2+1 && n >= N {
 						zz := fft(z[i], -1)
 						for n, z := range zz { // n, z are shadowed
-							w := (1 - Cos(Tau*float64(n)*N1)) * 0.5 // Hann
+							w := (1 - math.Cos(Tau*float64(n)*N1)) * 0.5 // Hann
 							ifft2[i][n] = w * real(z) * invN2
 						}
 					}
@@ -1656,9 +1656,9 @@ func SoundEngine(file *os.File, bits int) {
 							gt = not
 						}
 						for n, zz := range z[i] {
-							if gt && Abs(real(zz)) < s {
+							if gt && math.Abs(real(zz)) < s {
 								z[i][n] = 0
-							} else if !gt && Abs(real(zz)) > s {
+							} else if !gt && math.Abs(real(zz)) > s {
 								z[i][n] = 0
 							}
 						}
@@ -1672,7 +1672,7 @@ func SoundEngine(file *os.File, bits int) {
 					}
 				case 47: // "ffltr"
 					if n%N2 == 0 && n >= N && !ffrz[i] {
-						coeff := complex(Abs(sigs[i][o.N]*N), 0)
+						coeff := complex(math.Abs(sigs[i][o.N]*N), 0)
 						coeff *= Tau
 						coeff /= (coeff + 1)
 						for n := range z[i] {
@@ -1684,7 +1684,7 @@ func SoundEngine(file *os.File, bits int) {
 					if n%N2 == 0 && n >= N && !ffrz[i] {
 						for n := range z[i] {
 							r, θ := cmplx.Polar(z[i][n])
-							θ += Pi * no.ise()
+							θ += math.Pi * no.ise()
 							z[i][n] = cmplx.Rect(r, θ)
 						}
 					}
@@ -1722,7 +1722,7 @@ func SoundEngine(file *os.File, bits int) {
 				sigs[i][0] = 0
 				panic(sf("listing: %d - NaN", i))
 			}
-			if IsInf(sigs[i][0], 0) { // infinity to '93
+			if math.IsInf(sigs[i][0], 0) { // infinity to '93
 				sigs[i][0] = 0
 				panic(sf("listing: %d - overflow", i))
 			}
@@ -1735,9 +1735,9 @@ func SoundEngine(file *os.File, bits int) {
 				mid = tanh(mid+ct) - ct
 				display.Clip = yes
 			}
-			pan[i] = Max(-1, Min(1, pan[i])) // to prevent overmodulation
+			pan[i] = math.Max(-1, math.Min(1, pan[i])) // to prevent overmodulation
 			sides += pan[i] * mid * 0.5
-			mid *= 1 - Abs(pan[i]*0.5)
+			mid *= 1 - math.Abs(pan[i]*0.5)
 			dac += mid
 		}
 		hpf = (hpf + dac - x) * 0.9994 // hpf ≈ 4.6Hz
@@ -1745,9 +1745,9 @@ func SoundEngine(file *os.File, bits int) {
 		dac = hpf
 		//c += 16 / (c*c + 4.77)
 		c += 50 / (c*c + 9.5)
-		mixF = mixF + (Abs(c)-mixF)*0.00026 // ~2Hz @ 48kHz
+		mixF = mixF + (math.Abs(c)-mixF)*0.00026 // ~2Hz @ 48kHz
 		c = 0
-		dac /= Sqrt(mixF)
+		dac /= math.Sqrt(mixF)
 		sides /= mixF
 		dac *= gain * sqrt10
 		sides *= gain * sqrt10
@@ -1758,11 +1758,11 @@ func SoundEngine(file *os.File, bits int) {
 		x160 = dac
 		// parallel low end path
 		lpf50 = lpf50 + (dac-lpf50)*0.006536
-		d := 4 * lpf50 / (1 + Abs(lpf50*4)) // tanh approximation
+		d := 4 * lpf50 / (1 + math.Abs(lpf50*4)) // tanh approximation
 		lpf510 = lpf510 + (d-lpf510)*0.006536
 		deemph = lpf510
 		 // apply pre-emphasis to detection
-		det := Abs(11.4*hpf2560+1.6*hpf160+dac) * 0.5
+		det := math.Abs(11.4*hpf2560+1.6*hpf160+dac) * 0.5
 		if det > l {
 			l = det // MC
 			h = release
@@ -1787,7 +1787,7 @@ func SoundEngine(file *os.File, bits int) {
 		dither *= 0.5
 		dac *= hroom
 		dac += dither / convFactor       // dither dac value ±1 from xorshift lfsr
-		if abs := Abs(dac); abs > peak { // peak detect
+		if abs := math.Abs(dac); abs > peak { // peak detect
 			peak = abs
 		}
 		display.Vu = peak
@@ -1795,10 +1795,10 @@ func SoundEngine(file *os.File, bits int) {
 		if peak < 0 {
 			peak = 0
 		}
-		sides = Max(-0.5, Min(0.5, sides))
+		sides = math.Max(-0.5, math.Min(0.5, sides))
 		if record {
-			L := Max(-1, Min(1, dac+sides)) * convFactor
-			R := Max(-1, Min(1, dac-sides)) * convFactor
+			L := math.Max(-1, math.Min(1, dac+sides)) * convFactor
+			R := math.Max(-1, math.Min(1, dac-sides)) * convFactor
 			writeWav(L, R)
 		}
 		t = time.Since(lastTime)
@@ -1840,19 +1840,19 @@ var tanhTab = make([]float64, width)
 func init() {
 	for i := range sineTab {
 		// using cosine, even function avoids negation for -ve x
-		sineTab[i] = Cos(2 * Pi * float64(i) / SampleRate)
+		sineTab[i] = math.Cos(2 * math.Pi * float64(i) / SampleRate)
 	}
 }
 
 func init() {
 	for i := range tanhTab {
-		tanhTab[i] = Tanh(float64(i) / width)
+		tanhTab[i] = math.Tanh(float64(i) / width)
 	}
 }
 
-const Tau = 2*Pi
+const Tau = 2*math.Pi
 func sine(x float64) float64 {
-	return Sin(Tau * x)
+	return math.Sin(Tau * x)
 	if x < 0 {
 		x = -x
 	}
@@ -1866,7 +1866,7 @@ func sine(x float64) float64 {
 
 func tanh(x float64) float64 {
 	if x < -1 || x > 1 {
-		return Tanh(x)
+		return math.Tanh(x)
 	}
 	neg := not
 	if x < 0 {
@@ -1891,15 +1891,15 @@ func (n *noise) ise() float64 {
 	*n ^= *n << 17
 	return float64(*n) * twoInvMaxUint - 1
 }
-var invMaxInt32 = 1.0/MaxInt32
+var invMaxInt32 = 1.0/math.MaxInt32
 func mod(x, y float64) float64 {
-	return Mod(x, y)
+	return math.Mod(x, y)
 	pos := yes
 	if x < 0 {
 		pos = not
 		x = -x
 	}
-	m := uint32(MaxInt32*x/y)
+	m := uint32(math.MaxInt32*x/y)
 	//m %= uint32(MaxInt32*y) // dirty mod
 	if pos {
 		return float64(m)*invMaxInt32
@@ -1918,8 +1918,8 @@ func fft(y [N]complex128, s float64) [N]complex128 {
 	var x [N]complex128
 	for r, l := N2, 1; r > 0; r /= 2 {
 		y, x = x, y
-		ωi, ωr := Sincos(-s * Pi / float64(l))
-		//ω := complex(Cos(-s * Pi / float64(l)), Sin(-s * Pi / float64(l)))
+		ωi, ωr := math.Sincos(-s * math.Pi / float64(l))
+		//ω := complex(math.Cos(-s * Pi / float64(l)), math.Sin(-s * Pi / float64(l)))
 		for j, ωj := 0, complex(1, 0); j < l; j++ {
 			jr := j * r * 2
 			for k, m := jr, jr/2; k < jr+r; k++ {
@@ -2354,14 +2354,14 @@ func checkFade(s *systemState) int {
 func checkRelease(s *systemState) int {
 	if s.operand == "time" {
 		msg("%slimiter release is:%s %.4gms", italic, reset,
-			-1000/(Log(release)*SampleRate/Log(8000)))
+			-1000/(math.Log(release)*SampleRate/math.Log(8000)))
 		return startNewOperation
 	}
 	v, ok := parseFloat(s.num, 1/(MAX_RELEASE*SampleRate), 1/(MIN_RELEASE*SampleRate))
 	if !ok { // error reported by parseFloat
 		return startNewOperation
 	}
-	release = Pow(125e-6, v)
+	release = math.Pow(125e-6, v)
 	reportFloatSet("limiter "+s.operator, v) // report embellished
 	return startNewOperation
 }
@@ -2372,13 +2372,13 @@ func adjustGain(s *systemState) int {
 	} else if s.operand == "is" {
 	} else if n, ok := parseType(s.operand, s.operator); ok {
 		gain *= n
-		if Abs(Log10(gain)) < 1e-12 { // hacky
+		if math.Abs(math.Log10(gain)) < 1e-12 { // hacky
 			gain = 1
 		} else if gain < 0.05 { // lower bound ~ -26db
 			gain = 0.05
 		}
 	}
-	msg("%sgain set to %s%.2gdb", italic, reset, 20*Log10(gain))
+	msg("%sgain set to %s%.2gdb", italic, reset, 20*math.Log10(gain))
 	return startNewOperation
 }
 

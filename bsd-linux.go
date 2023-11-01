@@ -668,9 +668,7 @@ func loadReloadAppend(t *systemState) int {
 		reload = n
 		if len(mutes) > reload {
 			mutes[reload] = 0
-		}
-		if reload > len(transfer.Listing)-1 {
-			time.Sleep(25*time.Millisecond)
+			time.Sleep(50*time.Millisecond)
 		}
 		t.operand = ".temp/" + t.operand
 	case "apd":

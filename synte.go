@@ -1995,7 +1995,13 @@ func endFunctionDefine(t *systemState) int {
 			msg("%sfunction saved%s", italic, reset)
 		}
 	}
-	return startNewListing // fIn will be reset on start
+	t.fIn = not
+	if t.newListing[0].Op == "[" {
+		return startNewListing
+	}
+	t.newListing = t.newListing[:t.st+1]
+	msg("function not sent to soundengine")
+	return nextOperation
 }
 
 func checkPushPop(s *systemState) int {

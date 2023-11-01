@@ -102,7 +102,7 @@ const (
 	EXPORTED_LIMIT = 12
 	NOISE_FREQ     = 0.0625 // 3kHz @ 48kHz Sample rate
 	FDOUT          = 1e-4
-	MIN_FADE       = 125e-3 // 125ms
+	MIN_FADE       = 175e-3 // 125ms
 	MAX_FADE       = 120    // 120s
 	MIN_RELEASE    = 50e-3  // 50ms
 	MAX_RELEASE    = 50     // 50s
@@ -1758,11 +1758,11 @@ func SoundEngine(file *os.File, bits int) {
 		x160 = dac
 		// parallel low end path
 		lpf50 = lpf50 + (dac-lpf50)*0.006536
-		d := 4 * lpf50 / (1 + math.Abs(lpf50*4)) // tanh approximation
+		d := 1 * lpf50 / (1 + math.Abs(lpf50*4)) // tanh approximation
 		lpf510 = lpf510 + (d-lpf510)*0.006536
 		deemph = lpf510
 		 // apply pre-emphasis to detection
-		det := math.Abs(11.4*hpf2560+1.6*hpf160+dac) * 0.5
+		det := math.Abs(11.4*hpf2560+1.6*hpf160+dac) * 0.7
 		if det > l {
 			l = det // MC
 			h = release
@@ -1779,6 +1779,7 @@ func SoundEngine(file *os.File, bits int) {
 			sides *= env
 			env -= fade // linear fade-out (perceived as logarithmic)
 			if env < 0 {
+				time.Sleep(50*time.Millisecond) // wait for 'glitch protection' go routine to complete
 				break // equivalent to: return
 			}
 		}

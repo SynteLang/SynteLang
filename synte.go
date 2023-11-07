@@ -102,7 +102,7 @@ const (
 	EXPORTED_LIMIT = 12
 	NOISE_FREQ     = 0.0625 // 3kHz @ 48kHz Sample rate
 	FDOUT          = 1e-4
-	MIN_FADE       = 175e-3 // 125ms
+	MIN_FADE       = 75e-3 // 125ms
 	MAX_FADE       = 120    // 120s
 	MIN_RELEASE    = 50e-3  // 50ms
 	MAX_RELEASE    = 50     // 50s
@@ -1853,7 +1853,7 @@ func init() {
 
 const Tau = 2*math.Pi
 func sine(x float64) float64 {
-	return math.Sin(Tau * x)
+	return math.Cos(Tau * x)
 	if x < 0 {
 		x = -x
 	}

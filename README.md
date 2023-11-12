@@ -131,7 +131,7 @@ Common operations are `+`, `mul`, `in`, `out`.
 The `osc` function outputs a ramp wave (increasing series of values up to 1, then restarts.)  
 `osc` accepts a frequency in hertz (from the preceding operation.)
 
-Most values apart from frequencies are between -1 and 1 for audio and 0 to 1 for control/modulation. This might seem like a limited range; however, incredibly small fractions down to a number with over 300 zeros after the decimal place are possible. You won't need to handle such numbers, but if you want to experiment they can be input using the syntax `1e-3` which would represent one thousandth, or 3 millionths would be `3e-6` etc. You may also input a number as a fraction such as `in 1/3.14` etc. 
+Most values apart from frequencies are between -1 and 1 for audio and 0 to 1 for control/modulation. This might seem like a limited range; however, incredibly small fractions down to a number with over 300 zeros after the decimal place are possible. You won't need to handle such numbers, but if you want to experiment they can be input using the syntax `1e-3` which would represent one thousandth, or 3 millionths would be `3e-6` etc. You may also input a number as a fraction such as `in 1/3.14` etc.  
 Any values greater than 1 or less than -1 will be clipped by the output resulting in distortion. Think of this as slicing off the tops of waveforms that are too loud. Most of the time you won't need to worry about keeping within range though.
 
 In the syntə code example above, the output of the `osc` function is *shaped* by the sine operator. The sine operator does not produce a sound tone by itself.
@@ -970,6 +970,7 @@ Up to 12 signals may be exported for input to other listings. Indicate this by c
 ---
 
 <br>
+
 ## The Sound Engine
 Although it is not necessary to know how the sound engine works to perform or play with Syntə, it can be helpful to learn more about it so we'll give a brief outline here.  
 When a listing is send to the sound engine an internal copy is generated and added to the sequence of listings. The sound engine takes each listing in turn from 0 onwards and runs through it once to produce the value of the next sample, then it moves on to the next listing. Once it has computed all the listings the resulting samples are summed together and sent through the built-in limiter to ensure no loud surprises and the peak amplitude of the output is also sent to the info display. The resulting signal is converted to the correct format and sent to the soundcard in your computer, after which the whole process repeats.  
@@ -995,6 +996,7 @@ Please add a github issue for bug reports or feature requests.
 ---
 
 <br>
+
 ### A note on licensing
 The work in this file and all others in this repository is now licenced. See the licence.md file for details.  
 

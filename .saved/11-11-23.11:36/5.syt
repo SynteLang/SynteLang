@@ -1,0 +1,6 @@
+in 4hz
+osc
+flip
+exp 5
+lpf 75hz
+.out Vca

@@ -1,0 +1,9 @@
+from 0
++ c
+lpf 7khz
+hpf 200hz
+mul 0.65
+tape 773ms
+out c
+mul -6db
+out dac

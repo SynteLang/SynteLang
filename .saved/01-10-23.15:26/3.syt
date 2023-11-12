@@ -1,0 +1,10 @@
+in Vca
+mul 0.5
+flip
+out vca
+in pitch
+mul 1/4
+lpf 1s
+sino
+mul vca
+mix

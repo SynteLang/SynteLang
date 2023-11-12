@@ -1,0 +1,26 @@
+in 4hz
+osc
+flip
+exp 5
+smooth
+out vca
+in 4/1.618hz
+step 1.618
+8bit 4.7
+8bit 12
+base 2
+mul 660hz
+lpf 7hz
+sino
+out m
+in 4/1.6hz
+step 1.6
+8bit 4.7
+8bit 12
+base 2
+mul 330hz
+lpf 15hz
+sino
++ m
+pad
+mix

@@ -1,0 +1,15 @@
+in 5s
+sino
+mul 9
++ 1
+mul 3ms
+out t
+from 0
++ c
+lpf 7khz
+hpf 200hz
+mul 1
+tape t
+out c
+mul -6db
+out dac

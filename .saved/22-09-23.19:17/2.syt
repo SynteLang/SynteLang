@@ -1,0 +1,15 @@
+in 5s
+pulse PW
+out ^g
+in 1.5hz
+sq
+s/h grid
+mul ^g
+smooth
+smooth
+out ^g
+in 330hz
+sino
+mul ^g
+pad
+mix

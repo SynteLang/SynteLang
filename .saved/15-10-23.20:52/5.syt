@@ -1,0 +1,14 @@
+in Vca
+hpf 5hz
+lt 0.5
+dirac
+down 500ms
+exp 5
+out vca
+mul 25hz
++ 65hz
+sino
+mul vca
+lpf 220hz
+tanh
+mix

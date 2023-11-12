@@ -1,0 +1,15 @@
+/b 32,0
+trn 4
+mul 1
+clip 0
+lpf 100hz
+out vca
+mul 25hz
++ 65hz
+sino
+mul 2
+mul vca
+tanh
+lpf 200hz
+mul 10db
+mix

@@ -1,0 +1,28 @@
+/b 24,0
+lt 0.5
+out s
+/b 1,0
+gt 0.5
+out s1
+/b 8,0
+gt 0.5
+mul s1
+mul s
++ 1
+out p2
+in semitone
+pow 5
+mul pitch
+mul p2
+lpf 5hz
+out p
+saw
+out m
+in p
+mul 1.001
+saw
++ p
+mul 1/2
+lpf 800hz
+mul -2db
+mix

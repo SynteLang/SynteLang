@@ -1,0 +1,8 @@
+in 4s
+osc
+gt 0.5
+mul 0.5
++ 1
+mul 220hz
+sino
+mix

@@ -1,0 +1,31 @@
+in semitone
+- 1
+out s-1
+/b 2,0
+flip
+exp 2
+- 1/4
+out vca
+mul 2
+base 2
+mul 110hz
+out f
+in 1/8hz
+osc
+out sync
+lt 0.5
+mul s-1
++ 1
+mul 330/4hz
+out p
+saw
+out m
+in semitone
+pow 8
+mul p
+saw
+sum m
+mul vca
+lpf f
+lpf f
+mix

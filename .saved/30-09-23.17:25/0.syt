@@ -1,0 +1,19 @@
+in 2hz
+sq
+mul ln5
+out p
+in 2s
+mul Phi
+sq
+mul ln3
+out+ p
+in 1hz
+sq
+mul ln3
+mul -1
+in p
+mod ln2
+base E
+mul pitch
+sino
+mix

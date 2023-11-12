@@ -1,0 +1,37 @@
+in 8hz
+osc
+flip
+exp 4
+- 1/16
+smooth
+smooth
+out vca
+in 2s
+sq
+count 4
+clip 3
++ 2
+\ 5
+out p
+in 2hz
+step 4
++ n
+mod 0.75
++ 1
+mul p
+mul 330hz
+out p1
+sino
+out m
+in p1
+mul 1.12
+sino
++ m
+out x
+mul x
+mul x
+mul -35db
++ x
+mul vca
+pad
+mix

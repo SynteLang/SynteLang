@@ -1,0 +1,27 @@
+in 3hz
+osc
+flip
+exp 4
+- 1/16
+smooth
+smooth
+out vca
+in 1/2hz
+sq
+count 3
+/ 3
+out ch
+in 1hz
+osc
+8bit 3
+mul 3/4
++ ch
+mod 1
+8bit 7
+8bit 12
+base 2
+smooth
+mul 330/8hz
+saw
+mul vca
+mix

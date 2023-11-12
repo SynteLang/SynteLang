@@ -1,0 +1,15 @@
+in 0.4hz
+sino
+mul 0.15
++ 0.75
+out pw
+in pitch
+mul 1.002
+osc
+out s
+gt pw
+mul s
+lpf 440hz
+lpf 440hz
+cv2a
+mix

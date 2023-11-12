@@ -1,0 +1,12 @@
+/b 32,0
+lpf 25hz
+out vca
+in pitch
+mul 0.25
+sino
+out m
+T2
+mul 1/4
++ m
+mul vca
+mix

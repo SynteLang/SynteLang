@@ -1,0 +1,9 @@
+in Vca
+lt 0.5
+count 5
+hpf 2hz
+clip 0
+smooth
+mul 165hz
+sino
+mix

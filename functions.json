@@ -3668,27 +3668,39 @@
 		]
 	},
 	"saw": {
-		"Comment": "saw wave, descending ramp. Output in range ±1 ",
+		"Comment": "saw wave, ascending ramp. Output in range ±1 ",
 		"Body": [
-			{
-				"Op": "mul",
-				"Opd": "4"
-			},
 			{
 				"Op": "out",
 				"Opd": "^freq"
 			},
 			{
+				"Op": "+",
+				"Opd": "a"
+			},
+			{
 				"Op": "mul",
-				"Opd": "0.25"
+				"Opd": "b"
+			},
+			{
+				"Op": "lt",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "b"
+			},
+			{
+				"Op": "in",
+				"Opd": "^freq"
 			},
 			{
 				"Op": "+",
 				"Opd": "a"
 			},
 			{
-				"Op": "mod",
-				"Opd": "1"
+				"Op": "mul",
+				"Opd": "b"
 			},
 			{
 				"Op": "out",
@@ -3696,10 +3708,10 @@
 			},
 			{
 				"Op": "mul",
-				"Opd": "-2"
+				"Opd": "2"
 			},
 			{
-				"Op": "+",
+				"Op": "-",
 				"Opd": "1"
 			}
 		]

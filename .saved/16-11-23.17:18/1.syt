@@ -1,0 +1,13 @@
+in 0.29
+noise
+hpf 3s
+lpf 3hz
+lpf 3hz
++ 1
+mul 223ms
+out t
+from 0
++ C
+tape t
+lpf 7khz
+out dac

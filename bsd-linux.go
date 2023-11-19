@@ -491,7 +491,7 @@ func displayHeader(sc soundcard, wavNames string, t systemState) {
 	pf("\n%s%d%s:", cyan, l, reset)
 	for i, o := range t.dispListing {
 		switch t.dispListing[i].Op {
-		case "in", "pop", "index", "[", "]", "from", "all":
+		case "in", "pop", "index", "[", "]", "from", "all", "/b":
 			pf("\t  %s%s %s%s\n", yellow, o.Op, o.Opd, reset)
 		default:
 			if _, f := t.funcs[t.dispListing[i].Op]; f {
@@ -666,7 +666,7 @@ func loadReloadAppend(t *systemState) int {
 			return startNewOperation
 		}
 		reload = n
-		if len(mutes) > reload {
+		if len(mutes) > reload && !display.Paused {
 			mutes[reload] = 0
 			time.Sleep(50*time.Millisecond)
 		}

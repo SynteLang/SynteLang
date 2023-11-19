@@ -1577,16 +1577,16 @@ func SoundEngine(file *os.File, bits int) {
 					pan[int(sigs[i][o.N])] = math.Max(-1, math.Min(1, r))
 				case 39: // "all"
 					// r := 0 // allow mixing in of preceding listing
-					c := 0.0 // to avoid being mixed twice
+					c := 0.0
 					for ii := range listings {
 						if ii == i { // ignore current listing
-							continue
+							break // only 'all' preceding
 						}
 						r += sigs[ii][0]
 						c++ // yikes
 					}
 					c = math.Max(c, 1)
-					r /= c
+					r /= math.Sqrt(c)
 				case 40: // "fft"
 					fftArray[i][n%N] = r
 					if n%N2 == 0 && n >= N && !ffrz[i] {
@@ -1714,7 +1714,7 @@ func SoundEngine(file *os.File, bits int) {
 			// This can introduce distortion, which is mitigated by mixF filter below
 			// Skipping loop early isn't really necessary, but it has been kept in as a source of character
 			// The distortion arises because c is not incremented by 1 for unmuted listings
-			// whose output is exactly zero, thereby modulating the mix factor
+			// whose output is intermittently zero, thereby modulating the mix factor
 			if sigs[i][0] == 0 {
 				continue
 			}

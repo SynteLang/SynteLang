@@ -1987,7 +1987,7 @@ func endFunctionDefine(t *systemState) int {
 	}
 	name := t.newListing[t.st].Opd
 	t.hasOperand[name] = h
-	t.funcs[name] = fn{Body: t.newListing[t.st+1:]}
+	t.funcs[name] = fn{Comment: t.funcs[name].Comment, Body: t.newListing[t.st+1:]}
 	msg("%sfunction %s%s%s ready%s.", italic, reset, name, italic, reset)
 	if t.funcsave {
 		if !saveJson(t.funcs, "functions.json") {

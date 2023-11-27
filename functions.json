@@ -3311,7 +3311,7 @@
 		]
 	},
 	"ramp": {
-		"Comment": "like `osc` but with an output suitable for audio, i.e. spans -1 to 1 ",
+		"Comment": "like `osc` but with an output suitable for audio, i.e. spans -1 to 1. Contains spurious products ",
 		"Body": [
 			{
 				"Op": "mul",

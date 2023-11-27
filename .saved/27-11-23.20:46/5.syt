@@ -1,0 +1,15 @@
+/b 8,0.5
+trn 16
+out vca
+mul 880hz
+sqr
+hpf 440hz
+hpf 440hz
+mul 34db
+mul vca
++ c
+tape 116*1.5bpm
+lpf 8khz
+mul 0.99
+out c
+mix

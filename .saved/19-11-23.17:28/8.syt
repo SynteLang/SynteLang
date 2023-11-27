@@ -1,0 +1,16 @@
+in 24s
+pulse 0.5
+flip
+mul 0.62
+out p
+in 16s
+sq
+flip
+mul 0.5
++ p
++ 1
+mul 50hz
+sino
+mul Vca
+lpf 150hz
+mix

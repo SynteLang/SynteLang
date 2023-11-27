@@ -1221,7 +1221,6 @@ func SoundEngine(file *os.File, bits int) {
 		setmixDefault = 800 / SampleRate
 		current       int
 		p = 1.0
-		endPause int
 		samples = make(chan stereoPair, 2400) // buffer up to 50ms of samples (@ 48kHz), introduces latency
 	)
 	defer close(samples)
@@ -1311,7 +1310,6 @@ func SoundEngine(file *os.File, bits int) {
 		select {
 		case <-pause:
 			p = 0
-			endPause = n
 		case <-transmit:
 			listings = make([]listing, len(transfer.Listing))
 			copy(listings, transfer.Listing)
@@ -1345,7 +1343,7 @@ func SoundEngine(file *os.File, bits int) {
 		default:
 			// play
 		}
-		if p == 0 && endPause < n-12000 {
+		if p == 0 {
 			pause <- not // blocks until `: play`, bool is purely semantic
 			if exit {
 				break

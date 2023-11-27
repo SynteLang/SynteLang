@@ -193,7 +193,7 @@ func main() {
 %s
 %s
 %s%s
-      %sMouse-X:%s %.4g		%sMouse-Y:%s %.4g
+      %sMouse-X:%s %.5g		%sMouse-Y:%s %.5g
 ╰───────────────────────────────────────────────────╯`,
 				sync, paused, timer,
 				display.Mode, yellow, reset, L,

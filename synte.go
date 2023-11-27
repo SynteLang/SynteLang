@@ -1373,7 +1373,7 @@ func SoundEngine(file *os.File, bits int) {
 			sigs[i][7] = mo.Right
 			sigs[i][8] = mo.Middle
 			r := 0.0
-			op := 0
+			op := 0 // redundant until jl0 implemented
 			for _, o := range list {
 				current = i
 				switch o.Opn {
@@ -1892,6 +1892,10 @@ func (n *noise) ise() float64 {
 }
 var invMaxInt32 = 1.0/math.MaxInt32
 func mod(x, y float64) float64 {
+	if y == 1 {
+		_, f := math.Modf(x)
+		return f
+	}
 	return math.Mod(x, y)
 	pos := yes
 	if x < 0 {

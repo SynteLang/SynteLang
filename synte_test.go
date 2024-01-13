@@ -1,6 +1,9 @@
 package synte
 
-import "testing"
+import (
+	"slices"
+	"testing"
+)
 
 func init() {
 	msg = func(s string, i ...interface{}) {
@@ -95,5 +98,52 @@ func TestParseType(t *testing.T) {
 		if n, b := parseType(tst.expr, tst.op); n != tst.n || b != tst.b {
 			t.Errorf(`parseType(%q, %q) => %g %v, expected %g %v`, tst.expr, tst.op, n, b, tst.n, tst.b)
 		}
+	}
+}
+
+func TestEndFunctionDefine(t *testing.T) {
+	var inputNewListing = listing {
+		operation{Op: "[", Opd: "blah"},
+		operation{Op: "test", Opd: "330hz"},
+		operation{Op: "]", Opd: "blah"},
+	}
+	var s systemState
+	s.fIn = true
+	s.newListing = inputNewListing
+	s.hasOperand = make(map[string]bool)
+	s.funcs = make(map[string]fn)
+//	s.funcsave = false // implicit
+	if res := endFunctionDefine(&s); res != startNewListing {
+		t.Errorf(`endFunctionDefine(plain) => %s, expected startNewListing`, results[res])
+	}
+
+	inputNewListing = listing {
+		operation{Op: "in", Opd: "330hz"},
+		operation{Op: "[", Opd: "blah"},
+		operation{Op: "test", Opd: "@"},
+		operation{Op: "]", Opd: "blah"},
+	}
+	var outputNewListing = listing {
+		operation{Op: "in", Opd: "330hz"},
+	}
+	s.fIn = true
+	s.newListing = inputNewListing
+	s.hasOperand = make(map[string]bool)
+	s.funcs = make(map[string]fn)
+//	s.funcsave = false // implicit
+	if res := endFunctionDefine(&s); res != nextOperation {
+		t.Errorf(`endFunctionDefine(hot-loaded) => %s, expected nextOperation`, results[res])
+	}
+	if !slices.EqualFunc(s.newListing, outputNewListing, func(i, o operation) bool {
+		if i.Op != o.Op || i.Opd != o.Opd {
+			return false
+		}
+		return true
+	}) {
+		t.Errorf(`endFunctionDefine(hot-loaded) => %v, expected %v`, s.newListing, outputNewListing)
+	}
+	if _, ok := s.hasOperand["blah"]; !ok {
+		t.Error(`endFunctionDefine(hot-loaded), expected entry in hasOperand map`)
+		t.Log(s.hasOperand)
 	}
 }

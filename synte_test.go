@@ -1,4 +1,4 @@
-package synte
+package main
 
 import (
 	"slices"

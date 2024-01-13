@@ -52,7 +52,7 @@
 // go reloadListing(), poll '.temp/*.syt' modified time and reload if changed, timed slowly at > 84ms
 // go func(), anonymous, handles writing to soundcard within SoundEngine(), blocks on write to soundcard
 
-package synte
+package main
 
 import (
 	"bufio"

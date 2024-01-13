@@ -1,11 +1,9 @@
 //go:build (freebsd || linux) && amd64
 
-// +build freebsd linux
-
 //  is an audio live coding environment
 // This file implements BSD and Linux specific functions for 64bit x86 
 
-package main
+package synte
 
 import (
 	"bufio"

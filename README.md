@@ -63,19 +63,19 @@ It is not known at present what the performance will be on other systems. ◊ Th
 **Getting Started**
 
 To download the files use `git clone` on this repo or click on the green code link above this doc on the main page of the github repository (which you are probably looking at right now) and download as a zip file. As the software is under continuous development it is a good idea to update the code regularly.  
-You should end up with a directory (folder) containing the following files:  
+You should end up with a directory (folder) containing the following files and directories:  
 
 >	
 	README.md (this file)
 	synte.go  
 	bsd-linux.go 
-	info.go  
-	listing.go  
 	functions.json  
-	functions.go (optional, recommended) 
-	an empty directory named 'recordings' (can contain a README.md) 
+	tools/info.go (optional, recommended)  
+	tools/listing.go (optional, recommended)  
+	tools/functions.go (optional) 
 	a directory named 'wavs' containing wav files (optional, can contain a README.md)
 	an empty directory named '.temp' (can contain a README file) 
+	an empty directory named 'recordings' (can contain a README.md) 
 
 Open a terminal, navigate to the directory and type `go run synte.go bsd-linux.go` to begin. ◊ Open another terminal and run `info.go` similarly. This will display useful information and feedback as you input and run code, if you run this before synte.go it will display details of any loaded wavs.  
 Open another terminal and run `listing.go` to view currently running code, this will also show mute status in italics. You may wish to arrange these using a tiling window manager, terminal multiplexer, or equivalent.

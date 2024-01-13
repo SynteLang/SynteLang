@@ -1,3 +1,5 @@
+//go:build (freebsd || linux) && amd64
+
 /*
 	Syntə is an audio live coding environment
 
@@ -50,7 +52,7 @@
 // go reloadListing(), poll '.temp/*.syt' modified time and reload if changed, timed slowly at > 84ms
 // go func(), anonymous, handles writing to soundcard within SoundEngine(), blocks on write to soundcard
 
-package main
+package synte
 
 import (
 	"bufio"
@@ -190,13 +192,13 @@ type systemState struct {
 
 type processor func(*systemState) int
 
-type operatorParticulars struct {
+type operatorCheck struct {
 	Opd     bool // indicates if has operand
 	N       int  // index for sound engine switch
 	process processor
 }
 
-var operators = map[string]operatorParticulars{ // would be nice if switch indexes could be generated from a common root
+var operators = map[string]operatorCheck{ // would be nice if switch indexes could be generated from a common root
 	//name  operand N  process           comment
 	"+":      {yes, 1, noCheck},         // add
 	"out":    {yes, 2, checkOut},        // send to named signal
@@ -261,6 +263,7 @@ var operators = map[string]operatorParticulars{ // would be nice if switch index
 	"ffzy":   {not, 48, noCheck},        // rotate phases by random values
 	"ffaze":  {yes, 49, noCheck},        // rotate phases by operand
 	"reu":    {not, 50, noCheck},        // reverse each half of complex spectrum
+	"halt":    {not, 51, noCheck},        // halt sound engine for time specified by input (experimental)
 
 	// specials
 	"]":       {not, 0, endFunctionDefine},   // end function input
@@ -1073,8 +1076,7 @@ func bounds(a, b float64) bool {
 	return a < -b || a > b
 }
 
-// evaluateExpr() does what it says on the tin
-// not designed to handle expressions containing eg. 1e-3-1e-2
+// evaluateExpr() won't handle expressions containing eg. 1e-3-1e-2
 func evaluateExpr(expr string) (float64, bool) {
 	opds := []string{expr}
 	var rr error
@@ -1704,6 +1706,12 @@ func SoundEngine(file *os.File, bits int) {
 							z[ii][i], z[ii][j] = z[ii][j], z[ii][i]
 						}
 					}
+				case 51: // "halt"
+					t := time.Duration(1 / r) 
+					if t > 1e6 {
+						t = 1e6
+					}
+					time.Sleep(time.Microsecond*t)
 				default:
 					// nop, r = r
 				}
@@ -1942,7 +1950,7 @@ func fft(y [N]complex128, s float64) [N]complex128 {
 var sf func(string, ...interface{}) string = fmt.Sprintf
 
 // msg sends a formatted string to info display
-func msg(s string, i ...interface{}) {
+var msg = func(s string, i ...interface{}) {
 	info <- fmt.Sprintf(s, i...)
 	<-carryOn
 }
@@ -1952,7 +1960,7 @@ func e(rr error) bool {
 	return rr != nil
 }
 
-// operatorParticulars process field functions
+// operatorCheck process field functions
 // These must be of type processor func(*systemState) int
 
 func noCheck(_ *systemState) int {
@@ -1966,7 +1974,7 @@ func checkOut(s *systemState) int {
 		return s.clr("%soutput to number not permitted%s", italic, reset)
 	case in && s.operand[:1] != "^" && s.operand != "dac" && s.operator != "out+" && s.operator != ">+":
 		return s.clr("%s: %sduplicate output to signal, c'est interdit%s", s.operand, italic, reset)
-	case s.operand == "@":
+	case s.operand[:1] == "@":
 		return s.clr("%scan't send to @, represents function operand%s", italic, reset)
 	}
 	if !isUppercaseInitial(s.operand) {
@@ -2056,7 +2064,7 @@ func parseIndex(s listingState, l int) (int, bool) {
 
 func excludeCurrent(op string, i, l int) bool {
 	if i > l-1 {
-		msg("%scan't %s current or non-extant listing:%s %d", italic, op, reset)
+		msg("%scan't %s current or non-extant listing:%s %d", italic, op, reset, l)
 		return yes
 	}
 	return not
@@ -2172,6 +2180,7 @@ func doLoop(s *systemState) int {
 	s.to = s.do
 	return startNewOperation
 }
+
 func modeSet(s *systemState) int {
 	if s.operand == "p" { // toggle pause/play
 		switch {

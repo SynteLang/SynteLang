@@ -1995,7 +1995,7 @@ func endFunctionDefine(t *systemState) int {
 			break
 		}
 	}
-	name := t.newListing[t.st].Opd
+	name := t.newListing[t.st+1].Opd
 	t.hasOperand[name] = h
 	t.funcs[name] = fn{Comment: t.funcs[name].Comment, Body: t.newListing[t.st+1:]}
 	msg("%sfunction %s%s%s ready%s.", italic, reset, name, italic, reset)

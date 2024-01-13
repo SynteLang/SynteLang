@@ -1747,6 +1747,387 @@
 			}
 		]
 	},
+	"hh": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "out",
+				"Opd": "g"
+			},
+			{
+				"Op": "in",
+				"Opd": "1.85ms"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.0.0"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.0.0"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0.5"
+			},
+			{
+				"Op": "out",
+				"Opd": "m"
+			},
+			{
+				"Op": "in",
+				"Opd": "1.25ms"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.0.1"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.0.1"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0.5"
+			},
+			{
+				"Op": "out+",
+				"Opd": "m"
+			},
+			{
+				"Op": "in",
+				"Opd": "311.4hz"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.0.2"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.0.2"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0.5"
+			},
+			{
+				"Op": "out+",
+				"Opd": "m"
+			},
+			{
+				"Op": "in",
+				"Opd": "181.346hz"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.0.3"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.0.3"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0.5"
+			},
+			{
+				"Op": "out+",
+				"Opd": "m"
+			},
+			{
+				"Op": "in",
+				"Opd": "220.02hz"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.0.4"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.0.4"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0.5"
+			},
+			{
+				"Op": "out+",
+				"Opd": "m"
+			},
+			{
+				"Op": "in",
+				"Opd": "122.336hz"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.0.5"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.0.5"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0.5"
+			},
+			{
+				"Op": "+",
+				"Opd": "m"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "-",
+				"Opd": "x.6"
+			},
+			{
+				"Op": "+",
+				"Opd": "y.6"
+			},
+			{
+				"Op": "out",
+				"Opd": "r.6"
+			},
+			{
+				"Op": "in",
+				"Opd": "2.5khz"
+			},
+			{
+				"Op": "mul",
+				"Opd": "Tau"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "\\",
+				"Opd": "1"
+			},
+			{
+				"Op": "clip",
+				"Opd": "0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "r.6"
+			},
+			{
+				"Op": "out",
+				"Opd": "y.6"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "x.6"
+			},
+			{
+				"Op": "in",
+				"Opd": "y.6"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "-",
+				"Opd": "x.7"
+			},
+			{
+				"Op": "+",
+				"Opd": "y.7"
+			},
+			{
+				"Op": "out",
+				"Opd": "r.7"
+			},
+			{
+				"Op": "in",
+				"Opd": "2.5khz"
+			},
+			{
+				"Op": "mul",
+				"Opd": "Tau"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "\\",
+				"Opd": "1"
+			},
+			{
+				"Op": "clip",
+				"Opd": "0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "r.7"
+			},
+			{
+				"Op": "out",
+				"Opd": "y.7"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "x.7"
+			},
+			{
+				"Op": "in",
+				"Opd": "y.7"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "-",
+				"Opd": "x.8"
+			},
+			{
+				"Op": "+",
+				"Opd": "y.8"
+			},
+			{
+				"Op": "out",
+				"Opd": "r.8"
+			},
+			{
+				"Op": "in",
+				"Opd": "2.5khz"
+			},
+			{
+				"Op": "mul",
+				"Opd": "Tau"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "\\",
+				"Opd": "1"
+			},
+			{
+				"Op": "clip",
+				"Opd": "0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "r.8"
+			},
+			{
+				"Op": "out",
+				"Opd": "y.8"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "x.8"
+			},
+			{
+				"Op": "in",
+				"Opd": "y.8"
+			},
+			{
+				"Op": "-",
+				"Opd": "b.9"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.9"
+			},
+			{
+				"Op": "in",
+				"Opd": "2.5khz"
+			},
+			{
+				"Op": "f2c",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.9"
+			},
+			{
+				"Op": "+",
+				"Opd": "b.9"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.9"
+			},
+			{
+				"Op": "mul",
+				"Opd": "g"
+			},
+			{
+				"Op": "mul",
+				"Opd": "8db"
+			}
+		]
+	},
 	"hpf": {
 		"Comment": "6dB per octave high-pass filter. Operand is cutoff frequency in Hertz ",
 		"Body": [

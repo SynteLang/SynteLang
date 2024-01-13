@@ -1,0 +1,16 @@
+in 135bpm
+* 2.5
+osc
+lt 0.1
+smooth
+out vca
+in 135bpm
+step 3.02
+8bit 5
+8bit 12
+base 2
+mul 880hz
+saw
+lpf 330hz
+mul vca
+mix

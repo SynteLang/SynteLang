@@ -1,0 +1,30 @@
+/b 16,0.5
+trn 2
+push
+mul 0.5
+base 2
+mul 440hz
+out p
+pop
+gt 0.5
+smooth
+out vca
+in p
+mul 1.03
+saw
+out m
+in p
+saw
++ m
+lpf 3khz
+mul -8db
+mul vca
++ c
+push
+tape 128*1.5bpm
+lpf 3khz
+mul 0.7
+out c
+pop
+pad
+mix

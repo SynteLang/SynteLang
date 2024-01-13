@@ -1,0 +1,11 @@
+/b 8,0.5
+trn 12
+mul 2
+tanh
+noise
+hpf 3khz
+hpf 3khz
+mul 14db
+lpf 3khz
+lpf 3khz
+mix

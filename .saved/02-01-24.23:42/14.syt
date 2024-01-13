@@ -1,0 +1,31 @@
+in 3s
+osc
++ 1
+mul 12
+out b
+/b 2,0.5
+lt 0.5
+mul 0.25
+out t
+/b 64,0
+lt 0.5
+out grid
+/b b,t
+lt 1/2
+s/h grid
+hpf 1s
+clip 0
+lpf 25hz
+out vca
+mul 2hz
++ 55*1.2hz
+/ P
+sino
+mul 2
+tanh
+mul vca
+lpf 110hz
+tanh
+mul D
+pad
+mix

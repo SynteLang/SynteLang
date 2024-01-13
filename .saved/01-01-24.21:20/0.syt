@@ -1,0 +1,19 @@
+/b 1,0
+lt 0.875
+out t
+/b 6,0
+gt 0.5
++ 1
+mul 16
+out b
+/b b,0
+mul t
+trn 5
+smooth
+out vca
+in pitch
+sino
+clip vca
+lpf 200hz
+lpf 200hz
+mix

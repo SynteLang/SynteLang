@@ -1,0 +1,13 @@
+/b 2,0
+lt 0.5
+mul 0.125
++ 1
+out p
+/b 2,0
+lt 0.75
+flip
+mul 0.5
++ 1
+\ p
+mul 85hz
+.out pitch

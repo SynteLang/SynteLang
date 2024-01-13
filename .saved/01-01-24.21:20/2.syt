@@ -1,0 +1,19 @@
+/b 8,0.5
+trn 8
+out vca
+in 1.25ms
+sq
+out m
+in 1.75ms
+sq
++ m
+hpf 1khz
+hpf 1khz
+mul 8db
+mul vca
++ c
+mul 0.5
+tape 128*6bpm
+lpf 3khz
+out c
+mix

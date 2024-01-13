@@ -1,0 +1,26 @@
+in 2hz
+sq
++ 0.5
+lpf 25hz
+out vca
+in 17hz
+sino
+push
+mul 0.25
++ 1
+mul 600ms
+out t
+pop
+gt 0.5
+out Z
+in 0
+from 0
++ c
+mul 1.5
+tape t
+lpf 300hz
+mul vca
+out c
+hpf 50hz
+mul -12db
+mix

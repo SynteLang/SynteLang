@@ -1,0 +1,11 @@
+/b 16,0
+trn 6
+push
+mul 80hz
+out f
+pop
+noise
+lpf f
+lpf f
+mul 50db
+mix

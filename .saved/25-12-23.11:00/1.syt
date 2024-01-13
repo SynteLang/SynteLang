@@ -1,0 +1,23 @@
+in 135bpm
+/ 8
+osc
+out sync
+in 135bpm
+osc
+mul 110hz
+sino
+push
+in 6hz
+osc
+lt 0.3
+smooth
+smooth
+out vca
+flip
+out Vca
+pop
+mul vca
+mul 2.5
+tanh
+lpf 220hz
+mix

@@ -1,0 +1,8 @@
+in 3.5s
+pulse 0.1
+smooth
+out vca
+in 440hz
+sino
+mul vca
+mix

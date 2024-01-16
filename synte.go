@@ -1994,7 +1994,7 @@ func endFunctionDefine(t *systemState) int {
 			break
 		}
 	}
-	name := t.newListing[t.st+1].Opd
+	name := t.newListing[t.st].Opd
 	t.hasOperand[name] = h
 	t.funcs[name] = fn{Comment: t.funcs[name].Comment, Body: t.newListing[t.st+1:]}
 	msg("%sfunction %s%s%s ready%s.", italic, reset, name, italic, reset)
@@ -2009,7 +2009,7 @@ func endFunctionDefine(t *systemState) int {
 	if t.newListing[0].Op == "[" {
 		return startNewListing
 	}
-	t.newListing = t.newListing[:t.st+1]
+	t.newListing = t.newListing[:t.st]
 	msg("function not sent to soundengine")
 	return nextOperation
 }

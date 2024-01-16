@@ -116,16 +116,22 @@ func TestEndFunctionDefine(t *testing.T) {
 	if res := endFunctionDefine(&s); res != startNewListing {
 		t.Errorf(`endFunctionDefine(plain) => %s, expected startNewListing`, results[res])
 	}
+	if _, ok := s.hasOperand["blah"]; !ok {
+		t.Error(`endFunctionDefine(hot-loaded), expected entry in hasOperand map`)
+		t.Log(s.hasOperand)
+	}
 
 	inputNewListing = listing {
 		operation{Op: "in", Opd: "330hz"},
 		operation{Op: "[", Opd: "blah"},
 		operation{Op: "test", Opd: "@"},
-		operation{Op: "]", Opd: "blah"},
+		operation{Op: "]", Opd: ""},
 	}
 	var outputNewListing = listing {
 		operation{Op: "in", Opd: "330hz"},
 	}
+
+	s.st = 1
 	s.fIn = true
 	s.newListing = inputNewListing
 	s.hasOperand = make(map[string]bool)

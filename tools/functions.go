@@ -42,12 +42,14 @@ func main() {
 
 	var functions funcs
 
-	file := "../functions.json"
+	file := "functions.json"
 
 	Json, err := os.ReadFile(file)
 	err2 := json.Unmarshal(Json, &functions)
 	if err != nil || err2 != nil {
-		fmt.Printf("error loading %s: %v %v", file, err, err2)
+		fmt.Printf("error loading %s: %v %v\n", file, err, err2)
+		fmt.Println("please try running from main (containing) directory")
+		os.Exit(1)
 	}
 	if len(os.Args) > 1 && os.Args[1] == "-u" {
 		// process usage stats

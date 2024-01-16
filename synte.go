@@ -235,7 +235,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"<sync":  {yes, 25, noCheck},        // receive sync pulse
 	">sync":  {not, 26, noCheck},        // send sync pulse
 	".>sync": {not, 26, noCheck},        // alias, launches listing
-	"jl0":    {yes, 27, noCheck},        // jump if less than zero
+//	"jl0":    {yes, 27, noCheck},        // jump if less than zero
 	"level":  {yes, 28, checkIndexIncl}, // vary level of a listing
 	".level": {yes, 28, checkIndexIncl}, // alias, launches listing
 	"lvl":    {yes, 28, checkIndexIncl}, // vary level of a listing
@@ -1176,7 +1176,6 @@ type stereoPair struct {
 // If the loop time exceeds the sample rate over number of samples given by RATE the Sound Engine will panic
 // The data transfer structures need a good clean up
 // Some work has been done on profiling, beyond design choices such as using slices instead of maps
-// Using floats is probably somewhat profligate, later on this may be converted to int type which would provide ample dynamic range
 // Now with glitch protection! IO handled in separate go routine
 func SoundEngine(file *os.File, bits int) {
 	defer close(stop)
@@ -1375,7 +1374,7 @@ func SoundEngine(file *os.File, bits int) {
 			sigs[i][7] = mo.Right
 			sigs[i][8] = mo.Middle
 			r := 0.0
-			op := 0 // redundant until jl0 implemented
+			//op := 0
 			for _, o := range list {
 				current = i
 				switch o.Opn {
@@ -1534,13 +1533,13 @@ func SoundEngine(file *os.File, bits int) {
 					case r > 0: // reset
 						syncSt8[i] = run
 					}
-				case 27: // "jl0"
+				/*case 27: // "jl0"
 					if r <= 0 {
 						op += int(sigs[i][o.N])
 					}
 					if op > len(list)-2 {
 						op = len(list) - 2
-					}
+					}*/
 				case 28: // "level", ".level"
 					level[int(sigs[i][o.N])] = r
 				case 29: // "from"
@@ -1565,7 +1564,7 @@ func SoundEngine(file *os.File, bits int) {
 				case 35: // "print"
 					pd++ // unnecessary?
 					if (pd)%32768 == 0 && !exit {
-						info <- sf("listing %d, op %d: %.5g", i, op, r)
+						info <- sf("listing %d: %.5g", i, r)
 						pd += int(no >> 50)
 					}
 				case 36: // "\\"
@@ -1715,7 +1714,7 @@ func SoundEngine(file *os.File, bits int) {
 				default:
 					// nop, r = r
 				}
-				op++
+				//op++
 			}
 			// This can introduce distortion, which is mitigated by mixF filter below
 			// Skipping loop early isn't really necessary, but it has been kept in as a source of character

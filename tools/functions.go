@@ -12,7 +12,6 @@ import (
 	"os"
 	"sort"
 	"strconv"
-	"synte"
 )
 
 // terminal colours
@@ -43,7 +42,7 @@ func main() {
 
 	var functions funcs
 
-	file := "functions.json"
+	file := "../functions.json"
 
 	Json, err := os.ReadFile(file)
 	err2 := json.Unmarshal(Json, &functions)
@@ -52,7 +51,7 @@ func main() {
 	}
 	if len(os.Args) > 1 && os.Args[1] == "-u" {
 		// process usage stats
-		u := synte.loadUsage()
+		u := loadUsage()
 		for name, n := range u {
 			// for each function in usage list
 			if _, in := functions[name]; !in {
@@ -164,6 +163,31 @@ func main() {
 	for k := range functions {
 		fmt.Printf("\t%s%s%s ", italic, k, reset)
 	}
+}
+
+func loadUsage() map[string]int {
+	u := map[string]int{}
+	f, err := os.Open("usage.txt")
+	if err != nil {
+		//msg("%v", rr)
+		return u
+	}
+	s := bufio.NewScanner(f)
+	s.Split(bufio.ScanWords)
+	for s.Scan() {
+		op := s.Text()
+		if op == "unused:" {
+			break
+		}
+		s.Scan()
+		n, err := strconv.Atoi(s.Text())
+		if err != nil {
+			//msg("usage: %v", rr)
+			continue
+		}
+		u[op] = n
+	}
+	return u
 }
 
 type pair struct {

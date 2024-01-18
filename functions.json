@@ -4049,7 +4049,7 @@
 		]
 	},
 	"saw": {
-		"Comment": "saw wave, ascending ramp. Output in range ±1 ",
+		"Comment": "saw wave, ascending ramp. Output in range ±1. Not pitch accurate, but without spurious products ",
 		"Body": [
 			{
 				"Op": "out",

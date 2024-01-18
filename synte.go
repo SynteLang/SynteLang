@@ -326,7 +326,7 @@ var (
 	started bool      // latches
 	exit    bool      // initiate shutdown
 	mutes   muteSlice // move to transfer struct?
-	level   []float64 // move to transfer struct?
+	levels   []float64 // move to transfer struct?
 	reload  = -1
 	ds,
 	rs bool // root-sync between running instances
@@ -436,10 +436,6 @@ func main() {
 
 	t := systemState{sc: sc} // s yorks
 
-	go infoDisplay()
-	go SoundEngine(sc.file, sc.format)
-	go mouseRead()
-
 	// process wavs
 	wavSlice := decodeWavs()
 	transfer.Wavs = make([][]float64, 0, len(wavSlice))
@@ -451,6 +447,11 @@ func main() {
 		transfer.Wavs = append(transfer.Wavs, w.Data)
 	}
 
+	go infoDisplay()
+	go SoundEngine(sc, transfer.Wavs)
+	go mouseRead()
+
+
 	restart := not     // controls whether listing is saved to temp on launch
 
 	go func() { // watchdog, anonymous to use variables in scope
@@ -461,7 +462,7 @@ func main() {
 				return
 			}
 			stop = make(chan struct{})
-			go SoundEngine(sc.file, sc.format)
+			go SoundEngine(sc, transfer.Wavs)
 			lockLoad <- struct{}{}
 			for len(tokens) > 0 { // empty incoming tokens
 				<-tokens
@@ -695,7 +696,7 @@ start:
 					mutes = append(mutes, 0)
 					t.unsolo = append(t.unsolo, 0)
 					display.Mute = append(display.Mute, yes)
-					level = append(level, 1)
+					levels = append(levels, 1)
 				}
 				// reloaded listings handled below
 				break input
@@ -762,7 +763,7 @@ start:
 				mutes = append(mutes, 1)
 				t.unsolo = append(t.unsolo, 1)
 				display.Mute = append(display.Mute, not)
-				level = append(level, 1)
+				levels = append(levels, 1)
 			}
 			transmit <- yes
 			<-accepted
@@ -1177,19 +1178,19 @@ type stereoPair struct {
 // The data transfer structures need a good clean up
 // Some work has been done on profiling, beyond design choices such as using slices instead of maps
 // Now with glitch protection! IO handled in separate go routine
-func SoundEngine(file *os.File, bits int) {
+func SoundEngine(sc soundcard, wavs [][]float64) {
 	defer close(stop)
-	w := bufio.NewWriterSize(file, 256) // need to establish whether buffering is necessary here
+	w := bufio.NewWriterSize(sc.file, 256) // need to establish whether buffering is necessary here
 	defer w.Flush()
-	//w := file // unbuffered alternative
-	output := selectOutput(bits)
+	//w := sc.file // unbuffered alternative
+	output := selectOutput(sc.format)
 	if output == nil {
 		return
 	}
 
 	const (
 		Tau        = 2 * math.Pi
-		RATE       = 2 << 14 // lenient
+		RATE       = 2 << 14 // integration time
 	)
 
 	var (
@@ -1256,10 +1257,10 @@ func SoundEngine(file *os.File, bits int) {
 	for i := range stacks {
 		stacks[i] = stack
 	}
-	wavs := make([][]float64, len(transfer.Wavs), MAX_WAVS)
+	//wavs := make([][]float64, len(transfer.Wavs), MAX_WAVS)
 	copy(listings, transfer.Listing) // TODO: these don't properly de-reference because a slice of slices,
 	copy(sigs, transfer.Signals)     // listings need to be copied individually
-	copy(wavs, transfer.Wavs)        // for now it's not a problem, or the copying is not even necessary 
+	//copy(wavs, transfer.Wavs)        // for now it's not a problem, or the copying is not even necessary 
 	tapes := make([][]float64, len(transfer.Listing), 26)
 	for i := range tapes { // i is shadowed
 		tapes[i] = make([]float64, TLlen)
@@ -1366,7 +1367,7 @@ func SoundEngine(file *os.File, bits int) {
 				sigs[i][ii] = sigs[(i+len(sigs)-1)%len(sigs)][ii]
 			}
 			m[i] = m[i] + (p*mutes[i]-m[i])*0.0013   // anti-click filter @ ~10hz
-			lv[i] = lv[i] + (level[i]-lv[i])*0.125 // @ 1091hz
+			lv[i] = lv[i] + (levels[i]-lv[i])*0.125 // @ 1091hz
 			// mouse values
 			sigs[i][4] = mx
 			sigs[i][5] = my
@@ -1541,7 +1542,7 @@ func SoundEngine(file *os.File, bits int) {
 						op = len(list) - 2
 					}*/
 				case 28: // "level", ".level"
-					level[int(sigs[i][o.N])] = r
+					levels[int(sigs[i][o.N])] = r
 				case 29: // "from"
 					r = sigs[int(sigs[i][o.N])%len(sigs)][0]
 				case 30: // "sgn"

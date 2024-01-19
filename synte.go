@@ -360,8 +360,7 @@ var (
 	mutes   muteSlice
 	levels  []float64
 	//reload  = -1
-	ds,
-	rs bool // root-sync between running instances
+	rs      bool                                     // root-sync between running instances
 	fade    = 1 / (MIN_FADE * SAMPLE_RATE)           //Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
 	release = math.Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
 	ct      = 4.0                                    // individual listing clip threshold
@@ -434,7 +433,7 @@ const ( // used in token parsing
 	nextOperation
 )
 
-type clear func(s string, i ...interface{}) int
+type clear func(s string, i ...any) int
 
 const advisory = `
 Protect your hearing when listening to any audio on a system capable of
@@ -625,7 +624,7 @@ start:
 		t.reload = -1 // index to be launched to
 		rpl = t.reload
 		// the purpose of clr is to reset the input if error while receiving tokens from external source
-		t.clr = func(s string, i ...interface{}) int { // must be type: clear
+		t.clr = func(s string, i ...any) int { // must be type: clear
 			for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
 				<-tokens
 			}
@@ -816,11 +815,11 @@ func loadNewListing(listing []operation) []opSE {
 	for i := range listing {
 		if listing[i].N > math.MaxUint16 { // paranoid checks
 			msg("too many signals, didn't load to Sound Engine")
-			return []opSE{opSE{Opn: 31}}
+			return []opSE{{Opn: 31}}
 		}
 		if listing[i].Opn > math.MaxUint8 {
 			msg("listing too long, didn't load to Sound Engine")
-			return []opSE{opSE{Opn: 31}}
+			return []opSE{{Opn: 31}}
 		}
 		l[i] = opSE{
 			N:   uint16(listing[i].N),
@@ -1241,13 +1240,13 @@ type stereoPair struct {
 }
 
 func transfer(d []listingStack, t *data) ([]listingStack, []int) {
-	if (*t).reload < len(d) && (*t).reload > -1 { // for d reload
-		k := d[(*t).reload].keep
-		d[(*t).reload] = (*t).listingStack
-		d[(*t).reload].keep = k
-		return d, (*t).daisyChains
+	if t.reload < len(d) && t.reload > -1 { // for d reload
+		k := d[t.reload].keep
+		d[t.reload] = t.listingStack
+		d[t.reload].keep = k
+		return d, t.daisyChains
 	}
-	return append(d, (*t).listingStack), (*t).daisyChains
+	return append(d, t.listingStack), t.daisyChains
 }
 
 // The Sound Engine does the bare minimum to generate audio
@@ -1277,7 +1276,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	)
 
 	var (
-		no   noise   = noise(time.Now().UnixNano())
+		no           = noise(time.Now().UnixNano())
 		l, h float64 = 1, 2 // limiter, hold
 		env  float64 = 1    // for exit envelope
 		dac, // output
@@ -1285,7 +1284,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		dither float64
 		n int // loop counter
 
-		rate     time.Duration = time.Duration(7292) // loop timer, initialised to approximate resting rate
+		rate     = time.Duration(7292) // loop timer, initialised to approximate resting rate
 		lastTime time.Time
 		rates    [RateIntegrationTime]time.Duration
 		t        time.Duration
@@ -1307,7 +1306,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		p       = 1.0                                          // pause variable
 
 		samples     = make(chan stereoPair, 2400) // buffer up to 50ms of samples (@ 48kHz), introduces latency
-		daisyChains = make([]int, 16)
+		daisyChains = make([]int, 16) // made explicity here to set capacity
 	)
 	defer close(samples)
 	no *= 77777777777 // force overflow
@@ -1330,8 +1329,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			if current < 0 {
 				break
 			}
-			d[current].listing = []opSE{opSE{Opn: 31}} // delete listing
-			d[current].sigs[0] = 0                     // silence listing
+			d[current].listing = []opSE{{Opn: 31}} // delete listing
+			d[current].sigs[0] = 0                 // silence listing
 			info <- sf("%d:%slisting deleted%s, %[2]scan edit and reload%[3]s", current, italic, reset)
 			stop <- current
 		}
@@ -1745,7 +1744,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 							d[ii].z[i], d[ii].z[j] = d[ii].z[j], d[ii].z[i]
 						}
 					}
-				case 51: // "halt"
+				case 51: // "halt" // needs more work
 					t := time.Duration(1 / r)
 					if t > 1e6 {
 						t = 1e6
@@ -1874,8 +1873,8 @@ func clip(in float64) float64 { // hard clip
 }
 
 func (y *stereoPair) stereoLpf(x stereoPair, coeff float64) {
-	(*y).left += (x.left - (*y).left) * coeff
-	(*y).right += (x.right - (*y).right) * coeff
+	y.left += (x.left - y.left) * coeff
+	y.right += (x.right - y.right) * coeff
 }
 
 var sineTab = make([]float64, int(SampleRate))
@@ -1989,10 +1988,10 @@ func fft(y [N]complex128, s float64) [N]complex128 {
 	return y
 }
 
-var sf func(string, ...interface{}) string = fmt.Sprintf
+var sf = fmt.Sprintf
 
 // msg sends a formatted string to info display
-var msg = func(s string, i ...interface{}) {
+var msg = func(s string, i ...any) {
 	info <- fmt.Sprintf(s, i...)
 	<-carryOn
 }
@@ -2311,8 +2310,6 @@ func modeSet(s *systemState) int {
 		msg("Live: %v", stats.Mallocs-stats.Frees)
 	case "mc": // mouse curve, exp or lin
 		mc = !mc
-	case "ds":
-		ds = yes // not intended to be invoked while paused
 	case "rs": // root sync, is this needed any more?
 		rs = yes
 		msg("%snext launch will sync to root instance%s", italic, reset)
@@ -2430,6 +2427,7 @@ func adjustGain(s *systemState) int {
 	if s.operand == "zero" {
 		gain = 1
 	} else if s.operand == "is" {
+		// just show below
 	} else if n, ok := parseType(s.operand, s.operator); ok {
 		gain *= n
 		if math.Abs(math.Log10(gain)) < 1e-12 { // hacky

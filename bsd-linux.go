@@ -13,7 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	. "math" // don't do this!
+	"math"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -22,7 +22,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-	//	"unicode"
 	"unsafe" // :D
 )
 
@@ -63,12 +62,12 @@ func setupSoundCard(file string) (sc soundcard, success bool) {
 	sc.format = 16
 	switch {
 	case data == AFMT_S16_LE:
-		sc.convFactor = MaxInt16
+		sc.convFactor = math.MaxInt16
 	case data == AFMT_S32_LE:
-		sc.convFactor = MaxInt32
+		sc.convFactor = math.MaxInt32
 		sc.format = 32
 	case data == AFMT_S8:
-		sc.convFactor = MaxInt8
+		sc.convFactor = math.MaxInt8
 		sc.format = 8
 	default:
 		p("\n--Incompatible bit format!--\nChange requested format in file--\n")
@@ -174,7 +173,7 @@ func loadFunctions(data *map[string]fn) {
 }
 
 // used for saving info, listings, functions and code recordings (not audio)
-func saveJson(data interface{}, f string) bool {
+func saveJson(data any, f string) bool {
 	j, rr := json.MarshalIndent(data, "", "\t")
 	if e(rr) {
 		msg("Error encoding '%s': %v", f, rr)
@@ -263,7 +262,7 @@ func decodeWavs() wavs {
 		rb := bytes.NewReader(data[44:])
 		switch bits {
 		case 16:
-			wav.Data = decodeInt16(rb, file, make([]int16, to), float64(MaxInt16), to, channels)
+			wav.Data = decodeInt16(rb, file, make([]int16, to), float64(math.MaxInt16), to, channels)
 		case 24:
 			d := make([]byte, 0, len(data)*2)
 			for i := 44; i < len(data)-3; i += 3 { // byte stuffing
@@ -271,9 +270,9 @@ func decodeWavs() wavs {
 				d = append(d, word...)
 			}
 			rb = bytes.NewReader(d)
-			wav.Data = decodeInt32(rb, file, make([]int32, to), float64(MaxInt32), to, channels)
+			wav.Data = decodeInt32(rb, file, make([]int32, to), float64(math.MaxInt32), to, channels)
 		case 32:
-			wav.Data = decodeInt32(rb, file, make([]int32, to), float64(MaxInt32), to, channels)
+			wav.Data = decodeInt32(rb, file, make([]int32, to), float64(math.MaxInt32), to, channels)
 		default:
 			msg("%s: needs to be 32, 24 or 16 bit", file)
 			continue
@@ -388,8 +387,8 @@ func mouseRead() {
 			return
 		}
 		if mc {
-			mouse.X = Pow(10, mx/10)
-			mouse.Y = Pow(10, my/10)
+			mouse.X = math.Pow(10, mx/10)
+			mouse.Y = math.Pow(10, my/10)
 		} else {
 			mouse.X = mx / 5
 			mouse.Y = my / 5
@@ -411,12 +410,12 @@ func readInput() {
 }
 
 // shorthand, prints to stdout
-func p(i ...interface{}) {
+func p(i ...any) {
 	fmt.Println(i...)
 }
 
 // shorthand, prints to stdout
-func pf(s string, i ...interface{}) {
+func pf(s string, i ...any) {
 	fmt.Printf(s, i...)
 }
 

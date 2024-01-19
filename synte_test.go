@@ -51,8 +51,8 @@ func TestChecks(t *testing.T) {
 		switch tst.name { // initialising here because embedded struct literals are awkward
 		case "checkOut":
 			tst.i.out = map[string]struct{}{
-				"extant": struct{}{},
-				"^freq":  struct{}{},
+				"extant": {},
+				"^freq":  {},
 			}
 			tst.i.clr = func(s string, i ...interface{}) int {
 				// eliding info message

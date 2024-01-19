@@ -1,0 +1,24 @@
+in 1hz
+osc
+- 0.01
+out sh
+flip
+level 0
+level 3
+mul 0.5
++ 1
+out ph
+in 36s
+osc
+mul 31
+mod 0.25
+s/h sh
+8bit 12
+base 2
+mul 200hz
+out pitch
+osc
+mul ph
+sine
+pad
+mix

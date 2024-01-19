@@ -1,0 +1,12 @@
+in 1s
+pulse 0.01
+noise
+mul 10db
+in 2hz
+step 5.02
+8bit 12
+base 2
+mul 440hz
+lpf 50hz
+sino
+mix

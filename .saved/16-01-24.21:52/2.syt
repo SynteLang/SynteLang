@@ -1,0 +1,8 @@
+in 24s
+osc
+8bit 12
+mul 3
+base 2
+mul 200hz
+in pitch
+.out pitch

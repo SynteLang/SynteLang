@@ -1,0 +1,10 @@
+in 3.7hz
+sino
+mul 0.01
++ 1
+mul 73ms
+out t
+from 1
+tape t
+mul 0.7
+.out A

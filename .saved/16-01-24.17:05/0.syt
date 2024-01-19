@@ -1,0 +1,5 @@
+in 1s
+pulse 0.01
+noise
+mul 10db
+mix

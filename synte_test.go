@@ -20,12 +20,12 @@ var results = [4]string{
 
 var testChecks = []struct {
 	check func(*systemState) int
-	name string
-	i systemState // input
-	op string     // operator
-	opd string    // operand
-	num bool
-	o int		  // expected return value
+	name  string
+	i     systemState // input
+	op    string      // operator
+	opd   string      // operand
+	num   bool
+	o     int // expected return value
 }{
 	{check: noCheck, name: "noCheck", o: nextOperation},
 	{check: checkOut, name: "checkOut", op: "out", opd: "vca", o: nextOperation},
@@ -48,18 +48,18 @@ var testChecks = []struct {
 
 func TestChecks(t *testing.T) {
 	for i, tst := range testChecks {
-		switch tst.name  { // initialising here because embedded struct literals are awkward
+		switch tst.name { // initialising here because embedded struct literals are awkward
 		case "checkOut":
 			tst.i.out = map[string]struct{}{
 				"extant": struct{}{},
-				"^freq": struct{}{},
+				"^freq":  struct{}{},
 			}
 			tst.i.clr = func(s string, i ...interface{}) int {
 				// eliding info message
 				return startNewOperation
 			}
 		case "checkIndexIncl":
-			transfer.Listing = make([]listing, 1)
+			mutes = make(muteSlice, 1)
 		}
 		tst.i.operator = tst.op
 		tst.i.operand = tst.opd
@@ -77,17 +77,17 @@ func TestParseType(t *testing.T) {
 	}
 	tests := []struct {
 		op, expr string
-		n float64
-		b bool
+		n        float64
+		b        bool
 	}{
 		{"in", "1/2", 0.5, true},
 		{"in", "500", 0, false},
 		{"in", "500!", 500, true},
-		{"in", "1ms", 1e3/SampleRate, true},
+		{"in", "1ms", 1e3 / SampleRate, true},
 		{"in", "2e-2ms", 0, false},
 		{"in", "4e3bpm", 0, false},
-		{"in", "120bpm", 2/SampleRate, true},
-		{"in", "1/48m", 1/6e4, true},
+		{"in", "120bpm", 2 / SampleRate, true},
+		{"in", "1/48m", 1 / 6e4, true},
 		{"in", "24khz", 0.5, true},
 		{"in", "48e3hz", 1, true},
 		{"in", "48*2e3hz", 0, false},
@@ -102,7 +102,7 @@ func TestParseType(t *testing.T) {
 }
 
 func TestEndFunctionDefine(t *testing.T) {
-	var inputNewListing = listing {
+	var inputNewListing = listing{
 		operation{Op: "[", Opd: "blah"},
 		operation{Op: "test", Opd: "330hz"},
 		operation{Op: "]", Opd: "blah"},
@@ -112,7 +112,7 @@ func TestEndFunctionDefine(t *testing.T) {
 	s.newListing = inputNewListing
 	s.hasOperand = make(map[string]bool)
 	s.funcs = make(map[string]fn)
-//	s.funcsave = false // implicit
+	//	s.funcsave = false // implicit
 	if res := endFunctionDefine(&s); res != startNewListing {
 		t.Errorf(`endFunctionDefine(plain) => %s, expected startNewListing`, results[res])
 	}
@@ -121,13 +121,13 @@ func TestEndFunctionDefine(t *testing.T) {
 		t.Log(s.hasOperand)
 	}
 
-	inputNewListing = listing {
+	inputNewListing = listing{
 		operation{Op: "in", Opd: "330hz"},
 		operation{Op: "[", Opd: "blah"},
 		operation{Op: "test", Opd: "@"},
 		operation{Op: "]", Opd: ""},
 	}
-	var outputNewListing = listing {
+	var outputNewListing = listing{
 		operation{Op: "in", Opd: "330hz"},
 	}
 
@@ -136,7 +136,7 @@ func TestEndFunctionDefine(t *testing.T) {
 	s.newListing = inputNewListing
 	s.hasOperand = make(map[string]bool)
 	s.funcs = make(map[string]fn)
-//	s.funcsave = false // implicit
+	//	s.funcsave = false // implicit
 	if res := endFunctionDefine(&s); res != nextOperation {
 		t.Errorf(`endFunctionDefine(hot-loaded) => %s, expected nextOperation`, results[res])
 	}

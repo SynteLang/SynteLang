@@ -1,7 +1,7 @@
 //go:build (freebsd || linux) && amd64
 
-//  is an audio live coding environment
-// This file implements BSD and Linux specific functions for 64bit x86 
+// Syntə is an audio live coding environment
+// This file implements BSD and Linux specific functions for 64bit x86
 
 package main
 
@@ -17,22 +17,21 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"runtime/pprof"
 	"sort"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
-//	"unicode"
+	//	"unicode"
 	"unsafe" // :D
 )
 
 var (
-	BYTE_ORDER  = binary.LittleEndian // not allowed in constants
+	BYTE_ORDER = binary.LittleEndian // not allowed in constants
 	// record indicates recording in progress
-	record bool
+	record    bool
 	wavHeader = []byte{82, 73, 70, 70, 36, 228, 87, 0, 87, 65, 86, 69, 102, 109, 116, 32, 16, 0, 0, 0, 1, 0, 2, 0, 128, 187, 0, 0, 0, 238, 2, 0, 4, 0, 16, 0, 100, 97, 116, 97, 0, 208, 221, 6} // 16bit signed PCM 48kHz
-	wavFile *os.File
+	wavFile   *os.File
 )
 
 func setupSoundCard(file string) (sc soundcard, success bool) {
@@ -178,7 +177,7 @@ func loadFunctions(data *map[string]fn) {
 func saveJson(data interface{}, f string) bool {
 	j, rr := json.MarshalIndent(data, "", "\t")
 	if e(rr) {
-		msg("Error encoding '%s': %v", f, rr) 
+		msg("Error encoding '%s': %v", f, rr)
 		return false
 	}
 	return save(j, f)
@@ -428,7 +427,7 @@ func reloadListing() {
 	for {
 		time.Sleep(32361 * time.Microsecond) // coarse loop timing
 		lockLoad <- struct{}{}
-		for ; l < len(transfer.Listing); l++ {
+		for ; l < len(mutes); l++ { // only loops over additional listings, likely just one
 			stat = append(stat, time.Time{})
 		}
 		for i := 0; i < l; i++ {
@@ -449,7 +448,7 @@ func reloadListing() {
 	}
 }
 
-// rootsync can be used to synchronise two instances of Syntə, may be depricated in future
+// rootsync can be used to synchronise two instances of Syntə, may be deprecated in future
 func rootSync() bool {
 	f := "../infodisplay.json"
 	d := disp{}
@@ -483,8 +482,8 @@ func displayHeader(sc soundcard, wavNames string, t systemState) {
 		pf(" %swavs:%s %s\n\n", italic, reset, wavNames)
 	}
 	l := len(t.dispListings)
-	if reload > -1 {
-		l = reload
+	if t.reload > -1 {
+		l = t.reload
 	}
 	pf("\n%s%d%s:", cyan, l, reset)
 	for i, o := range t.dispListing {
@@ -527,23 +526,6 @@ func selectOutput(bits int) func(w io.Writer, f float64) {
 	return output
 }
 
-func startProfiling(prof bool) {
-	if !prof {
-		return
-	}
-	f, rr := os.Create("cpu.prof")
-	if e(rr) {
-		msg("no cpu profile: %v", rr)
-		return
-	}
-	defer f.Close()
-	if rr := pprof.StartCPUProfile(f); e(rr) {
-		msg("profiling not started: %v", rr)
-		return
-	}
-	defer pprof.StopCPUProfile()
-}
-
 func ls(s *systemState) int {
 	if s.operand == "l" {
 		s.operand += "istings"
@@ -575,12 +557,12 @@ func ls(s *systemState) int {
 	return startNewOperation
 }
 
-func saveTempFile(r bool, t systemState) {
-	if r { // hacky conditional
+func saveTempFile(t systemState, l int) {
+	if t.newListing[0].Op == "deleted" {
 		return
 	}
 	// save listing as <n>.syt for the reload
-	f := sf(".temp/%d.syt", len(transfer.Listing)-1)
+	f := sf(".temp/%d.syt", l)
 	content := ""
 	for _, d := range t.dispListing {
 		content += d.Op
@@ -663,29 +645,28 @@ func loadReloadAppend(t *systemState) int {
 			msg("%soperand not valid:%s %s", italic, reset, t.operand)
 			return startNewOperation
 		}
-		reload = n
-		if len(mutes) > reload && !display.Paused {
-			mutes[reload] = 0
-			time.Sleep(50*time.Millisecond)
+		t.reload = n
+		if len(mutes) > t.reload && !display.Paused {
+			mutes[t.reload] = 0
+			time.Sleep(50 * time.Millisecond)
 		}
 		t.operand = ".temp/" + t.operand
 	case "apd":
-		reload = -1
+		t.reload = -1
 		t.operand = ".temp/" + t.operand
 	}
 	inputF, rr := os.Open(t.operand + ".syt")
 	if e(rr) {
 		msg("%v", rr)
-		reload = -1
+		t.reload = -1
 		return startNewOperation
 	}
 	s := bufio.NewScanner(inputF)
 	s.Split(bufio.ScanWords)
 	for s.Scan() {
-		tokens <- token{s.Text(), reload, yes}
+		tokens <- token{s.Text(), t.reload, yes}
 	}
 	inputF.Close()
 	tokens <- token{"_", -1, not} // reset header
 	return startNewListing
 }
-

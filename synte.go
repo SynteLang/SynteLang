@@ -180,6 +180,7 @@ type fn struct {
 
 type systemState struct {
 	dispListings []listing // these are relied on to track len of SE listings, checked after transfer
+	verbose      []listing
 	wmap         map[string]bool
 	funcs        map[string]fn
 	funcsave     bool
@@ -516,7 +517,6 @@ func main() {
 				}
 				s := bufio.NewScanner(inputF)
 				s.Split(bufio.ScanWords)
-				//if t.dispListings[i][0].Opn == 31 { // hacky, to avoid undeleting listings
 				if i == current { // hacky, to avoid undeleting listings
 					tokens <- token{"deleted", -1, yes}
 					continue
@@ -858,7 +858,7 @@ func collate(t *systemState, restart bool) *data {
 		return d
 	}
 	t.dispListings = append(t.dispListings, t.dispListing)
-	// append verbose here
+	t.verbose = append(t.verbose, t.newListing)
 	if len(mutes) >= len(t.dispListings) {
 		return d
 	}
@@ -2278,18 +2278,17 @@ func modeSet(s *systemState) int {
 	case "clear", "c":
 		msg("clear")
 	case "verbose":
-		msg("out of action")
-		/*switch s.code {
+		switch s.code {
 		case &s.dispListings:
 			s.code = &s.verbose
-		case &s.verbose
+		case &s.verbose:
 			s.code = &s.dispListings
 		}
 		display.Verbose = !display.Verbose
 		if !saveJson(*s.code, "displaylisting.json") {
 			msg("%slisting display not updated, check %s'displaylisting.json'%s exists%s",
 				italic, reset, italic, reset)
-		}*/
+		}
 	case "stats":
 		if !started {
 			return startNewOperation

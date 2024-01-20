@@ -291,8 +291,6 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"ct":      {yes, 0, adjustClip},          // individual clip threshold
 	"rld":     {yes, 0, loadReloadAppend},    // reload a listing
 	"r":       {yes, 0, loadReloadAppend},    // alias of rld
-	"rpl":     {yes, 0, enactRpl},            // replace a listing
-	".rpl":    {yes, 0, enactRpl},            // launch listing in place of another
 	"s":       {yes, 0, enactSolo},           // alias of solo
 	"e":       {yes, 0, eraseOperations},     // alias of erase
 	"apd":     {yes, 0, loadReloadAppend},    // launch index to new listing
@@ -359,7 +357,6 @@ var (
 	exit    bool // initiate shutdown
 	mutes   muteSlice
 	levels  []float64
-	//reload  = -1
 	rs      bool                                     // root-sync between running instances
 	fade    = 1 / (MIN_FADE * SAMPLE_RATE)           //Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
 	release = math.Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
@@ -423,8 +420,6 @@ var (
 	tokens   = make(chan token, 2<<12) // arbitrary capacity, will block input in extreme circumstances
 	lockLoad = make(chan struct{}, 1)  // mutex on transferring listings
 )
-
-var rpl = -1 // synchronised to 'reload' at new listing start and if error, hacky global
 
 const ( // used in token parsing
 	startNewOperation = iota
@@ -491,12 +486,10 @@ func main() {
 	go SoundEngine(sc, twavs)
 	go mouseRead()
 
-	restart := not // controls whether listing is saved to temp on launch
-
 	go func() { // watchdog, anonymous to use variables in scope
 		// This function will restart the sound engine in the event of a runtime panic
 		for {
-			current := <-stop // wait until stop channel closed
+			current := <-stop // blocks on receive or close
 			if exit {         // don't restart if legitimate exit
 				return
 			}
@@ -516,8 +509,11 @@ func main() {
 				}
 				s := bufio.NewScanner(inputF)
 				s.Split(bufio.ScanWords)
-				if i == current { // hacky, to avoid undeleting listings
+				if i == current {
 					tokens <- token{"deleted", -1, yes}
+					continue
+				}
+				if t.dispListings[i][0].Op == "deleted" {
 					continue
 				}
 				for s.Scan() { // listings dumped into tokens chan
@@ -525,11 +521,9 @@ func main() {
 				}
 				inputF.Close()
 			}
-			t.dispListings = nil
-			mutes = make(muteSlice, 0)
-			levels = make([]float64, 0)
-			restart = yes // don't save temp files
+			t.dispListings = nil // SE has been restarted so anull these to match internal listings
 			<-lockLoad
+			msg("%d: %slisting deleted%s, %[2]scan edit and reload%[3]s", current, italic, reset)
 			msg("%s>>> Sound Engine restarted%s", italic, reset)
 		}
 	}()
@@ -609,7 +603,6 @@ start:
 			signals["l."+w.Name] = float64(len(w.Data)-1) / (WAV_TIME * SampleRate)
 			signals["r."+w.Name] = 1.0 / float64(len(w.Data))
 		}
-		//TAPELEN = int(SampleRate * TAPE_LENGTH) // necessary?
 		t.out = make(map[string]struct{}, 30) // to check for multiple outs to same signal name
 		for _, v := range reservedSignalNames {
 			switch v {
@@ -622,13 +615,11 @@ start:
 			t.out[v] = assigned
 		}
 		t.reload = -1 // index to be launched to
-		rpl = t.reload
 		// the purpose of clr is to reset the input if error while receiving tokens from external source
 		t.clr = func(s string, i ...any) int { // must be type: clear
 			for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
 				<-tokens
 			}
-			rpl = t.reload
 			info <- fmt.Sprintf(s, i...)
 			<-carryOn
 			if ext {
@@ -640,12 +631,6 @@ start:
 	input:
 		for { // input loop
 			t.newOperation = newOperation{}
-			if len(tokens) == 0 {
-				// Not strictly correct. No files saved to temp while restart is true,
-				// tokens will be empty at completion of restart unless received from stdin within
-				// time taken to compile and launch. This is not critical as restart only controls file save.
-				restart = not
-			}
 			if !ext {
 				displayHeader(sc, wavNames, t)
 			}
@@ -781,10 +766,10 @@ start:
 		}
 
 		lockLoad <- struct{}{}
-		transmit <- collate(&t, restart)
+		transmit <- collate(&t)
 		a := <-accepted
-		if a != len(mutes) || len(mutes) != len(t.dispListings) {
-			msg("%s!! listings/mutes length mismatch !!%s", red, reset)
+		if a != len(t.dispListings) {
+			msg("%s!! listings length mismatch !!%s", red, reset)
 			//msg("len(mutes): %d, len(disp): %d, accepted: %d", len(mutes), len(t.dispListings), a)
 		}
 		<-lockLoad
@@ -829,10 +814,10 @@ func loadNewListing(listing []operation) []opSE {
 	return l
 }
 
-func collate(t *systemState, restart bool) *data {
+func collate(t *systemState) *data {
 	safe := t.newSignals
 	if t.newListing[0].Op == "deleted" {
-		safe = make([]float64, 9)
+		safe = make([]float64, 11) // minimise deleted signals
 	}
 	d := &data{
 		daisyChains: t.daisyChains,
@@ -848,8 +833,8 @@ func collate(t *systemState, restart bool) *data {
 	}
 	m := 1.0
 	switch o := t.newListing[len(t.newListing)-1]; o.Op {
-	case ".out", ".>sync", ".level", ".lvl", ".pan": // silent listings
-		m = 0
+	case ".out", ".>sync", ".level", ".lvl", ".pan", "deleted": // silent listings
+		m = 0 // to display as muted
 	}
 	if t.reload > -1 && t.reload < len(t.dispListings) {
 		t.dispListings[t.reload] = t.dispListing
@@ -858,16 +843,13 @@ func collate(t *systemState, restart bool) *data {
 	}
 	t.dispListings = append(t.dispListings, t.dispListing)
 	t.verbose = append(t.verbose, t.newListing)
-	if len(mutes) >= len(t.dispListings) {
+	if len(mutes) >= len(t.dispListings) { // if restart has happened
 		return d
 	}
 	display.Mute = append(display.Mute, (m == 0))
 	mutes = append(mutes, m)
 	levels = append(levels, 1)
 	t.unsolo = append(t.unsolo, m)
-	if restart {
-		return d
-	}
 	saveTempFile(*t, len(mutes)-1) // second argument sets name of file
 	return d
 }
@@ -890,41 +872,41 @@ type soundcard struct {
 	convFactor float64
 }
 
-func readTokenPair(t *systemState) (ext bool, result int) {
+func readTokenPair(t *systemState) (bool, int) {
 	tt := <-tokens
-	t.operator, t.reload, ext = tt.tk, tt.reload, tt.ext
+	t.operator, t.reload = tt.tk, tt.reload
 	if (len(t.operator) > 2 && byte(t.operator[1]) == 91) || t.operator == "_" || t.operator == "" {
-		return ext, startNewOperation
+		return tt.ext, startNewOperation
 	}
 	t.operator = strings.TrimSuffix(t.operator, ",")  // to allow comma separation of tokens
 	if len(t.operator) > 1 && t.operator[:1] == ":" { // hacky shorthand
 		t.operand = t.operator[1:]
 		t.operator = ":"
-		return ext, nextOperation
+		return tt.ext, nextOperation
 	}
 	hO, in := t.hasOperand[t.operator]
 	if !in {
 		r := t.clr("%soperator or function doesn't exist:%s %s", italic, reset, t.operator)
-		return ext, r
+		return tt.ext, r
 	}
 	_, t.isFunction = t.funcs[t.operator]
 
 	if !hO {
-		return ext, nextOperation
+		return tt.ext, nextOperation
 	}
 	// parse second token
 	tt = <-tokens
-	t.operand, t.reload, ext = tt.tk, tt.reload, tt.ext
+	t.operand, t.reload = tt.tk, tt.reload
 	t.operand = strings.TrimSuffix(t.operand, ",") // to allow comma separation of tokens
 	if t.operand == "_" || t.operand == "" {
-		return ext, startNewOperation
+		return tt.ext, startNewOperation
 	}
 	s := strings.ReplaceAll(t.operand, "{i}", "0")
 	s = strings.ReplaceAll(s, "{i+1}", "0")
 	t.operands = strings.Split(s, ",")
 	if !t.isFunction && len(t.operands) > 1 {
 		r := t.clr("only functions can have multiple operands")
-		return ext, r
+		return tt.ext, r
 	}
 	pass := t.wmap[t.operand] && t.operator == "wav"
 	switch t.operator { // operand can start with a number
@@ -932,13 +914,13 @@ func readTokenPair(t *systemState) (ext bool, result int) {
 		pass = true
 	}
 	if !strings.ContainsAny(s[:1], "+-.0123456789") || pass || t.isFunction {
-		return ext, nextOperation
+		return tt.ext, nextOperation
 	}
 	if t.num.Ber, t.num.Is = parseType(s, t.operator); !t.num.Is {
 		r := t.clr("")
-		return ext, r // parseType will report error
+		return tt.ext, r // parseType will report error
 	}
-	return ext, nextOperation
+	return tt.ext, nextOperation
 }
 
 func parseFunction(
@@ -1152,7 +1134,7 @@ func evaluateExpr(expr string) (float64, bool) {
 	var rr error
 	var n, n2 float64
 	var op string
-	if n, rr = strconv.ParseFloat(opds[0], 64); !e(rr) { // early return
+	if n, rr = strconv.ParseFloat(opds[0], 64); !e(rr) {
 		return n, true
 	}
 	for _, v := range []string{"*", "/", "+", "-"} {
@@ -1296,17 +1278,17 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		hpf160, x160 float64 // limiter detection
 		lpf50, lpf510,
 		deemph float64 // de-emphasis
-		//α                     = 30 * 1 / (SampleRate/(2*Pi*6.3) + 1) // co-efficient for setmix
-		α               = 1 / (SampleRate/(2*math.Pi*194) + 1) // co-efficient for setmix
-		hroom           = (convFactor - 1.0) / convFactor      // headroom for positive dither
-		c, mixF float64 = 4, 4                                 // mix factor
-		pd      int                                            // slated for removal
-		sides   float64                                        // for stereo
-		current int                                            // tracks index of active listing for recover()
-		p       = 1.0                                          // pause variable
+		//α       = 30 * 1 / (SampleRate/(2*Pi*6.3) + 1) // co-efficient for setmix
+		α       = 1 / (SampleRate/(2*math.Pi*194) + 1) // co-efficient for setmix
+		hroom   = (convFactor - 1.0) / convFactor      // headroom for positive dither
+		c, mixF = 4.0, 4.0                             // mix factor
+		pd      int                                    // slated for removal
+		sides   float64                                // for stereo
+		current int                                    // tracks index of active listing for recover()
+		p       = 1.0                                  // pause variable
 
 		samples     = make(chan stereoPair, 2400) // buffer up to 50ms of samples (@ 48kHz), introduces latency
-		daisyChains = make([]int, 16) // made explicity here to set capacity
+		daisyChains = make([]int, 16)             // made explicity here to set capacity
 	)
 	defer close(samples)
 	no *= 77777777777 // force overflow
@@ -1323,16 +1305,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				var buf [4096]byte
 				n := runtime.Stack(buf[:], false)
 				msg("%s", buf[:n]) // print stack trace to infoDisplay*/
-			if current > len(d)-1 {
-				current = len(d) - 1
-			}
-			if current < 0 {
-				break
-			}
-			d[current].listing = []opSE{{Opn: 31}} // delete listing
-			d[current].sigs[0] = 0                 // silence listing
-			info <- sf("%d:%slisting deleted%s, %[2]scan edit and reload%[3]s", current, italic, reset)
 			stop <- current
+			started = not
 		}
 	}()
 
@@ -1345,7 +1319,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				if !ok {
 					break loop
 				}
-				lpf.stereoLpf(s, 0.5)
+				lpf.stereoLpf(s, 0.7)
 			default:
 				lpf.stereoLpf(stereoPair{}, 0.0013)
 			}
@@ -1395,8 +1369,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		//for i, l := range d { // this is incredibly slow
 		for i := 0; i < len(d); i++ { // much faster
 			current = i
-			//for _, ii := range daisyChains {
-			for ii := 0; ii < len(daisyChains); ii++ {
+			for _, ii := range daisyChains {
 				d[i].sigs[ii] = d[(i+len(d)-1)%len(d)].sigs[ii]
 			}
 			d[i].m = d[i].m + (p*mutes[i]-d[i].m)*0.0013  // anti-click filter @ ~10hz
@@ -1764,11 +1737,11 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			}
 			if sigs[0] != sigs[0] { // test for NaN
 				sigs[0] = 0
-				panic(sf("listing: %d - NaN", i))
+				panic(sf("listing:%d - NaN", i))
 			}
 			if math.IsInf(sigs[0], 0) { // infinity to '93
 				sigs[0] = 0
-				panic(sf("listing: %d - overflow", i))
+				panic(sf("listing:%d - overflow", i))
 			}
 			c += d[i].m                       // add mute to mix factor
 			mid := sigs[0] * d[i].m * d[i].lv // sigs[0] left intact for `from` operator
@@ -2246,7 +2219,7 @@ func modeSet(s *systemState) int {
 		close(infoff)
 		if s.funcsave && !saveJson(s.funcs, "functions.json") {
 			msg("functions not saved!")
-			return startNewListing
+			//return startNewListing
 		}
 		time.Sleep(30 * time.Millisecond) // wait for infoDisplay to finish
 		return exitNow
@@ -2320,8 +2293,8 @@ func modeSet(s *systemState) int {
 }
 
 func enactDelete(s *systemState) int {
-	n, ok := parseIndex(s.listingState, len(mutes))
-	if !ok || excludeCurrent(s.operator, n, len(mutes)) {
+	n, ok := parseIndex(s.listingState, len(s.dispListings))
+	if !ok || excludeCurrent(s.operator, n, len(s.dispListings)) {
 		return startNewOperation // error reported by parseIndex
 	}
 	mutes.set(n, mute)  // wintermute
@@ -2334,42 +2307,27 @@ func enactDelete(s *systemState) int {
 		tokens <- token{"mix", -1, not}
 	}
 	// reload as deleted
-	tokens <- token{"deleted", n, yes}
-	s.dispListings[n] = listing{operation{Op: "deleted"}}
-	if !saveJson(*(s.code), "displaylisting.json") {
-		msg("%slisting display not updated, check %s'displaylisting.json'%s exists%s",
-			italic, reset, italic, reset)
-	}
-	tokens <- token{"_", -1, not} // reset header
-	return startNewOperation
+	s.reload = n
+	tokens <- token{"deleted", s.reload, yes}
+	return startNewListing
 }
 
 func checkIndexIncl(s *systemState) int { // eg. listing can level or pan itself
-	// alternative would be to let out-of-bounds fail silently in sound engine
-	if _, ok := parseIndex(s.listingState, len(mutes)); !ok {
+	if _, ok := parseIndex(s.listingState, len(s.dispListings)); !ok {
 		return startNewOperation // error reported by parseIndex
 	}
 	return nextOperation
 }
 
 func checkIndex(s *systemState) int {
-	i, ok := parseIndex(s.listingState, len(mutes))
-	if !ok || excludeCurrent(s.operator, i, len(mutes)) {
+	i, ok := parseIndex(s.listingState, len(s.dispListings))
+	if !ok || excludeCurrent(s.operator, i, len(s.dispListings)) {
 		return startNewOperation // error reported by parseIndex
 	}
 	return nextOperation
 }
 
-func enactRpl(s *systemState) int {
-	reload := checkIndex(s)
-	msg("%swill replace listing %s%d%s on launch%s", italic, reset, reload, italic, reset)
-	return startNewOperation
-}
-
 func unmuteAll(s *systemState) int {
-	if _, ok := parseIndex(s.listingState, len(mutes)); !ok {
-		return startNewOperation
-	}
 	for i := range mutes {
 		mutes.set(i, unmute)
 	}

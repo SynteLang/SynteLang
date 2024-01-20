@@ -601,10 +601,11 @@ You can find more examples in the `.saved` directory.
 |	ffzy	|		no		|		randomise phases of internal representation
 |	ffltr	|		yes		|		smear multiple windows, suggest operand in range 2s to 50s
 |	ffaze	|		yes		|		rotate phases by operand [-1. 1]
+|	index	|		yes		|		access index of listing
 |	       	| 		       	|
 |	fma		|		yes  	|		fused multiply add, the result of the input multiplied by the operand is stored in a special register `fma` (not implimented yet) ◊  
 
-**List of commands (won't appear in listing)**
+**List of commands (won't appear in listing, `rld` and `del` will remove any unlaunched input)**
 
 |  Command	|Requires operand?| Notes                           |
 |-----------|---------------|-----------------------------------|
@@ -613,7 +614,6 @@ You can find more examples in the `.saved` directory.
 |	:		|   	yes		|   	perform mode command: exit, erase, play, pause, fon, foff, clear, verbose, mc |
 |	fade	|		yes		|		changes fade out time after exit. Default is 325e-3 (unit is seconds, maximum 130s)
 |	del		|		yes		|		delete an entire compliled and running listing numbered by operand. Play will be resumed if paused. On deletion the `.temp/*.syt` file remains intact so the listing can be reloaded with `rld`. If you wish to delete all listings simply exit from Syntə and restart
-|	index	|		yes		|		access index of listing
 |	mute 	|		yes		|		mute  or un-mute listing at index given by operand. Muting won't affect sync operations sent by a listing
 |	m	 	|		yes		|		alias of `mute`
 |	m+	 	|		yes		|		like mute but simply adds to mute group, the whole group is launched (and reset) at once by a final invocation of `mute` or `m`

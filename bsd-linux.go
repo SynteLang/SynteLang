@@ -405,7 +405,7 @@ func readInput() {
 	s.Split(bufio.ScanWords)
 	for !exit {
 		s.Scan() // blocks on stdin
-		tokens <- token{s.Text(), rpl, not}
+		tokens <- token{s.Text(), -1, not}
 	}
 }
 
@@ -666,6 +666,5 @@ func loadReloadAppend(t *systemState) int {
 		tokens <- token{s.Text(), t.reload, yes}
 	}
 	inputF.Close()
-	tokens <- token{"_", -1, not} // reset header
 	return startNewListing
 }

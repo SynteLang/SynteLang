@@ -58,8 +58,8 @@ func TestChecks(t *testing.T) {
 				// eliding info message
 				return startNewOperation
 			}
-		case "checkIndexIncl":
-			mutes = make(muteSlice, 1)
+		case "checkIndexIncl", "checkIndex":
+			tst.i.dispListings = []listing{{}}
 		}
 		tst.i.operator = tst.op
 		tst.i.operand = tst.opd

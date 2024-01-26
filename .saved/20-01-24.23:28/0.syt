@@ -1,0 +1,44 @@
+in 1
+noise
+gt 0.999
+lpf 10m
+gt 0
+push
+cv2a
+out pol
+pop
+lpf 10s
+out vca
+in 3s
+osc
+flip
+hpf 1hz
+abs
++ 0.3
+lpf 5s
+out st
+in 1
+noise
+gt 0.95
+noise
+mul 3
+tanh
+hpf 1hz
+lpf 7khz
+mul st
++ c
+lpf 2200*4hz
+tape 220/2hz
+* 19
+tap 221*1.5hz
+/ 20
+mul 0.999
+mul pol
+out c
+mul 5
+tanh
+hpf 100hz
+lpf 7khz
+mul 3
+mul vca
+out dac

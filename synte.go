@@ -473,7 +473,7 @@ func main() {
 	go mouseRead()
 
 	go func() { // watchdog, anonymous to use variables in scope: dispListings, sc, twavs
-		// This function will restart the sound engine in the event of a runtime panic
+		// This function will restart the sound engine in the event of a panic
 		for {
 			current := <-stop // blocks on receive or close
 			if exit {         // don't restart if legitimate exit
@@ -507,10 +507,13 @@ func main() {
 				}
 				inputF.Close()
 			}
-			t.dispListings = nil // SE has been restarted so anull these to match internal listings
+			t.dispListings = nil // SE has been restarted so anull these to match sound engine
+			t.verbose = nil
+			t.daisyChains = t.daisyChains[:4]
 			<-lockLoad
 			msg("%d: %slisting deleted, can edit and reload%s", current, italic, reset)
 			msg("%s>>> Sound Engine restarted%s", italic, reset)
+			time.Sleep(5*time.Second) // hold-off
 		}
 	}()
 
@@ -652,7 +655,7 @@ start:
 				}
 			}
 			_, inSg := signals[t.operand]
-			if !inSg && !alreadyIn && !t.num.Is && !t.fIn && t.operator != "//" && isUppercaseInitial(t.operand) {
+			if !inSg && !alreadyIn && !t.num.Is && !t.fIn && t.operator != "//" && isUppercaseInitial(t.operand) { // optional: && t.operator == "out"
 				if lenExported > EXPORTED_LIMIT {
 					msg("we've ran out of exported signals :(")
 					continue
@@ -736,8 +739,9 @@ start:
 		transmit <- collate(&t)
 		a := <-accepted
 		if a != len(t.dispListings) {
-			msg("%s!! listings length mismatch !!%s", red, reset)
-			//msg("len(mutes): %d, len(disp): %d, accepted: %d", len(mutes), len(t.dispListings), a)
+		//	msg("%s!! listings length mismatch !!%s", red, reset)
+			msg("len(mutes): %d, len(disp): %d, accepted: %d", len(mutes), len(t.dispListings), a)
+			time.Sleep(1*time.Second)
 		}
 		<-lockLoad
 
@@ -805,6 +809,7 @@ func collate(t *systemState) *data {
 	}
 	if t.reload > -1 && t.reload < len(t.dispListings) {
 		t.dispListings[t.reload] = t.dispListing
+		t.verbose[t.reload] = t.newListing
 		mutes.set(t.reload, m)
 		return d
 	}
@@ -1272,6 +1277,10 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				var buf [4096]byte
 				n := runtime.Stack(buf[:], false)
 				msg("%s", buf[:n]) // print stack trace to infoDisplay*/
+			//saveJson(t.listing, sf("debug/SEcoredump%dlisting.json", time.Now().UnixMilli()))
+			//saveJson(t.sigs, sf("debug/SEcoredump%dsigs.json", time.Now().UnixMilli()))
+		//	time.Sleep(time.Second)
+		//	os.Exit(1)
 			stop <- current
 			started = not
 		}
@@ -1336,18 +1345,19 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		//for i, l := range d { // this is incredibly slow
 		for i := 0; i < len(d); i++ { // much faster
 			current = i
-			for _, ii := range daisyChains {
-				d[i].sigs[ii] = d[(i+len(d)-1)%len(d)].sigs[ii]
+			//for _, ii := range daisyChains {
+			for ii := 0; ii < len(daisyChains); ii++ {
+				d[i].sigs[daisyChains[ii]] = d[(i+len(d)-1)%len(d)].sigs[daisyChains[ii]]
 			}
 			d[i].m = d[i].m + (p*mutes[i]-d[i].m)*0.0013  // anti-click filter @ ~10hz
 			d[i].lv = d[i].lv + (levels[i]-d[i].lv)*0.125 // @ 1091hz
-			sigs := d[i].sigs
+			//sigs := d[i].sigs
 			// mouse values
-			sigs[4] = mx
-			sigs[5] = my
-			sigs[6] = mo.Left
-			sigs[7] = mo.Right
-			sigs[8] = mo.Middle
+			d[i].sigs[4] = mx
+			d[i].sigs[5] = my
+			d[i].sigs[6] = mo.Left
+			d[i].sigs[7] = mo.Right
+			d[i].sigs[8] = mo.Middle
 			r := 0.0
 			//op := 0
 			ll := len(d[i].listing)
@@ -1357,43 +1367,43 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				case 0:
 					// nop
 				case 1: // "+"
-					r += sigs[d[i].listing[ii].N]
+					r += d[i].sigs[d[i].listing[ii].N]
 				case 2: // "out"
-					sigs[d[i].listing[ii].N] = r
+					d[i].sigs[d[i].listing[ii].N] = r
 				case 3: // "out+"
-					sigs[d[i].listing[ii].N] += r
+					d[i].sigs[d[i].listing[ii].N] += r
 				case 4: // "in"
-					r = sigs[d[i].listing[ii].N]
+					r = d[i].sigs[d[i].listing[ii].N]
 				case 5: // "sine"
 					//r = math.Sin(Tau * r)
 					r = sine(r)
 				case 6: // "mod"
-					r = mod(r, sigs[d[i].listing[ii].N])
+					r = mod(r, d[i].sigs[d[i].listing[ii].N])
 				case 7: // "gt"
-					if r >= sigs[d[i].listing[ii].N] {
+					if r >= d[i].sigs[d[i].listing[ii].N] {
 						r = 1
 					} else {
 						r = 0
 					}
 				case 8: // "lt"
-					if r <= sigs[d[i].listing[ii].N] {
+					if r <= d[i].sigs[d[i].listing[ii].N] {
 						r = 1
 					} else {
 						r = 0
 					}
 				case 9: // "mul", "x", "*":
-					r *= sigs[d[i].listing[ii].N]
+					r *= d[i].sigs[d[i].listing[ii].N]
 				case 10: // "abs"
 					r = math.Abs(r)
 				case 11: // "tanh"
 					r = tanh(r)
 				case 12: // "pow"
-					if math.Signbit(sigs[d[i].listing[ii].N]) && r == 0 {
+					if math.Signbit(d[i].sigs[d[i].listing[ii].N]) && r == 0 {
 						r = math.Copysign(1e-308, r) // inverse is within upper range of float
 					}
-					r = math.Pow(r, sigs[d[i].listing[ii].N])
+					r = math.Pow(r, d[i].sigs[d[i].listing[ii].N])
 				case 13: // "base"
-					sg := sigs[d[i].listing[ii].N]
+					sg := d[i].sigs[d[i].listing[ii].N]
 					switch sg {
 					case math.E:
 						r = math.Exp(r)
@@ -1404,12 +1414,12 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					}
 				case 14: // "clip"
 					switch {
-					case sigs[d[i].listing[ii].N] == 0:
+					case d[i].sigs[d[i].listing[ii].N] == 0:
 						r = math.Max(0, math.Min(1, r))
-					case sigs[d[i].listing[ii].N] > 0:
-						r = math.Max(-sigs[d[i].listing[ii].N], math.Min(sigs[d[i].listing[ii].N], r))
-					case sigs[d[i].listing[ii].N] < 0:
-						r = math.Min(-sigs[d[i].listing[ii].N], math.Max(sigs[d[i].listing[ii].N], r))
+					case d[i].sigs[d[i].listing[ii].N] > 0:
+						r = math.Max(-d[i].sigs[d[i].listing[ii].N], math.Min(d[i].sigs[d[i].listing[ii].N], r))
+					case d[i].sigs[d[i].listing[ii].N] < 0:
+						r = math.Min(-d[i].sigs[d[i].listing[ii].N], math.Max(d[i].sigs[d[i].listing[ii].N], r))
 					}
 				case 15: // "noise"
 					r *= no.ise() // roll a fresh one
@@ -1425,9 +1435,9 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					d[i].tx = r
 					d[i].tape[n%TAPELEN] = d[i].th // record head
 					tl := SampleRate * TAPE_LENGTH
-					//t := math.Abs(math.Min(1/sigs[d[i].listing[ii].N], tl))
-					t := math.Mod((1 / sigs[d[i].listing[ii].N]), tl)
-					if sigs[d[i].listing[ii].N] == 0 {
+					//t := math.Abs(math.Min(1/d[i].sigs[d[i].listing[ii].N], tl))
+					t := math.Mod((1 / d[i].sigs[d[i].listing[ii].N]), tl)
+					if d[i].sigs[d[i].listing[ii].N] == 0 {
 						t = 0
 					}
 					xa := (n + TAPELEN - int(t)) % TAPELEN
@@ -1450,11 +1460,11 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					d[i].tf = (d[i].tf + r) * 0.5 // roll off the top end @ 7640Hz
 					r = d[i].tf
 				case 19: // "--"
-					r = sigs[d[i].listing[ii].N] - r
+					r = d[i].sigs[d[i].listing[ii].N] - r
 				case 20: // "tap"
 					tl := SampleRate * TAPE_LENGTH
-					//t := math.Abs(math.Min(1/sigs[d[i].listing[ii].N], tl))
-					t := math.Min(math.Abs(1/sigs[d[i].listing[ii].N]), tl)
+					//t := math.Abs(math.Min(1/d[i].sigs[d[i].listing[ii].N], tl))
+					t := math.Min(math.Abs(1/d[i].sigs[d[i].listing[ii].N]), tl)
 					xa := (n + TAPELEN - int(t)) % TAPELEN
 					x := mod(float64(n+TAPELEN)-(t), tl)
 					ta0 := d[i].tape[(n+TAPELEN-int(t)-1)%TAPELEN]
@@ -1476,13 +1486,13 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				case 22: // "wav"
 					r += 1 // to allow negative input to reverse playback
 					r = math.Abs(r)
-					l := len(wavs[int(sigs[d[i].listing[ii].N])])
+					l := len(wavs[int(d[i].sigs[d[i].listing[ii].N])])
 					r *= float64(l)
 					x1 := int(r) % l
-					w0 := wavs[int(sigs[d[i].listing[ii].N])][(l+int(r-1))%l]
-					w1 := wavs[int(sigs[d[i].listing[ii].N])][x1]
-					w2 := wavs[int(sigs[d[i].listing[ii].N])][int(r+1)%l]
-					w3 := wavs[int(sigs[d[i].listing[ii].N])][int(r+2)%l]
+					w0 := wavs[int(d[i].sigs[d[i].listing[ii].N])][(l+int(r-1))%l]
+					w1 := wavs[int(d[i].sigs[d[i].listing[ii].N])][x1]
+					w2 := wavs[int(d[i].sigs[d[i].listing[ii].N])][int(r+1)%l]
+					w3 := wavs[int(d[i].sigs[d[i].listing[ii].N])][int(r+2)%l]
 					z := mod(r-float64(x1), float64(l-1)) - 0.5
 					ev1, od1 := w2+w1, w2-w1
 					ev2, od2 := w3+w0, w3-w0
@@ -1491,12 +1501,12 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					c2 := ev1*-0.213439787561776841 + ev2*0.21303593243799016
 					r = (c2*z+c1)*z + c0
 				case 23: // "8bit"
-					r = float64(int8(r*sigs[d[i].listing[ii].N])) / sigs[d[i].listing[ii].N]
+					r = float64(int8(r*d[i].sigs[d[i].listing[ii].N])) / d[i].sigs[d[i].listing[ii].N]
 				case 24: // "index"
 					r = float64(i)
 				case 25: // "<sync"
 					r *= s
-					r += (1 - s) * sigs[d[i].listing[ii].N] // phase offset
+					r += (1 - s) * d[i].sigs[d[i].listing[ii].N] // phase offset
 				case 26: // ">sync", ".>sync"
 					switch { // syncSt8 is a slice to make multiple >sync operations independent
 					case r <= 0 && d[i].syncSt8 == run: // edge-detect
@@ -1511,30 +1521,30 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					}
 				/*case 27: // "jl0"
 				if r <= 0 {
-					op += int(sigs[d[i].listing[ii].N])
+					op += int(d[i].sigs[d[i].listing[ii].N])
 				}
 				if op > len(list)-2 {
 					op = len(list) - 2
 				}*/
 				case 28: // "level", ".level"
-					levels[int(sigs[d[i].listing[ii].N])] = r
-					//levels[Min(len(levels), int(sigs[d[i].listing[ii].N]))] = r // alternative
+					levels[int(d[i].sigs[d[i].listing[ii].N])] = r
+					//levels[Min(len(levels), int(d[i].sigs[d[i].listing[ii].N]))] = r // alternative
 				case 29: // "from"
-					r = d[int(sigs[d[i].listing[ii].N])%len(d)].sigs[0]
+					r = d[int(d[i].sigs[d[i].listing[ii].N])%len(d)].sigs[0]
 				case 30: // "sgn"
 					r = 1 - float64(math.Float64bits(r)>>62)
 				case 31: // "deleted"
-					sigs[0] = 0
+					d[i].sigs[0] = 0
 				case 32: // "/"
-					if sigs[d[i].listing[ii].N] == 0 {
-						sigs[d[i].listing[ii].N] = math.Copysign(1e-308, sigs[d[i].listing[ii].N])
+					if d[i].sigs[d[i].listing[ii].N] == 0 {
+						d[i].sigs[d[i].listing[ii].N] = math.Copysign(1e-308, d[i].sigs[d[i].listing[ii].N])
 					}
-					//r /= math.Max(0.1, math.Min(-0.1, sigs[d[i].listing[ii].N])) // alternative
-					r /= sigs[d[i].listing[ii].N]
+					//r /= math.Max(0.1, math.Min(-0.1, d[i].sigs[d[i].listing[ii].N])) // alternative
+					r /= d[i].sigs[d[i].listing[ii].N]
 				case 33: // "sub"
-					r -= sigs[d[i].listing[ii].N]
+					r -= d[i].sigs[d[i].listing[ii].N]
 				case 34: // "setmix"
-					a := math.Abs(sigs[d[i].listing[ii].N])
+					a := math.Abs(d[i].sigs[d[i].listing[ii].N])
 					delta := a - d[i].peakfreq
 					//d[i].peakfreq += delta * α * (a / d[i].peakfreq)
 					d[i].peakfreq += delta * α * (math.Abs(delta) * a / d[i].peakfreq)
@@ -1550,9 +1560,9 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					if r == 0 {
 						r = math.Copysign(1e-308, r)
 					}
-					r = sigs[d[i].listing[ii].N] / r
+					r = d[i].sigs[d[i].listing[ii].N] / r
 				case 38: // "pan", ".pan"
-					d[int(sigs[d[i].listing[ii].N])].pan = math.Max(-1, math.Min(1, r))
+					d[int(d[i].sigs[d[i].listing[ii].N])].pan = math.Max(-1, math.Min(1, r))
 				case 39: // "all"
 					// r := 0 // allow mixing in of preceding listing
 					c := 0.0
@@ -1600,13 +1610,13 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				case 42: // "fftrnc"
 					if n%N2 == 0 && n >= N && !d[i].ffrz {
 						switch {
-						case sigs[d[i].listing[ii].N] > 0:
-							l := int(N * sigs[d[i].listing[ii].N])
+						case d[i].sigs[d[i].listing[ii].N] > 0:
+							l := int(N * d[i].sigs[d[i].listing[ii].N])
 							for n := l; n < N; n++ {
 								d[i].z[n] = complex(0, 0)
 							}
-						case sigs[d[i].listing[ii].N] < 0:
-							l := -int(N * sigs[d[i].listing[ii].N])
+						case d[i].sigs[d[i].listing[ii].N] < 0:
+							l := -int(N * d[i].sigs[d[i].listing[ii].N])
 							for n := range d[i].z {
 								if n > l || n < N-l {
 									d[i].z[n] = complex(0, 0)
@@ -1615,7 +1625,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 						}
 					}
 				case 43: // "shfft"
-					s := sigs[d[i].listing[ii].N]
+					s := d[i].sigs[d[i].listing[ii].N]
 					if n%N2 == 0 && n >= N && !d[i].ffrz {
 						l := int(mod(s, 1) * N)
 						for n := range d[i].z {
@@ -1624,10 +1634,10 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 						}
 					}
 				case 44: // "ffrz"
-					d[i].ffrz = sigs[d[i].listing[ii].N] == 0
+					d[i].ffrz = d[i].sigs[d[i].listing[ii].N] == 0
 				case 45: // "gafft"
 					if n%N2 == 0 && n >= N && !d[i].ffrz {
-						s := sigs[d[i].listing[ii].N] * 50
+						s := d[i].sigs[d[i].listing[ii].N] * 50
 						gt := yes
 						if s < 0 {
 							s = -s
@@ -1650,7 +1660,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					}
 				case 47: // "ffltr"
 					if n%N2 == 0 && n >= N && !d[i].ffrz {
-						coeff := complex(math.Abs(sigs[d[i].listing[ii].N]*N), 0)
+						coeff := complex(math.Abs(d[i].sigs[d[i].listing[ii].N]*N), 0)
 						coeff *= Tau
 						coeff /= (coeff + 1)
 						for n := range d[i].z {
@@ -1670,7 +1680,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					if n%N2 == 0 && n >= N && !d[i].ffrz {
 						for n := range d[i].z {
 							r, θ := cmplx.Polar(d[i].z[n])
-							θ += Tau * sigs[d[i].listing[ii].N]
+							θ += Tau * d[i].sigs[d[i].listing[ii].N]
 							d[i].z[n] = cmplx.Rect(r, θ)
 						}
 					}
@@ -1699,19 +1709,19 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			// Skipping loop early isn't really necessary, but it has been kept in as a source of character
 			// The distortion arises because c is not incremented by 1 for unmuted listings
 			// whose output is intermittently zero, thereby modulating the mix factor
-			if sigs[0] == 0 {
+			if d[i].sigs[0] == 0 {
 				continue
 			}
-			if sigs[0] != sigs[0] { // test for NaN
-				sigs[0] = 0
+			if d[i].sigs[0] != d[i].sigs[0] { // test for NaN
+				d[i].sigs[0] = 0
 				panic(sf("listing:%d - NaN", i))
 			}
-			if math.IsInf(sigs[0], 0) { // infinity to '93
-				sigs[0] = 0
+			if math.IsInf(d[i].sigs[0], 0) { // infinity to '93
+				d[i].sigs[0] = 0
 				panic(sf("listing:%d - overflow", i))
 			}
 			c += d[i].m                       // add mute to mix factor
-			mid := sigs[0] * d[i].m * d[i].lv // sigs[0] left intact for `from` operator
+			mid := d[i].sigs[0] * d[i].m * d[i].lv // sigs[0] left intact for `from` operator
 			if mid > ct {                     // soft clip
 				mid = ct + tanh(mid-ct)
 				display.Clip = yes
@@ -1881,6 +1891,9 @@ func (n *noise) ise() float64 {
 var invMaxInt32 = 1.0 / math.MaxInt32
 
 func mod(x, y float64) float64 {
+	if y == 0 { // TODO: temporary hack
+		return 0
+	}
 	if y == 1 {
 		_, f := math.Modf(x)
 		return f

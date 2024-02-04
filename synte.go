@@ -1,5 +1,3 @@
-//go:build (freebsd || linux) && amd64
-
 /*
 	Syntə is an audio live coding environment
 
@@ -113,10 +111,7 @@ const (
 	TAPELEN        = SAMPLE_RATE * TAPE_LENGTH
 )
 
-var (
-	convFactor         = float64(math.MaxInt16) // checked below
-	SampleRate float64 = SAMPLE_RATE
-)
+var SampleRate float64 = SAMPLE_RATE // should be 'de-globalised'
 
 // terminal colours, eg. sf("%stest%s test", yellow, reset)
 const (
@@ -180,12 +175,13 @@ type fn struct {
 
 type systemState struct {
 	dispListings []listing // these are relied on to track len of SE listings, checked after transfer
-	verbose      []listing
+	verbose      []listing // for tools/listings.go
 	wmap         map[string]bool
+	wavNames     string // for display purposes
 	funcs        map[string]fn
 	funcsave     bool
 	code         *[]listing
-	solo         int
+	solo         int // index of most recent solo
 	unsolo       muteSlice
 	hasOperand   map[string]bool
 	sc           soundcard
@@ -203,6 +199,7 @@ type operatorCheck struct {
 }
 
 var operators = map[string]operatorCheck{ // would be nice if switch indexes could be generated from a common root
+	// this map is effectively a constant and not mutated
 	//name  operand N  process           comment
 	"+":      {yes, 1, noCheck},       // add
 	"out":    {yes, 2, checkOut},      // send to named signal
@@ -467,26 +464,15 @@ func main() {
 		return
 	}
 	defer sc.file.Close()
-	SampleRate, convFactor = sc.sampleRate, sc.convFactor // change later
+	SampleRate = sc.sampleRate // change later
 
-	t := systemState{sc: sc} // s yorks
-
-	// process wavs
-	wavSlice := decodeWavs()
-	twavs := make([][]float64, 0, len(wavSlice))
-	t.wmap = map[string]bool{}
-	wavNames := ""
-	for _, w := range wavSlice {
-		wavNames += w.Name + " "
-		t.wmap[w.Name] = yes
-		twavs = append(twavs, w.Data)
-	}
+	t, twavs, wavSlice := newSystemState(sc)
 
 	go infoDisplay()
 	go SoundEngine(sc, twavs)
 	go mouseRead()
 
-	go func() { // watchdog, anonymous to use variables in scope
+	go func() { // watchdog, anonymous to use variables in scope: dispListings, sc, twavs
 		// This function will restart the sound engine in the event of a runtime panic
 		for {
 			current := <-stop // blocks on receive or close
@@ -523,7 +509,7 @@ func main() {
 			}
 			t.dispListings = nil // SE has been restarted so anull these to match internal listings
 			<-lockLoad
-			msg("%d: %slisting deleted%s, %[2]scan edit and reload%[3]s", current, italic, reset)
+			msg("%d: %slisting deleted, can edit and reload%s", current, italic, reset)
 			msg("%s>>> Sound Engine restarted%s", italic, reset)
 		}
 	}()
@@ -546,32 +532,13 @@ func main() {
 		"sync",
 	}
 	lenReserved := len(reservedSignalNames) // use this as starting point for exported signals
-	t.daisyChains = []int{2, 3, 9, 10}      // pitch,tempo,grid,sync
 	for i := 0; i < EXPORTED_LIMIT; i++ {   // add 12 reserved signals for inter-list signals
 		reservedSignalNames = append(reservedSignalNames, sf("***%d", i+lenReserved)) // placeholder
 	}
 	lenExported := 0
-	t.funcs = make(map[string]fn)
-	loadFunctions(&t.funcs)
-	t.hasOperand = make(map[string]bool, len(operators)+len(t.funcs))
-	for k, o := range operators {
-		t.hasOperand[k] = o.Opd
-	}
-	for k, f := range t.funcs {
-		h := not
-		for _, o := range f.Body {
-			if o.Opd == "@" { // set but don't reset
-				h = yes
-				break
-			}
-		}
-		t.hasOperand[k] = h
-	}
 	usage := loadUsage() // local usage telemetry
 	ext := not           // loading external listing state
-
 	t.code = &t.dispListings // code sent to listings.go
-	t.solo = -1              // index of most recent solo
 
 start:
 	for { // main loop
@@ -615,7 +582,7 @@ start:
 			t.out[v] = assigned
 		}
 		t.reload = -1 // index to be launched to
-		// the purpose of clr is to reset the input if error while receiving tokens from external source
+		// the purpose of clr is to reset the input if error while receiving tokens from external source, declared in this scope to read value of var ext
 		t.clr = func(s string, i ...any) int { // must be type: clear
 			for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
 				<-tokens
@@ -632,7 +599,7 @@ start:
 		for { // input loop
 			t.newOperation = newOperation{}
 			if !ext {
-				displayHeader(sc, wavNames, t)
+				displayHeader(sc, t)
 			}
 			var result int
 			switch ext, result = readTokenPair(&t); result {
@@ -1279,13 +1246,13 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		lpf50, lpf510,
 		deemph float64 // de-emphasis
 		//α       = 30 * 1 / (SampleRate/(2*Pi*6.3) + 1) // co-efficient for setmix
-		α       = 1 / (SampleRate/(2*math.Pi*194) + 1) // co-efficient for setmix
-		hroom   = (convFactor - 1.0) / convFactor      // headroom for positive dither
-		c, mixF = 4.0, 4.0                             // mix factor
-		pd      int                                    // slated for removal
-		sides   float64                                // for stereo
-		current int                                    // tracks index of active listing for recover()
-		p       = 1.0                                  // pause variable
+		α       = 1 / (SampleRate/(2*math.Pi*194) + 1)  // co-efficient for setmix
+		hroom   = (sc.convFactor - 1.0) / sc.convFactor // headroom for positive dither
+		c, mixF = 4.0, 4.0                              // mix factor
+		pd      int                                     // slated for removal
+		sides   float64                                 // for stereo
+		current int                                     // tracks index of active listing for recover()
+		p       = 1.0                                   // pause variable
 
 		samples     = make(chan stereoPair, 2400) // buffer up to 50ms of samples (@ 48kHz), introduces latency
 		daisyChains = make([]int, 16)             // made explicity here to set capacity
@@ -1323,8 +1290,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			default:
 				lpf.stereoLpf(stereoPair{}, 0.0013)
 			}
-			L := clip(lpf.left) * convFactor  // clip will display info
-			R := clip(lpf.right) * convFactor // clip will display info
+			L := clip(lpf.left) * sc.convFactor  // clip will display info
+			R := clip(lpf.right) * sc.convFactor // clip will display info
 			output(w, L)
 			output(w, R)
 		}
@@ -1804,7 +1771,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		dither += no.ise()
 		dither *= 0.5
 		dac *= hroom
-		dac += dither / convFactor            // dither dac value ±1 from xorshift lfsr
+		dac += dither / sc.convFactor         // dither dac value ±1 from xorshift lfsr
 		if abs := math.Abs(dac); abs > peak { // peak detect
 			peak = abs
 		}
@@ -1815,8 +1782,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		}
 		sides = math.Max(-0.5, math.Min(0.5, sides))
 		if record {
-			L := math.Max(-1, math.Min(1, dac+sides)) * convFactor
-			R := math.Max(-1, math.Min(1, dac-sides)) * convFactor
+			L := math.Max(-1, math.Min(1, dac+sides)) * sc.convFactor
+			R := math.Max(-1, math.Min(1, dac-sides)) * sc.convFactor
 			writeWav(L, R)
 		}
 		t = time.Since(lastTime)
@@ -2426,4 +2393,41 @@ func isUppercaseInitial(operand string) bool {
 		r = 1
 	}
 	return unicode.IsUpper([]rune(operand)[r])
+}
+
+func newSystemState(sc soundcard) (systemState, [][]float64, wavs) {
+	t := systemState{
+		sc: sc,
+		funcs: make(map[string]fn),
+		daisyChains: []int{2, 3, 9, 10}, // pitch,tempo,grid,sync
+		solo: -1,
+	}
+
+	loadFunctions(&t.funcs)
+	t.hasOperand = make(map[string]bool, len(operators)+len(t.funcs))
+	for k, o := range operators {
+		t.hasOperand[k] = o.Opd
+	}
+	for k, f := range t.funcs {
+		h := not
+		for _, o := range f.Body {
+			if o.Opd == "@" { // set but don't reset
+				h = yes
+				break
+			}
+		}
+		t.hasOperand[k] = h
+	}
+
+	// process wavs
+	wavSlice := decodeWavs()
+	wavs := make([][]float64, 0, len(wavSlice))
+	t.wmap = map[string]bool{}
+	for _, w := range wavSlice {
+		t.wavNames += w.Name + " "
+		t.wmap[w.Name] = yes
+		wavs = append(wavs, w.Data)
+	}
+
+	return t, wavs, wavSlice
 }

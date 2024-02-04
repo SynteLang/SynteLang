@@ -472,13 +472,13 @@ func rootSync() bool {
 }
 
 // clear screen, print header and what has been entered so far
-func displayHeader(sc soundcard, wavNames string, t systemState) {
+func displayHeader(sc soundcard, t systemState) {
 	pf("%s\033[H\033[2J", reset) // this clears prior error messages!
 	pf(">  %dbit %2gkHz %s\n", sc.format, SampleRate/1000, sc.channels)
 	pf("%sSyntə%s running...\n", cyan, reset)
 	pf("Always protect your ears above +85dB SPL\n\n")
-	if len(wavNames) > 0 {
-		pf(" %swavs:%s %s\n\n", italic, reset, wavNames)
+	if len(t.wavNames) > 0 {
+		pf(" %swavs:%s %s\n\n", italic, reset, t.wavNames)
 	}
 	l := len(t.dispListings)
 	if t.reload > -1 {

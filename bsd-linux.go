@@ -173,7 +173,7 @@ func loadFunctions(data *map[string]fn) {
 }
 
 // used for saving info, listings, functions and code recordings (not audio)
-func saveJson(data any, f string) bool {
+func saveJson(data interface{}, f string) bool {
 	j, rr := json.MarshalIndent(data, "", "\t")
 	if e(rr) {
 		msg("Error encoding '%s': %v", f, rr)
@@ -410,12 +410,12 @@ func readInput(from io.Reader) {
 }
 
 // shorthand, prints to stdout
-func p(i ...any) {
+func p(i ...interface{}) {
 	fmt.Println(i...)
 }
 
 // shorthand, prints to stdout
-func pf(s string, i ...any) {
+func pf(s string, i ...interface{}) {
 	fmt.Printf(s, i...)
 }
 

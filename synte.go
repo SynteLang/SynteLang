@@ -427,7 +427,22 @@ const ( // used in token parsing
 	nextOperation
 )
 
-type clear func(s string, i ...any) int
+type clear func(s string, i ...interface{}) int
+
+func main() {
+	if len(os.Args) > 1 && os.Args[1] == "-prof" {
+		f, rr := os.Create("cpu.prof")
+		if e(rr) {
+			pf("no cpu profile: %v", rr)
+		}
+		defer f.Close()
+		if rr := pprof.StartCPUProfile(f); e(rr) {
+			pf("profiling not started: %v", rr)
+		}
+		defer pprof.StopCPUProfile() //*/
+	}
+	run(os.Stdin)
+}
 
 const advisory = `
 Protect your hearing when listening to any audio on a system capable of
@@ -444,22 +459,6 @@ you exceed these limits:
 
 	SPL = Sound Pressure Level (A-weighted)
 `
-
-func main() {
-	if len(os.Args) > 1 && os.Args[1] == "-prof" {
-		f, rr := os.Create("cpu.prof")
-		if e(rr) {
-			pf("no cpu profile: %v", rr)
-		}
-		defer f.Close()
-		if rr := pprof.StartCPUProfile(f); e(rr) {
-			pf("profiling not started: %v", rr)
-		}
-		defer pprof.StopCPUProfile() //*/
-	}
-
-	run(os.Stdin)
-}
 
 func run(from io.Reader) {
 	saveJson([]listing{{operation{Op: advisory}}}, "displaylisting.json")
@@ -580,7 +579,7 @@ start:
 			signals["r."+w.Name] = 1.0 / float64(len(w.Data))
 		}
 		// the purpose of clr is to reset the input if error while receiving tokens from external source, declared in this scope to read value of loadExternalFile
-		t.clr = func(s string, i ...any) int { // must be type: clear
+		t.clr = func(s string, i ...interface{}) int { // must be type: clear
 			for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
 				<-tokens
 			}
@@ -1273,8 +1272,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				msg("%s", buf[:n]) // print stack trace to infoDisplay*/
 			//saveJson(t.listing, sf("debug/SEcoredump%dlisting.json", time.Now().UnixMilli()))
 			//saveJson(t.sigs, sf("debug/SEcoredump%dsigs.json", time.Now().UnixMilli()))
-		//	time.Sleep(time.Second)
-		//	os.Exit(1)
+			//time.Sleep(time.Second)
+			//os.Exit(1)
 			stop <- current
 			started = not
 		}
@@ -1938,7 +1937,7 @@ func fft(y [N]complex128, s float64) [N]complex128 {
 var sf = fmt.Sprintf
 
 // msg sends a formatted string to info display
-var msg = func(s string, i ...any) {
+var msg = func(s string, i ...interface{}) {
 	info <- fmt.Sprintf(s, i...)
 	<-carryOn
 }

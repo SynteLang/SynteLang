@@ -55,6 +55,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"math"
 	"math/cmplx"
 	"os"
@@ -277,6 +278,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"solo":    {yes, 0, enactSolo},           // solo a listing
 	"release": {yes, 0, checkRelease},        // set limiter release
 	"unmute":  {not, 0, unmuteAll},           // unmute all listings
+	"unsolo":  {not, 0, unmuteAll},           // alias for unmute all listings
 	".mute":   {yes, 0, enactMute},           // alias, launches listing
 	".del":    {yes, 0, enactDelete},         // alias, launches listing
 	".solo":   {yes, 0, enactSolo},           // alias, launches listing
@@ -455,6 +457,11 @@ func main() {
 		}
 		defer pprof.StopCPUProfile() //*/
 	}
+
+	run(os.Stdin)
+}
+
+func run(from io.Reader) {
 	saveJson([]listing{{operation{Op: advisory}}}, "displaylisting.json")
 
 	sc, success := setupSoundCard("/dev/dsp")
@@ -517,7 +524,7 @@ func main() {
 		}
 	}()
 
-	go readInput()     // scan stdin from goroutine to allow external concurrent input
+	go readInput(from)     // scan stdin from goroutine to allow external concurrent input
 	go reloadListing() // poll '.temp/*.syt' modified time and reload if changed
 
 	// set-up state
@@ -540,13 +547,12 @@ func main() {
 	}
 	lenExported := 0
 	usage := loadUsage() // local usage telemetry
-	ext := not           // loading external listing state
+	loadExternalFile := not
 	t.code = &t.dispListings // code sent to listings.go
 
 start:
 	for { // main loop
-		t.listingState = listingState{}
-		t.newSignals = make([]float64, len(reservedSignalNames), 30) // capacity is nominal
+		t = initialiseListing(t, reservedSignalNames)
 		// signals map with predefined constants, mutable
 		signals := map[string]float64{ // reset and add predefined signals
 			"ln2":      math.Ln2,
@@ -573,26 +579,14 @@ start:
 			signals["l."+w.Name] = float64(len(w.Data)-1) / (WAV_TIME * SampleRate)
 			signals["r."+w.Name] = 1.0 / float64(len(w.Data))
 		}
-		t.out = make(map[string]struct{}, 30) // to check for multiple outs to same signal name
-		for _, v := range reservedSignalNames {
-			switch v {
-			case "tempo", "pitch", "grid", "sync":
-				continue
-			}
-			if isUppercaseInitial(v) {
-				continue
-			}
-			t.out[v] = assigned
-		}
-		t.reload = -1 // index to be launched to
-		// the purpose of clr is to reset the input if error while receiving tokens from external source, declared in this scope to read value of var ext
+		// the purpose of clr is to reset the input if error while receiving tokens from external source, declared in this scope to read value of loadExternalFile
 		t.clr = func(s string, i ...any) int { // must be type: clear
 			for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
 				<-tokens
 			}
 			info <- fmt.Sprintf(s, i...)
 			<-carryOn
-			if ext {
+			if loadExternalFile {
 				return startNewListing
 			}
 			return startNewOperation
@@ -601,15 +595,15 @@ start:
 	input:
 		for { // input loop
 			t.newOperation = newOperation{}
-			if !ext {
+			if !loadExternalFile {
 				displayHeader(sc, t)
 			}
 			var result int
-			switch ext, result = readTokenPair(&t); result {
+			switch loadExternalFile, result = readTokenPair(&t); result {
 			case startNewOperation:
 				continue input
 			case startNewListing:
-				ext = not
+				loadExternalFile = not
 				continue start
 			}
 
@@ -628,10 +622,10 @@ start:
 			if t.isFunction {
 				function, ok := parseFunction(t, signals, t.out)
 				switch {
-				case !ok && !ext:
+				case !ok && !loadExternalFile:
 					continue input
-				case !ok && ext:
-					ext = not
+				case !ok && loadExternalFile:
+					loadExternalFile = not
 					continue start
 				}
 				t.fun++
@@ -684,7 +678,7 @@ start:
 			case ".out", ".>sync", ".level", ".lvl", ".pan", "//", "deleted":
 				break input
 			}
-			if !ext {
+			if !loadExternalFile {
 				msg(" ")
 			}
 		}
@@ -2443,4 +2437,22 @@ func newSystemState(sc soundcard) (systemState, [][]float64, wavs) {
 	}
 
 	return t, wavs, wavSlice
+}
+
+func initialiseListing(t systemState, res []string) systemState {
+		t.listingState = listingState{}
+		t.newSignals = make([]float64, len(res), 30) // capacity is nominal
+		t.out = make(map[string]struct{}, 30) // to check for multiple outs to same signal name
+		for _, v := range res {
+			switch v {
+			case "tempo", "pitch", "grid", "sync":
+				continue
+			}
+			if isUppercaseInitial(v) {
+				continue
+			}
+			t.out[v] = assigned
+		}
+		t.reload = -1 // index to be launched to
+		return t
 }

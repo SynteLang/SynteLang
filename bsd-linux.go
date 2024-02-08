@@ -400,8 +400,8 @@ func mouseRead() {
 }
 
 // scan stdin from goroutine to allow external concurrent input
-func readInput() {
-	s := bufio.NewScanner(os.Stdin)
+func readInput(from io.Reader) {
+	s := bufio.NewScanner(from)
 	s.Split(bufio.ScanWords)
 	for !exit {
 		s.Scan() // blocks on stdin

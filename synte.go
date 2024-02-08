@@ -352,16 +352,16 @@ type muteSlice []float64
 
 // communication variables
 var (
-	started bool // latches
-	exit    bool // initiate shutdown
-	mutes   muteSlice
-	levels  []float64
-	rs      bool                                     // root-sync between running instances
-	fade    = 1 / (MIN_FADE * SAMPLE_RATE)           //Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
-	release = math.Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
-	ct      = 4.0                                    // individual listing clip threshold
-	gain    = 1.0
-	sqrt10  = math.Sqrt(0.1) // constant
+	started   bool // latches
+	exit      bool // initiate shutdown
+	mutes     muteSlice
+	levels    []float64
+	rs        bool                                     // root-sync between running instances
+	fade      = 1 / (MIN_FADE * SAMPLE_RATE)           //Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
+	release   = math.Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
+	ct        = 4.0                                    // individual listing clip threshold
+	baseGain  = math.Sqrt(0.05) // constant
+	gain      = baseGain
 )
 
 type noise uint64
@@ -1728,16 +1728,14 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			dac += mid
 		}
 		hpf = (hpf + dac - x) * 0.9994 // hpf ≈ 4.6Hz
-		x = dac
-		dac = hpf
-		//c += 16 / (c*c + 4.77)
-		c += 50 / (c*c + 9.5)
-		mixF = mixF + (math.Abs(c)-mixF)*0.00026 // ~2Hz @ 48kHz
+		x, dac = dac, hpf
+		c = c*0.167 + 1.5 // approximation to sqrt, avoiding level changes for first few listings
+		mixF = mixF + (c-mixF)*0.00026 // lpf ~2Hz @ 48kHz
 		c = 0
-		dac /= math.Sqrt(mixF)
+		dac /= mixF
 		sides /= mixF
-		dac *= gain * sqrt10
-		sides *= gain * sqrt10
+		dac *= gain
+		sides *= gain
 		// limiter
 		hpf2560 = (hpf2560 + dac - x2560) * 0.749
 		x2560 = dac
@@ -2356,18 +2354,18 @@ func checkRelease(s *systemState) int {
 
 func adjustGain(s *systemState) int {
 	if s.operand == "zero" {
-		gain = 1
+		gain = baseGain
 	} else if s.operand == "is" {
 		// just show below
 	} else if n, ok := parseType(s.operand, s.operator); ok {
 		gain *= n
 		if math.Abs(math.Log10(gain)) < 1e-12 { // hacky
-			gain = 1
+			gain = baseGain
 		} else if gain < 0.05 { // lower bound ~ -26db
 			gain = 0.05
 		}
 	}
-	msg("%sgain set to %s%.2gdb", italic, reset, 20*math.Log10(gain))
+	msg("%sgain set to %s%.2gdb", italic, reset, 20*math.Log10(gain/baseGain))
 	return startNewOperation
 }
 

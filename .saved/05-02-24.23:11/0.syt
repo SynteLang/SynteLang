@@ -1,0 +1,8 @@
+in 255hz
+noise
+osc
+hpf 100hz
+lpf 7khz
+mul 3
+tanh
+out dac

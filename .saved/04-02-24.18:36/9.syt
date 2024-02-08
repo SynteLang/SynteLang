@@ -1,0 +1,6 @@
+/b 5,0
+lt 0.5
+lpf 5hz
++ 1
+mul 55hz
+.out pitch

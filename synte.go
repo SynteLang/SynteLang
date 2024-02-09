@@ -597,6 +597,7 @@ start:
 			if !loadExternalFile {
 				displayHeader(sc, t)
 			}
+			// this section still needs further refactoring for better maintenance and readability
 			var result int
 			switch loadExternalFile, result = readTokenPair(&t); result {
 			case startNewOperation:
@@ -630,6 +631,7 @@ start:
 				t.fun++
 				t.newListing = append(t.newListing, function...)
 			} else {
+				// call to process() seg faults if placed in separate function
 				switch r := operators[t.operator].process(&t); r {
 				case startNewOperation:
 					continue input

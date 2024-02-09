@@ -110,6 +110,7 @@ const (
 	MAX_RELEASE    = 50    // 50s
 	twoInvMaxUint  = 2.0 / math.MaxUint64
 	TAPELEN        = SAMPLE_RATE * TAPE_LENGTH
+	baseGain       = 1.0
 )
 
 var SampleRate float64 = SAMPLE_RATE // should be 'de-globalised'
@@ -360,7 +361,6 @@ var (
 	fade      = 1 / (MIN_FADE * SAMPLE_RATE)           //Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
 	release   = math.Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
 	ct        = 4.0                                    // individual listing clip threshold
-	baseGain  = math.Sqrt(0.05) // constant
 	gain      = baseGain
 )
 
@@ -1729,7 +1729,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		}
 		hpf = (hpf + dac - x) * 0.9994 // hpf ≈ 4.6Hz
 		x, dac = dac, hpf
-		c = c*0.167 + 1.5 // approximation to sqrt, avoiding level changes for first few listings
+		c = 0.387*c + 6.5 // approximation to sqrt, avoiding level changes for first few listings
 		mixF = mixF + (c-mixF)*0.00026 // lpf ~2Hz @ 48kHz
 		c = 0
 		dac /= mixF

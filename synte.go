@@ -656,7 +656,7 @@ start:
 			}
 		}
 
-		i := len(t.newSignals)      // to ignore reserved signals
+		i := len(t.newSignals)        // to ignore reserved signals
 		for k, v := range t.signals { // assign signals to slice from map
 			t.newSignals = append(t.newSignals, v)
 			for ii, o := range t.newListing {
@@ -674,7 +674,7 @@ start:
 			i++
 		}
 
-		if display.Paused { // resume play on launch if paused
+		if display.Paused {
 			<-pause
 			display.Paused = not
 		}
@@ -683,7 +683,6 @@ start:
 		transmit <- collate(&t)
 		a := <-accepted
 		if a != len(t.dispListings) {
-		//	msg("%s!! listings length mismatch !!%s", red, reset)
 			msg("len(mutes): %d, len(disp): %d, accepted: %d", len(mutes), len(t.dispListings), a)
 			time.Sleep(1*time.Second)
 		}
@@ -695,8 +694,8 @@ start:
 		}
 
 		timestamp := time.Now().Format("02-01-06.15:04")
-		f := "recordings/listing." + timestamp + ".json" // shadowed
-		if !saveJson(t.newListing, f) {                  // save as plain text instead?
+		f := "recordings/listing." + timestamp + ".json"
+		if !saveJson(t.newListing, f) {
 			msg("%slisting not recorded, check 'recordings/' directory exists%s", italic, reset)
 		}
 		if !saveJson(*t.code, "displaylisting.json") {

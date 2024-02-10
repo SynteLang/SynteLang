@@ -144,6 +144,7 @@ type createListing struct {
 	newListing  listing
 	dispListing listing
 	newSignals  []float64
+	signals		map[string]float64
 }
 
 type number struct {
@@ -553,7 +554,7 @@ start:
 	for { // main loop
 		t = initialiseListing(t, reservedSignalNames)
 		// signals map with predefined constants, mutable
-		signals := map[string]float64{ // reset and add predefined signals
+		t.signals = map[string]float64{ // reset and add predefined signals
 			"ln2":      math.Ln2,
 			"ln3":      math.Log(3),
 			"ln5":      math.Log(5),
@@ -574,9 +575,9 @@ start:
 			"seventh":  math.Pow(2, 11.0/12), // major, equal temperament ≈ 1.875 (8:15)
 		}
 		for i, w := range wavSlice { // add to signals map, with current sample rate
-			signals[w.Name] = float64(i)
-			signals["l."+w.Name] = float64(len(w.Data)-1) / (WAV_TIME * SampleRate)
-			signals["r."+w.Name] = 1.0 / float64(len(w.Data))
+			t.signals[w.Name] = float64(i)
+			t.signals["l."+w.Name] = float64(len(w.Data)-1) / (WAV_TIME * SampleRate)
+			t.signals["r."+w.Name] = 1.0 / float64(len(w.Data))
 		}
 		// the purpose of clr is to reset the input if error while receiving tokens from external source, declared in this scope to read value of loadExternalFile
 		t.clr = func(s string, i ...interface{}) int { // must be type: clear
@@ -599,7 +600,7 @@ start:
 			}
 
 			var do int
-			t, loadExternalFile, do = parseNewOperation(t, signals, loadExternalFile)
+			t, loadExternalFile, do = parseNewOperation(t, loadExternalFile)
 			switch do {
 			case startNewOperation:
 				continue input
@@ -617,7 +618,7 @@ start:
 					alreadyIn = yes // signal already exported or reserved
 				}
 			}
-			_, inSg := signals[t.operand]
+			_, inSg := t.signals[t.operand]
 			if !inSg && !alreadyIn && !t.num.Is && !t.fIn && t.operator != "//" && isUppercaseInitial(t.operand) { // optional: && t.operator == "out"
 				if lenExported > EXPORTED_LIMIT {
 					msg("we've ran out of exported signals :(")
@@ -654,11 +655,11 @@ start:
 		// end of input
 
 		for _, o := range t.newListing {
-			if _, in := signals[o.Opd]; in || len(o.Opd) == 0 {
+			if _, in := t.signals[o.Opd]; in || len(o.Opd) == 0 {
 				continue
 			}
 			if strings.ContainsAny(o.Opd[:1], "+-.0123456789") { // wavs already in signals map
-				signals[o.Opd], _ = parseType(o.Opd, o.Op) // number assigned, error checked above
+				t.signals[o.Opd], _ = parseType(o.Opd, o.Op) // number assigned, error checked above
 			} else { // assign initial value
 				i := 0
 				if o.Opd[:1] == "^" {
@@ -666,17 +667,17 @@ start:
 				}
 				switch o.Opd[i : i+1] {
 				case "'":
-					signals[o.Opd] = 1
+					t.signals[o.Opd] = 1
 				case "\"":
-					signals[o.Opd] = 0.5
+					t.signals[o.Opd] = 0.5
 				default:
-					signals[o.Opd] = 0
+					t.signals[o.Opd] = 0
 				}
 			}
 		}
 
 		i := len(t.newSignals)      // to ignore reserved signals
-		for k, v := range signals { // assign signals to slice from map
+		for k, v := range t.signals { // assign signals to slice from map
 			t.newSignals = append(t.newSignals, v)
 			for ii, o := range t.newListing {
 				if o.Opd == k {
@@ -729,7 +730,7 @@ start:
 	saveUsage(usage, t)
 }
 
-func parseNewOperation(t systemState, signals map[string]float64, ldExt bool) (systemState, bool, int) {
+func parseNewOperation(t systemState, ldExt bool) (systemState, bool, int) {
 	var result int
 	if ldExt, result = readTokenPair(&t); result != nextOperation {
 		return t, ldExt, result
@@ -748,7 +749,7 @@ func parseNewOperation(t systemState, signals map[string]float64, ldExt bool) (s
 	t.operand = strings.ReplaceAll(t.operand, "{i+1}", sf("%d", 1))
 
 	if t.isFunction {
-		function, ok := parseFunction(t, signals, t.out)
+		function, ok := parseFunction(t, t.out)
 		switch {
 		case !ok && !ldExt:
 			return t, ldExt, startNewOperation
@@ -900,7 +901,6 @@ func readTokenPair(t *systemState) (bool, int) {
 
 func parseFunction(
 	t systemState,
-	signals map[string]float64,
 	out map[string]struct{}, // implictly de-referenced
 ) (function listing, result bool) {
 	function = make(listing, len(t.funcs[t.operator].Body))
@@ -922,7 +922,7 @@ func parseFunction(
 		case "@2":
 			m.at2 = yes
 		}
-		if _, in := signals[o.Opd]; in || isUppercaseInitial(o.Opd) {
+		if _, in := t.signals[o.Opd]; in || isUppercaseInitial(o.Opd) {
 			continue
 		}
 		switch o.Opd[:1] {

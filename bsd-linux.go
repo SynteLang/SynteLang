@@ -1,4 +1,4 @@
-//go:build (freebsd || linux) && amd64
+////go:build (freebsd || linux) && amd64
 
 // Syntə is an audio live coding environment
 // This file implements BSD and Linux specific functions for 64bit x86

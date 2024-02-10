@@ -192,7 +192,7 @@ type systemState struct {
 	listingState
 }
 
-type processor func(*systemState) int
+type processor func(systemState) (systemState, int)
 
 type operatorCheck struct {
 	Opd     bool // indicates if has operand
@@ -597,49 +597,17 @@ start:
 			if !loadExternalFile {
 				displayHeader(sc, t)
 			}
-			// this section still needs further refactoring for better maintenance and readability
-			var result int
-			switch loadExternalFile, result = readTokenPair(&t); result {
+
+			var do int
+			t, loadExternalFile, do = parseNewOperation(t, signals, loadExternalFile)
+			switch do {
 			case startNewOperation:
 				continue input
 			case startNewListing:
 				loadExternalFile = not
 				continue start
-			}
-
-			for t.do > 1 { // one done below
-				tokens <- token{t.operator, -1, not}
-				d := strings.ReplaceAll(t.operand, "{i}", sf("%d", t.to-t.do+1))
-				d = strings.ReplaceAll(d, "{i+1}", sf("%d", t.to-t.do+2))
-				if y := t.hasOperand[t.operator]; y { // to avoid weird blank opds being sent
-					tokens <- token{d, -1, not}
-				}
-				t.do--
-			}
-			t.operand = strings.ReplaceAll(t.operand, "{i}", sf("%d", 0))
-			t.operand = strings.ReplaceAll(t.operand, "{i+1}", sf("%d", 1))
-
-			if t.isFunction {
-				function, ok := parseFunction(t, signals, t.out)
-				switch {
-				case !ok && !loadExternalFile:
-					continue input
-				case !ok && loadExternalFile:
-					loadExternalFile = not
-					continue start
-				}
-				t.fun++
-				t.newListing = append(t.newListing, function...)
-			} else {
-				// call to process() seg faults if placed in separate function
-				switch r := operators[t.operator].process(&t); r {
-				case startNewOperation:
-					continue input
-				case startNewListing:
-					continue start
-				case exitNow:
-					break start
-				}
+			case exitNow:
+				break start
 			}
 
 			// process exported signals
@@ -759,6 +727,46 @@ start:
 		closeWavFile()
 	}
 	saveUsage(usage, t)
+}
+
+func parseNewOperation(t systemState, signals map[string]float64, ldExt bool) (systemState, bool, int) {
+	var result int
+	if ldExt, result = readTokenPair(&t); result != nextOperation {
+		return t, ldExt, result
+	}
+
+	for t.do > 1 { // one done below
+		tokens <- token{t.operator, -1, not}
+		d := strings.ReplaceAll(t.operand, "{i}", sf("%d", t.to-t.do+1))
+		d = strings.ReplaceAll(d, "{i+1}", sf("%d", t.to-t.do+2))
+		if y := t.hasOperand[t.operator]; y { // to avoid weird blank opds being sent
+			tokens <- token{d, -1, not}
+		}
+		t.do--
+	}
+	t.operand = strings.ReplaceAll(t.operand, "{i}", sf("%d", 0))
+	t.operand = strings.ReplaceAll(t.operand, "{i+1}", sf("%d", 1))
+
+	if t.isFunction {
+		function, ok := parseFunction(t, signals, t.out)
+		switch {
+		case !ok && !ldExt:
+			return t, ldExt, startNewOperation
+		case !ok && ldExt:
+			return t, ldExt, startNewListing
+		}
+		t.fun++
+		t.newListing = append(t.newListing, function...)
+		return t, ldExt, nextOperation
+	}
+	p, ok := operators[t.operator]
+	if !ok {
+		msg("not in operators map")
+		return t, ldExt, startNewOperation
+	}
+	var r int
+	t, r = p.process(t)
+	return t, ldExt, r
 }
 
 func loadNewListing(listing []operation) []opSE {
@@ -1948,32 +1956,32 @@ func e(rr error) bool {
 }
 
 // operatorCheck process field functions
-// These must be of type processor func(*systemState) int
+// These must be of type processor func(systemState) (systemState, int)
 
-func noCheck(_ *systemState) int {
-	return nextOperation
+func noCheck(s systemState) (systemState, int) {
+	return s, nextOperation
 }
 
-func checkOut(s *systemState) int {
+func checkOut(s systemState) (systemState, int) {
 	_, in := s.out[s.operand]
 	switch {
 	case s.num.Is:
-		return s.clr("%soutput to number not permitted%s", italic, reset)
+		return s, s.clr("%soutput to number not permitted%s", italic, reset)
 	case in && s.operand[:1] != "^" && s.operand != "dac" && s.operator != "out+" && s.operator != ">+":
-		return s.clr("%s: %sduplicate output to signal, c'est interdit%s", s.operand, italic, reset)
+		return s, s.clr("%s: %sduplicate output to signal, c'est interdit%s", s.operand, italic, reset)
 	case s.operand[:1] == "@":
-		return s.clr("%scan't send to @, represents function operand%s", italic, reset)
+		return s, s.clr("%scan't send to @, represents function operand%s", italic, reset)
 	}
 	if !isUppercaseInitial(s.operand) {
 		s.out[s.operand] = assigned
 	}
-	return nextOperation
+	return s, nextOperation
 }
 
-func endFunctionDefine(t *systemState) int {
+func endFunctionDefine(t systemState) (systemState, int) {
 	if !t.fIn || len(t.newListing[t.st+1:]) < 1 {
 		msg("%sno function definition%s", italic, reset)
-		return startNewOperation
+		return t, startNewOperation
 	}
 	h := not
 	for _, o := range t.newListing[t.st+1:] {
@@ -1995,14 +2003,14 @@ func endFunctionDefine(t *systemState) int {
 	}
 	t.fIn = not
 	if t.newListing[0].Op == "[" {
-		return startNewListing
+		return t, startNewListing
 	}
 	t.newListing = t.newListing[:t.st]
 	msg("function not sent to soundengine")
-	return nextOperation
+	return t, nextOperation
 }
 
-func checkPushPop(s *systemState) int {
+func checkPushPop(s systemState) (systemState, int) {
 	p := 0
 	for _, o := range s.newListing {
 		if o.Op == "push" {
@@ -2014,19 +2022,19 @@ func checkPushPop(s *systemState) int {
 	}
 	if p <= 0 {
 		msg("%sno push to pop%s", italic, reset)
-		return startNewOperation
+		return s, startNewOperation
 	}
-	return nextOperation
+	return s, nextOperation
 }
 
-func tapeUnique(s *systemState) int {
+func tapeUnique(s systemState) (systemState, int) {
 	for _, o := range s.newListing {
 		if o.Op == "tape" {
 			msg("%sonly one tape per listing%s", italic, reset)
-			return startNewOperation
+			return s, startNewOperation
 		}
 	}
-	return nextOperation
+	return s, nextOperation
 }
 
 func parseIndex(s listingState, l int) (int, bool) {
@@ -2057,10 +2065,10 @@ func excludeCurrent(op string, i, l int) bool {
 	return not
 }
 
-func eraseOperations(s *systemState) int {
+func eraseOperations(s systemState) (systemState, int) {
 	n, ok := parseIndex(s.listingState, len(s.dispListings))
 	if !ok {
-		return startNewOperation // error reported by parseIndex
+		return s, startNewOperation // error reported by parseIndex
 	}
 	for i := 0; i < len(s.dispListing)-n; i++ { // recompile
 		tokens <- token{s.dispListing[i].Op, -1, yes}
@@ -2069,24 +2077,24 @@ func eraseOperations(s *systemState) int {
 		}
 	}
 	tokens <- token{"", -1, not}
-	return startNewListing
+	return s, startNewListing
 }
 
-func checkWav(s *systemState) int {
+func checkWav(s systemState) (systemState, int) {
 	if s.wmap[s.operand] || (s.operand == "@" && s.fIn) {
-		return nextOperation
+		return s, nextOperation
 	}
-	return s.clr("%s %sisn't in wav list%s", s.operand, italic, reset)
+	return s, s.clr("%s %sisn't in wav list%s", s.operand, italic, reset)
 }
 
-func enactMute(s *systemState) int {
+func enactMute(s systemState) (systemState, int) {
 	i, ok := parseIndex(s.listingState, len(mutes))
 	if !ok || excludeCurrent(s.operator, i, len(mutes)) {
-		return startNewOperation // error reported by parseIndex
+		return s, startNewOperation // error reported by parseIndex
 	}
 	if s.operator == "m+" {
 		s.muteGroup = append(s.muteGroup, i) // add to mute group
-		return startNewOperation
+		return s, startNewOperation
 	}
 	s.muteGroup = append(s.muteGroup, i)
 	for _, i := range s.muteGroup {
@@ -2100,17 +2108,17 @@ func enactMute(s *systemState) int {
 		tokens <- token{"mix", -1, not}
 	}
 	s.muteGroup = []int{}
-	return startNewOperation
+	return s, startNewOperation
 }
 
-func enactSolo(s *systemState) int {
+func enactSolo(s systemState) (systemState, int) {
 	i, ok := parseIndex(s.listingState, len(mutes))
 	if !ok {
-		return startNewOperation // error reported by parseIndex
+		return s, startNewOperation // error reported by parseIndex
 	}
 	if i == len(mutes) && s.operator != ".solo" {
 		msg("operand out of range")
-		return startNewOperation
+		return s, startNewOperation
 	}
 	if s.solo == i { // unsolo index given by operand
 		for ii := range mutes { // i is shadowed
@@ -2134,41 +2142,41 @@ func enactSolo(s *systemState) int {
 	if s.operator[:1] == "." && len(s.newListing) > 0 {
 		tokens <- token{"mix", -1, not}
 	}
-	return startNewOperation
+	return s, startNewOperation
 }
 
-func setNoiseFreq(s *systemState) int {
+func setNoiseFreq(s systemState) (systemState, int) {
 	s.newListing = append(s.newListing, listing{{Op: "push"}, {Op: "in", Opd: sf("%v", NOISE_FREQ)}, {Op: "out", Opd: "^freq"}, {Op: "pop"}}...)
-	return nextOperation
+	return s, nextOperation
 }
 
-func beginFunctionDefine(s *systemState) int {
+func beginFunctionDefine(s systemState) (systemState, int) {
 	if _, ok := s.funcs[s.operand]; ok {
 		msg("%swill overwrite existing function!%s", red, reset)
 	} else if _, ok := s.hasOperand[s.operand]; ok { // using this map to avoid cyclic reference of operators
 		msg("%sduplicate of extant operator, use another name%s", italic, reset)
-		return startNewOperation // only return early if not a function and in hasOperand map
+		return s, startNewOperation // only return early if not a function and in hasOperand map
 	}
 	s.st = len(s.newListing) // because current input hasn't been added yet
 	s.fIn = yes
 	msg("%sbegin function definition,%s", italic, reset)
 	msg("%suse @ for operand signal%s", italic, reset)
-	return nextOperation
+	return s, nextOperation
 }
 
-func doLoop(s *systemState) int {
+func doLoop(s systemState) (systemState, int) {
 	var rr error
 	s.do, rr = strconv.Atoi(s.operand)
 	if e(rr) { // returns do as zero
 		msg("%soperand not an integer%s", italic, reset)
-		return startNewOperation
+		return s, startNewOperation
 	}
 	msg("%snext operation repeated%s %dx", italic, reset, s.do)
 	s.to = s.do
-	return startNewOperation
+	return s, startNewOperation
 }
 
-func modeSet(s *systemState) int {
+func modeSet(s systemState) (systemState, int) {
 	if s.operand == "p" { // toggle pause/play
 		switch {
 		case display.Paused:
@@ -2195,9 +2203,9 @@ func modeSet(s *systemState) int {
 			//return startNewListing
 		}
 		time.Sleep(30 * time.Millisecond) // wait for infoDisplay to finish
-		return exitNow
+		return s, exitNow
 	case "erase", "e":
-		return startNewListing
+		return s, startNewListing
 	case "foff":
 		s.funcsave = not
 		display.Mode = "off"
@@ -2206,7 +2214,7 @@ func modeSet(s *systemState) int {
 		display.Mode = "on"
 		if !saveJson(s.funcs, "functions.json") {
 			msg("functions not saved!")
-			return startNewOperation
+			return s, startNewOperation
 		}
 		msg("%sfunctions saved%s", italic, reset)
 	case "pause":
@@ -2216,7 +2224,7 @@ func modeSet(s *systemState) int {
 		}
 	case "play":
 		if !display.Paused {
-			return startNewOperation
+			return s, startNewOperation
 		}
 		<-pause
 		display.Paused = not
@@ -2236,7 +2244,7 @@ func modeSet(s *systemState) int {
 		}
 	case "stats":
 		if !started {
-			return startNewOperation
+			return s, startNewOperation
 		}
 		stats := new(debug.GCStats)
 		debug.ReadGCStats(stats)
@@ -2246,7 +2254,7 @@ func modeSet(s *systemState) int {
 		msg("Avg.: %v", stats.PauseTotal/time.Duration(stats.NumGC))
 	case "mstat":
 		if !started {
-			return startNewOperation
+			return s, startNewOperation
 		}
 		stats := new(runtime.MemStats)
 		runtime.ReadMemStats(stats)
@@ -2262,13 +2270,13 @@ func modeSet(s *systemState) int {
 	default:
 		msg("%sunrecognised mode: %s%s", italic, reset, s.operand)
 	}
-	return startNewOperation
+	return s, startNewOperation
 }
 
-func enactDelete(s *systemState) int {
+func enactDelete(s systemState) (systemState, int) {
 	n, ok := parseIndex(s.listingState, len(s.dispListings))
 	if !ok || excludeCurrent(s.operator, n, len(s.dispListings)) {
-		return startNewOperation // error reported by parseIndex
+		return s, startNewOperation // error reported by parseIndex
 	}
 	mutes.set(n, mute)  // wintermute
 	if display.Paused { // play resumed to enact deletion in sound engine
@@ -2282,29 +2290,29 @@ func enactDelete(s *systemState) int {
 	// reload as deleted
 	s.reload = n
 	tokens <- token{"deleted", s.reload, yes}
-	return startNewListing
+	return s, startNewListing
 }
 
-func checkIndexIncl(s *systemState) int { // eg. listing can level or pan itself
+func checkIndexIncl(s systemState) (systemState, int) { // eg. listing can level or pan itself
 	if _, ok := parseIndex(s.listingState, len(s.dispListings)); !ok {
-		return startNewOperation // error reported by parseIndex
+		return s, startNewOperation // error reported by parseIndex
 	}
-	return nextOperation
+	return s, nextOperation
 }
 
-func checkIndex(s *systemState) int {
+func checkIndex(s systemState) (systemState, int) {
 	i, ok := parseIndex(s.listingState, len(s.dispListings))
 	if !ok || excludeCurrent(s.operator, i, len(s.dispListings)) {
-		return startNewOperation // error reported by parseIndex
+		return s, startNewOperation // error reported by parseIndex
 	}
-	return nextOperation
+	return s, nextOperation
 }
 
-func unmuteAll(s *systemState) int {
+func unmuteAll(s systemState) (systemState, int) {
 	for i := range mutes {
 		mutes.set(i, unmute)
 	}
-	return startNewOperation
+	return s, startNewOperation
 }
 
 func parseFloat(num number, lowerBound, upperBound float64) (v float64, ok bool) {
@@ -2329,32 +2337,32 @@ func reportFloatSet(op string, f float64) {
 	msg("%s%s set to%s %.3gs", italic, op, reset, 1/(f*SampleRate))
 }
 
-func checkFade(s *systemState) int {
+func checkFade(s systemState) (systemState, int) {
 	fd, ok := parseFloat(s.num, 1/(MAX_FADE*SampleRate), 1/(MIN_FADE*SampleRate))
 	if !ok { // error reported by parseFloat
-		return startNewOperation
+		return s, startNewOperation
 	}
 	fade = fd //Pow(FDOUT, fd)
 	reportFloatSet(s.operator, fd)
-	return startNewOperation
+	return s, startNewOperation
 }
 
-func checkRelease(s *systemState) int {
+func checkRelease(s systemState) (systemState, int) {
 	if s.operand == "time" {
 		msg("%slimiter release is:%s %.4gms", italic, reset,
 			-1000/(math.Log(release)*SampleRate/math.Log(8000)))
-		return startNewOperation
+		return s, startNewOperation
 	}
 	v, ok := parseFloat(s.num, 1/(MAX_RELEASE*SampleRate), 1/(MIN_RELEASE*SampleRate))
 	if !ok { // error reported by parseFloat
-		return startNewOperation
+		return s, startNewOperation
 	}
 	release = math.Pow(125e-6, v)
 	reportFloatSet("limiter "+s.operator, v) // report embellished
-	return startNewOperation
+	return s, startNewOperation
 }
 
-func adjustGain(s *systemState) int {
+func adjustGain(s systemState) (systemState, int) {
 	if s.operand == "zero" {
 		gain = baseGain
 	} else if s.operand == "is" {
@@ -2368,23 +2376,23 @@ func adjustGain(s *systemState) int {
 		}
 	}
 	msg("%sgain set to %s%.2gdb", italic, reset, 20*math.Log10(gain/baseGain))
-	return startNewOperation
+	return s, startNewOperation
 }
 
-func adjustClip(s *systemState) int {
+func adjustClip(s systemState) (systemState, int) {
 	if n, ok := parseType(s.operand, s.operator); ok { // permissive, no bounds check
 		ct = n
 		msg("%sclip threshold set to %.3g%s", italic, ct, reset)
 	}
-	return startNewOperation
+	return s, startNewOperation
 }
 
-func checkComment(s *systemState) int {
+func checkComment(s systemState) (systemState, int) {
 	if len(s.newListing) > 0 {
 		msg("%sa comment has to be the first and only operation of a listing...%s", italic, reset)
-		return startNewOperation
+		return s, startNewOperation
 	}
-	return nextOperation
+	return s, nextOperation
 }
 
 func isUppercaseInitial(operand string) bool {

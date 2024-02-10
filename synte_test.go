@@ -19,7 +19,7 @@ var results = [4]string{
 }
 
 var testChecks = []struct {
-	check func(*systemState) int
+	check processor
 	name  string
 	i     systemState // input
 	op    string      // operator
@@ -64,7 +64,7 @@ func TestChecks(t *testing.T) {
 		tst.i.operator = tst.op
 		tst.i.operand = tst.opd
 		tst.i.num.Is = tst.num
-		res := tst.check(&tst.i)
+		_, res := tst.check(tst.i)
 		if res != tst.o {
 			t.Errorf(`#%d %s (%q) => %s, expected %s`, i, tst.name, tst.opd, results[res], results[tst.o])
 		}
@@ -113,7 +113,7 @@ func TestEndFunctionDefine(t *testing.T) {
 	s.hasOperand = make(map[string]bool)
 	s.funcs = make(map[string]fn)
 	//	s.funcsave = false // implicit
-	if res := endFunctionDefine(&s); res != startNewListing {
+	if _, res := endFunctionDefine(s); res != startNewListing {
 		t.Errorf(`endFunctionDefine(plain) => %s, expected startNewListing`, results[res])
 	}
 	if _, ok := s.hasOperand["blah"]; !ok {
@@ -137,7 +137,8 @@ func TestEndFunctionDefine(t *testing.T) {
 	s.hasOperand = make(map[string]bool)
 	s.funcs = make(map[string]fn)
 	//	s.funcsave = false // implicit
-	if res := endFunctionDefine(&s); res != nextOperation {
+	var res int
+	if s, res = endFunctionDefine(s); res != nextOperation {
 		t.Errorf(`endFunctionDefine(hot-loaded) => %s, expected nextOperation`, results[res])
 	}
 	if !slices.EqualFunc(s.newListing, outputNewListing, func(i, o operation) bool {

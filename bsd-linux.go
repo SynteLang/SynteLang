@@ -119,29 +119,29 @@ func setupSoundCard(file string) (sc soundcard, success bool) {
 	return sc, yes
 }
 
-func recordWav(s *systemState) int {
+func recordWav(s systemState) (systemState, int) {
 	if s.sc.sampleRate != 48000 || s.sc.format != 16 {
 		msg("can only record at 16bit 48kHz")
-		return startNewOperation
+		return s, startNewOperation
 	}
 	dir := "./audio-recordings/"
 	f := s.operand + ".wav"
 	files, rr := os.ReadDir(dir)
 	if e(rr) {
 		msg("unable to access '%s': %s", dir, rr)
-		return startNewOperation
+		return s, startNewOperation
 	}
 	for _, file := range files {
 		if file.Name() == f {
 			msg("file '%s' in %s already exists", f, dir)
-			return startNewOperation
+			return s, startNewOperation
 		}
 	}
 	f = dir + f
 	wavFile, rr = os.Create(f)
 	if e(rr) {
 		msg("%v", rr)
-		return startNewOperation
+		return s, startNewOperation
 	}
 	wavFile.Write(wavHeader)
 	for i := 0; i < 9600; i++ {
@@ -151,7 +151,7 @@ func recordWav(s *systemState) int {
 	msg("%snow recording to:%s", italic, reset)
 	msg("%s", f)
 	msg("%s(ends on exit)%s", italic, reset)
-	return startNewOperation
+	return s, startNewOperation
 }
 
 func writeWav(L, R float64) {
@@ -525,7 +525,7 @@ func selectOutput(bits int) func(w io.Writer, f float64) {
 	return output
 }
 
-func ls(s *systemState) int {
+func ls(s systemState) (systemState, int) {
 	if s.operand == "l" {
 		s.operand += "istings"
 	}
@@ -533,7 +533,7 @@ func ls(s *systemState) int {
 	files, rr := os.ReadDir(dir)
 	if e(rr) {
 		msg("unable to access '%s': %s", dir, rr)
-		return startNewOperation
+		return s, startNewOperation
 	}
 	extn := ".syt"
 	if dir == "./wavs" {
@@ -549,11 +549,11 @@ func ls(s *systemState) int {
 	}
 	if len(ls) == 0 {
 		msg("no files")
-		return startNewOperation
+		return s, startNewOperation
 	}
 	msg("%s", ls)
 	msg("")
-	return startNewOperation
+	return s, startNewOperation
 }
 
 func saveTempFile(t systemState, l int) {
@@ -636,13 +636,13 @@ func saveUsage(u map[string]int, t systemState) {
 	}
 }
 
-func loadReloadAppend(t *systemState) int {
+func loadReloadAppend(t systemState) (systemState, int) {
 	switch t.operator {
 	case "rld", "r":
 		n, rr := strconv.Atoi(t.operand) // allow any index, no bounds check
 		if e(rr) || n < 0 {
 			msg("%soperand not valid:%s %s", italic, reset, t.operand)
-			return startNewOperation
+			return t, startNewOperation
 		}
 		t.reload = n
 		if len(mutes) > t.reload && !display.Paused {
@@ -658,7 +658,7 @@ func loadReloadAppend(t *systemState) int {
 	if e(rr) {
 		msg("%v", rr)
 		t.reload = -1
-		return startNewOperation
+		return t, startNewOperation
 	}
 	s := bufio.NewScanner(inputF)
 	s.Split(bufio.ScanWords)
@@ -666,5 +666,5 @@ func loadReloadAppend(t *systemState) int {
 		tokens <- token{s.Text(), t.reload, yes}
 	}
 	inputF.Close()
-	return startNewListing
+	return t, startNewListing
 }

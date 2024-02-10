@@ -460,6 +460,11 @@ you exceed these limits:
 
 	SPL = Sound Pressure Level (A-weighted)
 `
+func emptyTokens() {
+	for len(tokens) > 0 {
+		<-tokens
+	}
+}
 
 func run(from io.Reader) {
 	saveJson([]listing{{operation{Op: advisory}}}, "displaylisting.json")
@@ -489,9 +494,7 @@ func run(from io.Reader) {
 			stop = make(chan int)
 			go SoundEngine(sc, twavs)
 			lockLoad <- struct{}{}
-			for len(tokens) > 0 { // empty incoming tokens
-				<-tokens
-			}
+			emptyTokens()
 			tokens <- token{"_", -1, yes}              // hack to restart input
 			for i := 0; i < len(t.dispListings); i++ { // preload listings into tokens buffer
 				f := sf(".temp/%d.syt", i)
@@ -524,7 +527,7 @@ func run(from io.Reader) {
 		}
 	}()
 
-	go readInput(from)     // scan stdin from goroutine to allow external concurrent input
+	go readInput(from) // scan stdin from goroutine to allow external concurrent input
 	go reloadListing() // poll '.temp/*.syt' modified time and reload if changed
 
 	// set-up state
@@ -560,9 +563,7 @@ start:
 		}
 		// the purpose of clr is to reset the input if error while receiving tokens from external source, declared in this scope to read value of loadExternalFile
 		t.clr = func(s string, i ...interface{}) int {
-			for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
-				<-tokens
-			}
+			emptyTokens()
 			info <- fmt.Sprintf(s, i...)
 			<-carryOn
 			if loadExternalFile {

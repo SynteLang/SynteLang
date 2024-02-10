@@ -553,34 +553,13 @@ func run(from io.Reader) {
 start:
 	for { // main loop
 		t = initialiseListing(t, reservedSignalNames)
-		// signals map with predefined constants, mutable
-		t.signals = map[string]float64{ // reset and add predefined signals
-			"ln2":      math.Ln2,
-			"ln3":      math.Log(3),
-			"ln5":      math.Log(5),
-			"E":        math.E,   // e
-			"Pi":       math.Pi,  // π
-			"Phi":      math.Phi, // φ
-			"invSR":    1 / SampleRate,
-			"SR":       SampleRate,
-			"Epsilon":  math.SmallestNonzeroFloat64, // ε, epsilon
-			"wavR":     1.0 / (WAV_TIME * SampleRate),
-			"semitone": math.Pow(2, 1.0/12),
-			"Tau":      2 * math.Pi, // 2π
-			"ln7":      math.Log(7),
-			"^freq":    NOISE_FREQ,           // default frequency for setmix, suitable for noise
-			"null":     0,                    // only necessary if zero is banned in Syntə again
-			"fifth":    math.Pow(2, 7.0/12),  // equal temperament ≈ 1.5 (2:3)
-			"third":    math.Pow(2, 1.0/3),   // major, equal temperament ≈ 1.25 (4:5)
-			"seventh":  math.Pow(2, 11.0/12), // major, equal temperament ≈ 1.875 (8:15)
-		}
 		for i, w := range wavSlice { // add to signals map, with current sample rate
 			t.signals[w.Name] = float64(i)
 			t.signals["l."+w.Name] = float64(len(w.Data)-1) / (WAV_TIME * SampleRate)
 			t.signals["r."+w.Name] = 1.0 / float64(len(w.Data))
 		}
 		// the purpose of clr is to reset the input if error while receiving tokens from external source, declared in this scope to read value of loadExternalFile
-		t.clr = func(s string, i ...interface{}) int { // must be type: clear
+		t.clr = func(s string, i ...interface{}) int {
 			for len(tokens) > 0 { // empty remainder of incoming tokens and abandon reload
 				<-tokens
 			}
@@ -600,14 +579,14 @@ start:
 			}
 
 			var do int
-			t, loadExternalFile, do = parseNewOperation(t, loadExternalFile)
-			switch do {
-			case startNewOperation:
-				continue input
-			case startNewListing:
+			t, loadExternalFile, do = parseNewOperation(t)
+			switch {
+			case (do == startNewOperation && loadExternalFile) || do == startNewListing:
 				loadExternalFile = not
 				continue start
-			case exitNow:
+			case do == startNewOperation:
+				continue input
+			case do == exitNow:
 				break start
 			}
 
@@ -730,9 +709,9 @@ start:
 	saveUsage(usage, t)
 }
 
-func parseNewOperation(t systemState, ldExt bool) (systemState, bool, int) {
-	var result int
-	if ldExt, result = readTokenPair(&t); result != nextOperation {
+func parseNewOperation(t systemState) (systemState, bool, int) {
+	ldExt, result := readTokenPair(&t)
+	if result != nextOperation {
 		return t, ldExt, result
 	}
 
@@ -740,7 +719,7 @@ func parseNewOperation(t systemState, ldExt bool) (systemState, bool, int) {
 		tokens <- token{t.operator, -1, not}
 		d := strings.ReplaceAll(t.operand, "{i}", sf("%d", t.to-t.do+1))
 		d = strings.ReplaceAll(d, "{i+1}", sf("%d", t.to-t.do+2))
-		if y := t.hasOperand[t.operator]; y { // to avoid weird blank opds being sent
+		if y := t.hasOperand[t.operator]; y { // to avoid blank opds being sent
 			tokens <- token{d, -1, not}
 		}
 		t.do--
@@ -750,23 +729,14 @@ func parseNewOperation(t systemState, ldExt bool) (systemState, bool, int) {
 
 	if t.isFunction {
 		function, ok := parseFunction(t, t.out)
-		switch {
-		case !ok && !ldExt:
+		if !ok {
 			return t, ldExt, startNewOperation
-		case !ok && ldExt:
-			return t, ldExt, startNewListing
 		}
 		t.fun++
 		t.newListing = append(t.newListing, function...)
 		return t, ldExt, nextOperation
 	}
-	p, ok := operators[t.operator]
-	if !ok {
-		msg("not in operators map")
-		return t, ldExt, startNewOperation
-	}
-	var r int
-	t, r = p.process(t)
+	t, r := operators[t.operator].process(t)
 	return t, ldExt, r
 }
 
@@ -2465,5 +2435,26 @@ func initialiseListing(t systemState, res []string) systemState {
 			t.out[v] = assigned
 		}
 		t.reload = -1 // index to be launched to
+		// signals map with predefined constants, mutable
+		t.signals = map[string]float64{ // reset and add predefined signals
+			"ln2":      math.Ln2,
+			"ln3":      math.Log(3),
+			"ln5":      math.Log(5),
+			"E":        math.E,   // e
+			"Pi":       math.Pi,  // π
+			"Phi":      math.Phi, // φ
+			"invSR":    1 / SampleRate,
+			"SR":       SampleRate,
+			"Epsilon":  math.SmallestNonzeroFloat64, // ε, epsilon
+			"wavR":     1.0 / (WAV_TIME * SampleRate),
+			"semitone": math.Pow(2, 1.0/12),
+			"Tau":      2 * math.Pi, // 2π
+			"ln7":      math.Log(7),
+			"^freq":    NOISE_FREQ,           // default frequency for setmix, suitable for noise
+			"null":     0,                    // only necessary if zero is banned in Syntə again
+			"fifth":    math.Pow(2, 7.0/12),  // equal temperament ≈ 1.5 (2:3)
+			"third":    math.Pow(2, 1.0/3),   // major, equal temperament ≈ 1.25 (4:5)
+			"seventh":  math.Pow(2, 11.0/12), // major, equal temperament ≈ 1.875 (8:15)
+		}
 		return t
 }

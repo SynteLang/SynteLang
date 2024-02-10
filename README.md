@@ -942,7 +942,7 @@ Info display won't display the same message sent more than once in succession.
 To prepare the audio system:
 1. Set up the equipment and verify sound from Syntə is reaching the speakers using `in 440hz, osc, sine, mul 0.1, out dac`
 2. Turn the system volume down to zero
-3. Type `test 2000hz`
+3. Type `test 2khz`
 4. Increase volume until an acceptable level
 
 You will probably need to go above this level for perfomance once you have an audience in the room and are playing full range sounds, but this gives a good starting point that you probably don't want to go too far over. Please ensure the audience has access to hearing protection if the system is capable of more than 85dBSPL.

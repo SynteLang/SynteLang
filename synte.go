@@ -304,7 +304,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"record":  {yes, 0, recordWav},           // commence recording of wav file
 }
 
-type st8 int
+type syncState int
 
 type data struct {
 	listingStack
@@ -321,7 +321,7 @@ type listingStack struct {
 	listing []opSE
 	sigs    []float64
 	stack   []float64
-	syncSt8 st8
+	syncSt8 syncState
 	m       float64
 	keep
 }
@@ -1227,7 +1227,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	)
 
 	const ( // sync states
-		run st8 = iota
+		run syncState = iota
 		on
 		off
 	)

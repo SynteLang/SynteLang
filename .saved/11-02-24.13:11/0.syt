@@ -1,0 +1,17 @@
+in r.local
+osc
+out sync
+in r.local
+* 4
+sq
+mul 0.5
++ .25
+mul r.local
+osc
+mod 1/32
+hpf 32s
+wav local
+mul 12db
+hpf 200hz
+lpf 200hz
+out dac

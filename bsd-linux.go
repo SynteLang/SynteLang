@@ -386,7 +386,7 @@ func mouseRead() {
 			msg("error reading mouse data: %v", rr)
 			return
 		}
-		if mc {
+		if mouse.mc {
 			mouse.X = math.Pow(10, mx/10)
 			mouse.Y = math.Pow(10, my/10)
 		} else {

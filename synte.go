@@ -239,14 +239,14 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"<sync":  {yes, 25, noCheck},      // receive sync pulse
 	">sync":  {not, 26, noCheck},      // send sync pulse
 	".>sync": {not, 26, noCheck},      // alias, launches listing
-	//	"jl0":    {yes, 27, noCheck},        // jump if less than zero
+	//	"jl0":    {yes, 27, noCheck},    // jump if less than zero
 	"level":  {yes, 28, checkIndexIncl}, // vary level of a listing
 	".level": {yes, 28, checkIndexIncl}, // alias, launches listing
 	"lvl":    {yes, 28, checkIndexIncl}, // vary level of a listing
 	".lvl":   {yes, 28, checkIndexIncl}, // alias, launches listing
 	"from":   {yes, 29, checkIndex},     // receive output from a listing
 	"sgn":    {not, 30, noCheck},        // sign of input
-	//	"deleted":      {yes, 31, noCheck}, // specified below
+	// "":	  	{not, 31, noCheck}, 	 // unused
 	"/":      {yes, 32, noCheck},        // division
 	"sub":    {yes, 33, noCheck},        // subtract operand
 	"-":      {yes, 33, noCheck},        // alias of sub
@@ -269,7 +269,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"reu":    {not, 50, noCheck},        // reverse each half of complex spectrum
 	"halt":   {not, 51, noCheck},        // halt sound engine for time specified by input (experimental)
 
-	// specials
+	// specials. Not intended for sound engine, except 'deleted'
 	"]":       {not, 0, endFunctionDefine},   // end function input
 	":":       {yes, 0, modeSet},             // command
 	"fade":    {yes, 0, checkFade},           // set fade out
@@ -373,11 +373,12 @@ var mouse = struct {
 	Left, // 0 or 1
 	Right,
 	Middle float64
+	mc bool
 }{
 	X: 1,
 	Y: 1,
+	mc: yes, // mouse curve: not=linear, yes=exponential
 }
-var mc = yes // mouse curve: not=linear, yes=exponential
 
 type disp struct { // indicates:
 	On      bool          // Syntə is running
@@ -388,7 +389,6 @@ type disp struct { // indicates:
 	Info    string        // messages sent from msg()
 	MouseX  float64       // mouse X coordinate
 	MouseY  float64       // mouse Y coordinate
-	Protect bool          // redundant
 	Paused  bool          // sound engine is paused
 	Mute    []bool        // mutes of all listings
 	SR      float64       // current sample rate (not shown)
@@ -399,10 +399,9 @@ type disp struct { // indicates:
 
 var display = disp{
 	Mode:    "off",
+	Info:    "clear",
 	MouseX:  1,
 	MouseY:  1,
-	Protect: yes,
-	Info:    "clear",
 }
 
 type wavs []struct {
@@ -745,11 +744,11 @@ func loadNewListing(listing []operation) []opSE {
 	for i := range listing {
 		if listing[i].N > math.MaxUint16 { // paranoid checks
 			msg("too many signals, didn't load to Sound Engine")
-			return []opSE{{Opn: 31}}
+			return []opSE{{Opn: 0}}
 		}
 		if listing[i].Opn > math.MaxUint8 {
 			msg("listing too long, didn't load to Sound Engine")
-			return []opSE{{Opn: 31}}
+			return []opSE{{Opn: 0}}
 		}
 		l[i] = opSE{
 			N:   uint16(listing[i].N),
@@ -1506,8 +1505,6 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					r = d[int(d[i].sigs[d[i].listing[ii].N])%len(d)].sigs[0]
 				case 30: // "sgn"
 					r = 1 - float64(math.Float64bits(r)>>62)
-				case 31: // "deleted"
-					d[i].sigs[0] = 0
 				case 32: // "/"
 					if d[i].sigs[d[i].listing[ii].N] == 0 {
 						d[i].sigs[d[i].listing[ii].N] = math.Copysign(1e-308, d[i].sigs[d[i].listing[ii].N])
@@ -2237,7 +2234,7 @@ func modeSet(s systemState) (systemState, int) {
 		msg("Sys: %v", stats.Sys)
 		msg("Live: %v", stats.Mallocs-stats.Frees)
 	case "mc": // mouse curve, exp or lin
-		mc = !mc
+		mouse.mc = !mouse.mc
 	case "rs": // root sync, is this needed any more?
 		rs = yes
 		msg("%snext launch will sync to root instance%s", italic, reset)

@@ -36,7 +36,6 @@ func main() {
 		Info    string
 		MouseX  float64
 		MouseY  float64
-		Protect bool
 		Paused  bool
 		Mute    []bool
 		SR      float64
@@ -55,7 +54,6 @@ func main() {
 	messages := make([]message, 11)
 
 	clip := ""
-	unprotected := ""
 	paused := ""
 	sync := " "
 	GRhold := 0
@@ -135,15 +133,6 @@ func main() {
 					messages[i].Content = ""
 				}
 			}
-			if !display.Protect && display.On {
-				if display.Clip {
-					unprotected = fmt.Sprintf("%sUnprotected%s", invert, reset)
-				} else {
-					unprotected = "Unprotected"
-				}
-			} else {
-				unprotected = ""
-			}
 			clip = ""
 			if display.Clip {
 				clip = red
@@ -194,7 +183,7 @@ func main() {
 %s
 %s
 %s
-%s%s
+%s
       %sMouse-X:%s %.5g		%sMouse-Y:%s %.5g
 ╰───────────────────────────────────────────────────╯`,
 				sync, paused, timer,
@@ -210,7 +199,7 @@ func main() {
 				messages[8].Content,
 				messages[9].Content,
 				messages[10].Content,
-				VU, unprotected,
+				VU,
 				blue, reset, display.MouseX,
 				blue, reset, display.MouseY,
 			)

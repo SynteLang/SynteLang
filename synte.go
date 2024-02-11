@@ -144,7 +144,7 @@ type createListing struct {
 	newListing  listing
 	dispListing listing
 	newSignals  []float64
-	signals		map[string]float64
+	signals     map[string]float64
 }
 
 type number struct {
@@ -354,15 +354,15 @@ type muteSlice []float64
 
 // communication variables
 var (
-	started   bool // latches
-	exit      bool // initiate shutdown
-	mutes     muteSlice
-	levels    []float64
-	rs        bool                                     // root-sync between running instances
-	fade      = 1 / (MIN_FADE * SAMPLE_RATE)           //Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
-	release   = math.Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
-	ct        = 4.0                                    // individual listing clip threshold
-	gain      = baseGain
+	started bool // latches
+	exit    bool // initiate shutdown
+	mutes   muteSlice
+	levels  []float64
+	rs      bool                                     // root-sync between running instances
+	fade    = 1 / (MIN_FADE * SAMPLE_RATE)           //Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
+	release = math.Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
+	ct      = 4.0                                    // individual listing clip threshold
+	gain    = baseGain
 )
 
 type noise uint64
@@ -375,8 +375,8 @@ var mouse = struct {
 	Middle float64
 	mc bool
 }{
-	X: 1,
-	Y: 1,
+	X:  1,
+	Y:  1,
 	mc: yes, // mouse curve: not=linear, yes=exponential
 }
 
@@ -398,10 +398,10 @@ type disp struct { // indicates:
 }
 
 var display = disp{
-	Mode:    "off",
-	Info:    "clear",
-	MouseX:  1,
-	MouseY:  1,
+	Mode:   "off",
+	Info:   "clear",
+	MouseX: 1,
+	MouseY: 1,
 }
 
 type wavs []struct {
@@ -459,6 +459,7 @@ you exceed these limits:
 
 	SPL = Sound Pressure Level (A-weighted)
 `
+
 func emptyTokens() {
 	for len(tokens) > 0 {
 		<-tokens
@@ -522,7 +523,7 @@ func run(from io.Reader) {
 			<-lockLoad
 			msg("%d: %slisting deleted, can edit and reload%s", current, italic, reset)
 			msg("%s>>> Sound Engine restarted%s", italic, reset)
-			time.Sleep(5*time.Second) // hold-off
+			time.Sleep(5 * time.Second) // hold-off
 		}
 	}()
 
@@ -683,7 +684,7 @@ start:
 		a := <-accepted
 		if a != len(t.dispListings) {
 			msg("len(mutes): %d, len(disp): %d, accepted: %d", len(mutes), len(t.dispListings), a)
-			time.Sleep(1*time.Second)
+			time.Sleep(1 * time.Second)
 		}
 		<-lockLoad
 
@@ -1690,9 +1691,9 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				d[i].sigs[0] = 0
 				panic(sf("listing:%d - overflow", i))
 			}
-			c += d[i].m                       // add mute to mix factor
+			c += d[i].m                            // add mute to mix factor
 			mid := d[i].sigs[0] * d[i].m * d[i].lv // sigs[0] left intact for `from` operator
-			if mid > ct {                     // soft clip
+			if mid > ct {                          // soft clip
 				mid = ct + tanh(mid-ct)
 				display.Clip = yes
 			} else if mid < -ct {
@@ -1708,7 +1709,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		x, dac = dac, hpf
 		//c = math.Sqrt(c*10) // because eg. two signals sum by 3db, not 6db
 		c = c + 16.8 // approximation to sqrt, avoiding level changes for first few listings
-		if c < 1 { // c = max(c, 1)
+		if c < 1 {   // c = max(c, 1)
 			c = 1
 		}
 		mixF = mixF + (c-mixF)*0.00026 // lpf ~2Hz @ 48kHz
@@ -2382,10 +2383,10 @@ func isUppercaseInitial(operand string) bool {
 
 func newSystemState(sc soundcard) (systemState, [][]float64, wavs) {
 	t := systemState{
-		sc: sc,
-		funcs: make(map[string]fn),
+		sc:          sc,
+		funcs:       make(map[string]fn),
 		daisyChains: []int{2, 3, 9, 10}, // pitch,tempo,grid,sync
-		solo: -1,
+		solo:        -1,
 	}
 
 	loadFunctions(&t.funcs)
@@ -2418,40 +2419,40 @@ func newSystemState(sc soundcard) (systemState, [][]float64, wavs) {
 }
 
 func initialiseListing(t systemState, res []string) systemState {
-		t.listingState = listingState{}
-		t.newSignals = make([]float64, len(res), 30) // capacity is nominal
-		t.out = make(map[string]struct{}, 30) // to check for multiple outs to same signal name
-		for _, v := range res {
-			switch v {
-			case "tempo", "pitch", "grid", "sync":
-				continue
-			}
-			if isUppercaseInitial(v) {
-				continue
-			}
-			t.out[v] = assigned
+	t.listingState = listingState{}
+	t.newSignals = make([]float64, len(res), 30) // capacity is nominal
+	t.out = make(map[string]struct{}, 30)        // to check for multiple outs to same signal name
+	for _, v := range res {
+		switch v {
+		case "tempo", "pitch", "grid", "sync":
+			continue
 		}
-		t.reload = -1 // index to be launched to
-		// signals map with predefined constants, mutable
-		t.signals = map[string]float64{ // reset and add predefined signals
-			"ln2":      math.Ln2,
-			"ln3":      math.Log(3),
-			"ln5":      math.Log(5),
-			"E":        math.E,   // e
-			"Pi":       math.Pi,  // π
-			"Phi":      math.Phi, // φ
-			"invSR":    1 / SampleRate,
-			"SR":       SampleRate,
-			"Epsilon":  math.SmallestNonzeroFloat64, // ε, epsilon
-			"wavR":     1.0 / (WAV_TIME * SampleRate),
-			"semitone": math.Pow(2, 1.0/12),
-			"Tau":      2 * math.Pi, // 2π
-			"ln7":      math.Log(7),
-			"^freq":    NOISE_FREQ,           // default frequency for setmix, suitable for noise
-			"null":     0,                    // only necessary if zero is banned in Syntə again
-			"fifth":    math.Pow(2, 7.0/12),  // equal temperament ≈ 1.5 (2:3)
-			"third":    math.Pow(2, 1.0/3),   // major, equal temperament ≈ 1.25 (4:5)
-			"seventh":  math.Pow(2, 11.0/12), // major, equal temperament ≈ 1.875 (8:15)
+		if isUppercaseInitial(v) {
+			continue
 		}
-		return t
+		t.out[v] = assigned
+	}
+	t.reload = -1 // index to be launched to
+	// signals map with predefined constants, mutable
+	t.signals = map[string]float64{ // reset and add predefined signals
+		"ln2":      math.Ln2,
+		"ln3":      math.Log(3),
+		"ln5":      math.Log(5),
+		"E":        math.E,   // e
+		"Pi":       math.Pi,  // π
+		"Phi":      math.Phi, // φ
+		"invSR":    1 / SampleRate,
+		"SR":       SampleRate,
+		"Epsilon":  math.SmallestNonzeroFloat64, // ε, epsilon
+		"wavR":     1.0 / (WAV_TIME * SampleRate),
+		"semitone": math.Pow(2, 1.0/12),
+		"Tau":      2 * math.Pi, // 2π
+		"ln7":      math.Log(7),
+		"^freq":    NOISE_FREQ,           // default frequency for setmix, suitable for noise
+		"null":     0,                    // only necessary if zero is banned in Syntə again
+		"fifth":    math.Pow(2, 7.0/12),  // equal temperament ≈ 1.5 (2:3)
+		"third":    math.Pow(2, 1.0/3),   // major, equal temperament ≈ 1.25 (4:5)
+		"seventh":  math.Pow(2, 11.0/12), // major, equal temperament ≈ 1.875 (8:15)
+	}
+	return t
 }

@@ -1225,6 +1225,155 @@
 			}
 		]
 	},
+	"/euc": {
+		"Comment": "outputs euclidean rhythms at the frequency given by a `sync` signal. Eg. output for (3,8) = 'X..X..X.' the X will be 1 and the rests 0 ",
+		"Body": [
+			{
+				"Op": "in",
+				"Opd": "sync"
+			},
+			{
+				"Op": "mul",
+				"Opd": "@1"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "2"
+			},
+			{
+				"Op": "+",
+				"Opd": "-1"
+			},
+			{
+				"Op": "out",
+				"Opd": "gt"
+			},
+			{
+				"Op": "in",
+				"Opd": "@"
+			},
+			{
+				"Op": "+",
+				"Opd": "-0.5"
+			},
+			{
+				"Op": "/",
+				"Opd": "@1"
+			},
+			{
+				"Op": "out",
+				"Opd": "width"
+			},
+			{
+				"Op": "in",
+				"Opd": "sync"
+			},
+			{
+				"Op": "mul",
+				"Opd": "@"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "lt",
+				"Opd": "width"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "gt"
+			},
+			{
+				"Op": "out",
+				"Opd": "a1"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0"
+			},
+			{
+				"Op": "out",
+				"Opd": "b"
+			},
+			{
+				"Op": "in",
+				"Opd": "c"
+			},
+			{
+				"Op": "gt",
+				"Opd": "0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "b"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "a1"
+			},
+			{
+				"Op": "out",
+				"Opd": "c"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "sh"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "sh"
+			},
+			{
+				"Op": "out",
+				"Opd": "a2"
+			},
+			{
+				"Op": "in",
+				"Opd": "sh"
+			},
+			{
+				"Op": "mul",
+				"Opd": "-1"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "b0"
+			},
+			{
+				"Op": "+",
+				"Opd": "a2"
+			},
+			{
+				"Op": "out",
+				"Opd": "b0"
+			}
+		]
+	},
 	"euclid": {
 		"Comment": "outputs euclidean rhythms at the frequency given by input as a series of pulses. Eg. output for (3,8) = 'X..X..X.' the X will be 1 and the rests 0 ",
 		"Body": [
@@ -1235,10 +1384,6 @@
 			{
 				"Op": "mul",
 				"Opd": "@1"
-			},
-			{
-				"Op": "out",
-				"Opd": "^freq"
 			},
 			{
 				"Op": "+",
@@ -1291,10 +1436,6 @@
 			{
 				"Op": "mul",
 				"Opd": "@"
-			},
-			{
-				"Op": "out",
-				"Opd": "^freq"
 			},
 			{
 				"Op": "+",

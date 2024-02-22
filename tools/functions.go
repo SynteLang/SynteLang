@@ -2,6 +2,8 @@
 // pretty-prints functions saved in functions.json to stdout
 // OR
 // with -u flag, processes usage stats and prints to stdout
+// OR
+// with --docs flag, formats function documentation to stdout
 
 package main
 
@@ -75,7 +77,7 @@ func main() {
 		fmt.Println(sortUsage(u))
 		return
 	}
-	if len(os.Args) > 1 && os.Args[1] == "-docs" {
+	if len(os.Args) > 1 && os.Args[1] == "--docs" {
 		// process comments for docs
 		type mm struct{ at, at1, at2 bool }
 		for _, name := range functions.sortedByName() {
@@ -171,7 +173,7 @@ func loadUsage() map[string]int {
 	u := map[string]int{}
 	f, err := os.Open("usage.txt")
 	if err != nil {
-		//msg("%v", rr)
+		msg("%v", rr)
 		return u
 	}
 	s := bufio.NewScanner(f)

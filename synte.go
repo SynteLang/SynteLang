@@ -101,7 +101,8 @@ const (
 	WAV_LENGTH     = WAV_TIME * SAMPLE_RATE
 	TAPE_LENGTH    = 1 //seconds
 	MAX_WAVS       = 12
-	EXPORTED_LIMIT = 12
+	lenReserved    = 11
+	lenExports     = 12
 	NOISE_FREQ     = 0.0625 // 3kHz @ 48kHz Sample rate
 	FDOUT          = 1e-4
 	MIN_FADE       = 75e-3 // 125ms
@@ -531,7 +532,7 @@ func run(from io.Reader) {
 	go reloadListing() // poll '.temp/*.syt' modified time and reload if changed
 
 	// set-up state
-	reservedSignalNames := []string{ // order is important
+	reservedSignalNames := [lenReserved+lenExports]string{ // order is important
 		"dac",
 		"", // nil signal for unused operand
 		"pitch",
@@ -544,9 +545,8 @@ func run(from io.Reader) {
 		"grid",
 		"sync",
 	}
-	lenReserved := len(reservedSignalNames) // use this as starting point for exported signals
-	for i := 0; i < EXPORTED_LIMIT; i++ {   // add 12 reserved signals for inter-list signals
-		reservedSignalNames = append(reservedSignalNames, sf("***%d", i+lenReserved)) // placeholder
+	for i := lenReserved; i < lenExports; i++ {   // add 12 reserved signals for inter-list signals
+		reservedSignalNames[i] = sf("***%d", i+lenReserved) // placeholder
 	}
 	lenExported := 0
 	usage := loadUsage() // local usage telemetry
@@ -592,15 +592,15 @@ start:
 			}
 
 			// process exported signals
-			alreadyIn := not
+			reservedOrExported := not
 			for _, v := range reservedSignalNames {
 				if v == t.operand {
-					alreadyIn = yes // signal already exported or reserved
+					reservedOrExported = yes
 				}
 			}
 			_, inSg := t.signals[t.operand]
-			if !inSg && !alreadyIn && !t.num.Is && !t.fIn && t.operator != "//" && isUppercaseInitial(t.operand) { // optional: && t.operator == "out"
-				if lenExported > EXPORTED_LIMIT {
+			if !inSg && !reservedOrExported && !t.num.Is && !t.fIn && t.operator != "//" && isUppercaseInitial(t.operand) { // optional: && t.operator == "out"
+				if lenExported > lenExports {
 					msg("we've ran out of exported signals :(")
 					continue
 				}
@@ -2418,7 +2418,7 @@ func newSystemState(sc soundcard) (systemState, [][]float64, wavs) {
 	return t, wavs, wavSlice
 }
 
-func initialiseListing(t systemState, res []string) systemState {
+func initialiseListing(t systemState, res [lenReserved+lenExports]string) systemState {
 	t.listingState = listingState{}
 	t.newSignals = make([]float64, len(res), 30) // capacity is nominal
 	t.out = make(map[string]struct{}, 30)        // to check for multiple outs to same signal name

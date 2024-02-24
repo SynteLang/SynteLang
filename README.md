@@ -2,7 +2,8 @@
 
 # ◌ Syntə
 
-## is an audio live coding language environment
+is an audio live coding language and environment
+<br>
 
 The name is pronounced '*sinter*', which means to create something by
 fusing many tiny elements together under intense heat.  

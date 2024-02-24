@@ -1,0 +1,27 @@
+/b 3,0
+out f
+/b 3,0
+lt 0.5
+out grid
+/b 1,0
+gt 0.875
+mul 32
++ 1
+out b
+/b b,0
+flip
+s/h grid
+mul 4.5
+mod ln2
+8bit 12
+base 2
+mul 110hz
+out p
+saw
+out m
+in p
+mul 1.01
+saw
++ m
+lpf 550hz
+mix

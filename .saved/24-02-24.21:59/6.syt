@@ -1,0 +1,8 @@
+/b 3,0
+lt 0.5
+out cl
+/euc 6,24,0.5
+hpf 2hz
+clip cl
+noise
+mix

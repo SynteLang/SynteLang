@@ -2038,7 +2038,7 @@ func excludeCurrent(op string, i, l int) bool {
 }
 
 func eraseOperations(s systemState) (systemState, int) {
-	n, ok := parseIndex(s.listingState, len(s.dispListings))
+	n, ok := parseIndex(s.listingState, len(s.dispListing))
 	if !ok {
 		return s, startNewOperation // error reported by parseIndex
 	}

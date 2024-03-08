@@ -173,7 +173,7 @@ func loadUsage() map[string]int {
 	u := map[string]int{}
 	f, err := os.Open("usage.txt")
 	if err != nil {
-		msg("%v", rr)
+		fmt.Println("%v", err)
 		return u
 	}
 	s := bufio.NewScanner(f)

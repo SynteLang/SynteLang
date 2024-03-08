@@ -56,7 +56,7 @@ The ◊ symbol indicates a sentence or section that may need updating in future.
 **Requirements:**  
 >Computer with a soundcard (internal or external)  
 >OSS or ALSA sound driver (FreeBSD / Linux) ◊  
->Go programming language installed - requires at minimum version 1.16 ◊  
+>Go programming language installed - requires at minimum version 1.18 ◊  
 >Desire to learn about audio synthesis  
 >Unicode support
 

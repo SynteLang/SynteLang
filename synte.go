@@ -1864,15 +1864,16 @@ func (n *noise) ise() float64 {
 var invMaxInt32 = 1.0 / math.MaxInt32
 
 func mod(x, y float64) float64 {
-	if y == 0 { // TODO: temporary hack
+	if y == 0 {
 		return 0
+		// return x ?
 	}
 	if y == 1 {
 		_, f := math.Modf(x)
 		return f
 	}
 	return math.Mod(x, y)
-	pos := yes
+/*	pos := yes
 	if x < 0 {
 		pos = not
 		x = -x
@@ -1882,7 +1883,7 @@ func mod(x, y float64) float64 {
 	if pos {
 		return float64(m) * invMaxInt32
 	}
-	return -float64(m) * invMaxInt32
+	return -float64(m) * invMaxInt32*/
 }
 
 const (

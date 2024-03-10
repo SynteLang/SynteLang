@@ -1191,19 +1191,29 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		return
 	}
 
-	const (
-		Tau                 = 2 * math.Pi
-		RateIntegrationTime = 2 << 14 // to display load
-	)
+	const Tau = 2 * math.Pi
+	const RateIntegrationTime = 2 << 14 // to display load
 
-	const ( // sync states
+	const (
 		run syncState = iota
 		on
 		off
 	)
 
 	var (
-		no           = noise(time.Now().UnixNano())
+		lpf15hz   = lpf_coeff(15, SampleRate)
+		lpf1khz   = lpf_coeff(1e3, SampleRate)
+		lpf2hz    = lpf_coeff(2, SampleRate)
+		lpf50hz   = lpf_coeff(50, SampleRate)
+
+		hpf4hz    = hpf_coeff(4, SampleRate)
+		hpf2560hz = hpf_coeff(2560, SampleRate)
+		hpf160hz  = hpf_coeff(160, SampleRate)
+	)
+
+	var (
+		no = noise(time.Now().UnixNano())
+
 		l, h float64 = 1, 2 // limiter, hold
 		env  float64 = 1    // for exit envelope
 		dac, // output
@@ -1270,7 +1280,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				}
 				lpf.stereoLpf(s, 0.7)
 			default:
-				lpf.stereoLpf(stereoPair{}, 0.0013)
+				lpf.stereoLpf(stereoPair{}, lpf15hz)
 			}
 			L := clip(lpf.left) * sc.convFactor  // clip will display info
 			R := clip(lpf.right) * sc.convFactor // clip will display info
@@ -1312,8 +1322,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		}
 
 		mo := mouse
-		mx = mx + (mo.X-mx)*0.0026 // lpf @ ~20Hz
-		my = my + (mo.Y-my)*0.0013
+		mx = mx + (mo.X-mx)*lpf15hz
+		my = my + (mo.Y-my)*lpf15hz
 
 		//for i, l := range d { // this is incredibly slow
 		for i := 0; i < len(d); i++ { // much faster
@@ -1322,8 +1332,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			for ii := 0; ii < len(daisyChains); ii++ {
 				d[i].sigs[daisyChains[ii]] = d[(i+len(d)-1)%len(d)].sigs[daisyChains[ii]]
 			}
-			d[i].m = d[i].m + (p*mutes[i]-d[i].m)*0.0013  // anti-click filter @ ~10hz
-			d[i].lv = d[i].lv + (levels[i]-d[i].lv)*0.125 // @ 1091hz
+			d[i].m = d[i].m + (p*mutes[i]-d[i].m)*lpf15hz  // anti-click filter
+			d[i].lv = d[i].lv + (levels[i]-d[i].lv)*lpf1khz
 			//sigs := d[i].sigs
 			// mouse values
 			d[i].sigs[4] = mx
@@ -1403,6 +1413,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					r = d[i].stack[len(d[i].stack)-1]
 					d[i].stack = d[i].stack[:len(d[i].stack)-1]
 				case 18: // "tape"
+					// TODO remove clip and filters, rename as buff
 					r = math.Max(-1, math.Min(1, r)) // hard clip for cleaner reverbs
 					d[i].th = (d[i].th + r - d[i].tx) * 0.9994
 					d[i].tx = r
@@ -1705,31 +1716,31 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			mid *= 1 - math.Abs(d[i].pan*0.5)
 			dac += mid
 		}
-		hpf = (hpf + dac - x) * 0.9994 // hpf ≈ 4.6Hz
+		hpf = (hpf + dac - x) * hpf4hz
 		x, dac = dac, hpf
 		//c = math.Sqrt(c*10) // because eg. two signals sum by 3db, not 6db
 		c = c + 16.8 // approximation to sqrt, avoiding level changes for first few listings
 		if c < 1 {   // c = max(c, 1)
 			c = 1
 		}
-		mixF = mixF + (c-mixF)*0.00026 // lpf ~2Hz @ 48kHz
+		mixF = mixF + (c-mixF) * lpf2hz
 		c = 0
 		dac /= mixF
 		sides /= mixF
 		dac *= gain
 		sides *= gain
 		// limiter
-		hpf2560 = (hpf2560 + dac - x2560) * 0.749
+		hpf2560 = (hpf2560 + dac - x2560) * hpf2560hz
 		x2560 = dac
-		hpf160 = (hpf160 + dac - x160) * 0.97948
+		hpf160 = (hpf160 + dac - x160) * hpf160hz
 		x160 = dac
 		// parallel low end path
-		lpf50 = lpf50 + (dac-lpf50)*0.006536
+		lpf50 = lpf50 + (dac-lpf50) * lpf50hz
 		d := 1 * lpf50 / (1 + math.Abs(lpf50*4)) // tanh approximation
-		lpf510 = lpf510 + (d-lpf510)*0.006536
+		lpf510 = lpf510 + (d-lpf510) * lpf50hz
 		deemph = lpf510
 		// apply pre-emphasis to detection
-		det := math.Abs(11.4*hpf2560+1.6*hpf160+dac) * 0.7
+		det := math.Abs(11.4*hpf2560 + 1.6*hpf160 + dac) * 0.7
 		if det > l {
 			l = det // MC
 			h = release
@@ -1782,6 +1793,14 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		sides = 0
 		n++
 	}
+}
+
+func lpf_coeff(f, SR float64) float64 {
+	return 1 / (1 + 1/(Tau*f/SR))
+}
+
+func hpf_coeff(f, SR float64) float64 {
+	return 1 / (1 + Tau*f/SR)
 }
 
 func clip(in float64) float64 { // hard clip
@@ -2341,11 +2360,12 @@ func adjustGain(s systemState) (systemState, int) {
 	} else if s.operand == "is" {
 		// just show below
 	} else if n, ok := parseType(s.operand, s.operator); ok {
+		n = math.Abs(n)
 		gain *= n
-		if math.Abs(math.Log10(gain)) < 1e-12 { // hacky
+		if math.Abs(math.Log10(gain/baseGain)) < 1e-12 { // hacky
 			gain = baseGain
-		} else if gain < 0.05 { // lower bound ~ -26db
-			gain = 0.05
+		} else if gain < 0.05 * baseGain { // lower bound ~ -26db
+			gain = 0.05 * baseGain 
 		}
 	}
 	msg("%sgain set to %s%.2gdb", italic, reset, 20*math.Log10(gain/baseGain))

@@ -230,7 +230,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"pop":    {not, 17, checkPushPop}, // pop from listing stack
 	"(":      {not, 16, noCheck},      // alias of push
 	")":      {not, 17, noCheck},      // alias of pop
-	"tape":   {yes, 18, tapeUnique},   // listing tape loop
+	"buff":   {yes, 18, buffUnique},   // listing buff loop
 	"--":     {yes, 19, noCheck},      // subtract from operand
 	"tap":    {yes, 20, noCheck},      // tap from loop
 	"f2c":    {not, 21, noCheck},      // convert frequency to co-efficient
@@ -328,7 +328,7 @@ type listingStack struct {
 }
 
 type keep struct {
-	tape [TAPELEN]float64
+	buff [TAPELEN]float64
 	tf, th, tx,
 	lv, pan,
 	peakfreq float64
@@ -1412,12 +1412,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				case 17: // "pop"
 					r = d[i].stack[len(d[i].stack)-1]
 					d[i].stack = d[i].stack[:len(d[i].stack)-1]
-				case 18: // "tape"
-					// TODO remove clip and filters, rename as buff
-					r = math.Max(-1, math.Min(1, r)) // hard clip for cleaner reverbs
-					d[i].th = (d[i].th + r - d[i].tx) * 0.9994
-					d[i].tx = r
-					d[i].tape[n%TAPELEN] = d[i].th // record head
+				case 18: // "buff"
+					d[i].buff[n%TAPELEN] = r // record head
 					tl := SampleRate * TAPE_LENGTH
 					//t := math.Abs(math.Min(1/d[i].sigs[d[i].listing[ii].N], tl))
 					t := math.Mod((1 / d[i].sigs[d[i].listing[ii].N]), tl)
@@ -1426,23 +1422,20 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					}
 					xa := (n + TAPELEN - int(t)) % TAPELEN
 					x := mod(float64(n+TAPELEN)-(t), tl)
-					ta0 := d[i].tape[(n+TAPELEN-int(t)-1)%TAPELEN]
-					ta := d[i].tape[xa] // play heads
-					tb := d[i].tape[(n+TAPELEN-int(t)+1)%TAPELEN]
-					tb1 := d[i].tape[(n+TAPELEN-int(t)+2)%TAPELEN]
-					xx := mod(x-float64(xa), tl-1) // to avoid end of loop clicks
-					z := xx - 0.5
+					ta0 := d[i].buff[(n+TAPELEN-int(t)-1)%TAPELEN]
+					ta := d[i].buff[xa] // play heads
+					tb := d[i].buff[(n+TAPELEN-int(t)+1)%TAPELEN]
+					tb1 := d[i].buff[(n+TAPELEN-int(t)+2)%TAPELEN]
+					z := mod(x-float64(xa), tl-1) - 0.5 // to avoid end of loop clicks
+					// 4-point 4th order "optimal" interpolation filter by Olli Niemitalo
 					ev1, od1 := tb+ta, tb-ta
 					ev2, od2 := tb1+ta0, tb1-ta0
-					// 4-point 4th order "optimal" interpolation filter by Olli Niemitalo
 					c0 := ev1*0.45645918406487612 + ev2*0.04354173901996461
 					c1 := od1*0.47236675362442071 + od2*0.17686613581136501
 					c2 := ev1*-0.253674794204558521 + ev2*0.25371918651882464
 					c3 := od1*-0.37917091811631082 + od2*0.11952965967158
 					c4 := ev1*0.04252164479749607 + ev2*-0.04289144034653719
 					r = (((c4*z+c3)*z+c2)*z+c1)*z + c0
-					d[i].tf = (d[i].tf + r) * 0.5 // roll off the top end @ 7640Hz
-					r = d[i].tf
 				case 19: // "--"
 					r = d[i].sigs[d[i].listing[ii].N] - r
 				case 20: // "tap"
@@ -1451,18 +1444,25 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					t := math.Min(math.Abs(1/d[i].sigs[d[i].listing[ii].N]), tl)
 					xa := (n + TAPELEN - int(t)) % TAPELEN
 					x := mod(float64(n+TAPELEN)-(t), tl)
-					ta0 := d[i].tape[(n+TAPELEN-int(t)-1)%TAPELEN]
-					ta := d[i].tape[xa] // play heads
-					tb := d[i].tape[(n+TAPELEN-int(t)+1)%TAPELEN]
-					tb1 := d[i].tape[(n+TAPELEN-int(t)+2)%TAPELEN]
+					ta0 := d[i].buff[(n+TAPELEN-int(t)-1)%TAPELEN]
+					ta := d[i].buff[xa] // play heads
+					tb := d[i].buff[(n+TAPELEN-int(t)+1)%TAPELEN]
+					tb1 := d[i].buff[(n+TAPELEN-int(t)+2)%TAPELEN]
 					z := mod(x-float64(xa), tl-1) - 0.5 // to avoid end of loop clicks
-					// 4-point 2nd order "optimal" interpolation filter by Olli Niemitalo
+					// 4-point 4th order "optimal" interpolation filter by Olli Niemitalo
 					ev1, od1 := tb+ta, tb-ta
 					ev2, od2 := tb1+ta0, tb1-ta0
-					c0 := ev1*0.42334633257225274 + ev2*0.07668732202139628
-					c1 := od1*0.26126047291143606 + od2*0.24778879018226652
-					c2 := ev1*-0.213439787561776841 + ev2*0.21303593243799016
-					r += (c2*z+c1)*z + c0
+					c0 := ev1*0.45645918406487612 + ev2*0.04354173901996461
+					c1 := od1*0.47236675362442071 + od2*0.17686613581136501
+					c2 := ev1*-0.253674794204558521 + ev2*0.25371918651882464
+					c3 := od1*-0.37917091811631082 + od2*0.11952965967158
+					c4 := ev1*0.04252164479749607 + ev2*-0.04289144034653719
+					r = (((c4*z+c3)*z+c2)*z+c1)*z + c0
+					// 4-point 2nd order "optimal" interpolation filter by Olli Niemitalo
+					//c0 := ev1*0.42334633257225274 + ev2*0.07668732202139628
+					//c1 := od1*0.26126047291143606 + od2*0.24778879018226652
+					//c2 := ev1*-0.213439787561776841 + ev2*0.21303593243799016
+					//r += (c2*z+c1)*z + c0
 				case 21: // "f2c" // r = 1 / (1 + 1/(Tau*r))
 					r = math.Abs(r)
 					r *= Tau
@@ -2019,10 +2019,10 @@ func checkPushPop(s systemState) (systemState, int) {
 	return s, nextOperation
 }
 
-func tapeUnique(s systemState) (systemState, int) {
+func buffUnique(s systemState) (systemState, int) {
 	for _, o := range s.newListing {
-		if o.Op == "tape" {
-			msg("%sonly one tape per listing%s", italic, reset)
+		if o.Op == "buff" {
+			msg("%sonly one buff per listing%s", italic, reset)
 			return s, startNewOperation
 		}
 	}

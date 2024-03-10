@@ -2978,6 +2978,39 @@
 			}
 		]
 	},
+	"oct": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "@"
+			},
+			{
+				"Op": "log",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "m"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "mod",
+				"Opd": "m"
+			},
+			{
+				"Op": "base",
+				"Opd": "@"
+			}
+		]
+	},
 	"once": {
 		"Comment": "like `osc` but only completes one cycle and output remains at 1 ",
 		"Body": [

@@ -175,6 +175,8 @@ func loadFunctions(data *map[string]fn) {
 // used for saving info, listings, functions and code recordings (not audio)
 func saveJson(data interface{}, f string) bool {
 	j, rr := json.MarshalIndent(data, "", "\t")
+	j = bytes.TrimSpace(j)
+	j = append(j, []byte("\n")...)
 	if e(rr) {
 		msg("Error encoding '%s': %v", f, rr)
 		return false

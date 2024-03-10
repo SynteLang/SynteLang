@@ -1518,6 +1518,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				case 30: // "sgn"
 					r = 1 - float64(math.Float64bits(r)>>62)
 				case 31: // "log"
+					r = math.Abs(r) // avoiding NaN
 					r = math.Log2(r)
 				case 32: // "/"
 					if d[i].sigs[d[i].listing[ii].N] == 0 {

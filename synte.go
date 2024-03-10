@@ -247,7 +247,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	".lvl":   {yes, 28, checkIndexIncl}, // alias, launches listing
 	"from":   {yes, 29, checkIndex},     // receive output from a listing
 	"sgn":    {not, 30, noCheck},        // sign of input
-	// "":	  	{not, 31, noCheck}, 	 // unused
+	"log":	  {not, 31, noCheck}, 	     // base-2 logarithm of input
 	"/":      {yes, 32, noCheck},        // division
 	"sub":    {yes, 33, noCheck},        // subtract operand
 	"-":      {yes, 33, noCheck},        // alias of sub
@@ -1517,6 +1517,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					r = d[int(d[i].sigs[d[i].listing[ii].N])%len(d)].sigs[0]
 				case 30: // "sgn"
 					r = 1 - float64(math.Float64bits(r)>>62)
+				case 31: // "log"
+					r = math.Log2(r)
 				case 32: // "/"
 					if d[i].sigs[d[i].listing[ii].N] == 0 {
 						d[i].sigs[d[i].listing[ii].N] = math.Copysign(1e-308, d[i].sigs[d[i].listing[ii].N])

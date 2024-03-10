@@ -573,7 +573,6 @@ You can find more examples in the `.saved` directory.
 |	buff	|		yes		|		record and playback from a rotating buffer, analogous to a tape loop. Operand is the offset in seconds/milliseconds (use types).
 |	tap		|		yes		|		result drawn from buff and added to input from preceding listing, operand is the offset in seconds/milliseconds (use types)
 |	f2c		|		no		|		convert frequency to filter coefficient. Numbers less than than 0 will be multiplied by -1 (sign removed, become positive)
-|	erase	|		yes		|		operand is number of operations to erase above the current in listing. For all use `: erase`. 
 |	wav		|		yes   	|		will play the corresponding sample of a loaded WAV file given by the operand. Expects an input in range [0, 1], values outside this range will wrap around this interval. See section below for more information
 |	8bit	|		yes   	|		quantises input to 8 bits of resolution (-128 to +127). The operand is the size of quantisation steps. So to quantise a ±1 signal, use 127 as the operand. Alternatively, quantise to integers with an operand of 1.
 |	level	|		yes   	|		changes the output level of the listing at the index given by operand, which must be a number (not a signal). The preceding input sets the level. Level will persist after deletion. Capable of modulation up to 1100Hz, but because of this sudden large changes in level may produce clicks. Operation independent of mute
@@ -605,6 +604,7 @@ You can find more examples in the `.saved` directory.
 |	ffltr	|		yes		|		smear multiple windows, suggest operand in range 2s to 50s
 |	ffaze	|		yes		|		rotate phases by operand [-1. 1]
 |	index	|		yes		|		access index of listing
+|	log	    |		no		|		output is base-2 logarithm of input. Negative inputs are treated as if they are positive
 |	       	| 		       	|
 |	fma		|		yes  	|		fused multiply add, the result of the input multiplied by the operand is stored in a special register `fma` (not implemented yet) ◊  
 
@@ -627,7 +627,7 @@ You can find more examples in the `.saved` directory.
 |	.mute 	|		yes		|		equivalent to `mute` except will insert 'out dac' to launch listing. Play will be resumed if paused
 |	.del 	|		yes		|		equivalent to `del` except will insert 'out dac' to launch listing. Used in effect to replace a listing, play will be resumed if paused
 |	.solo 	|		yes		|		equivalent to `solo` except will insert 'out dac' to launch listing. Play will be resumed if paused
-|	erase 	|		yes		|		erase preceding number of lines given by operand
+|	erase 	|		yes		|		erase preceding number of lines given by operand. For erase all use `: erase`. 
 |	e	 	|		yes		|		alias of `erase`
 |	rld 	|		yes		|		reload edited listing, file in `.temp/` is not updated. if index not extant, will append to listings, but won't overwrite that particular `.temp/` file
 |	r 		|		yes		|		alias of `rld`

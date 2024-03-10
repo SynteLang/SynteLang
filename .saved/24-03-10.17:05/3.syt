@@ -1,0 +1,6 @@
+/euc 12,32,0
+dirac
+down 50ms
+noise
+hpf 5khz
+mix

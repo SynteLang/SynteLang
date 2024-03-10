@@ -1,0 +1,21 @@
+/b 12,0
+flip
+lpf 55hz
+out vca
+/b 15,0
+lt 0.5
+out sh
+/b 12,0
+s/h sh
+mul 5
+oct 1.75
+lpf 150hz
+mul 110*6hz
+sino
+mul -8db
+mul vca
+out m
+reverb
+/ 3
++ m
+mix

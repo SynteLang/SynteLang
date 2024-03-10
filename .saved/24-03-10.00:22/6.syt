@@ -1,0 +1,15 @@
+/b 16,0
+lt 0.001
+push
+down 200ms
+smooth
+out vca
+pop
+count 5
+mod 1.7095
+base 1.5
++ vca
+mul 220/8hz
+sino
+mul vca
+mix

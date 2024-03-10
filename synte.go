@@ -111,7 +111,7 @@ const (
 	MAX_RELEASE    = 50    // 50s
 	twoInvMaxUint  = 2.0 / math.MaxUint64
 	TAPELEN        = SAMPLE_RATE * TAPE_LENGTH
-	baseGain       = 2.74
+	baseGain       = 4.0 //2.74
 )
 
 var SampleRate float64 = SAMPLE_RATE // should be 'de-globalised'
@@ -188,10 +188,10 @@ type systemState struct {
 	solo         int // index of most recent solo
 	unsolo       muteSlice
 	hasOperand   map[string]bool
-	sc           soundcard
 	reload       int
 	daisyChains  []int
 	listingState
+	soundcard
 }
 
 type processor func(systemState) (systemState, int)
@@ -477,7 +477,7 @@ func run(from io.Reader) {
 		return
 	}
 	defer sc.file.Close()
-	SampleRate = sc.sampleRate // change later
+	SampleRate = sc.sampleRate // TODO change later
 
 	t, twavs, wavSlice := newSystemState(sc)
 
@@ -558,7 +558,7 @@ start:
 		t = initialiseListing(t, reservedSignalNames)
 		for i, w := range wavSlice { // add to signals map, with current sample rate
 			t.signals[w.Name] = float64(i)
-			t.signals["l."+w.Name] = float64(len(w.Data)-1) / (WAV_TIME * SampleRate)
+			t.signals["l."+w.Name] = float64(len(w.Data)-1) / (WAV_TIME * sc.sampleRate)
 			t.signals["r."+w.Name] = 1.0 / float64(len(w.Data))
 		}
 		// the purpose of clr is to reset the input if error while receiving tokens from external source, declared in this scope to read value of loadExternalFile
@@ -772,7 +772,7 @@ func collate(t *systemState) *data {
 			sigs:    safe,
 			keep: keep{
 				lv:       1,
-				peakfreq: 800 / SampleRate,
+				peakfreq: 800 / t.sampleRate,
 			},
 		},
 	}
@@ -879,6 +879,13 @@ func parseFunction(
 	type mm struct{ at, at1, at2 bool }
 	m := mm{}
 	for i, o := range function {
+		// TODO
+		// check if not an operator and is not a function
+		// continue
+		// check if is a function
+		// call parseFunction?
+		// insert to this current function
+		// NB. this may require refactoring parseFunction()
 		if len(o.Opd) == 0 {
 			continue
 		}
@@ -972,7 +979,7 @@ func parseFunction(
 }
 
 // parseType() evaluates conversion of types
-func parseType(expr, op string) (n float64, b bool) {
+func parseType(expr, op string) (n float64, b bool) { // TODO pass in s.sampleRate
 	switch {
 	case len(expr) > 1 && expr[len(expr)-1:] == "!":
 		if n, b = evaluateExpr(expr[:len(expr)-1]); !b {
@@ -1201,14 +1208,14 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	)
 
 	var (
-		lpf15hz   = lpf_coeff(15, SampleRate)
-		lpf1khz   = lpf_coeff(1e3, SampleRate)
-		lpf2hz    = lpf_coeff(2, SampleRate)
-		lpf50hz   = lpf_coeff(50, SampleRate)
+		lpf15hz   = lpf_coeff(15, sc.sampleRate)
+		lpf1khz   = lpf_coeff(1e3, sc.sampleRate)
+		lpf2hz    = lpf_coeff(2, sc.sampleRate)
+		lpf50hz   = lpf_coeff(50, sc.sampleRate)
 
-		hpf4hz    = hpf_coeff(4, SampleRate)
-		hpf2560hz = hpf_coeff(2560, SampleRate)
-		hpf160hz  = hpf_coeff(160, SampleRate)
+		hpf4hz    = hpf_coeff(4, sc.sampleRate)
+		hpf2560hz = hpf_coeff(2560, sc.sampleRate)
+		hpf160hz  = hpf_coeff(160, sc.sampleRate)
 	)
 
 	var (
@@ -1233,8 +1240,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		hpf160, x160 float64 // limiter detection
 		lpf50, lpf510,
 		deemph float64 // de-emphasis
-		//α       = 30 * 1 / (SampleRate/(2*Pi*6.3) + 1) // co-efficient for setmix
-		α       = 1 / (SampleRate/(2*math.Pi*194) + 1)  // co-efficient for setmix
+		//α       = 30 * 1 / (sc.sampleRate/(2*Pi*6.3) + 1) // co-efficient for setmix
+		α       = 1 / (sc.sampleRate/(2*math.Pi*194) + 1)  // co-efficient for setmix
 		hroom   = (sc.convFactor - 1.0) / sc.convFactor // headroom for positive dither
 		c, mixF = 4.0, 4.0                              // mix factor
 		pd      int                                     // slated for removal
@@ -1414,7 +1421,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					d[i].stack = d[i].stack[:len(d[i].stack)-1]
 				case 18: // "buff"
 					d[i].buff[n%TAPELEN] = r // record head
-					tl := SampleRate * TAPE_LENGTH
+					tl := sc.sampleRate * TAPE_LENGTH
 					//t := math.Abs(math.Min(1/d[i].sigs[d[i].listing[ii].N], tl))
 					t := math.Mod((1 / d[i].sigs[d[i].listing[ii].N]), tl)
 					if d[i].sigs[d[i].listing[ii].N] == 0 {
@@ -1439,7 +1446,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				case 19: // "--"
 					r = d[i].sigs[d[i].listing[ii].N] - r
 				case 20: // "tap"
-					tl := SampleRate * TAPE_LENGTH
+					tl := sc.sampleRate * TAPE_LENGTH
 					//t := math.Abs(math.Min(1/d[i].sigs[d[i].listing[ii].N], tl))
 					t := math.Min(math.Abs(1/d[i].sigs[d[i].listing[ii].N]), tl)
 					xa := (n + TAPELEN - int(t)) % TAPELEN
@@ -1533,8 +1540,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					delta := a - d[i].peakfreq
 					//d[i].peakfreq += delta * α * (a / d[i].peakfreq)
 					d[i].peakfreq += delta * α * (math.Abs(delta) * a / d[i].peakfreq)
-					//r *= math.Min(1, 140/(d[i].peakfreq*SampleRate+20)) // ignoring density
-					r *= math.Min(1, math.Sqrt(140/(d[i].peakfreq*SampleRate+20)))
+					//r *= math.Min(1, 140/(d[i].peakfreq*sc.sampleRate+20)) // ignoring density
+					r *= math.Min(1, math.Sqrt(140/(d[i].peakfreq*sc.sampleRate+20)))
 				case 35: // "print"
 					pd++ // unnecessary?
 					if (pd)%32768 == 0 && !exit {
@@ -2001,7 +2008,6 @@ func endFunctionDefine(t systemState) (systemState, int) {
 		return t, startNewListing
 	}
 	t.newListing = t.newListing[:t.st]
-	msg("function not sent to soundengine")
 	return t, nextOperation
 }
 
@@ -2326,14 +2332,14 @@ func parseFloat(num number, lowerBound, upperBound float64) (v float64, ok bool)
 }
 func reportFloatSet(op string, f float64) {
 	if f > 1/SampleRate {
-		msg("%s%s set to%s %.3gms", italic, op, reset, 1e3/(f*SampleRate))
+		msg("%s%s set to%s %.3gms", italic, op, reset, 1e3/(f*SampleRate)) //TODO
 		return
 	}
-	msg("%s%s set to%s %.3gs", italic, op, reset, 1/(f*SampleRate))
+	msg("%s%s set to%s %.3gs", italic, op, reset, 1/(f*SampleRate)) //TODO
 }
 
 func checkFade(s systemState) (systemState, int) {
-	fd, ok := parseFloat(s.num, 1/(MAX_FADE*SampleRate), 1/(MIN_FADE*SampleRate))
+	fd, ok := parseFloat(s.num, 1/(MAX_FADE*s.sampleRate), 1/(MIN_FADE*s.sampleRate))
 	if !ok { // error reported by parseFloat
 		return s, startNewOperation
 	}
@@ -2345,10 +2351,10 @@ func checkFade(s systemState) (systemState, int) {
 func checkRelease(s systemState) (systemState, int) {
 	if s.operand == "time" {
 		msg("%slimiter release is:%s %.4gms", italic, reset,
-			-1000/(math.Log(release)*SampleRate/math.Log(8000)))
+			-1000/(math.Log(release)*s.sampleRate/math.Log(8000)))
 		return s, startNewOperation
 	}
-	v, ok := parseFloat(s.num, 1/(MAX_RELEASE*SampleRate), 1/(MIN_RELEASE*SampleRate))
+	v, ok := parseFloat(s.num, 1/(MAX_RELEASE*s.sampleRate), 1/(MIN_RELEASE*s.sampleRate))
 	if !ok { // error reported by parseFloat
 		return s, startNewOperation
 	}
@@ -2407,7 +2413,7 @@ func isUppercaseInitial(operand string) bool {
 
 func newSystemState(sc soundcard) (systemState, [][]float64, wavs) {
 	t := systemState{
-		sc:          sc,
+		soundcard:          sc,
 		funcs:       make(map[string]fn),
 		daisyChains: []int{2, 3, 9, 10}, // pitch,tempo,grid,sync
 		solo:        -1,
@@ -2465,10 +2471,10 @@ func initialiseListing(t systemState, res [lenReserved+lenExports]string) system
 		"E":        math.E,   // e
 		"Pi":       math.Pi,  // π
 		"Phi":      math.Phi, // φ
-		"invSR":    1 / SampleRate,
-		"SR":       SampleRate,
+		"invSR":    1 / t.sampleRate,
+		"SR":       t.sampleRate,
 		"Epsilon":  math.SmallestNonzeroFloat64, // ε, epsilon
-		"wavR":     1.0 / (WAV_TIME * SampleRate),
+		"wavR":     1.0 / (WAV_TIME * t.sampleRate),
 		"semitone": math.Pow(2, 1.0/12),
 		"Tau":      2 * math.Pi, // 2π
 		"ln7":      math.Log(7),

@@ -120,7 +120,7 @@ func setupSoundCard(file string) (sc soundcard, success bool) {
 }
 
 func recordWav(s systemState) (systemState, int) {
-	if s.sc.sampleRate != 48000 || s.sc.format != 16 {
+	if s.sampleRate != 48000 || s.format != 16 {
 		msg("can only record at 16bit 48kHz")
 		return s, startNewOperation
 	}

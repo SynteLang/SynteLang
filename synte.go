@@ -329,7 +329,6 @@ type listingStack struct {
 
 type keep struct {
 	buff [TAPELEN]float64
-	tf, th, tx,
 	lv, pan,
 	peakfreq float64
 	fftArr,
@@ -935,7 +934,7 @@ func parseFunction(
 	if mmm < l {
 		switch {
 		case l-mmm == 1:
-			msg("%slast operand ignored%s", italic, reset)
+			msg("%s: %slast operand ignored%s", t.operator, italic, reset)
 		case l-mmm > 1:
 			msg("%slast %d operands ignored%s", italic, l-mmm, reset)
 		}
@@ -943,16 +942,16 @@ func parseFunction(
 	if mmm > l {
 		switch {
 		case mmm == 1:
-			t.clr("%sthe function requires an operand%s", italic, reset)
+			t.clr("%s %srequires an operand%s", t.operator, italic, reset)
 			return nil, not
 		case mmm > 1:
-			t.clr("%sthe function requires %d operands%s", italic, mmm, reset)
+			t.clr("%s %srequires %d operands%s", t.operator, italic, mmm, reset)
 			return nil, not
 		}
 	}
 	for i, opd := range t.operands { // opd shadowed
 		if t.operands[i] == "" {
-			t.clr("empty argument %d", i+1)
+			t.clr("%s: empty argument %d", t.operator,  i+1)
 			return nil, not
 		}
 		if strings.ContainsAny(opd[:1], "+-.0123456789") {
@@ -1250,7 +1249,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		p       = 1.0                                   // pause variable
 
 		samples     = make(chan stereoPair, 2400) // buffer up to 50ms of samples (@ 48kHz), introduces latency
-		daisyChains = make([]int, 16)             // made explicity here to set capacity
+		daisyChains = make([]int, 0, 16)             // made explicitly here to set capacity
 	)
 	defer close(samples)
 	no *= 77777777777 // force overflow
@@ -1687,11 +1686,11 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 						}
 					}
 				case 51: // "halt" // needs more work
-					t := time.Duration(1 / r)
+				/*	t := time.Duration(1 / r)
 					if t > 1e6 {
 						t = 1e6
 					}
-					time.Sleep(time.Microsecond * t)
+					time.Sleep(time.Microsecond * t)*/
 				default:
 					// nop, r = r
 				}
@@ -1851,7 +1850,7 @@ const Tau = 2 * math.Pi
 
 func sine(x float64) float64 {
 	return math.Cos(Tau * x)
-	if x < 0 {
+/*	if x < 0 {
 		x = -x
 	}
 	sr := int(SampleRate)
@@ -1859,7 +1858,7 @@ func sine(x float64) float64 {
 	sa := sineTab[a%sr]
 	sb := sineTab[(a+1)%sr]
 	xx := mod((x*SampleRate)-float64(a), SampleRate-1)
-	return sa + ((sb - sa) * xx) // linear interpolation
+	return sa + ((sb - sa) * xx) // linear interpolation*/
 }
 
 func tanh(x float64) float64 {
@@ -1890,7 +1889,7 @@ func (n *noise) ise() float64 {
 	return float64(*n)*twoInvMaxUint - 1
 }
 
-var invMaxInt32 = 1.0 / math.MaxInt32
+//var invMaxInt32 = 1.0 / math.MaxInt32
 
 func mod(x, y float64) float64 {
 	if y == 0 {
@@ -2366,16 +2365,23 @@ func checkRelease(s systemState) (systemState, int) {
 func adjustGain(s systemState) (systemState, int) {
 	if s.operand == "zero" {
 		gain = baseGain
-	} else if s.operand == "is" {
-		// just show below
-	} else if n, ok := parseType(s.operand, s.operator); ok {
-		n = math.Abs(n)
-		gain *= n
-		if math.Abs(math.Log10(gain/baseGain)) < 1e-12 { // hacky
-			gain = baseGain
-		} else if gain < 0.05 * baseGain { // lower bound ~ -26db
-			gain = 0.05 * baseGain 
-		}
+		msg("%sgain set to %s%.2gdb", italic, reset, 20*math.Log10(gain/baseGain))
+		return s, startNewOperation
+	}
+	if s.operand == "is" {
+		msg("%sgain set to %s%.2gdb", italic, reset, 20*math.Log10(gain/baseGain))
+		return s, startNewOperation
+	}
+	n, ok := parseType(s.operand, s.operator)
+	if!ok {
+		return s, startNewOperation
+	}
+	gain *= math.Abs(n)
+	if math.Abs(math.Log10(gain/baseGain)) < 1e-12 { // if log(1) ≈ 0, reset to 1
+		gain = baseGain
+	}
+	if gain < 0.05 * baseGain { // lower bound ~ -26db
+		gain = 0.05 * baseGain
 	}
 	msg("%sgain set to %s%.2gdb", italic, reset, 20*math.Log10(gain/baseGain))
 	return s, startNewOperation

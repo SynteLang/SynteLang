@@ -167,7 +167,7 @@ type listingState struct {
 	newOperation
 	fIn bool // yes = inside function definition
 	st, // func def start
-	fun, // don't worry the fun will increase!
+	funCount,
 	do, to int
 	muteGroup []int // new mute group
 }
@@ -425,6 +425,7 @@ const ( // used in token parsing
 	startNewListing
 	exitNow
 	nextOperation
+	continueParsing
 )
 
 type clear func(s string, i ...interface{}) int
@@ -713,7 +714,6 @@ func parseNewOperation(t systemState) (systemState, bool, int) {
 	if result != nextOperation {
 		return t, ldExt, result
 	}
-
 	for t.do > 1 { // one done below
 		tokens <- token{t.operator, -1, not}
 		d := strings.ReplaceAll(t.operand, "{i}", sf("%d", t.to-t.do+1))
@@ -726,17 +726,25 @@ func parseNewOperation(t systemState) (systemState, bool, int) {
 	t.operand = strings.ReplaceAll(t.operand, "{i}", sf("%d", 0))
 	t.operand = strings.ReplaceAll(t.operand, "{i+1}", sf("%d", 1))
 
-	if t.isFunction {
-		function, ok := parseFunction(t, t.out)
-		if !ok {
-			return t, ldExt, startNewOperation
-		}
-		t.fun++
-		t.newListing = append(t.newListing, function...)
-		return t, ldExt, nextOperation
+	t, r := addIfFunction(t)
+	if r != continueParsing {
+		return t, ldExt, r
 	}
-	t, r := operators[t.operator].process(t)
+	t, r = operators[t.operator].process(t)
 	return t, ldExt, r
+}
+
+func addIfFunction(t systemState) (systemState, int) {
+	if !t.isFunction {
+		return t, continueParsing
+	}
+	function, ok := parseFunction(t)
+	if !ok {
+		return t, startNewOperation
+	}
+	t.funCount++
+	t.newListing = append(t.newListing, function...)
+	return t, nextOperation
 }
 
 func loadNewListing(listing []operation) []opSE {
@@ -868,96 +876,27 @@ func readTokenPair(t *systemState) (bool, int) {
 	return tt.ext, nextOperation
 }
 
-func parseFunction(
-	t systemState,
-	out map[string]struct{}, // implictly de-referenced
-) (function listing, result bool) {
-	function = make(listing, len(t.funcs[t.operator].Body))
+type args struct{ at, at1, at2 bool }
+
+func parseFunction(t systemState) (listing, bool) {
+	function := make(listing, len(t.funcs[t.operator].Body))
 	copy(function, t.funcs[t.operator].Body)
-	s := sf(".%d", t.fun)
-	type mm struct{ at, at1, at2 bool }
-	m := mm{}
-	for i, o := range function {
-		// TODO
-		// check if not an operator and is not a function
-		// continue
-		// check if is a function
-		// call parseFunction?
-		// insert to this current function
-		// NB. this may require refactoring parseFunction()
-		if len(o.Opd) == 0 {
-			continue
-		}
-		switch o.Opd {
-		case "dac", "tempo", "pitch", "grid", "sync":
-			continue
-		case "@":
-			m.at = yes
-		case "@1":
-			m.at1 = yes
-		case "@2":
-			m.at2 = yes
-		}
-		if _, in := t.signals[o.Opd]; in || isUppercaseInitial(o.Opd) {
-			continue
-		}
-		switch o.Opd[:1] {
-		case "^", "@":
-			continue
-		}
-		if strings.ContainsAny(o.Opd[:1], "+-.0123456789") {
-			if _, ok := parseType(o.Opd, o.Op); ok {
-				continue
-			}
-		}
-		function[i].Opd += s // rename signal
-		switch o.Op {
-		case "out", ">":
-			out[function[i].Opd] = assigned
-		}
-	}
-	mmm := 0
-	switch m {
-	case mm{not, not, not}:
-		// nop
-	case mm{yes, not, not}:
-		mmm = 1
-	case mm{yes, yes, not}:
-		mmm = 2
-	case mm{yes, yes, yes}:
-		mmm = 3
-	default:
-		t.clr("malformed function") // probably not needed
+	funArgs := args{}
+	funArgs, function = processFunction(t.funCount, t, function)
+	ok := argsCorrect(t.operand, funArgs, t.clr, len(t.operands))
+	if !ok {
 		return nil, not
-	}
-	l := len(t.operands)
-	if mmm < l {
-		switch {
-		case l-mmm == 1:
-			msg("%s: %slast operand ignored%s", t.operator, italic, reset)
-		case l-mmm > 1:
-			msg("%slast %d operands ignored%s", italic, l-mmm, reset)
-		}
-	}
-	if mmm > l {
-		switch {
-		case mmm == 1:
-			t.clr("%s %srequires an operand%s", t.operator, italic, reset)
-			return nil, not
-		case mmm > 1:
-			t.clr("%s %srequires %d operands%s", t.operator, italic, mmm, reset)
-			return nil, not
-		}
 	}
 	for i, opd := range t.operands { // opd shadowed
 		if t.operands[i] == "" {
 			t.clr("%s: empty argument %d", t.operator,  i+1)
 			return nil, not
 		}
-		if strings.ContainsAny(opd[:1], "+-.0123456789") {
-			if _, ok := parseType(opd, ""); !ok {
-				return nil, not // parseType will report error
-			}
+		if !strings.ContainsAny(opd[:1], "+-.0123456789") {
+			continue
+		}
+		if _, ok := parseType(opd, ""); !ok {
+			return nil, not // parseType will report error
 		}
 	}
 	for i, o := range function {
@@ -975,6 +914,90 @@ func parseFunction(
 		function[i] = o
 	}
 	return function, yes
+}
+
+func processFunction(fun int, t systemState, f listing) (args, listing) {
+	funArgs := args{}
+	for i, o := range f {
+		// TODO // check if not an operator and is not a function // continue
+		// check if is a function // call parseFunction?
+		// insert to this current function
+		if len(o.Opd) == 0 {
+			continue
+		}
+		switch o.Opd {
+		case "dac", "tempo", "pitch", "grid", "sync":
+			continue
+		}
+		funArgs = countFuncArgs(o.Opd, funArgs)
+		if _, in := t.signals[o.Opd]; in || isUppercaseInitial(o.Opd) {
+			continue
+		}
+		switch o.Opd[:1] {
+		case "^", "@":
+			continue
+		}
+		if strings.ContainsAny(o.Opd[:1], "+-.0123456789") {
+			_, isNum := parseType(o.Opd, o.Op)
+			if isNum {
+				continue
+			}
+		}
+		f[i].Opd += sf(".%d", fun)
+		switch o.Op {
+		case "out", ">":
+			t.out[f[i].Opd] = assigned // implicitly de-referenced
+		}
+	}
+	return funArgs, f
+}
+
+func countFuncArgs(opd string, funArgs args) args {
+	switch opd {
+	case "@":
+		funArgs.at = yes
+	case "@1":
+		funArgs.at1 = yes
+	case "@2":
+		funArgs.at2 = yes
+	}
+	return funArgs
+}
+
+func argsCorrect(op string, funArgs args, clr clear, l int) bool {
+	a := 0
+	switch funArgs {
+	case args{not, not, not}:
+		// nop
+	case args{yes, not, not}:
+		a = 1
+	case args{yes, yes, not}:
+		a = 2
+	case args{yes, yes, yes}:
+		a = 3
+	default:
+		clr("malformed function") // probably not needed
+		return not
+	}
+	if a < l {
+		switch {
+		case l-a == 1:
+			msg("%s: %slast operand ignored%s", op, italic, reset)
+		case l-a > 1:
+			msg("%slast %d operands ignored%s", italic, l-a, reset)
+		}
+	}
+	if a > l {
+		switch {
+		case a == 1:
+			clr("%s %srequires an operand%s", op, italic, reset)
+			return not
+		case a > 1:
+			clr("%s %srequires %d operands%s", op, italic, a, reset)
+			return not
+		}
+	}
+	return yes
 }
 
 // parseType() evaluates conversion of types

@@ -336,6 +336,7 @@ type keep struct {
 	ifft2 [N]float64
 	z, zf [N]complex128
 	ffrz  bool
+	lim float64
 }
 
 // communication channels
@@ -361,7 +362,7 @@ var (
 	rs      bool                                     // root-sync between running instances
 	fade    = 1 / (MIN_FADE * SAMPLE_RATE)           //Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
 	release = math.Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
-	ct      = 4.0                                    // individual listing clip threshold
+	clipThr      = 1.0                                    // individual listing clip threshold
 	gain    = baseGain
 )
 
@@ -1735,18 +1736,16 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				panic(sf("listing:%d - overflow", i))
 			}
 			c += d[i].m                            // add mute to mix factor
-			mid := d[i].sigs[0] * d[i].m * d[i].lv // sigs[0] left intact for `from` operator
-			if mid > ct {                          // soft clip
-				mid = ct + tanh(mid-ct)
-				display.Clip = yes
-			} else if mid < -ct {
-				mid = tanh(mid+ct) - ct
+			out := d[i].sigs[0]
+			out *= d[i].m * d[i].lv // sigs[0] left intact for `from` operator
+			if math.Abs(out) > d[i].lim+clipThr {
+				d[i].lim = d[i].lim + (math.Abs(out - clipThr) - d[i].lim) * lpf50hz
 				display.Clip = yes
 			}
-			d[i].pan = math.Max(-1, math.Min(1, d[i].pan)) // to prevent overmodulation
-			sides += d[i].pan * mid * 0.5
-			mid *= 1 - math.Abs(d[i].pan*0.5)
-			dac += mid
+			out /= (d[i].lim+clipThr)*(d[i].lim+clipThr+4)/5 // over-limit
+			d[i].lim *= hpf4hz
+			sides += out * d[i].pan * 0.5
+			dac += out * (1 - math.Abs(d[i].pan*0.5))
 		}
 		hpf = (hpf + dac - x) * hpf4hz
 		x, dac = dac, hpf
@@ -2412,8 +2411,8 @@ func adjustGain(s systemState) (systemState, int) {
 
 func adjustClip(s systemState) (systemState, int) {
 	if n, ok := parseType(s.operand, s.operator); ok { // permissive, no bounds check
-		ct = n
-		msg("%sclip threshold set to %.3g%s", italic, ct, reset)
+		clipThr = n
+		msg("%sclip threshold set to %.3g%s", italic, clipThr, reset)
 	}
 	return s, startNewOperation
 }

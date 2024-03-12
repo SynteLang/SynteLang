@@ -883,7 +883,7 @@ func parseFunction(t systemState) (listing, bool) {
 	copy(function, t.funcs[t.operator].Body)
 	funArgs := args{}
 	funArgs, function = processFunction(t.funCount, t, function)
-	ok := argsCorrect(t.operand, funArgs, t.clr, len(t.operands))
+	ok := argsCorrect(t.operator, funArgs, t.clr, len(t.operands))
 	if !ok {
 		return nil, not
 	}

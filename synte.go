@@ -97,21 +97,22 @@ const (
 	SNDCTL_DSP_SETFRAGMENT = IOC_INOUT | (0x04&((1<<13)-1))<<16 | 0x50<<8 | 0x0A
 	BUFFER_SIZE            = 10 // not used
 
-	WAV_TIME       = 4 //seconds
-	WAV_LENGTH     = WAV_TIME * SAMPLE_RATE
-	TAPE_LENGTH    = 1 //seconds
-	MAX_WAVS       = 12
-	lenReserved    = 11
-	lenExports     = 12
-	NOISE_FREQ     = 0.0625 // 3kHz @ 48kHz Sample rate
-	FDOUT          = 1e-4
-	MIN_FADE       = 75e-3 // 125ms
-	MAX_FADE       = 120   // 120s
-	MIN_RELEASE    = 50e-3 // 50ms
-	MAX_RELEASE    = 50    // 50s
-	twoInvMaxUint  = 2.0 / math.MaxUint64
-	TAPELEN        = SAMPLE_RATE * TAPE_LENGTH
-	baseGain       = 4.0 //2.74
+	WAV_TIME      = 4 //seconds
+	WAV_LENGTH    = WAV_TIME * SAMPLE_RATE
+	TAPE_LENGTH   = 1 //seconds
+	MAX_WAVS      = 12
+	lenReserved   = 11
+	lenExports    = 12
+	NOISE_FREQ    = 0.0625 // 3kHz @ 48kHz Sample rate
+	FDOUT         = 1e-4
+	MIN_FADE      = 75e-3 // 125ms
+	MAX_FADE      = 120   // 120s
+	MIN_RELEASE   = 50e-3 // 50ms
+	MAX_RELEASE   = 50    // 50s
+	twoInvMaxUint = 2.0 / math.MaxUint64
+	TAPELEN       = SAMPLE_RATE * TAPE_LENGTH
+	alpLen        = 2400
+	baseGain      = 4.0 //2.74
 )
 
 var SampleRate float64 = SAMPLE_RATE // should be 'de-globalised'
@@ -247,7 +248,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	".lvl":   {yes, 28, checkIndexIncl}, // alias, launches listing
 	"from":   {yes, 29, checkIndex},     // receive output from a listing
 	"sgn":    {not, 30, noCheck},        // sign of input
-	"log":	  {not, 31, noCheck}, 	     // base-2 logarithm of input
+	"log":    {not, 31, noCheck},        // base-2 logarithm of input
 	"/":      {yes, 32, noCheck},        // division
 	"sub":    {yes, 33, noCheck},        // subtract operand
 	"-":      {yes, 33, noCheck},        // alias of sub
@@ -269,6 +270,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"ffaze":  {yes, 49, noCheck},        // rotate phases by operand
 	"reu":    {not, 50, noCheck},        // reverse each half of complex spectrum
 	"halt":   {not, 51, noCheck},        // halt sound engine for time specified by input (experimental)
+	"4lp":    {not, 52, noCheck},        // prototype all-pass filter, to allow 4 buffers in one listing for this specific purpose
 
 	// specials. Not intended for sound engine, except 'deleted'
 	"]":       {not, 0, endFunctionDefine},   // end function input
@@ -329,6 +331,10 @@ type listingStack struct {
 
 type keep struct {
 	buff [TAPELEN]float64
+	alp  [alpLen]float64
+	alp1 [alpLen]float64
+	alp2 [alpLen]float64
+	alp3 [alpLen]float64
 	lv, pan,
 	peakfreq float64
 	fftArr,
@@ -336,7 +342,7 @@ type keep struct {
 	ifft2 [N]float64
 	z, zf [N]complex128
 	ffrz  bool
-	lim float64
+	lim   float64
 }
 
 // communication channels
@@ -362,7 +368,7 @@ var (
 	rs      bool                                     // root-sync between running instances
 	fade    = 1 / (MIN_FADE * SAMPLE_RATE)           //Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
 	release = math.Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
-	clipThr      = 1.0                                    // individual listing clip threshold
+	clipThr = 1.0                                    // individual listing clip threshold
 	gain    = baseGain
 )
 
@@ -533,7 +539,7 @@ func run(from io.Reader) {
 	go reloadListing() // poll '.temp/*.syt' modified time and reload if changed
 
 	// set-up state
-	reservedSignalNames := [lenReserved+lenExports]string{ // order is important
+	reservedSignalNames := [lenReserved + lenExports]string{ // order is important
 		"dac",
 		"", // nil signal for unused operand
 		"pitch",
@@ -546,7 +552,7 @@ func run(from io.Reader) {
 		"grid",
 		"sync",
 	}
-	for i := lenReserved; i < lenExports; i++ {   // add 12 reserved signals for inter-list signals
+	for i := lenReserved; i < lenExports; i++ { // add 12 reserved signals for inter-list signals
 		reservedSignalNames[i] = sf("***%d", i+lenReserved) // placeholder
 	}
 	lenExported := 0
@@ -890,7 +896,7 @@ func parseFunction(t systemState) (listing, bool) {
 	}
 	for i, opd := range t.operands { // opd shadowed
 		if t.operands[i] == "" {
-			t.clr("%s: empty argument %d", t.operator,  i+1)
+			t.clr("%s: empty argument %d", t.operator, i+1)
 			return nil, not
 		}
 		if !strings.ContainsAny(opd[:1], "+-.0123456789") {
@@ -1231,10 +1237,10 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	)
 
 	var (
-		lpf15hz   = lpf_coeff(15, sc.sampleRate)
-		lpf1khz   = lpf_coeff(1e3, sc.sampleRate)
-		lpf2hz    = lpf_coeff(2, sc.sampleRate)
-		lpf50hz   = lpf_coeff(50, sc.sampleRate)
+		lpf15hz = lpf_coeff(15, sc.sampleRate)
+		lpf1khz = lpf_coeff(1e3, sc.sampleRate)
+		lpf2hz  = lpf_coeff(2, sc.sampleRate)
+		lpf50hz = lpf_coeff(50, sc.sampleRate)
 
 		hpf4hz    = hpf_coeff(4, sc.sampleRate)
 		hpf2560hz = hpf_coeff(2560, sc.sampleRate)
@@ -1264,16 +1270,16 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		lpf50, lpf510,
 		deemph float64 // de-emphasis
 		//α       = 30 * 1 / (sc.sampleRate/(2*Pi*6.3) + 1) // co-efficient for setmix
-		α       = 1 / (sc.sampleRate/(2*math.Pi*194) + 1)  // co-efficient for setmix
-		hroom   = (sc.convFactor - 1.0) / sc.convFactor // headroom for positive dither
-		c, mixF = 4.0, 4.0                              // mix factor
-		pd      int                                     // slated for removal
-		sides   float64                                 // for stereo
-		current int                                     // tracks index of active listing for recover()
-		p       = 1.0                                   // pause variable
+		α       = 1 / (sc.sampleRate/(2*math.Pi*194) + 1) // co-efficient for setmix
+		hroom   = (sc.convFactor - 1.0) / sc.convFactor   // headroom for positive dither
+		c, mixF = 4.0, 4.0                                // mix factor
+		pd      int                                       // slated for removal
+		sides   float64                                   // for stereo
+		current int                                       // tracks index of active listing for recover()
+		p       = 1.0                                     // pause variable
 
 		samples     = make(chan stereoPair, 2400) // buffer up to 50ms of samples (@ 48kHz), introduces latency
-		daisyChains = make([]int, 0, 16)             // made explicitly here to set capacity
+		daisyChains = make([]int, 0, 16)          // made explicitly here to set capacity
 	)
 	defer close(samples)
 	no *= 77777777777 // force overflow
@@ -1362,7 +1368,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			for ii := 0; ii < len(daisyChains); ii++ {
 				d[i].sigs[daisyChains[ii]] = d[(i+len(d)-1)%len(d)].sigs[daisyChains[ii]]
 			}
-			d[i].m = d[i].m + (p*mutes[i]-d[i].m)*lpf15hz  // anti-click filter
+			d[i].m = d[i].m + (p*mutes[i]-d[i].m)*lpf15hz // anti-click filter
 			d[i].lv = d[i].lv + (levels[i]-d[i].lv)*lpf1khz
 			//sigs := d[i].sigs
 			// mouse values
@@ -1715,6 +1721,24 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 						t = 1e6
 					}
 					time.Sleep(time.Microsecond * t)*/
+				case 52: // "4lp"
+					in := r + d[i].alp[(n+int(0.0047*sc.sampleRate))%alpLen]/2
+					d[i].alp[n%alpLen] = in
+					a := d[i].alp[(n+int(0.0047*sc.sampleRate))%alpLen] - r/2 // 4.7ms
+
+					in2 := a + d[i].alp1[(n+int(0.0076*sc.sampleRate))%alpLen]/2
+					d[i].alp1[n%alpLen] = in2
+					a2 := d[i].alp1[(n+int(0.0076*sc.sampleRate))%alpLen] - a/2 // 7.6ms
+
+					in3 := a2 + d[i].alp2[(n+int(0.0123*sc.sampleRate))%alpLen]/2
+					d[i].alp2[n%alpLen] = in3
+					a3 := d[i].alp2[(n+int(0.0123*sc.sampleRate))%alpLen] - a2/2 // 12.3ms
+
+					in4 := a3 + d[i].alp3[(n+int(0.0198*sc.sampleRate))%alpLen]/2
+					d[i].alp3[n%alpLen] = in4
+					r = d[i].alp3[(n+int(0.0198*sc.sampleRate))%alpLen] - a3/2 // 19.8ms
+					r *= 0.25
+					// 4.7, 5.4, 9.1, 1.27 // alternative delays
 				default:
 					// nop, r = r
 				}
@@ -1735,14 +1759,14 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				d[i].sigs[0] = 0
 				panic(sf("listing:%d - overflow", i))
 			}
-			c += d[i].m                            // add mute to mix factor
+			c += d[i].m // add mute to mix factor
 			out := d[i].sigs[0]
 			out *= d[i].m * d[i].lv // sigs[0] left intact for `from` operator
 			if math.Abs(out) > d[i].lim+clipThr {
-				d[i].lim = d[i].lim + (math.Abs(out - clipThr) - d[i].lim) * lpf50hz
+				d[i].lim = d[i].lim + (math.Abs(out-clipThr)-d[i].lim)*lpf50hz
 				display.Clip = yes
 			}
-			out /= (d[i].lim+clipThr)*(d[i].lim+clipThr+4)/5 // over-limit
+			out /= (d[i].lim + clipThr) * (d[i].lim + clipThr + 4) / 5 // over-limit
 			d[i].lim *= hpf4hz
 			sides += out * d[i].pan * 0.5
 			dac += out * (1 - math.Abs(d[i].pan*0.5))
@@ -1754,7 +1778,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		if c < 1 {   // c = max(c, 1)
 			c = 1
 		}
-		mixF = mixF + (c-mixF) * lpf2hz
+		mixF = mixF + (c-mixF)*lpf2hz
 		c = 0
 		dac /= mixF
 		sides /= mixF
@@ -1766,12 +1790,12 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		hpf160 = (hpf160 + dac - x160) * hpf160hz
 		x160 = dac
 		// parallel low end path
-		lpf50 = lpf50 + (dac-lpf50) * lpf50hz
+		lpf50 = lpf50 + (dac-lpf50)*lpf50hz
 		d := 1 * lpf50 / (1 + math.Abs(lpf50*4)) // tanh approximation
-		lpf510 = lpf510 + (d-lpf510) * lpf50hz
+		lpf510 = lpf510 + (d-lpf510)*lpf50hz
 		deemph = lpf510
 		// apply pre-emphasis to detection
-		det := math.Abs(11.4*hpf2560 + 1.6*hpf160 + dac) * 0.7
+		det := math.Abs(11.4*hpf2560+1.6*hpf160+dac) * 0.7
 		if det > l {
 			l = det // MC
 			h = release
@@ -1872,15 +1896,18 @@ const Tau = 2 * math.Pi
 
 func sine(x float64) float64 {
 	return math.Cos(Tau * x)
-/*	if x < 0 {
-		x = -x
-	}
-	sr := int(SampleRate)
-	a := int(x * SampleRate)
-	sa := sineTab[a%sr]
-	sb := sineTab[(a+1)%sr]
-	xx := mod((x*SampleRate)-float64(a), SampleRate-1)
-	return sa + ((sb - sa) * xx) // linear interpolation*/
+	/*
+	   	if x < 0 {
+	   		x = -x
+	   	}
+
+	   sr := int(SampleRate)
+	   a := int(x * SampleRate)
+	   sa := sineTab[a%sr]
+	   sb := sineTab[(a+1)%sr]
+	   xx := mod((x*SampleRate)-float64(a), SampleRate-1)
+	   return sa + ((sb - sa) * xx) // linear interpolation
+	*/
 }
 
 func tanh(x float64) float64 {
@@ -1923,17 +1950,23 @@ func mod(x, y float64) float64 {
 		return f
 	}
 	return math.Mod(x, y)
-/*	pos := yes
-	if x < 0 {
-		pos = not
-		x = -x
-	}
-	m := uint32(math.MaxInt32 * x / y)
-	//m %= uint32(MaxInt32*y) // dirty mod
-	if pos {
-		return float64(m) * invMaxInt32
-	}
-	return -float64(m) * invMaxInt32*/
+	/*
+	   pos := yes
+
+	   	if x < 0 {
+	   		pos = not
+	   		x = -x
+	   	}
+
+	   m := uint32(math.MaxInt32 * x / y)
+	   //m %= uint32(MaxInt32*y) // dirty mod
+
+	   	if pos {
+	   		return float64(m) * invMaxInt32
+	   	}
+
+	   return -float64(m) * invMaxInt32
+	*/
 }
 
 const (
@@ -2395,14 +2428,14 @@ func adjustGain(s systemState) (systemState, int) {
 		return s, startNewOperation
 	}
 	n, ok := parseType(s.operand, s.operator)
-	if!ok {
+	if !ok {
 		return s, startNewOperation
 	}
 	gain *= math.Abs(n)
 	if math.Abs(math.Log10(gain/baseGain)) < 1e-12 { // if log(1) ≈ 0, reset to 1
 		gain = baseGain
 	}
-	if gain < 0.05 * baseGain { // lower bound ~ -26db
+	if gain < 0.05*baseGain { // lower bound ~ -26db
 		gain = 0.05 * baseGain
 	}
 	msg("%sgain set to %s%.2gdb", italic, reset, 20*math.Log10(gain/baseGain))
@@ -2441,7 +2474,7 @@ func isUppercaseInitial(operand string) bool {
 
 func newSystemState(sc soundcard) (systemState, [][]float64, wavs) {
 	t := systemState{
-		soundcard:          sc,
+		soundcard:   sc,
 		funcs:       make(map[string]fn),
 		daisyChains: []int{2, 3, 9, 10}, // pitch,tempo,grid,sync
 		solo:        -1,
@@ -2476,7 +2509,7 @@ func newSystemState(sc soundcard) (systemState, [][]float64, wavs) {
 	return t, wavs, wavSlice
 }
 
-func initialiseListing(t systemState, res [lenReserved+lenExports]string) systemState {
+func initialiseListing(t systemState, res [lenReserved + lenExports]string) systemState {
 	t.listingState = listingState{}
 	t.newSignals = make([]float64, len(res), 30) // capacity is nominal
 	t.out = make(map[string]struct{}, 30)        // to check for multiple outs to same signal name

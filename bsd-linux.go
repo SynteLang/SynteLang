@@ -25,6 +25,8 @@ import (
 	"unsafe" // :D
 )
 
+const tempDir = ".temp"
+
 var (
 	BYTE_ORDER = binary.LittleEndian // not allowed in constants
 	// record indicates recording in progress
@@ -437,7 +439,7 @@ func reloadListing() {
 	}
 	if !tempExtant {
 		os.Mkdir(tempDir, 0664)
-		pf("%s made", tempDir)
+		pf("\n%s/ made\n", tempDir)
 	}
 	l := 0
 	stat := make([]time.Time, 0)
@@ -448,7 +450,7 @@ func reloadListing() {
 			stat = append(stat, time.Time{})
 		}
 		for i := 0; i < l; i++ {
-			f := sf("%s%d.syt", tempDir, i)
+			f := sf("%s/%d.syt", tempDir, i)
 			st, rm := os.Stat(f)
 			if e(rm) || st.ModTime().Equal(stat[i]) {
 				continue
@@ -579,7 +581,7 @@ func saveTempFile(t systemState, l int) {
 		return
 	}
 	// save listing as <n>.syt for the reload
-	f := sf("%s%d.syt", tempDir, l)
+	f := sf("%s/%d.syt", tempDir, l)
 	content := ""
 	for _, d := range t.dispListing {
 		content += d.Op
@@ -667,10 +669,10 @@ func loadReloadAppend(t systemState) (systemState, int) {
 			mutes[t.reload] = 0
 			time.Sleep(50 * time.Millisecond)
 		}
-		t.operand = tempDir + t.operand
+		t.operand = tempDir + "/" + t.operand
 	case "apd":
 		t.reload = -1
-		t.operand = tempDir + t.operand
+		t.operand = tempDir + "/" + t.operand
 	}
 	inputF, rr := os.Open(t.operand + ".syt")
 	if e(rr) {

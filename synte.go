@@ -97,7 +97,6 @@ const ( // operating system
 	SNDCTL_DSP_SETFRAGMENT = IOC_INOUT | (0x04&((1<<13)-1))<<16 | 0x50<<8 | 0x0A
 	BUFFER_SIZE            = 10 // not used
 
-	tempDir       = ".temp/"
 	WAV_TIME      = 4 //seconds
 	WAV_LENGTH    = WAV_TIME * SAMPLE_RATE
 	TAPE_LENGTH   = 1 //seconds

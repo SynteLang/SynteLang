@@ -397,10 +397,12 @@ type disp struct { // indicates:
 	MouseY  float64       // mouse Y coordinate
 	Paused  bool          // sound engine is paused
 	Mute    []bool        // mutes of all listings
-	SR      float64       // current sample rate (not shown)
+	SR      float64       // current sample rate
 	GR      bool          // limiter is in effect
 	Sync    bool          // sync pulse sent
 	Verbose bool          // show unrolled functions - all operations
+	Format	int           // output bit depth
+	Channel string        // stereo/mono
 }
 
 var display = disp{
@@ -577,12 +579,15 @@ start:
 			}
 			return startNewOperation
 		}
+		if !loadExternalFile {
+			displayHeader()
+		}
 
 	input:
 		for { // input loop
 			t.newOperation = newOperation{}
 			if !loadExternalFile {
-				displayHeader(sc, t)
+				pf("\t")
 			}
 			var do int
 			t, loadExternalFile, do = parseNewOperation(t)

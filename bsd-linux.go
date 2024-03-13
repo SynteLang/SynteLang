@@ -117,7 +117,9 @@ func setupSoundCard(file string) (sc soundcard, success bool) {
 		info <- "--requested sample rate not accepted--"
 		info <- sf("new sample rate: %vHz", sc.sampleRate)
 	}
-	display.SR = sc.sampleRate // fixed at initial rate
+	display.SR = sc.sampleRate
+	display.Format = sc.format
+	display.Channel = sc.channels
 	return sc, yes
 }
 
@@ -226,7 +228,7 @@ func decodeWavs() wavs {
 		msg("no wav files found")
 		return nil
 	}
-	pf("%sProcessing wavs...%s", italic, reset)
+	pf("%sProcessing wavs...%s\n", italic, reset)
 	for _, file := range filelist {
 		r, rr := os.Open("./wavs/" + file)
 		if e(rr) {
@@ -491,33 +493,8 @@ func rootSync() bool {
 	return true
 }
 
-// clear screen, print header and what has been entered so far
-func displayHeader(sc soundcard, t systemState) {
-	pf("%s\033[H\033[2J", reset) // this clears prior error messages!
-	pf(">  %dbit %2gkHz %s\n", sc.format, SampleRate/1000, sc.channels)
-	pf("%sSyntə%s running...\n", cyan, reset)
-	pf("Always protect your ears above +85dB SPL\n\n")
-	if len(t.wavNames) > 0 {
-		pf(" %swavs:%s %s\n\n", italic, reset, t.wavNames)
-	}
-	l := len(t.dispListings)
-	if t.reload > -1 {
-		l = t.reload
-	}
-	pf("\n%s%d%s:", cyan, l, reset)
-	for i, o := range t.dispListing {
-		switch t.dispListing[i].Op {
-		case "in", "pop", "index", "[", "]", "from", "all", "/b":
-			pf("\t  %s%s %s%s\n", yellow, o.Op, o.Opd, reset)
-		default:
-			if _, f := t.funcs[t.dispListing[i].Op]; f {
-				pf("\t\u21AA %s%s %s%s%s\n", magenta, o.Op, yellow, o.Opd, reset)
-				continue
-			}
-			pf("\t\u21AA %s%s %s%s\n", yellow, o.Op, o.Opd, reset)
-		}
-	}
-	pf("\t  ")
+func displayHeader() {
+	pf("\r%sSyntə%s\n", cyan, reset)
 }
 
 func selectOutput(bits int) func(w io.Writer, f float64) {

@@ -42,6 +42,8 @@ func main() {
 		GR      bool
 		Sync    bool
 		v       bool
+		Format  int
+		Channel string
 	}
 	var display = Disp{
 		SR: 48000,
@@ -171,7 +173,7 @@ func main() {
 			fmt.Printf("%sSyntə info%s %spress enter to quit%s", cyan, reset, italic, reset)
 			fmt.Printf(`   %s   %s  %3s
 ╭───────────────────────────────────────────────────╮
-	%s		%sLoad:%s %v
+  > %dbit %2gkhz %s %s	 	%sLoad:%s %v
 %s
 %s
 %s
@@ -187,7 +189,7 @@ func main() {
       %sMouse-X:%s %.5g		%sMouse-Y:%s %.5g
 ╰───────────────────────────────────────────────────╯`,
 				sync, paused, timer,
-				display.Mode, yellow, reset, L,
+				display.Format, display.SR/1000, display.Channel, display.Mode, yellow, reset, L,
 				messages[0].Content,
 				messages[1].Content,
 				messages[2].Content,

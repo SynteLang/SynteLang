@@ -168,7 +168,7 @@ func loadFunctions(data *map[string]fn) {
 	j, rr := os.ReadFile(f)
 	rr2 := json.Unmarshal(j, data)
 	if e(rr) || e(rr2) {
-		msg("Error loading '%s': %v %v", f, rr, rr2)
+		pf("Error loading '%s': %v %v\n", f, rr, rr2)
 	}
 }
 
@@ -205,7 +205,7 @@ func decodeWavs() wavs {
 	}
 	files, rr := os.ReadDir("./wavs")
 	if e(rr) {
-		msg("%sno wavs:%s %v", italic, reset, rr)
+		pf("%sno wavs:%s %v\n", italic, reset, rr)
 		return nil
 	}
 	limit := 0
@@ -423,6 +423,22 @@ func pf(s string, i ...interface{}) {
 
 // poll '.temp/*.syt' modified time and reload if changed
 func reloadListing() {
+	dir := "./"
+	files, rr := os.ReadDir(dir)
+	if e(rr) {
+		msg("unable to access '%s': %s", dir, rr)
+		return
+	}
+	tempExtant := not
+	for _, f := range files {
+		if f.IsDir() && f.Name() == tempDir {
+			tempExtant = yes
+		}
+	}
+	if !tempExtant {
+		os.Mkdir(tempDir, 0664)
+		pf("%s made", tempDir)
+	}
 	l := 0
 	stat := make([]time.Time, 0)
 	for {
@@ -432,7 +448,7 @@ func reloadListing() {
 			stat = append(stat, time.Time{})
 		}
 		for i := 0; i < l; i++ {
-			f := sf(".temp/%d.syt", i)
+			f := sf("%s%d.syt", tempDir, i)
 			st, rm := os.Stat(f)
 			if e(rm) || st.ModTime().Equal(stat[i]) {
 				continue
@@ -563,7 +579,7 @@ func saveTempFile(t systemState, l int) {
 		return
 	}
 	// save listing as <n>.syt for the reload
-	f := sf(".temp/%d.syt", l)
+	f := sf("%s%d.syt", tempDir, l)
 	content := ""
 	for _, d := range t.dispListing {
 		content += d.Op
@@ -651,10 +667,10 @@ func loadReloadAppend(t systemState) (systemState, int) {
 			mutes[t.reload] = 0
 			time.Sleep(50 * time.Millisecond)
 		}
-		t.operand = ".temp/" + t.operand
+		t.operand = tempDir + t.operand
 	case "apd":
 		t.reload = -1
-		t.operand = ".temp/" + t.operand
+		t.operand = tempDir + t.operand
 	}
 	inputF, rr := os.Open(t.operand + ".syt")
 	if e(rr) {

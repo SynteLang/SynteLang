@@ -72,7 +72,7 @@ import (
 // these values are from '/sys/sys/soundcard.h' on freebsd13.0
 // currently using `sudo sysctl dev.pcm.X.bitperfect=1`
 // where X is the output found in `cat /dev/sndstat`
-const (
+const ( // operating system
 	// set output only
 	IOC_INOUT = 0xC0000000
 	// set bit width to 32bit
@@ -97,6 +97,7 @@ const (
 	SNDCTL_DSP_SETFRAGMENT = IOC_INOUT | (0x04&((1<<13)-1))<<16 | 0x50<<8 | 0x0A
 	BUFFER_SIZE            = 10 // not used
 
+	tempDir       = ".temp/"
 	WAV_TIME      = 4 //seconds
 	WAV_LENGTH    = WAV_TIME * SAMPLE_RATE
 	TAPE_LENGTH   = 1 //seconds
@@ -117,8 +118,7 @@ const (
 
 var SampleRate float64 = SAMPLE_RATE // should be 'de-globalised'
 
-// terminal colours, eg. sf("%stest%s test", yellow, reset)
-const (
+const ( // terminal colours, eg. sf("%stest%s test", yellow, reset)
 	reset   = "\x1b[0m"
 	italic  = "\x1b[3m"
 	red     = "\x1b[31m"
@@ -585,19 +585,21 @@ start:
 			if !loadExternalFile {
 				displayHeader(sc, t)
 			}
-
 			var do int
 			t, loadExternalFile, do = parseNewOperation(t)
-			switch {
-			case (do == startNewOperation && loadExternalFile) || do == startNewListing:
+			switch do {
+			case startNewListing:
 				loadExternalFile = not
 				continue start
-			case do == startNewOperation:
+			case startNewOperation:
+				if loadExternalFile {
+					loadExternalFile = not
+					continue start
+				}
 				continue input
-			case do == exitNow:
+			case exitNow:
 				break start
 			}
-
 			// process exported signals
 			reservedOrExported := not
 			for _, v := range reservedSignalNames {
@@ -616,7 +618,6 @@ start:
 				lenExported++
 				msg("%s%s added to exported signals%s", t.operand, italic, reset)
 			}
-
 			// add to listing
 			t.dispListing = append(t.dispListing, operation{Op: t.operator, Opd: t.operand})
 			usage[t.operator] += 1
@@ -691,7 +692,7 @@ start:
 		a := <-accepted
 		if a != len(t.dispListings) {
 			msg("len(mutes): %d, len(disp): %d, accepted: %d", len(mutes), len(t.dispListings), a)
-			time.Sleep(1 * time.Second)
+			//time.Sleep(0.2 * time.Second)
 		}
 		<-lockLoad
 
@@ -1738,6 +1739,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					d[i].alp3[n%alpLen] = in4
 					r = d[i].alp3[(n+int(0.0198*sc.sampleRate))%alpLen] - a3/2 // 19.8ms
 					r *= 0.25
+					r = math.Max(-5, math.Min(5, r)) // to mitigate possible instability
 					// 4.7, 5.4, 9.1, 1.27 // alternative delays
 				default:
 					// nop, r = r
@@ -1762,12 +1764,12 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			c += d[i].m // add mute to mix factor
 			out := d[i].sigs[0]
 			out *= d[i].m * d[i].lv // sigs[0] left intact for `from` operator
-			if math.Abs(out) > d[i].lim+clipThr {
+			if math.Abs(out) > d[i].lim+clipThr { // limiter
 				d[i].lim = d[i].lim + (math.Abs(out-clipThr)-d[i].lim)*lpf50hz
 				display.Clip = yes
 			}
 			out /= (d[i].lim + clipThr) * (d[i].lim + clipThr + 4) / 5 // over-limit
-			d[i].lim *= hpf4hz
+			d[i].lim *= hpf4hz // release
 			sides += out * d[i].pan * 0.5
 			dac += out * (1 - math.Abs(d[i].pan*0.5))
 		}

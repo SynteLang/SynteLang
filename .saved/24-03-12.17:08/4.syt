@@ -1,0 +1,10 @@
+/b 8,0
+trn 8
+out env
+exp 52
+mul 1200hz
++ 100hz
+sino
+mul env
+lpf 2khz
+mix

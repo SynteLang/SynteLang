@@ -1,0 +1,29 @@
+/b 1,0
+lt 0.5
+mul 0.2
++ 1
+out ^p
+/b 16/3,0
+tri
+mul ^p
+out ^p
+/b 4,0
+mul ^p
+8bit 5
+8bit 12
+push
+hpf 5hz
+mul 10
+abs
+clip 0
+lpf 150hz
+out vca
+pop
+base 2
+mul 110/2hz
+sino
+mul vca
+out m
+4lp
+in m
+mix

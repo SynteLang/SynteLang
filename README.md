@@ -563,7 +563,7 @@ You can find more examples in the `.saved` directory.
 |	tanh	|		no		|		hyperbolic tangent, useful for 'soft clipping'
 |	clip	|		no		|		restrict input between symmetrical thresholds ±operand value. 0 is a special case resulting in thresholds of 0 and 1
 |	noise	|		no		|		result is a pseudo-random series of numbers in range ( [-1, 1] * input )
-|	pow		|		yes		|		result is operand raised to the power of input
+|	pow		|		yes		|		result is operand raised to the power of input, for convenience the sign of both input and operand is ignored (always positive, |n|)
 |	base	|		yes		|		result is input raised to the power of operand
 |	\<sync	|		yes		|		receive sync pulse which zeros whatever is passed through. Operand adds phase offset on pulse
 |	\>sync	|		yes		|		send one sync pulse to all listings when input ≤ 0. Latches off until input > 0
@@ -605,6 +605,7 @@ You can find more examples in the `.saved` directory.
 |	ffaze	|		yes		|		rotate phases by operand [-1. 1]
 |	index	|		yes		|		access index of listing
 |	log	    |		no		|		output is base-2 logarithm of input. Negative inputs are treated as if they are positive
+|   4lp     |       no      |       four concatenated all-pass filters with delays of between 4ms and 20ms, useful to create diffuse reverbs within a tape echo loop
 |	       	| 		       	|
 |	fma		|		yes  	|		fused multiply add, the result of the input multiplied by the operand is stored in a special register `fma` (not implemented yet) ◊  
 

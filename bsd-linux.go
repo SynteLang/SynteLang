@@ -1,6 +1,6 @@
 ////go:build (freebsd || linux) && amd64
 
-// Syntə is an audio live coding environment
+// Syntə is an audio live coding environment and language
 // This file implements BSD and Linux specific functions for 64bit x86
 
 package main
@@ -494,7 +494,7 @@ func rootSync() bool {
 }
 
 func displayHeader() {
-	pf("\r%sSyntə%s\n", cyan, reset)
+	pf("\r->%sSyntə%s\n", cyan, reset)
 }
 
 func selectOutput(bits int) func(w io.Writer, f float64) {

@@ -1422,10 +1422,10 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				case 11: // "tanh"
 					r = tanh(r)
 				case 12: // "pow"
-					if math.Signbit(d[i].sigs[d[i].listing[ii].N]) && r == 0 {
-						r = math.Copysign(1e-308, r) // inverse is within upper range of float
-					}
-					r = math.Pow(r, d[i].sigs[d[i].listing[ii].N])
+					//if math.Signbit(d[i].sigs[d[i].listing[ii].N]) && r == 0 {
+					//	r = math.Copysign(1e-308, r)
+					//}
+					r = math.Pow(math.Abs(r), math.Abs(d[i].sigs[d[i].listing[ii].N]))
 				case 13: // "base"
 					sg := d[i].sigs[d[i].listing[ii].N]
 					switch sg {

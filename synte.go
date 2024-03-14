@@ -269,7 +269,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"ffaze":  {yes, 49, noCheck},        // rotate phases by operand
 	"reu":    {not, 50, noCheck},        // reverse each half of complex spectrum
 	"halt":   {not, 51, noCheck},        // halt sound engine for time specified by input (experimental)
-	"4lp":    {not, 52, noCheck},        // prototype all-pass filter, to allow 4 buffers in one listing for this specific purpose
+	"4lp":    {not, 52, checkAlp},        // prototype all-pass filter, to allow 4 buffers in one listing for this specific purpose
 
 	// specials. Not intended for sound engine, except 'deleted'
 	"]":       {not, 0, endFunctionDefine},   // end function input
@@ -2460,6 +2460,16 @@ func checkComment(s systemState) (systemState, int) {
 	if len(s.newListing) > 0 {
 		msg("%sa comment has to be the first and only operation of a listing...%s", italic, reset)
 		return s, startNewOperation
+	}
+	return s, nextOperation
+}
+
+func checkAlp(s systemState) (systemState, int) {
+	for _, o := range s.newListing {
+		if o.Op == "4lp" {
+			msg("%susing more than one %s4lp%s in a listing may cause instability%s", italic, reset, italic, reset)
+			break
+		}
 	}
 	return s, nextOperation
 }

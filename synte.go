@@ -344,6 +344,8 @@ type keep struct {
 	lim   float64
 }
 
+const infoBuffer = 96
+
 // communication channels
 var (
 	stop     = make(chan int)  // confirm on close()
@@ -351,9 +353,8 @@ var (
 	transmit = make(chan *data)
 	accepted = make(chan int)
 
-	info    = make(chan string, 96) // arbitrary buffer length, 48000Hz = 960 x 50Hz
+	info    = make(chan string, infoBuffer) // arbitrary buffer length, 48000Hz = 960 x 50Hz
 	carryOn = make(chan bool)
-	infoff  = make(chan struct{}) // shut-off info display (and external input)
 )
 
 type muteSlice []float64
@@ -523,10 +524,11 @@ func run(from io.Reader) {
 	go func() { // watchdog, anonymous to use variables in scope: dispListings, sc, twavs
 		// This function will restart the sound engine in the event of a panic
 		for {
-			current := <-stop // blocks on receive or close
+			current := <-stop // unblocks on sound engine restart or exit
 			if exit {         // don't restart if legitimate exit
 				return
 			}
+			<-stop // block until stop closed
 			stop = make(chan int)
 			go SoundEngine(sc, twavs)
 			lockLoad <- struct{}{}
@@ -548,14 +550,11 @@ func run(from io.Reader) {
 				if t.dispListings[i][0].Op == "deleted" {
 					continue
 				}
-				for s.Scan() { // listings dumped into tokens chan
-					tokens <- token{s.Text(), -1, yes} // tokens could block here, theoretically
+				for s.Scan() { // tokens could block here, theoretically
+					tokens <- token{s.Text(), -1, yes}
 				}
 				inputF.Close()
 			}
-			t.dispListings = nil // SE has been restarted so anull these to match sound engine
-			t.verbose = nil
-			t.daisyChains = t.daisyChains[:4]
 			infoIfLogging("len(disp) %d", len(t.dispListings))
 			<-lockLoad
 			msg("%d: %slisting deleted, can edit and reload%s", current, italic, reset)
@@ -719,6 +718,11 @@ start:
 			display.Paused = not
 		}
 
+		if !started { // anull/truncate these in case sound engine restarted
+			t.dispListings = make([]listing, 0, 15)
+			t.verbose = make([]listing, 0, 15)
+			t.daisyChains = t.daisyChains[:4]
+		}
 		lockLoad <- struct{}{}
 		transmit <- collate(&t)
 		a := <-accepted
@@ -1221,7 +1225,10 @@ func infoDisplay() {
 				}
 			}
 		case carryOn <- yes: // semaphore: received, continue
-		case <-infoff:
+		case <-stop:
+			if !exit {
+				break
+			}
 			display.Info = sf("%sSyntə closed%s", italic, reset)
 			display.On = not // stops timer in info display
 			saveJson(display, file)
@@ -1336,11 +1343,11 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	d := make([]listingStack, 0, 15) // this slice stores all listings and signals
 
 	defer func() { // fail gracefully
-		switch r := recover(); r {
+		switch err := recover(); err {
 		case nil:
 			return // exit normally
 		default:
-			msg("oops - %v", r) // report error to infoDisplay
+			msg("oops - %s", err) // report error to infoDisplay
 			/*
 				var buf [4096]byte
 				n := runtime.Stack(buf[:], false)
@@ -1349,30 +1356,29 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			//saveJson(t.sigs, sf("debug/SEcoredump%dsigs.json", time.Now().UnixMilli()))
 			//time.Sleep(time.Second)
 			//os.Exit(1)
+			env = 0
 			stop <- current
 			started = not
 		}
 	}()
 
-	go func() { // if samples channel runs empty insert zeros instead and filter heavily
+	 // if samples channel runs empty insert zeros instead and filter heavily
+	 // anonymous to use var n in scope
+	go func(w *bufio.Writer, sc soundcard) {
 		lpf := stereoPair{}
-	loop:
 		for env > 0 || n%1024 != 0 { // finish on end of buffer
 			select {
-			case s, ok := <-samples:
-				if !ok {
-					break loop
-				}
+			case s := <-samples:
 				lpf.stereoLpf(s, 0.7)
 			default:
-				lpf.stereoLpf(stereoPair{}, lpf15hz)
+				lpf.stereoLpf(stereoPair{}, lpf15Hz)
 			}
 			L := clip(lpf.left) * sc.convFactor  // clip will display info
 			R := clip(lpf.right) * sc.convFactor // clip will display info
 			output(w, L)
 			output(w, R)
 		}
-	}()
+	}(w, sc)
 
 	tr := *<-transmit
 	d = append(d, tr.listingStack)
@@ -2299,13 +2305,13 @@ func modeSet(s systemState) (systemState, int) {
 		}
 		if started {
 			<-stop // received when shutdown complete
+		} else {
+			close(stop)
 		}
 		saveJson([]listing{{operation{Op: advisory}}}, "displaylisting.json")
 		p("Stopped")
-		close(infoff)
 		if s.funcsave && !saveJson(s.funcs, "functions.json") {
 			msg("functions not saved!")
-			//return startNewListing
 		}
 		time.Sleep(30 * time.Millisecond) // wait for infoDisplay to finish
 		return s, exitNow

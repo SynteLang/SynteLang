@@ -489,7 +489,9 @@ func rootSync() bool {
 		s = d.Sync
 	}
 	rs = not
-	info <- "< synced to root"
+	if len(info) < infoBuffer {
+		info <- "< synced to root"
+	}
 	return true
 }
 

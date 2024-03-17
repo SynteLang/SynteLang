@@ -438,8 +438,32 @@ const ( // used in token parsing
 
 type clear func(s string, i ...interface{}) int
 
+var (
+	writeLog bool
+	log *os.File
+)
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "-prof" {
+	if len(os.Args) < 2 {
+		run(os.Stdin)
+		return
+	}
+	switch os.Args[1] {
+	case "--log", "-l":
+		var err error
+		log, err = os.OpenFile("info.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			fmt.Println("unable to log: %s", err)
+			return
+		}
+		defer log.Close()
+		_, err = log.WriteString(sf("-- Syntə info log %s --\n", time.Now()))
+		if err != nil {
+			fmt.Println("unable to log: %s", err)
+			return
+		}
+		writeLog = true
+		fmt.Println("logging...")
+	case "-prof", "-p":
 		f, rr := os.Create("cpu.prof")
 		if e(rr) {
 			pf("no cpu profile: %v", rr)
@@ -485,6 +509,9 @@ func run(from io.Reader) {
 		return
 	}
 	defer sc.file.Close()
+	if writeLog {
+		log.WriteString(sf("soundcard: %dbit %2gkHz %s\n", sc.format, sc.sampleRate, sc.channels))
+	}
 	SampleRate = sc.sampleRate // TODO change later
 
 	t, twavs, wavSlice := newSystemState(sc)
@@ -529,6 +556,7 @@ func run(from io.Reader) {
 			t.dispListings = nil // SE has been restarted so anull these to match sound engine
 			t.verbose = nil
 			t.daisyChains = t.daisyChains[:4]
+			infoIfLogging("len(disp) %d", len(t.dispListings))
 			<-lockLoad
 			msg("%d: %slisting deleted, can edit and reload%s", current, italic, reset)
 			msg("%s>>> Sound Engine restarted%s", italic, reset)
@@ -695,8 +723,8 @@ start:
 		transmit <- collate(&t)
 		a := <-accepted
 		if a != len(t.dispListings) {
-			msg("len(mutes): %d, len(disp): %d, accepted: %d", len(mutes), len(t.dispListings), a)
-			//time.Sleep(0.2 * time.Second)
+			infoIfLogging("len(mutes): %d, len(disp): %d, accepted: %d", len(mutes), len(t.dispListings), a)
+			time.Sleep(200 * time.Millisecond)
 		}
 		<-lockLoad
 
@@ -809,8 +837,10 @@ func collate(t *systemState) *data {
 	t.dispListings = append(t.dispListings, t.dispListing)
 	t.verbose = append(t.verbose, t.newListing)
 	if len(mutes) >= len(t.dispListings) { // if restart has happened
+		infoIfLogging("append mutes skipped: %d", len(t.dispListings)-1)
 		return d
 	}
+	infoIfLogging("reload: %d, len(disp): %d", t.reload, len(t.dispListings))
 	display.Mute = append(display.Mute, (m == 0))
 	mutes = append(mutes, m)
 	levels = append(levels, 1)
@@ -1162,6 +1192,14 @@ func evaluateExpr(expr string) (float64, bool) {
 	return n, true
 }
 
+func infoIfLogging(s string, i ...interface{}) {
+	if !writeLog {
+		return
+	}
+	info <- sf(s, i...)
+	<-carryOn
+}
+
 func infoDisplay() {
 	file := "infodisplay.json"
 	c := 1
@@ -1176,6 +1214,12 @@ func infoDisplay() {
 		}
 		select {
 		case display.Info = <-info:
+			if writeLog {
+				_, err := log.WriteString(sf("%s\n", display.Info))
+				if err != nil {
+					info <- sf("logging error: %s", err)
+				}
+			}
 		case carryOn <- yes: // semaphore: received, continue
 		case <-infoff:
 			display.Info = sf("%sSyntə closed%s", italic, reset)

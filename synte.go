@@ -105,7 +105,7 @@ const ( // operating system
 	lenExports    = 12
 	NOISE_FREQ    = 0.0625 // 3kHz @ 48kHz Sample rate
 	FDOUT         = 1e-4
-	MIN_FADE      = 75e-3 // 125ms
+	MIN_FADE      = 125e-3 // 125ms
 	MAX_FADE      = 120   // 120s
 	MIN_RELEASE   = 50e-3 // 50ms
 	MAX_RELEASE   = 50    // 50s
@@ -367,9 +367,9 @@ var (
 	levels  []float64
 	rs      bool                                     // root-sync between running instances
 	fade    = 1 / (MIN_FADE * SAMPLE_RATE)           //Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
-	release = math.Pow(8000, -1.0/(0.5*SAMPLE_RATE)) // 500ms
-	clipThr = 1.0                                    // individual listing clip threshold
+	release = math.Pow(8000, -1.0/(1.5*SAMPLE_RATE)) // 1.5s
 	gain    = baseGain
+	clipThr = 1.0 // individual listing limiter threshold
 )
 
 type noise uint64
@@ -1930,17 +1930,18 @@ func (y *stereoPair) stereoLpf(x stereoPair, coeff float64) {
 	y.right += (x.right - y.right) * coeff
 }
 
-var sineTab = make([]float64, int(SampleRate))
 
 const width = 2 << 16 // precision of tanh table
 var tanhTab = make([]float64, width)
 
+/*
+var sineTab = make([]float64, int(SampleRate))
 func init() {
 	for i := range sineTab {
 		// using cosine, even function avoids negation for -ve x
 		sineTab[i] = math.Cos(2 * math.Pi * float64(i) / SampleRate)
 	}
-}
+}*/
 
 func init() {
 	for i := range tanhTab {
@@ -2459,7 +2460,7 @@ func checkFade(s systemState) (systemState, int) {
 }
 
 func checkRelease(s systemState) (systemState, int) {
-	if s.operand == "time" {
+	if s.operand == "time" || s.operand == "is" {
 		msg("%slimiter release is:%s %.4gms", italic, reset,
 			-1000/(math.Log(release)*s.sampleRate/math.Log(8000)))
 		return s, startNewOperation

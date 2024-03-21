@@ -242,7 +242,8 @@ func decodeWavs() wavs {
 			msg("error loading: %s %s", file, rr)
 			continue
 		}
-		data := make([]byte, 44+8*WAV_LENGTH) // enough for 32bit stereo @ WAV_LENGTH
+		length := WAV_TIME * 48000 // wavs above 48kHz will be truncated to less than WAV_TIME
+		data := make([]byte, 44+8*length) // enough for 32bit stereo @ WAV_LENGTH
 		n, err := io.ReadFull(r, data)
 		if errors.Is(err, io.ErrUnexpectedEOF) {
 			data = data[:n] // truncate silent data
@@ -267,8 +268,9 @@ func decodeWavs() wavs {
 			msg("Warning: non-standard sample rate: %s", file)
 			time.Sleep(time.Second)
 		}
+		length = WAV_TIME * int(sr)
 		bits := binary.LittleEndian.Uint16(data[34:36])
-		to := channels * WAV_LENGTH
+		to := channels * length
 		if len(data) < to {
 			to = len(data[44:]) / channels
 		}

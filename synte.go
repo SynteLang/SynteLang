@@ -77,28 +77,25 @@ const ( // operating system
 	IOC_INOUT = 0xC0000000
 	// set bit width to 32bit
 	SNDCTL_DSP_SETFMT = IOC_INOUT | (0x04&((1<<13)-1))<<16 | 0x50<<8 | 0x05
-	//	SNDCTL_DSP_SETFMT	= 0xC0045005
-	// Format in Little Endian, see BYTE_ORDER below
-	AFMT_S32_LE  = 0x00001000 // use only if supported by soundcard and driver
+	// SNDCTL_DSP_SETFMT	= 0xC0045005
+	// Format in Little Endian, see BYTE_ORDER
+	AFMT_S32_LE  = 0x00001000
 	AFMT_S16_LE  = 0x00000010
 	AFMT_S8      = 0x00000040
-	SELECTED_FMT = AFMT_S16_LE
-	// Format in Big Endian
-	//AFMT_S32_BE = 0x00002000
+	//AFMT_S32_BE = 0x00002000 // Big Endian
+	SELECTED_FMT = AFMT_S32_LE
 	// for Stereo
 	SNDCTL_DSP_CHANNELS = 0xC0045003
 	STEREO              = 1
 	MONO                = 0
 	CHANNELS            = STEREO // will halve pitches/frequencies/tempos if mono!
 	// set Sample Rate, specific rate defined below
-	//	SNDCTL_DSP_SPEED	= IOC_INOUT |(0x04 & ((1 << 13)-1))<<16 | 0x50 << 8 | 0x02
+	// SNDCTL_DSP_SPEED	= IOC_INOUT |(0x04 & ((1 << 13)-1))<<16 | 0x50 << 8 | 0x02
 	SNDCTL_DSP_SPEED       = 0xC0045002
 	SAMPLE_RATE            = 48000 //hertz
 	SNDCTL_DSP_SETFRAGMENT = IOC_INOUT | (0x04&((1<<13)-1))<<16 | 0x50<<8 | 0x0A
-	BUFFER_SIZE            = 10 // not used
 
 	WAV_TIME      = 4 //seconds
-	WAV_LENGTH    = WAV_TIME * SAMPLE_RATE
 	TAPE_LENGTH   = 1 //seconds
 	MAX_WAVS      = 12
 	lenReserved   = 11

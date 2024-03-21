@@ -503,6 +503,8 @@ func emptyTokens() {
 func run(from io.Reader) {
 	saveJson([]listing{{operation{Op: advisory}}}, "displaylisting.json")
 
+	go infoDisplay()
+
 	sc, success := setupSoundCard("/dev/dsp")
 	if !success {
 		p("unable to setup soundcard")
@@ -517,7 +519,6 @@ func run(from io.Reader) {
 
 	t, twavs, wavSlice := newSystemState(sc)
 
-	go infoDisplay()
 	go SoundEngine(sc, twavs)
 	go mouseRead()
 
@@ -1231,6 +1232,7 @@ func infoDisplay() {
 			}
 			display.Info = sf("%sSyntə closed%s", italic, reset)
 			display.On = not // stops timer in info display
+			display.Format = 0 // so previous soundcard info not displayed, in case different
 			saveJson(display, file)
 			return
 		default: // passthrough

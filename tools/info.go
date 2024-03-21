@@ -27,7 +27,7 @@ const (
 
 func main() {
 
-	type Disp struct {
+	type Disp struct { // TODO import this from a types package
 		On      bool
 		Mode    string // func add fon/foff
 		Vu      float64
@@ -169,11 +169,16 @@ func main() {
 				VU += "|"
 			}
 
+			soundcard := fmt.Sprintf("> %dbit %2gkhz %s", display.Format, display.SR/1000, display.Channel)
+			if display.Format == 0 {
+				soundcard = "\t\t"
+			}
+
 			fmt.Printf("\033[H\033[2J")
 			fmt.Printf("%sSyntə info%s %spress enter to quit%s", cyan, reset, italic, reset)
 			fmt.Printf(`   %s   %s  %3s
 ╭───────────────────────────────────────────────────╮
-  > %dbit %2gkhz %s %s	 	%sLoad:%s %v
+  %s %s	 	%sLoad:%s %v
 %s
 %s
 %s
@@ -189,7 +194,7 @@ func main() {
       %sMouse-X:%s %.5g		%sMouse-Y:%s %.5g
 ╰───────────────────────────────────────────────────╯`,
 				sync, paused, timer,
-				display.Format, display.SR/1000, display.Channel, display.Mode, yellow, reset, L,
+				soundcard, display.Mode, yellow, reset, L,
 				messages[0].Content,
 				messages[1].Content,
 				messages[2].Content,
@@ -214,7 +219,6 @@ func main() {
 		}
 	}()
 	if !exit {
-		fmt.Printf("press enter to quit")
 		fmt.Scanln()
 		exit = true
 		<-stop

@@ -1504,7 +1504,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					d[i].stack = d[i].stack[:len(d[i].stack)-1]
 				case 18: // "buff"
 					d[i].buff[n%TAPELEN] = r // record head
-					tl := sc.sampleRate * TAPE_LENGTH
+					tl := float64(TAPELEN) //sc.sampleRate * TAPE_LENGTH
 					//t := math.Abs(math.Min(1/d[i].sigs[d[i].listing[ii].N], tl))
 					t := math.Mod((1 / d[i].sigs[d[i].listing[ii].N]), tl)
 					if d[i].sigs[d[i].listing[ii].N] == 0 {
@@ -1529,7 +1529,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				case 19: // "--"
 					r = d[i].sigs[d[i].listing[ii].N] - r
 				case 20: // "tap"
-					tl := sc.sampleRate * TAPE_LENGTH
+					tl := float64(TAPELEN) //sc.sampleRate * TAPE_LENGTH
 					//t := math.Abs(math.Min(1/d[i].sigs[d[i].listing[ii].N], tl))
 					t := math.Min(math.Abs(1/d[i].sigs[d[i].listing[ii].N]), tl)
 					xa := (n + TAPELEN - int(t)) % TAPELEN

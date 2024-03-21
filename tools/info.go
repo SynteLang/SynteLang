@@ -110,8 +110,11 @@ func main() {
 
 			loadColour := ""
 			l := float64(display.Load) / (1e9 / display.SR)
-			if started && overload == 0 {
+			if overload == 0 {
 				load = fmt.Sprintf("%0.2f", l)
+			}
+			if !started {
+				load = "0"
 			}
 			if overload > 0 {
 				overload--
@@ -169,7 +172,7 @@ func main() {
 				VU += "|"
 			}
 
-			soundcard := fmt.Sprintf("> %dbit %2gkhz %s", display.Format, display.SR/1000, display.Channel)
+			soundcard := fmt.Sprintf("%dbit %2gkhz %s", display.Format, display.SR/1000, display.Channel)
 			if display.Format == 0 {
 				soundcard = "\t\t"
 			}
@@ -178,7 +181,7 @@ func main() {
 			fmt.Printf("%sSyntə info%s %spress enter to quit%s", cyan, reset, italic, reset)
 			fmt.Printf(`   %s   %s  %3s
 ╭───────────────────────────────────────────────────╮
-  %s %s	 	%sLoad:%s %v
+   %sLoad:%s %v      %s     %s
 %s
 %s
 %s
@@ -194,7 +197,7 @@ func main() {
       %sMouse-X:%s %.5g		%sMouse-Y:%s %.5g
 ╰───────────────────────────────────────────────────╯`,
 				sync, paused, timer,
-				soundcard, display.Mode, yellow, reset, L,
+				yellow, reset, L, display.Mode, soundcard,
 				messages[0].Content,
 				messages[1].Content,
 				messages[2].Content,

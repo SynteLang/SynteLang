@@ -101,7 +101,14 @@ func setupSoundCard(file string) (sc soundcard, success bool) {
 
 	// set sample rate
 	req = SNDCTL_DSP_SPEED
-	data = SAMPLE_RATE
+	var sr uint32 = SAMPLE_RATE
+	if len(os.Args) > 2 && (os.Args[1] == "--sr" || os.Args[1] == "--SR" || os.Args[1] == "-s") {
+		flag, err := strconv.Atoi(os.Args[2])
+		if err == nil && sr >= 12000 && sr <= 192000 {
+			sr = uint32(flag)
+		}
+	}
+	data = sr
 	_, _, ern = syscall.Syscall(
 		syscall.SYS_IOCTL,
 		uintptr(sc.file.Fd()),
@@ -113,7 +120,7 @@ func setupSoundCard(file string) (sc soundcard, success bool) {
 		time.Sleep(time.Second)
 	}
 	sc.sampleRate = float64(data)
-	if data != SAMPLE_RATE {
+	if data != sr {
 		info <- "--requested sample rate not accepted--"
 		info <- sf("new sample rate: %vHz", sc.sampleRate)
 	}

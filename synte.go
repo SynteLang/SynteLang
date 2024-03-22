@@ -107,7 +107,6 @@ const ( // operating system
 	MIN_RELEASE   = 50e-3 // 50ms
 	MAX_RELEASE   = 50    // 50s
 	twoInvMaxUint = 2.0 / math.MaxUint64
-	TAPELEN       = SAMPLE_RATE * TAPE_LENGTH
 	alpLen        = 2400
 	baseGain      = 4.0 //2.74
 )
@@ -187,6 +186,7 @@ type systemState struct {
 	hasOperand   map[string]bool
 	reload       int
 	daisyChains  []int
+	tapeLen      int
 	listingState
 	soundcard
 }
@@ -326,7 +326,7 @@ type listingStack struct {
 }
 
 type keep struct {
-	buff [TAPELEN]float64
+	buff []float64
 	alp  [alpLen]float64
 	alp1 [alpLen]float64
 	alp2 [alpLen]float64
@@ -822,6 +822,7 @@ func collate(t *systemState) *data {
 			keep: keep{
 				lv:       1,
 				peakfreq: 800 / t.sampleRate,
+				buff:     make([]float64, t.tapeLen),
 			},
 		},
 	}
@@ -1304,6 +1305,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 
 	var (
 		no = noise(time.Now().UnixNano())
+		tapeLen = int(sc.sampleRate) * TAPE_LENGTH
 
 		l, h float64 = 1, 2 // limiter, hold
 		env  float64 = 1    // for exit envelope
@@ -1503,19 +1505,19 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					r = d[i].stack[len(d[i].stack)-1]
 					d[i].stack = d[i].stack[:len(d[i].stack)-1]
 				case 18: // "buff"
-					d[i].buff[n%TAPELEN] = r // record head
-					tl := float64(TAPELEN) //sc.sampleRate * TAPE_LENGTH
+					d[i].buff[n%tapeLen] = r // record head
+					tl := float64(tapeLen)
 					//t := math.Abs(math.Min(1/d[i].sigs[d[i].listing[ii].N], tl))
 					t := math.Mod((1 / d[i].sigs[d[i].listing[ii].N]), tl)
 					if d[i].sigs[d[i].listing[ii].N] == 0 {
 						t = 0
 					}
-					xa := (n + TAPELEN - int(t)) % TAPELEN
-					x := mod(float64(n+TAPELEN)-(t), tl)
-					ta0 := d[i].buff[(n+TAPELEN-int(t)-1)%TAPELEN]
+					xa := (n + tapeLen - int(t)) % tapeLen
+					x := mod(float64(n+tapeLen)-(t), tl)
+					ta0 := d[i].buff[(n+tapeLen-int(t)-1)%tapeLen]
 					ta := d[i].buff[xa] // play heads
-					tb := d[i].buff[(n+TAPELEN-int(t)+1)%TAPELEN]
-					tb1 := d[i].buff[(n+TAPELEN-int(t)+2)%TAPELEN]
+					tb := d[i].buff[(n+tapeLen-int(t)+1)%tapeLen]
+					tb1 := d[i].buff[(n+tapeLen-int(t)+2)%tapeLen]
 					z := mod(x-float64(xa), tl-1) - 0.5 // to avoid end of loop clicks
 					// 4-point 4th order "optimal" interpolation filter by Olli Niemitalo
 					ev1, od1 := tb+ta, tb-ta
@@ -1529,15 +1531,15 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				case 19: // "--"
 					r = d[i].sigs[d[i].listing[ii].N] - r
 				case 20: // "tap"
-					tl := float64(TAPELEN) //sc.sampleRate * TAPE_LENGTH
+					tl := float64(tapeLen)
 					//t := math.Abs(math.Min(1/d[i].sigs[d[i].listing[ii].N], tl))
 					t := math.Min(math.Abs(1/d[i].sigs[d[i].listing[ii].N]), tl)
-					xa := (n + TAPELEN - int(t)) % TAPELEN
-					x := mod(float64(n+TAPELEN)-(t), tl)
-					ta0 := d[i].buff[(n+TAPELEN-int(t)-1)%TAPELEN]
+					xa := (n + tapeLen - int(t)) % tapeLen
+					x := mod(float64(n+tapeLen)-(t), tl)
+					ta0 := d[i].buff[(n+tapeLen-int(t)-1)%tapeLen]
 					ta := d[i].buff[xa] // play heads
-					tb := d[i].buff[(n+TAPELEN-int(t)+1)%TAPELEN]
-					tb1 := d[i].buff[(n+TAPELEN-int(t)+2)%TAPELEN]
+					tb := d[i].buff[(n+tapeLen-int(t)+1)%tapeLen]
+					tb1 := d[i].buff[(n+tapeLen-int(t)+2)%tapeLen]
 					z := mod(x-float64(xa), tl-1) - 0.5 // to avoid end of loop clicks
 					// 4-point 4th order "optimal" interpolation filter by Olli Niemitalo
 					ev1, od1 := tb+ta, tb-ta
@@ -2611,5 +2613,6 @@ func initialiseListing(t systemState, res [lenReserved + lenExports]string) syst
 		"third":    math.Pow(2, 1.0/3),   // major, equal temperament ≈ 1.25 (4:5)
 		"seventh":  math.Pow(2, 11.0/12), // major, equal temperament ≈ 1.875 (8:15)
 	}
+	t.tapeLen = TAPE_LENGTH * int(t.sampleRate)
 	return t
 }

@@ -100,7 +100,8 @@ const ( // operating system
 	MAX_WAVS      = 12
 	lenReserved   = 11
 	lenExports    = 12
-	NOISE_FREQ    = 0.0625 // 3kHz @ 48kHz Sample rate
+	NOISE_FREQ    = 0.25
+	DEFAULT_FREQ  = 0.0625 // 3kHz @ 48kHz Sample rate
 	FDOUT         = 1e-4
 	MIN_FADE      = 125e-3 // 125ms
 	MAX_FADE      = 120   // 120s
@@ -108,7 +109,7 @@ const ( // operating system
 	MAX_RELEASE   = 50    // 50s
 	twoInvMaxUint = 2.0 / math.MaxUint64
 	alpLen        = 2400
-	baseGain      = 4.0 //2.74
+	baseGain      = 0.25
 )
 
 var SampleRate float64 = SAMPLE_RATE // should be 'de-globalised'
@@ -364,7 +365,7 @@ var (
 	levels  []float64
 	rs      bool                                     // root-sync between running instances
 	fade    = 1 / (MIN_FADE * SAMPLE_RATE)           //Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
-	release = math.Pow(8000, -1.0/(1.5*SAMPLE_RATE)) // 1.5s
+	release = math.Pow(8000, -1.0/(.5*SAMPLE_RATE)) // 500ms
 	gain    = baseGain
 	clipThr = 1.0 // individual listing limiter threshold
 )
@@ -440,6 +441,7 @@ var (
 	writeLog bool
 	log *os.File
 )
+
 func main() {
 	if len(os.Args) < 2 {
 		run(os.Stdin)
@@ -1293,22 +1295,28 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	)
 
 	var (
-		lpf15hz = lpf_coeff(15, sc.sampleRate)
-		lpf1khz = lpf_coeff(1e3, sc.sampleRate)
-		lpf2hz  = lpf_coeff(2, sc.sampleRate)
-		lpf50hz = lpf_coeff(50, sc.sampleRate)
+		lpf15Hz = lpf_coeff(15, sc.sampleRate)
+		lpf1kHz = lpf_coeff(1e3, sc.sampleRate)
+		lpf2Hz  = lpf_coeff(2, sc.sampleRate)
+		lpf150Hz = lpf_coeff(150, sc.sampleRate)
 
-		hpf4hz    = hpf_coeff(4, sc.sampleRate)
-		hpf2560hz = hpf_coeff(2560, sc.sampleRate)
-		hpf160hz  = hpf_coeff(160, sc.sampleRate)
+		hpf2s  = hpf_coeff(0.5, sc.sampleRate)
+		hpf20Hz = hpf_coeff(20, sc.sampleRate)
+
+		hiBandCoeff      = hpf_coeff(14481, sc.sampleRate) // x43
+		midBandCoeff     = hpf_coeff(320, sc.sampleRate) // x4
+		postLowBandCoeff = lpf_coeff(65, sc.sampleRate) // x0.9
+		postHiBandCoeff  = lpf_coeff(octave(9), sc.sampleRate) // x0.1
 	)
+
+	const Thr = 1.0 // must be less than or equal to one
 
 	var (
 		no = noise(time.Now().UnixNano())
 		tapeLen = int(sc.sampleRate) * TAPE_LENGTH
 
-		l, h float64 = 1, 2 // limiter, hold
-		env  float64 = 1    // for exit envelope
+		l, h float64 = Thr, 2 // limiter, hold
+		env  float64 = 1      // for exit envelope
 		dac, // output
 		peak, // vu meter
 		dither float64
@@ -1321,15 +1329,14 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 
 		s      float64 = 1    // sync=0
 		mx, my float64 = 1, 1 // mouse smooth intermediates
+		c, mixF = 4.0, 4.0    // mix factor
 		hpf, x float64        // DC-blocking high pass filter
-		hpf2560, x2560,
-		hpf160, x160 float64 // limiter detection
-		lpf50, lpf510,
-		deemph float64 // de-emphasis
-		//α       = 30 * 1 / (sc.sampleRate/(2*Pi*6.3) + 1) // co-efficient for setmix
+		g      float64        // gain smooth intermediate
+		hiBand, hiBandPrev,
+		midBand, midBandPrev float64    // limiter pre-emphasis
+		postLowBand, postHiBand float64 // limiter de-emphasis
 		α       = 1 / (sc.sampleRate/(2*math.Pi*194) + 1) // co-efficient for setmix
 		hroom   = (sc.convFactor - 1.0) / sc.convFactor   // headroom for positive dither
-		c, mixF = 4.0, 4.0                                // mix factor
 		pd      int                                       // slated for removal
 		sides   float64                                   // for stereo
 		current int                                       // tracks index of active listing for recover()
@@ -1414,8 +1421,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		}
 
 		mo := mouse
-		mx = mx + (mo.X-mx)*lpf15hz
-		my = my + (mo.Y-my)*lpf15hz
+		mx = mx + (mo.X-mx)*lpf15Hz
+		my = my + (mo.Y-my)*lpf15Hz
 
 		//for i, l := range d { // this is incredibly slow
 		for i := 0; i < len(d); i++ { // much faster
@@ -1424,8 +1431,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			for ii := 0; ii < len(daisyChains); ii++ {
 				d[i].sigs[daisyChains[ii]] = d[(i+len(d)-1)%len(d)].sigs[daisyChains[ii]]
 			}
-			d[i].m = d[i].m + (p*mutes[i]-d[i].m)*lpf15hz // anti-click filter
-			d[i].lv = d[i].lv + (levels[i]-d[i].lv)*lpf1khz
+			d[i].m = d[i].m + (p*mutes[i]-d[i].m)*lpf15Hz // anti-click filter
+			d[i].lv = d[i].lv + (levels[i]-d[i].lv)*lpf1kHz
 			//sigs := d[i].sigs
 			// mouse values
 			d[i].sigs[4] = mx
@@ -1623,10 +1630,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				case 34: // "setmix"
 					a := math.Abs(d[i].sigs[d[i].listing[ii].N])
 					delta := a - d[i].peakfreq
-					//d[i].peakfreq += delta * α * (a / d[i].peakfreq)
 					d[i].peakfreq += delta * α * (math.Abs(delta) * a / d[i].peakfreq)
-					//r *= math.Min(1, 140/(d[i].peakfreq*sc.sampleRate+20)) // ignoring density
-					r *= math.Min(1, math.Sqrt(140/(d[i].peakfreq*sc.sampleRate+20)))
+					r *= math.Min(1, math.Sqrt(100/(d[i].peakfreq*sc.sampleRate+20)))
 				case 35: // "print"
 					pd++ // unnecessary?
 					if (pd)%32768 == 0 && !exit {
@@ -1820,50 +1825,50 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			out := d[i].sigs[0]
 			out *= d[i].m * d[i].lv // sigs[0] left intact for `from` operator
 			if math.Abs(out) > d[i].lim+clipThr { // limiter
-				d[i].lim = d[i].lim + (math.Abs(out-clipThr)-d[i].lim)*lpf50hz
-				display.Clip = yes
+				d[i].lim = d[i].lim + (math.Abs(out-clipThr)-d[i].lim)*lpf15Hz
 			}
 			out /= (d[i].lim + clipThr) * (d[i].lim + clipThr + 4) / 5 // over-limit
-			d[i].lim *= hpf4hz // release
+			d[i].lim *= hpf2s // release
 			sides += out * d[i].pan * 0.5
 			dac += out * (1 - math.Abs(d[i].pan*0.5))
 		}
-		hpf = (hpf + dac - x) * hpf4hz
-		x, dac = dac, hpf
-		//c = math.Sqrt(c*10) // because eg. two signals sum by 3db, not 6db
-		c = c + 16.8 // approximation to sqrt, avoiding level changes for first few listings
-		if c < 1 {   // c = max(c, 1)
+		if c < 1 { // c = max(c, 1)
 			c = 1
 		}
-		mixF = mixF + (c-mixF)*lpf2hz
+		c = math.Max(1, math.Sqrt(c) + 0.9/(c*c+ 1)) // because eg. two signals sum by 3db, not 6db
+		mixF = mixF + (c-mixF)*lpf2Hz
 		c = 0
 		dac /= mixF
 		sides /= mixF
-		dac *= gain
-		sides *= gain
+		g += (gain - g)*lpf2Hz
+		dac *= g
+		sides *= g
+		hpf = (hpf + dac - x) * hpf20Hz
+		x = dac
+		dac = hpf
+		// pre-emphasis
+		hiBand = (hiBand + dac - hiBandPrev) * hiBandCoeff
+		hiBandPrev = dac
+		midBand = (midBand + dac - midBandPrev) * midBandCoeff
+		midBandPrev = dac
+		dac = 43*hiBand + 4*midBand + dac
 		// limiter
-		hpf2560 = (hpf2560 + dac - x2560) * hpf2560hz
-		x2560 = dac
-		hpf160 = (hpf160 + dac - x160) * hpf160hz
-		x160 = dac
-		// parallel low end path
-		lpf50 = lpf50 + (dac-lpf50)*lpf50hz
-		d := 1 * lpf50 / (1 + math.Abs(lpf50*4)) // tanh approximation
-		lpf510 = lpf510 + (d-lpf510)*lpf50hz
-		deemph = lpf510
-		// apply pre-emphasis to detection
-		det := math.Abs(11.4*hpf2560+1.6*hpf160+dac) * 0.7
-		if det > l {
-			l = det // MC
+		det := math.Abs(dac)
+		if det > l+Thr {
+			l += (det - l)*lpf150Hz // attack
 			h = release
 			display.GR = yes
 		}
-		dac /= l // VCA
+		dac /= l+Thr // VCA
 		sides /= l
-		dac += deemph // low end path is mono only, may clip at output
 		h /= release
-		l = (l-1)*(1/(h+1/(1-release))+release) + 1 // snubbed decay curve
-		display.GR = l > 1+3e-4
+		l *= release + 1/(h+1/(1-release))
+		display.GR = l > 3e-4
+		// de-emphasis
+		postLowBand = postLowBand + (dac-postLowBand)*postLowBandCoeff
+		postHiBand = postHiBand + (dac-postHiBand)*postHiBandCoeff
+		dac = 0.9*postLowBand + 0.045*postHiBand
+		dac *= 1.45
 		if exit {
 			dac *= env // fade out
 			sides *= env
@@ -1905,6 +1910,10 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		sides = 0
 		n++
 	}
+}
+
+func octave(oct float64) float64 {
+	return 20*math.Pow(2, oct) // 20hz root frequency
 }
 
 func lpf_coeff(f, SR float64) float64 {
@@ -2607,7 +2616,7 @@ func initialiseListing(t systemState, res [lenReserved + lenExports]string) syst
 		"semitone": math.Pow(2, 1.0/12),
 		"Tau":      2 * math.Pi, // 2π
 		"ln7":      math.Log(7),
-		"^freq":    NOISE_FREQ,           // default frequency for setmix, suitable for noise
+		"^freq":    DEFAULT_FREQ,           // default frequency for setmix, suitable for noise
 		"null":     0,                    // only necessary if zero is banned in Syntə again
 		"fifth":    math.Pow(2, 7.0/12),  // equal temperament ≈ 1.5 (2:3)
 		"third":    math.Pow(2, 1.0/3),   // major, equal temperament ≈ 1.25 (4:5)

@@ -267,8 +267,8 @@ func decodeWavs() wavs {
 			msg("error loading: %s %s", file, rr)
 			continue
 		}
-		length := WAV_TIME * 48000 // wavs above 48kHz will be truncated to less than WAV_TIME
-		data := make([]byte, 44+8*length) // enough for 32bit stereo @ WAV_LENGTH
+		length := WAV_TIME * 192000
+		data := make([]byte, 44+8*length) // enough for 32bit stereo WAV_TIME @ 192kHz
 		n, err := io.ReadFull(r, data)
 		if errors.Is(err, io.ErrUnexpectedEOF) {
 			data = data[:n] // truncate silent data
@@ -324,14 +324,13 @@ func decodeWavs() wavs {
 		t := float64(len(wav.Data)) / float64(sr)
 		c := "stereo"
 		if channels == 1 {
-			c = "mono  "
+			c = "mono"
 		}
-		info <- sf("%s\t%2dbit  %3gkHz  %s  %.3gs", file, bits, float64(sr)/1000, c, t)
+		msg("%16s   %2dbit  %4.3gkHz  %-6s  %.3gs", wav.Name, bits, float64(sr)/1000, c, t)
 	}
 	if len(w) == 0 {
 		return nil
 	}
-	info <- sf("")
 	return w
 }
 

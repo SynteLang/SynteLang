@@ -1317,7 +1317,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 
 		l, h float64 = Thr, 2 // limiter, hold
 		env  float64 = 1      // for exit envelope
-		dac, // output
+		mid, // output
 		peak, // vu meter
 		dither float64
 		n int // loop counter
@@ -1830,7 +1830,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			out /= (d[i].lim + clipThr) * (d[i].lim + clipThr + 4) / 5 // over-limit
 			d[i].lim *= hpf2s // release
 			sides += out * d[i].pan * 0.5
-			dac += out * (1 - math.Abs(d[i].pan*0.5))
+			mid += out * (1 - math.Abs(d[i].pan*0.5))
 		}
 		if c < 1 { // c = max(c, 1)
 			c = 1
@@ -1838,39 +1838,39 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		c = math.Max(1, math.Sqrt(c) + 0.9/(c*c+ 1)) // because eg. two signals sum by 3db, not 6db
 		mixF = mixF + (c-mixF)*lpf2Hz
 		c = 0
-		dac /= mixF
+		mid /= mixF
 		sides /= mixF
 		g += (gain - g)*lpf2Hz
-		dac *= g
+		mid *= g
 		sides *= g
-		hpf = (hpf + dac - x) * hpf20Hz
-		x = dac
-		dac = hpf
+		hpf = (hpf + mid - x) * hpf20Hz
+		x = mid
+		mid = hpf
 		// pre-emphasis
-		hiBand = (hiBand + dac - hiBandPrev) * hiBandCoeff
-		hiBandPrev = dac
-		midBand = (midBand + dac - midBandPrev) * midBandCoeff
-		midBandPrev = dac
-		dac = 43*hiBand + 4*midBand + dac
+		hiBand = (hiBand + mid - hiBandPrev) * hiBandCoeff
+		hiBandPrev = mid
+		midBand = (midBand + mid - midBandPrev) * midBandCoeff
+		midBandPrev = mid
+		mid = 43*hiBand + 4*midBand + mid
 		// limiter
-		det := math.Abs(dac)
+		det := math.Abs(mid)
 		if det > l+Thr {
 			l += (det - l)*lpf150Hz // attack
 			h = release
 			display.GR = yes
 		}
-		dac /= l+Thr // VCA
+		mid /= l+Thr // VCA
 		sides /= l
 		h /= release
 		l *= release + 1/(h+1/(1-release))
 		display.GR = l > 3e-4
 		// de-emphasis
-		postLowBand = postLowBand + (dac-postLowBand)*postLowBandCoeff
-		postHiBand = postHiBand + (dac-postHiBand)*postHiBandCoeff
-		dac = 0.9*postLowBand + 0.045*postHiBand
-		dac *= 1.45
+		postLowBand = postLowBand + (mid-postLowBand)*postLowBandCoeff
+		postHiBand = postHiBand + (mid-postHiBand)*postHiBandCoeff
+		mid = 0.9*postLowBand + 0.045*postHiBand
+		mid *= 1.45
 		if exit {
-			dac *= env // fade out
+			mid *= env // fade out
 			sides *= env
 			env -= fade // linear fade-out (perceived as logarithmic)
 			if env < 0 {
@@ -1881,9 +1881,9 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		dither = no.ise()
 		dither += no.ise()
 		dither *= 0.5
-		dac *= hroom
-		dac += dither / sc.convFactor         // dither dac value ±1 from xorshift lfsr
-		if abs := math.Abs(dac); abs > peak { // peak detect
+		mid *= hroom
+		mid += dither / sc.convFactor         // dither dac value ±1 from xorshift lfsr
+		if abs := math.Abs(mid); abs > peak { // peak detect
 			peak = abs
 		}
 		display.Vu = peak
@@ -1893,12 +1893,12 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		}
 		sides = math.Max(-0.5, math.Min(0.5, sides))
 		if record {
-			L := math.Max(-1, math.Min(1, dac+sides)) * sc.convFactor
-			R := math.Max(-1, math.Min(1, dac-sides)) * sc.convFactor
+			L := math.Max(-1, math.Min(1, mid+sides)) * sc.convFactor
+			R := math.Max(-1, math.Min(1, mid-sides)) * sc.convFactor
 			writeWav(L, R)
 		}
 		t = time.Since(lastTime)
-		samples <- stereoPair{left: dac + sides, right: dac - sides}
+		samples <- stereoPair{left: mid + sides, right: mid - sides}
 		lastTime = time.Now()
 		rate += t
 		rates[n%RateIntegrationTime] = t // rolling average buffer
@@ -1906,8 +1906,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		if n%RateIntegrationTime == 0 {
 			display.Load = rate / RateIntegrationTime
 		}
-		dac = 0
-		sides = 0
+		mid, sides = 0, 0
 		n++
 	}
 }

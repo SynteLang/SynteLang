@@ -101,13 +101,7 @@ func setupSoundCard(file string) (sc soundcard, success bool) {
 
 	// set sample rate
 	req = SNDCTL_DSP_SPEED
-	var sr uint32 = SAMPLE_RATE
-	if len(os.Args) > 2 && (os.Args[1] == "--sr" || os.Args[1] == "--SR" || os.Args[1] == "-s") {
-		flag, err := strconv.Atoi(os.Args[2])
-		if err == nil && sr >= 12000 && sr <= 192000 {
-			sr = uint32(flag)
-		}
-	}
+	sr := checkFlag(SAMPLE_RATE)
 	data = sr
 	_, _, ern = syscall.Syscall(
 		syscall.SYS_IOCTL,
@@ -128,6 +122,37 @@ func setupSoundCard(file string) (sc soundcard, success bool) {
 	display.Format = sc.format
 	display.Channel = sc.channels
 	return sc, yes
+}
+
+func checkFlag(sr uint32) uint32 {
+	if len(os.Args) < 3 {
+		return sr
+	}
+	switch os.Args[1] {
+	case "--sr", "--SR", "-s":
+		// break
+	default:
+		return sr
+	}
+	if os.Args[2] == "44.1" { // for convenience
+		os.Args[2] = "44"
+	}
+	flag, err := strconv.Atoi(os.Args[2])
+	if err != nil {
+		return sr
+	}
+	switch flag {
+	case 48:
+		flag = 48000
+	case 44:
+		flag = 44100
+	case 96:
+		flag = 96000
+	}
+	if flag < 12000 || flag > 192000 {
+		return sr
+	}
+    return uint32(flag)
 }
 
 func recordWav(s systemState) (systemState, int) {

@@ -181,7 +181,6 @@ type systemState struct {
 	wavNames     string // for display purposes
 	funcs        map[string]fn
 	funcsave     bool
-	code         *[]listing
 	solo         int // index of most recent solo
 	unsolo       muteSlice
 	hasOperand   map[string]bool
@@ -586,7 +585,6 @@ func run(from io.Reader) {
 	lenExported := 0
 	usage := loadUsage() // local usage telemetry
 	loadExternalFile := not
-	t.code = &t.dispListings // code sent to listings.go
 
 start:
 	for { // main loop
@@ -742,7 +740,7 @@ start:
 		if !saveJson(t.newListing, f) {
 			msg("%slisting not recorded, check 'recordings/' directory exists%s", italic, reset)
 		}
-		if !saveJson(*t.code, "displaylisting.json") {
+		if !saveJson(t.dispListings, "displaylisting.json") {
 			msg("%slisting display not updated, check file %s'displaylisting.json'%s exists%s",
 				italic, reset, italic, reset)
 		}
@@ -2352,17 +2350,19 @@ func modeSet(s systemState) (systemState, int) {
 	case "clear", "c":
 		msg("clear")
 	case "verbose":
-		switch s.code {
-		case &s.dispListings:
-			s.code = &s.verbose
-		case &s.verbose:
-			s.code = &s.dispListings
+		switch display.Verbose {
+		case not:
+			if !saveJson(s.verbose, "displaylisting.json") {
+				msg("%slisting display not updated, check %s'displaylisting.json'%s exists%s",
+					italic, reset, italic, reset)
+			}
+		case yes:
+			if !saveJson(s.dispListings, "displaylisting.json") {
+				msg("%slisting display not updated, check %s'displaylisting.json'%s exists%s",
+					italic, reset, italic, reset)
+			}
 		}
 		display.Verbose = !display.Verbose
-		if !saveJson(*s.code, "displaylisting.json") {
-			msg("%slisting display not updated, check %s'displaylisting.json'%s exists%s",
-				italic, reset, italic, reset)
-		}
 	case "stats":
 		if !started {
 			return s, startNewOperation

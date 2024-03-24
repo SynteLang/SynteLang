@@ -635,6 +635,7 @@ start:
 				break start
 			}
 			// process exported signals
+			// TODO make this a function and add to parseFunction
 			reservedOrExported := not
 			for _, v := range reservedSignalNames {
 				if v == t.operand {
@@ -682,38 +683,37 @@ start:
 			}
 			if strings.ContainsAny(o.Opd[:1], "+-.0123456789") { // wavs already in signals map
 				t.signals[o.Opd], _ = parseType(o.Opd, o.Op) // number assigned, error checked above
-			} else { // assign initial value
-				i := 0
-				if o.Opd[:1] == "^" {
-					i++
-				}
-				switch o.Opd[i : i+1] {
-				case "'":
-					t.signals[o.Opd] = 1
-				case "\"":
-					t.signals[o.Opd] = 0.5
-				default:
-					t.signals[o.Opd] = 0
-				}
+				continue
+			}
+			i := 0
+			if o.Opd[:1] == "^" {
+				i++
+			}
+			switch o.Opd[i : i+1] {
+			case "'":
+				t.signals[o.Opd] = 1
+			case "\"":
+				t.signals[o.Opd] = 0.5
+			default:
+				t.signals[o.Opd] = 0
 			}
 		}
 
-		i := len(t.newSignals)        // to ignore reserved signals
-		for k, v := range t.signals { // assign signals to slice from map
-			t.newSignals = append(t.newSignals, v)
+		for sig, val := range t.signals { // assign signals to slice from map
+			t.newSignals = append(t.newSignals, val)
+			n := len(t.newSignals)-1
 			for ii, o := range t.newListing {
-				if o.Opd == k {
-					o.N = i
+				if o.Opd == sig {
+					o.N = n
 				}
 				for i, pre := range reservedSignalNames { // reserved signals are added in order
 					if o.Opd == pre {
-						o.N = i // shadowed
+						o.N = i
 					}
 				}
 				o.Opn = operators[o.Op].N
 				t.newListing[ii] = o
 			}
-			i++
 		}
 
 		if display.Paused {
@@ -791,7 +791,6 @@ func addIfFunction(t systemState) (systemState, int) {
 		return t, startNewOperation
 	}
 	t.funCount++
-	// TODO add Exported signals here?
 	t.newListing = append(t.newListing, function...)
 	return t, nextOperation
 }
@@ -980,9 +979,6 @@ func parseFunction(t systemState) (listing, bool) {
 func processFunction(fun int, t systemState, f listing) (args, listing) {
 	funArgs := args{}
 	for i, o := range f {
-		// TODO // check if not an operator and is not a function // continue
-		// check if is a function // call parseFunction?
-		// insert to this current function
 		if len(o.Opd) == 0 {
 			continue
 		}
@@ -1004,6 +1000,7 @@ func processFunction(fun int, t systemState, f listing) (args, listing) {
 				continue
 			}
 		}
+		// TODO add Exported signals here?
 		f[i].Opd += sf(".%d", fun)
 		switch o.Op {
 		case "out", ">":

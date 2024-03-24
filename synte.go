@@ -862,6 +862,14 @@ const (
 )
 
 func (m *muteSlice) set(i int, v float64) {
+	if i >= len(display.Mute) {
+		infoIfLogging("out of bounds display.Mute access: %d, len=%d", i, len(display.Mute))
+		return
+	}
+	if i >= len(*m) {
+		infoIfLogging("out of bounds mutes access: %d, len=%d", i, len(*m))
+		return
+	}
 	display.Mute[i] = v == 0 // convert to bool
 	(*m)[i] = v
 }

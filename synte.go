@@ -99,7 +99,7 @@ const ( // operating system
 	TAPE_LENGTH   = 1 //seconds
 	MAX_WAVS      = 12
 	lenReserved   = 11
-	lenExports    = 12
+	maxExports    = 12
 	NOISE_FREQ    = 0.25
 	DEFAULT_FREQ  = 0.0625 // 3kHz @ 48kHz Sample rate
 	FDOUT         = 1e-4
@@ -566,7 +566,7 @@ func run(from io.Reader) {
 	go reloadListing() // poll '.temp/*.syt' modified time and reload if changed
 
 	// set-up state
-	reservedSignalNames := [lenReserved + lenExports]string{ // order is important
+	reservedSignalNames := [lenReserved + maxExports]string{ // order is important
 		"dac",
 		"", // nil signal for unused operand
 		"pitch",
@@ -579,7 +579,7 @@ func run(from io.Reader) {
 		"grid",
 		"sync",
 	}
-	for i := lenReserved; i < lenExports; i++ { // add 12 reserved signals for inter-list signals
+	for i := lenReserved; i < maxExports; i++ { // add 12 reserved signals for inter-list signals
 		reservedSignalNames[i] = sf("***%d", i+lenReserved) // placeholder
 	}
 	lenExported := 0
@@ -638,7 +638,7 @@ start:
 			}
 			_, inSg := t.signals[t.operand]
 			if !inSg && !reservedOrExported && !t.num.Is && !t.fIn && t.operator != "//" && isUppercaseInitial(t.operand) { // optional: && t.operator == "out"
-				if lenExported > lenExports {
+				if lenExported > maxExports {
 					msg("we've ran out of exported signals :(")
 					continue
 				}
@@ -785,6 +785,7 @@ func addIfFunction(t systemState) (systemState, int) {
 		return t, startNewOperation
 	}
 	t.funCount++
+	// TODO add Exported signals here?
 	t.newListing = append(t.newListing, function...)
 	return t, nextOperation
 }
@@ -811,7 +812,7 @@ func loadNewListing(listing []operation) []opSE {
 func collate(t *systemState) *data {
 	safe := t.newSignals
 	if t.newListing[0].Op == "deleted" {
-		safe = make([]float64, 11) // minimise deleted signals
+		safe = make([]float64, lenReserved + maxExports)
 	}
 	d := &data{
 		daisyChains: t.daisyChains,
@@ -2585,7 +2586,7 @@ func newSystemState(sc soundcard) (systemState, [][]float64, wavs) {
 	return t, wavs, wavSlice
 }
 
-func initialiseListing(t systemState, res [lenReserved + lenExports]string) systemState {
+func initialiseListing(t systemState, res [lenReserved + maxExports]string) systemState {
 	t.listingState = listingState{}
 	t.newSignals = make([]float64, len(res), 30) // capacity is nominal
 	t.out = make(map[string]struct{}, 30)        // to check for multiple outs to same signal name

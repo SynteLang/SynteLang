@@ -455,7 +455,7 @@ func main() {
 			return
 		}
 		defer log.Close()
-		_, err = log.WriteString(sf("-- Syntə info log %s --\n", time.Now()))
+		_, err = log.WriteString(sf("\n-- Syntə info log %s --\n", time.Now()))
 		if err != nil {
 			fmt.Println("unable to log: %s", err)
 			return
@@ -543,18 +543,20 @@ func run(from io.Reader) {
 				s := bufio.NewScanner(inputF)
 				s.Split(bufio.ScanWords)
 				if i == current {
+					infoIfLogging("deleting: %d", i)
 					tokens <- token{"deleted", -1, yes}
 					continue
 				}
 				if t.dispListings[i][0].Op == "deleted" {
+					infoIfLogging("skipping: %d", i)
 					continue
 				}
+				infoIfLogging("restart: %d", i)
 				for s.Scan() { // tokens could block here, theoretically
 					tokens <- token{s.Text(), -1, yes}
 				}
 				inputF.Close()
 			}
-			infoIfLogging("len(disp) %d", len(t.dispListings))
 			<-lockLoad
 			msg("%d: %slisting deleted, can edit and reload%s", current, italic, reset)
 			msg("%s>>> Sound Engine restarted%s", italic, reset)
@@ -833,6 +835,7 @@ func collate(t *systemState) *data {
 		m = 0 // to display as muted
 	}
 	if t.reload > -1 && t.reload < len(t.dispListings) {
+		infoIfLogging("reload: %d, len(disp): %d", t.reload, len(t.dispListings))
 		t.dispListings[t.reload] = t.dispListing
 		t.verbose[t.reload] = t.newListing
 		mutes.set(t.reload, m)
@@ -844,7 +847,7 @@ func collate(t *systemState) *data {
 		infoIfLogging("append mutes skipped: %d", len(t.dispListings)-1)
 		return d
 	}
-	infoIfLogging("reload: %d, len(disp): %d", t.reload, len(t.dispListings))
+	infoIfLogging("append: %d", len(t.dispListings)-1)
 	display.Mute = append(display.Mute, (m == 0))
 	mutes = append(mutes, m)
 	levels = append(levels, 1)
@@ -1210,6 +1213,9 @@ func infoDisplay() {
 	s := 1
 	display.Info = "clear"
 	for {
+		if writeLog {
+			display.Info = "Logging..."
+		}
 		if !saveJson(display, file) {
 			pf("%sinfo display not updated, check file %s%s%s exists%s\n",
 				italic, reset, file, italic, reset)
@@ -1221,7 +1227,7 @@ func infoDisplay() {
 			if writeLog {
 				_, err := log.WriteString(sf("%s\n", display.Info))
 				if err != nil {
-					info <- sf("logging error: %s", err)
+					fmt.Println("logging error: %s", err)
 				}
 			}
 		case carryOn <- yes: // semaphore: received, continue
@@ -1355,10 +1361,9 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			return // exit normally
 		default:
 			msg("oops - %s", err) // report error to infoDisplay
-			/*
-				var buf [4096]byte
-				n := runtime.Stack(buf[:], false)
-				msg("%s", buf[:n]) // print stack trace to infoDisplay*/
+			var buf [4096]byte
+			n := runtime.Stack(buf[:], false)
+			infoIfLogging("%s", buf[:n]) // print stack trace
 			//saveJson(t.listing, sf("debug/SEcoredump%dlisting.json", time.Now().UnixMilli()))
 			//saveJson(t.sigs, sf("debug/SEcoredump%dsigs.json", time.Now().UnixMilli()))
 			//time.Sleep(time.Second)

@@ -1,0 +1,5 @@
+in Body
+4lp
+mul -16db
+hpf 100hz
+.out Body

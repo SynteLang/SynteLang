@@ -1406,7 +1406,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		default:
 			// play
 		}
-		if p == 0 {
+		if p == 0 && d[0].m < 1e-4 { // -80dB
 			pause <- not // blocks until `: play`, bool is purely semantic
 			if exit {
 				break
@@ -2401,7 +2401,7 @@ func enactDelete(s systemState) (systemState, int) {
 		return s, startNewOperation // error reported by parseIndex
 	}
 	mutes.set(n, mute)  // wintermute
-	if display.Paused { // play resumed to enact deletion in sound engine
+	if display.Paused { // play resumed to enact mute
 		<-pause
 		display.Paused = not
 	}

@@ -345,10 +345,11 @@ const infoBuffer = 96
 
 // communication channels
 var (
-	stop     = make(chan int)  // confirm on close()
-	pause    = make(chan bool) // bool is purely semantic
+	stop     = make(chan struct{}) // confirm on close()
+	pause    = make(chan bool)     // bool is purely semantic
 	transmit = make(chan *data)
 	accepted = make(chan int)
+	report   = make(chan int)  // send current listing on panic
 
 	info    = make(chan string, infoBuffer) // arbitrary buffer length, 48000Hz = 960 x 50Hz
 	carryOn = make(chan bool)
@@ -523,12 +524,12 @@ func run(from io.Reader) {
 	go func() { // watchdog, anonymous to use variables in scope: dispListings, sc, twavs
 		// This function will restart the sound engine in the event of a panic
 		for {
-			current := <-stop // unblocks on sound engine restart or exit
-			if exit {         // don't restart if legitimate exit
+			current := <-report // unblocks on sound engine panic
+			<-stop
+			if exit { // don't restart if legitimate exit
 				return
 			}
-			<-stop // block until stop closed
-			stop = make(chan int)
+			stop = make(chan struct{})
 			go SoundEngine(sc, twavs)
 			lockLoad <- struct{}{}
 			emptyTokens()
@@ -545,10 +546,12 @@ func run(from io.Reader) {
 				if i == current {
 					infoIfLogging("deleting: %d", i)
 					tokens <- token{"deleted", -1, yes}
+					inputF.Close()
 					continue
 				}
 				if t.dispListings[i][0].Op == "deleted" {
 					infoIfLogging("skipping: %d", i)
+					inputF.Close()
 					continue
 				}
 				infoIfLogging("restart: %d", i)
@@ -558,7 +561,7 @@ func run(from io.Reader) {
 				inputF.Close()
 			}
 			<-lockLoad
-			msg("%d: %slisting deleted, can edit and reload%s", current, italic, reset)
+			msg("listing %d deleted, %scan edit and reload%s", current, italic, reset)
 			msg("%s>>> Sound Engine restarted%s", italic, reset)
 			time.Sleep(5 * time.Second) // hold-off
 		}
@@ -718,12 +721,12 @@ start:
 			display.Paused = not
 		}
 
+		lockLoad <- struct{}{}
 		if !started { // anull/truncate these in case sound engine restarted
 			t.dispListings = make([]listing, 0, 15)
 			t.verbose = make([]listing, 0, 15)
 			t.daisyChains = t.daisyChains[:4]
 		}
-		lockLoad <- struct{}{}
 		transmit <- collate(&t)
 		a := <-accepted
 		if a != len(t.dispListings) {
@@ -1375,11 +1378,9 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			infoIfLogging("%s", buf[:n]) // print stack trace
 			//saveJson(t.listing, sf("debug/SEcoredump%dlisting.json", time.Now().UnixMilli()))
 			//saveJson(t.sigs, sf("debug/SEcoredump%dsigs.json", time.Now().UnixMilli()))
-			//time.Sleep(time.Second)
-			//os.Exit(1)
 			env = 0
-			stop <- current
 			started = not
+			report <- current
 		}
 	}()
 
@@ -1389,6 +1390,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		lpf := stereoPair{}
 		for env > 0 || n%1024 != 0 { // finish on end of buffer
 			select {
+			case <-stop:
+				return
 			case s := <-samples:
 				lpf.stereoLpf(s, 0.7)
 			default:
@@ -1829,11 +1832,11 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			}
 			if d[i].sigs[0] != d[i].sigs[0] { // test for NaN
 				d[i].sigs[0] = 0
-				panic(sf("listing:%d - NaN", i))
+				panic(sf("listing: %d, %d - NaN", i, current))
 			}
 			if math.IsInf(d[i].sigs[0], 0) { // infinity to '93
 				d[i].sigs[0] = 0
-				panic(sf("listing:%d - overflow", i))
+				panic(sf("listing: %d, %d - ±Inf", i, current))
 			}
 			c += d[i].m // add mute to mix factor
 			out := d[i].sigs[0]

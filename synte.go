@@ -1299,7 +1299,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		lpf150Hz = lpf_coeff(150, sc.sampleRate)
 
 		hpf2s  = hpf_coeff(0.5, sc.sampleRate)
-		hpf20Hz = hpf_coeff(20, sc.sampleRate)
+		hpf40Hz = hpf_coeff(40, sc.sampleRate)
 
 		hiBandCoeff      = hpf_coeff(14481, sc.sampleRate) // x43
 		midBandCoeff     = hpf_coeff(320, sc.sampleRate) // x4
@@ -1841,7 +1841,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		g += (gain - g)*lpf2Hz
 		mid *= g
 		sides *= g
-		hpf = (hpf + mid - x) * hpf20Hz
+		hpf = (hpf + mid - x) * hpf40Hz
 		x = mid
 		mid = hpf
 		// pre-emphasis
@@ -1866,7 +1866,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		postLowBand = postLowBand + (mid-postLowBand)*postLowBandCoeff
 		postHiBand = postHiBand + (mid-postHiBand)*postHiBandCoeff
 		mid = 0.9*postLowBand + 0.045*postHiBand
-		mid *= 1.45
+		mid *= 1.3
 		if exit {
 			mid *= env // fade out
 			sides *= env

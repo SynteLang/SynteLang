@@ -1259,14 +1259,14 @@ type stereoPair struct {
 	right float64
 }
 
-func transfer(d []listingStack, t *data) ([]listingStack, []int) {
-	if t.reload < len(d) && t.reload > -1 { // for d reload
-		k := d[t.reload].keep
-		d[t.reload] = t.listingStack
-		d[t.reload].keep = k
-		return d, t.daisyChains
+func transfer(d []listingStack, tr *data) ([]listingStack, []int) {
+	if tr.reload < len(d) && tr.reload > -1 { // for d reload
+		k := d[tr.reload].keep
+		d[tr.reload] = tr.listingStack
+		d[tr.reload].keep = k
+		return d, tr.daisyChains
 	}
-	return append(d, t.listingStack), t.daisyChains
+	return append(d, tr.listingStack), tr.daisyChains
 }
 
 // The Sound Engine does the bare minimum to generate audio

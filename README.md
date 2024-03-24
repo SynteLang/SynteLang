@@ -564,7 +564,7 @@ You can find more examples in the `.saved` directory.
 |	clip	|		no		|		restrict input between symmetrical thresholds ±operand value. 0 is a special case resulting in thresholds of 0 and 1
 |	noise	|		no		|		result is a pseudo-random series of numbers in range ( [-1, 1] * input )
 |	pow		|		yes		|		result is operand raised to the power of input, for convenience the sign of both input and operand is ignored (always positive, |n|)
-|	base	|		yes		|		result is input raised to the power of operand
+|	base	|		yes		|		result is input raised to the power of operand. Sign of operand (±) is ignored
 |	\<sync	|		yes		|		receive sync pulse which zeros whatever is passed through. Operand adds phase offset on pulse
 |	\>sync	|		yes		|		send one sync pulse to all listings when input ≤ 0. Latches off until input > 0
 |	.>sync	|		yes		|		equivalent to >sync but will end listing and launch, like `out dac`

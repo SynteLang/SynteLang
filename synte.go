@@ -1503,12 +1503,12 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				case 13: // "base"
 					sg := d[i].sigs[d[i].listing[ii].N]
 					switch sg {
-					case math.E:
+					case math.E, -math.E:
 						r = math.Exp(r)
-					case 2:
+					case 2, -2:
 						r = math.Exp2(r)
 					default:
-						r = math.Pow(sg, r)
+						r = math.Pow(math.Abs(sg), r)
 					}
 				case 14: // "clip"
 					switch {

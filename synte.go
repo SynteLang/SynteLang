@@ -742,6 +742,7 @@ start:
 		if !saveJson(t.newListing, f) {
 			msg("%slisting not recorded, check 'recordings/' directory exists%s", italic, reset)
 		}
+		display.Verbose = not
 		if !saveJson(t.dispListings, "displaylisting.json") {
 			msg("%slisting display not updated, check file %s'displaylisting.json'%s exists%s",
 				italic, reset, italic, reset)

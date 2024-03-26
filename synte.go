@@ -267,6 +267,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"reu":    {not, 50, noCheck},        // reverse each half of complex spectrum
 	"halt":   {not, 51, noCheck},        // halt sound engine for time specified by input (experimental)
 	"4lp":    {not, 52, checkAlp},        // prototype all-pass filter, to allow 4 buffers in one listing for this specific purpose
+	"panic":  {not, 53, noCheck},        // prototype all-pass filter, to allow 4 buffers in one listing for this specific purpose
 
 	// specials. Not intended for sound engine, except 'deleted'
 	"]":       {not, 0, endFunctionDefine},   // end function input
@@ -452,17 +453,17 @@ func main() {
 		var err error
 		log, err = os.OpenFile("info.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			fmt.Println("unable to log: %s", err)
+			pf("unable to log: %s", err)
 			return
 		}
 		defer log.Close()
 		_, err = log.WriteString(sf("\n-- Syntə info log %s --\n", time.Now()))
 		if err != nil {
-			fmt.Println("unable to log: %s", err)
+			pf("unable to log: %s", err)
 			return
 		}
 		writeLog = true
-		fmt.Println("logging...")
+		p("logging...")
 	case "-prof", "-p":
 		f, rr := os.Create("cpu.prof")
 		if e(rr) {
@@ -535,30 +536,14 @@ func run(from io.Reader) {
 			emptyTokens()
 			tokens <- token{"_", -1, yes}              // hack to restart input
 			for i := 0; i < len(t.dispListings); i++ { // preload listings into tokens buffer
-				f := sf(".temp/%d.syt", i)
-				inputF, rr := os.Open(f)
+				if t.dispListings[i][0].Op == "deleted" {
+					continue
+				}
+				rr := reloadExcept(current, i)
 				if e(rr) {
 					msg("%v", rr)
 					break
 				}
-				s := bufio.NewScanner(inputF)
-				s.Split(bufio.ScanWords)
-				if i == current {
-					infoIfLogging("deleting: %d", i)
-					tokens <- token{"deleted", -1, yes}
-					inputF.Close()
-					continue
-				}
-				if t.dispListings[i][0].Op == "deleted" {
-					infoIfLogging("skipping: %d", i)
-					inputF.Close()
-					continue
-				}
-				infoIfLogging("restart: %d", i)
-				for s.Scan() { // tokens could block here, theoretically
-					tokens <- token{s.Text(), -1, yes}
-				}
-				inputF.Close()
 			}
 			<-lockLoad
 			msg("listing %d deleted, %scan edit and reload%s", current, italic, reset)
@@ -617,7 +602,7 @@ start:
 		for { // input loop
 			t.newOperation = newOperation{}
 			if !loadExternalFile {
-				pf("\t")
+				pf("\r\t")
 			}
 			var do int
 			t, loadExternalFile, do = parseNewOperation(t)
@@ -723,7 +708,7 @@ start:
 
 		lockLoad <- struct{}{}
 		if !started { // anull/truncate these in case sound engine restarted
-			t.dispListings = make([]listing, 0, 15)
+			t.dispListings = make([]listing, 0, 15) // arbitrary capacity
 			t.verbose = make([]listing, 0, 15)
 			t.daisyChains = t.daisyChains[:4]
 		}
@@ -760,6 +745,7 @@ start:
 func parseNewOperation(t systemState) (systemState, bool, int) {
 	ldExt, result := readTokenPair(&t)
 	if result != nextOperation {
+		t.do = 0
 		return t, ldExt, result
 	}
 	for t.do > 1 { // one done below
@@ -1236,7 +1222,7 @@ func infoDisplay() {
 			if writeLog {
 				_, err := log.WriteString(sf("%s\n", display.Info))
 				if err != nil {
-					fmt.Println("logging error: %s", err)
+					pf("logging error: %s", err)
 				}
 			}
 		case carryOn <- yes: // semaphore: received, continue
@@ -1385,9 +1371,9 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	 // anonymous to use var n in scope
 	go func(w *bufio.Writer, sc soundcard) {
 		lpf := stereoPair{}
-		for env > 0 || n%1024 != 0 { // finish on end of buffer
+		for env > 0 || n%1024 != 0 { // finish on end of buffer, should be determined in setupSouncard instead of this default
 			select {
-			case <-stop:
+			case <-stop: // if panic has occurred n will no longer be incrementing, so return here
 				return
 			case s := <-samples:
 				lpf.stereoLpf(s, 0.7)
@@ -1815,6 +1801,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					r *= 0.25
 					r = math.Max(-5, math.Min(5, r)) // to mitigate possible instability
 					// 4.7, 5.4, 9.1, 1.27 // alternative delays
+				case 53: // "panic"
+					panic("test")
 				default:
 					// nop, r = r
 				}

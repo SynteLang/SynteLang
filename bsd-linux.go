@@ -502,6 +502,26 @@ func reloadListing() {
 	}
 }
 
+func reloadExcept(current, i int) error {
+	f, rr := os.Open(sf(".temp/%d.syt", i))
+	if e(rr) {
+		return rr
+	}
+	defer f.Close()
+	s := bufio.NewScanner(f)
+	s.Split(bufio.ScanWords)
+	if i == current {
+		infoIfLogging("deleting: %d", i)
+		tokens <- token{"deleted", -1, yes}
+		return nil
+	}
+	infoIfLogging("restart: %d", i)
+	for s.Scan() { // tokens could block here, theoretically
+		tokens <- token{s.Text(), -1, yes}
+	}
+	return nil
+}
+
 // rootsync can be used to synchronise two instances of Syntə, may be deprecated in future
 func rootSync() bool {
 	f := "../infodisplay.json"

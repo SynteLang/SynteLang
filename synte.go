@@ -302,6 +302,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"m+":      {yes, 0, enactMute},           // add to mute group
 	"gain":    {yes, 0, adjustGain},          // set overall mono gain before limiter
 	"record":  {yes, 0, recordWav},           // commence recording of wav file
+	"wait":    {yes, 0, enactWait},           // for testing scripts, rounded to Milliseconds
 }
 
 type syncState int
@@ -2536,6 +2537,14 @@ func checkAlp(s systemState) (systemState, int) {
 		}
 	}
 	return s, nextOperation
+}
+
+func enactWait(s systemState) (systemState, int) {
+	if t, ok := parseType(s.operand, s.operator); ok { // permissive, no bounds check
+		pf("%swaiting...%s\n\t", italic, reset)
+		time.Sleep(time.Second * 1e3 / time.Duration(t * s.sampleRate * 1e3))
+	}
+	return s, startNewOperation
 }
 
 func isUppercaseInitial(operand string) bool {

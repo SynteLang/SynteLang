@@ -1,0 +1,23 @@
+/b 2,0
+out vca2
+/euc 5,32
+lt 0.5
+[ sn
+dirac
+push
+down @
+out vca
+pop
+down 5ms
+mul 12khz
++ 200hz
+sino
+mul vca
+out s
+mul 1.5
+noise
++ s
+]
+sn 180ms
+mul vca2
+mix

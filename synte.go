@@ -1810,14 +1810,13 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			if d[i].sigs[0] == 0 {
 				continue
 			}
-			if d[i].sigs[0] != d[i].sigs[0] { // test for NaN
-				d[i].sigs[0] = 0
-				panic(sf("listing: %d, %d - NaN", i, current))
-			}
 			if math.IsInf(d[i].sigs[0], 0) { // infinity to '93
 				d[i].sigs[0] = 0
 				panic(sf("listing: %d, %d - ±Inf", i, current))
 			}
+			if d[i].sigs[0] != d[i].sigs[0] { // test for NaN
+				d[i].sigs[0] = 0
+				panic(sf("listing: %d, %d - NaN", i, current))
 			}
 			c += d[i].m // add mute to mix factor
 			out := d[i].sigs[0]

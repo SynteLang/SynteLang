@@ -205,11 +205,8 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"+":      {yes, 1, noCheck},       // add
 	"out":    {yes, 2, checkOut},      // send to named signal
 	".out":   {yes, 2, checkOut},      // alias of out
-	">":      {yes, 2, checkOut},      // alias of out
 	"out+":   {yes, 3, checkOut},      // add to named signal
-	">+":     {yes, 3, checkOut},      // alias of out+
 	"in":     {yes, 4, noCheck},       // input numerical value or receive from named signal
-	"<":      {yes, 4, noCheck},       // alias of in
 	"sine":   {not, 5, noCheck},       // shape linear input to sine
 	"mod":    {yes, 6, noCheck},       // output = input MOD operand
 	"gt":     {yes, 7, noCheck},       // greater than
@@ -225,8 +222,6 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"noise":  {not, 15, setNoiseFreq}, // white noise source
 	"push":   {not, 16, noCheck},      // push to listing stack
 	"pop":    {not, 17, checkPushPop}, // pop from listing stack
-	"(":      {not, 16, noCheck},      // alias of push
-	")":      {not, 17, noCheck},      // alias of pop
 	"buff":   {yes, 18, buffUnique},   // listing buff loop
 	"--":     {yes, 19, noCheck},      // subtract from operand
 	"tap":    {yes, 20, noCheck},      // tap from loop
@@ -298,7 +293,6 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"do":      {yes, 0, doLoop},              // repeat next operation [operand] times
 	"d":       {yes, 0, enactDelete},         // alias of del
 	"deleted": {not, 0, noCheck},             // for internal use
-	"/*":      {yes, 0, noCheck},             // non-breaking comments, nop
 	"m+":      {yes, 0, enactMute},           // add to mute group
 	"gain":    {yes, 0, adjustGain},          // set overall mono gain before limiter
 	"record":  {yes, 0, recordWav},           // commence recording of wav file

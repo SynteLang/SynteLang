@@ -135,6 +135,7 @@ type operation struct {
 	Opd string // operand
 	N   int    `json:"-"` // signal number
 	Opn int    `json:"-"` // operation switch index
+	P	bool   `json:"-"` // persist = true
 }
 type listing []operation
 
@@ -309,6 +310,8 @@ type data struct {
 type opSE struct {
 	N   uint16 // signal number
 	Opn uint8  // operation switch index
+	P   bool
+	Opd string
 }
 
 type listingStack struct {
@@ -318,10 +321,6 @@ type listingStack struct {
 	stack   []float64
 	syncSt8 syncState
 	m       float64
-	keep
-}
-
-type keep struct {
 	buff []float64
 	alp  [alpLen]float64
 	alp1 [alpLen]float64
@@ -364,6 +363,7 @@ var (
 	release = math.Pow(8000, -1.0/(.5*SAMPLE_RATE)) // 500ms
 	gain    = baseGain
 	clipThr = 1.0 // individual listing limiter threshold
+	rst   bool
 )
 
 type noise uint64
@@ -677,6 +677,13 @@ start:
 				t.signals[o.Opd] = 0.5
 			default:
 				t.signals[o.Opd] = 0
+		if t.reload > -1 && t.reload < len(t.verbose) {
+			for l, o := range t.newListing {
+				for _, v := range t.verbose[t.reload] {
+					if o.Opd == v.Opd {
+						t.newListing[l].P = yes // persist signal
+					}
+				}
 			}
 		}
 
@@ -791,6 +798,8 @@ func loadNewListing(listing []operation) []opSE {
 		l[i] = opSE{
 			N:   uint16(o.N),
 			Opn: uint8(o.Opn),
+			P:   o.P,
+			Opd: o.Opd,
 		}
 	}
 	return l
@@ -806,12 +815,10 @@ func collate(t *systemState) *data {
 		listingStack: listingStack{
 			reload:  t.reload,
 			listing: loadNewListing(t.newListing),
+			lv:       1,
+			peakfreq: 800 / t.sampleRate,
+			buff:     make([]float64, t.tapeLen),
 			sigs:    safe,
-			keep: keep{
-				lv:       1,
-				peakfreq: 800 / t.sampleRate,
-				buff:     make([]float64, t.tapeLen),
-			},
 		},
 	}
 	m := 1.0
@@ -1258,9 +1265,26 @@ type stereoPair struct {
 
 func transfer(d []listingStack, tr *data) ([]listingStack, []int) {
 	if tr.reload < len(d) && tr.reload > -1 { // for d reload
-		k := d[tr.reload].keep
-		d[tr.reload] = tr.listingStack
-		d[tr.reload].keep = k
+		coreDump(d[tr.reload], "reloaded_listing_old")
+		sg := d[tr.reload].sigs
+		prev := d[tr.reload].listing
+		d[tr.reload].listing = tr.listing
+		d[tr.reload].sigs = tr.sigs
+		if rst {
+			return d, tr.daisyChains
+		}
+		for _, o := range tr.listing {
+			if !o.P || o.Opd == "" {
+				continue
+			}
+			for _, oo := range prev {
+				if o.Opd == oo.Opd {
+					d[tr.reload].sigs[o.N] = sg[oo.N]
+					break
+				}
+			}
+		}
+		coreDump(d[tr.reload], "reloaded_listing_new")
 		return d, tr.daisyChains
 	}
 	return append(d, tr.listingStack), tr.daisyChains
@@ -2390,6 +2414,9 @@ func modeSet(s systemState) (systemState, int) {
 	case "rs": // root sync, is this needed any more?
 		rs = yes
 		msg("%snext launch will sync to root instance%s", italic, reset)
+	case "reset":
+		rst = !rst
+		msg("reset: %t", rst)
 	default:
 		msg("%sunrecognised mode: %s%s", italic, reset, s.operand)
 	}

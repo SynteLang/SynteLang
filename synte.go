@@ -1355,8 +1355,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			var buf [4096]byte
 			n := runtime.Stack(buf[:], false)
 			infoIfLogging("%s", buf[:n]) // print stack trace
-			//saveJson(t.listing, sf("debug/SEcoredump%dlisting.json", time.Now().UnixMilli()))
-			//saveJson(t.sigs, sf("debug/SEcoredump%dsigs.json", time.Now().UnixMilli()))
+			coreDump(d[current], "panicked_listing")
 			env = 0
 			started = not
 			report <- current
@@ -1818,6 +1817,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			if math.IsInf(d[i].sigs[0], 0) { // infinity to '93
 				d[i].sigs[0] = 0
 				panic(sf("listing: %d, %d - ±Inf", i, current))
+			}
 			}
 			c += d[i].m // add mute to mix factor
 			out := d[i].sigs[0]
@@ -2631,4 +2631,60 @@ func initialiseListing(t systemState, res [lenReserved + maxExports]string) syst
 	}
 	t.tapeLen = TAPE_LENGTH * int(t.sampleRate)
 	return t
+}
+
+const debugFormat = `
+reload: %d
+list: %s
+stack: %v
+syncSt8: %v
+m: %f
+sigs: %s
+level: %f
+pan: %f
+peakfreq: %f
+lim %f
+`
+func coreDump(d listingStack, name string) {
+	if !writeLog && name != "panicked_listing" {
+		return
+	}
+	sg := ""
+	for i, f := range d.sigs {
+		sg += sf("%d: %f   ", i, f)
+	}
+	b := sf(debugFormat,
+		d.reload,
+		d.listing,
+		d.stack,
+		d.syncSt8,
+		d.m,
+		sg,
+		d.lv,
+		d.pan,
+		d.peakfreq,
+		d.lim,
+	)
+	if !save([]byte(b), sf("debug/%s_%s.txt", time.Now(), name)) {
+		f := sf(".%s_%s.txt", time.Now(), name)
+		if save([]byte(b), f) {
+			msg("debug info saved as: %q", f)
+		}
+	}
+}
+
+func (o opSE) String() string {
+	for operator, op := range operators {
+		if int(o.Opn) == op.N {
+			p := "."
+			if o.P {
+				p = "P"
+			}
+			if o.Opn == 0 {
+				operator = "// or deleted"
+			}
+			return sf("%s %s_%d %s, ", operator, o.Opd, o.N, p)
+		}
+	}
+	return sf("%d %d, ", o.Opn, o.N)
 }

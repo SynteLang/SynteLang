@@ -2094,6 +2094,8 @@ func checkOut(s systemState) (systemState, int) {
 	}
 	if !isUppercaseInitial(s.operand) {
 		s.out[s.operand] = assigned
+	} else if s.operator == "out+" {
+		msg("remember to reset %s with `in 0` once in the cycle", s.operand)
 	}
 	return s, nextOperation
 }

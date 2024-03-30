@@ -1624,9 +1624,9 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					r -= d[i].sigs[d[i].listing[ii].N]
 				case 34: // "setmix"
 					a := math.Abs(d[i].sigs[d[i].listing[ii].N])
+					a = math.Max(20/sc.sampleRate, a) // minimum 20Hz
 					delta := a - d[i].peakfreq
 					d[i].peakfreq += delta * α * (math.Abs(delta) * a / d[i].peakfreq)
-					d[i].peakfreq = math.Max(0, d[i].peakfreq)
 					r *= math.Min(1, math.Sqrt(100/(d[i].peakfreq*sc.sampleRate+20)))
 				case 35: // "print"
 					pd++ // unnecessary?

@@ -540,6 +540,7 @@ func run(from io.Reader) {
 					break
 				}
 			}
+			t.do = 0
 			<-lockLoad
 			msg("listing %d deleted, %scan edit and reload%s", current, italic, reset)
 			msg("%s>>> Sound Engine restarted%s", italic, reset)

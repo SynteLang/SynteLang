@@ -779,18 +779,18 @@ func addIfFunction(t systemState) (systemState, int) {
 
 func loadNewListing(listing []operation) []opSE {
 	l := make([]opSE, len(listing))
-	for i := range listing {
-		if listing[i].N > math.MaxUint16 { // paranoid checks
+	for i, o := range listing {
+		if o.N > math.MaxUint16 { // paranoid checks
 			msg("too many signals, didn't load to Sound Engine")
 			return []opSE{{Opn: 0}}
 		}
-		if listing[i].Opn > math.MaxUint8 {
+		if o.Opn > math.MaxUint8 {
 			msg("listing too long, didn't load to Sound Engine")
 			return []opSE{{Opn: 0}}
 		}
 		l[i] = opSE{
-			N:   uint16(listing[i].N),
-			Opn: uint8(listing[i].Opn),
+			N:   uint16(o.N),
+			Opn: uint8(o.Opn),
 		}
 	}
 	return l

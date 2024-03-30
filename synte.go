@@ -262,7 +262,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"reu":    {not, 50, noCheck},        // reverse each half of complex spectrum
 	"halt":   {not, 51, noCheck},        // halt sound engine for time specified by input (experimental)
 	"4lp":    {not, 52, checkAlp},        // prototype all-pass filter, to allow 4 buffers in one listing for this specific purpose
-	"panic":  {not, 53, noCheck},        // prototype all-pass filter, to allow 4 buffers in one listing for this specific purpose
+	"panic":  {not, 53, noCheck},        // artificially induce a SE panic, for testing
 
 	// specials. Not intended for sound engine, except 'deleted'
 	"]":       {not, 0, endFunctionDefine},   // end function input

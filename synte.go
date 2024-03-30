@@ -1419,6 +1419,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		my = my + (mo.Y-my)*lpf15Hz
 
 		//for i, l := range d { // this is incredibly slow
+	listings:
 		for i := 0; i < len(d); i++ { // much faster
 			current = i
 			//for _, ii := range daisyChains {
@@ -1440,8 +1441,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			for ii := 0; ii < ll; ii++ {
 				//o := d[i].listing[ii]
 				switch d[i].listing[ii].Opn {
-				case 0:
-					// nop
+				case 0: // "deleted", "//"
+					continue listings
 				case 1: // "+"
 					r += d[i].sigs[d[i].listing[ii].N]
 				case 2: // "out"
@@ -1799,7 +1800,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				case 53: // "panic"
 					panic("test")
 				default:
-					// nop, r = r
+					continue listings
 				}
 				//op++
 			}

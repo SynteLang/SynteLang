@@ -1,0 +1,10 @@
+in 155/1bpm
+osc
+gt 0.5
+mul 1.5
++ 1
+out z
+in 155bpm
+/ 8
+osc
+.out sync

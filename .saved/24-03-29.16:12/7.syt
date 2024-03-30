@@ -1,0 +1,9 @@
+receive
+hpf 100hz
++ c
+tape 155/1.5bpm
+4lp
+lpf 3khz
+mul 0.4
+out c
+out dac

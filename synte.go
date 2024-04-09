@@ -162,7 +162,7 @@ type newOperation struct {
 
 type listingState struct {
 	createListing
-	out map[string]struct{}
+	out map[string]struct{} // to check for multiple outs to same signal name
 	clr clear
 	newOperation
 	fIn bool // yes = inside function definition
@@ -209,7 +209,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"out":    {yes, 2, checkOut},      // send to named signal
 	".out":   {yes, 2, checkOut},      // alias of out
 	"out+":   {yes, 3, checkOut},      // add to named signal
-	"in":     {yes, 4, noCheck},       // input numerical value or receive from named signal
+	"in":     {yes, 4, checkIn},       // input numerical value or receive from named signal
 	"sine":   {not, 5, noCheck},       // shape linear input to sine
 	"mod":    {yes, 6, noCheck},       // output = input MOD operand
 	"gt":     {yes, 7, noCheck},       // greater than
@@ -981,14 +981,10 @@ func processFunction(fun int, t systemState, f listing) (args, listing) {
 		if len(o.Opd) == 0 {
 			continue
 		}
-		switch o.Opd {
-		case "dac", "tempo", "pitch", "grid", "sync":
+		if _, in := t.signals[o.Opd]; in || isUppercaseInitialOrDefaultExported(o.Opd) {
 			continue
 		}
 		funArgs = countFuncArgs(o.Opd, funArgs)
-		if _, in := t.signals[o.Opd]; in || isUppercaseInitial(o.Opd) {
-			continue
-		}
 		switch o.Opd[:1] {
 		case "^", "@":
 			continue
@@ -1002,7 +998,7 @@ func processFunction(fun int, t systemState, f listing) (args, listing) {
 		// TODO add Exported signals here?
 		f[i].Opd += sf(".%d", fun)
 		switch o.Op {
-		case "out", ">":
+		case "out":
 			t.out[f[i].Opd] = assigned // implicitly de-referenced
 		}
 	}
@@ -2110,20 +2106,52 @@ func noCheck(s systemState) (systemState, int) {
 }
 
 func checkOut(s systemState) (systemState, int) {
-	_, in := s.out[s.operand]
+	_, alreadyOut := s.out[s.operand]
 	switch {
 	case s.num.Is:
 		return s, s.clr("%soutput to number not permitted%s", italic, reset)
-	case in && s.operand[:1] != "^" && s.operand != "dac" && s.operator != "out+" && s.operator != ">+":
-		return s, s.clr("%s: %sduplicate output to signal, c'est interdit%s", s.operand, italic, reset)
 	case s.operand[:1] == "@":
 		return s, s.clr("%scan't send to @, represents function operand%s", italic, reset)
+	case isUppercaseInitialOrDefaultExported(s.operand):
+		if _, exp := s.exportedSignals[s.operand]; !exp && s.operator ==  "out+" {
+			msg("remember to reset %s with `in 0` once in the cycle", s.operand)
+		}
+		return s, nextOperation
+	case s.operator == "out+":
+		priorOut := not
+		for _, o := range s.newListing {
+			if o.Op == "out" && o.Opd == s.operand {
+				priorOut = yes
+			}
+		}
+		if !priorOut {
+			msg("%sfirst instance changed to%s out", italic, reset)
+			s.operator = "out"
+		}
+	case alreadyOut:
+		return s, s.clr("%s: %sduplicate output to signal, c'est interdit%s", s.operand, italic, reset)
 	}
-	if !isUppercaseInitial(s.operand) {
+	if s.operator == "out" && s.operand[:1] != "^" {
+		// not in switch because s.operator may be changed above
 		s.out[s.operand] = assigned
-	} else if s.operator == "out+" {
-		msg("remember to reset %s with `in 0` once in the cycle", s.operand)
 	}
+	return s, nextOperation
+}
+
+func checkIn(s systemState) (systemState, int) {
+	if s.num.Is || isUppercaseInitialOrDefaultExported(s.operand) {
+		return s, nextOperation
+	}
+	priorOut := not
+	for _, o := range s.newListing {
+		if o.Op == "out" && o.Opd == s.operand {
+			priorOut = yes
+		}
+	}
+	if priorOut {
+		return s, nextOperation
+	}
+	msg("%sno prior out for%s %s", italic, reset, s.operand)
 	return s, nextOperation
 }
 
@@ -2569,18 +2597,29 @@ func enactWait(s systemState) (systemState, int) {
 	return s, startNewOperation
 }
 
+func isUppercaseInitialOrDefaultExported(operand string) bool {
+	switch operand {
+	case "dac", "tempo", "pitch", "grid", "sync":
+		return yes
+	}
+	return isUppercaseInitial(operand)
+}
+
 func isUppercaseInitial(operand string) bool {
-	switch len(operand) {
-	case 0:
+	if operand == "" {
 		return not
-	case 1:
+	}
+	switch {
+	case len(operand) == 1:
 		return unicode.IsUpper([]rune(operand)[0])
+	case operand[:1] == "'" || operand[:1] == "^" || operand[:1] == "\"":
+		return unicode.IsUpper([]rune(operand)[1])
+	case len(operand) == 2:
+		return unicode.IsUpper([]rune(operand)[0])
+	case (operand[1:2] == "'" || operand[1:2] == "\"") && operand[:1] == "^":
+		return unicode.IsUpper([]rune(operand)[2])
 	}
-	r := 0
-	if operand[:1] == "'" || operand[:1] == "^" {
-		r = 1
-	}
-	return unicode.IsUpper([]rune(operand)[r])
+	return unicode.IsUpper([]rune(operand)[0])
 }
 
 func newSystemState(sc soundcard) (systemState, [][]float64, wavs) {
@@ -2624,16 +2663,6 @@ func initialiseListing(t systemState, res [lenReserved + maxExports]string) syst
 	t.listingState = listingState{}
 	t.newSignals = make([]float64, len(res), 30) // capacity is nominal
 	t.out = make(map[string]struct{}, 30)        // to check for multiple outs to same signal name
-	for _, v := range res {
-		switch v {
-		case "tempo", "pitch", "grid", "sync":
-			continue
-		}
-		if isUppercaseInitial(v) {
-			continue
-		}
-		t.out[v] = assigned
-	}
 	t.reload = -1 // index to be launched to
 	// signals map with predefined constants, mutable
 	t.signals = map[string]float64{ // reset and add predefined signals

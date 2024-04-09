@@ -52,7 +52,6 @@ func TestChecks(t *testing.T) {
 		case "checkOut":
 			tst.i.out = map[string]struct{}{
 				"extant": {},
-				"^freq":  {},
 			}
 			tst.i.clr = func(s string, i ...interface{}) int {
 				// eliding info message

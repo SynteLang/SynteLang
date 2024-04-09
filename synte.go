@@ -310,8 +310,8 @@ type data struct {
 }
 
 type opSE struct {
-	N   uint16 // signal number
-	Opn uint8  // operation switch index
+	N   int // signal number
+	Opn int // operation switch index
 	P   bool
 	i   int // index of persisted signal
 	Opd string
@@ -793,17 +793,9 @@ func addIfFunction(t systemState) (systemState, int) {
 func loadNewListing(listing []operation) []opSE {
 	l := make([]opSE, len(listing))
 	for i, o := range listing {
-		if o.N > math.MaxUint16 { // paranoid checks
-			msg("too many signals, didn't load to Sound Engine")
-			return []opSE{{Opn: 0}}
-		}
-		if o.Opn > math.MaxUint8 {
-			msg("listing too long, didn't load to Sound Engine")
-			return []opSE{{Opn: 0}}
-		}
 		l[i] = opSE{
-			N:   uint16(o.N),
-			Opn: uint8(o.Opn),
+			N:   o.N,
+			Opn: o.Opn,
 			P:   o.P,
 			Opd: o.Opd,
 			i:   o.i,

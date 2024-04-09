@@ -2713,6 +2713,10 @@ func coreDump(d listingStack, name string) {
 		d.peakfreq,
 		d.lim,
 	)
+	if writeLog {
+		msg(b)
+		return
+	}
 	if !save([]byte(b), sf("debug/%s_%s.txt", time.Now(), name)) {
 		f := sf(".%s_%s.txt", time.Now(), name)
 		if save([]byte(b), f) {

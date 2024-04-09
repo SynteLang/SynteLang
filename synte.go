@@ -135,6 +135,9 @@ type operation struct {
 	N   int    `json:"-"` // signal number
 	Opn int    `json:"-"` // operation switch index
 	P	bool   `json:"-"` // persist = true
+	i   int // index of persisted signal
+	num	bool
+	ber	float64
 }
 type listing []operation
 
@@ -310,6 +313,7 @@ type opSE struct {
 	N   uint16 // signal number
 	Opn uint8  // operation switch index
 	P   bool
+	i   int // index of persisted signal
 	Opd string
 }
 
@@ -634,10 +638,11 @@ start:
 				msg("%s%s added to exported signals%s", t.operand, italic, reset)
 			}
 			// add to listing
-			t.dispListing = append(t.dispListing, operation{Op: t.operator, Opd: t.operand})
 			usage[t.operator] += 1
-			if !t.isFunction {
-				t.newListing = append(t.newListing, operation{Op: t.operator, Opd: t.operand})
+			o := operation{Op: t.operator, Opd: t.operand, num: t.num.Is, ber: t.num.Ber}
+			t.dispListing = append(t.dispListing, o)
+			if !t.isFunction { // contents of function have been added already
+				t.newListing = append(t.newListing, o)
 			}
 			if t.fIn {
 				continue
@@ -679,9 +684,11 @@ start:
 		if t.reload > -1 && t.reload < len(t.verbose) {
 			for l, o := range t.newListing {
 				for _, v := range t.verbose[t.reload] {
-					if o.Opd == v.Opd {
-						t.newListing[l].P = yes // persist signal
+					if o.num || o.Opd != v.Opd || o.Opd == "" {
+						continue
 					}
+					t.newListing[l].P = yes // persist signal
+					t.newListing[l].i = v.N
 				}
 			}
 		}
@@ -799,6 +806,7 @@ func loadNewListing(listing []operation) []opSE {
 			Opn: uint8(o.Opn),
 			P:   o.P,
 			Opd: o.Opd,
+			i:   o.i,
 		}
 	}
 	return l
@@ -958,6 +966,9 @@ func parseFunction(t systemState) (listing, bool) {
 			o.Opd = t.operands[1]
 		case "@2":
 			o.Opd = t.operands[2]
+		}
+		if strings.ContainsAny(o.Opd[:1], "+-.0123456789") {
+			o.ber, o.num = parseType(o.Opd, o.Op)
 		}
 		function[i] = o
 	}
@@ -1266,21 +1277,14 @@ func transfer(d []listingStack, tr *data) ([]listingStack, []int) {
 	if tr.reload < len(d) && tr.reload > -1 { // for d reload
 		coreDump(d[tr.reload], "reloaded_listing_old")
 		sg := d[tr.reload].sigs
-		prev := d[tr.reload].listing
 		d[tr.reload].listing = tr.listing
 		d[tr.reload].sigs = tr.sigs
 		if rst {
 			return d, tr.daisyChains
 		}
 		for _, o := range tr.listing {
-			if !o.P || o.Opd == "" {
-				continue
-			}
-			for _, oo := range prev {
-				if o.Opd == oo.Opd {
-					d[tr.reload].sigs[o.N] = sg[oo.N]
-					break
-				}
+			if o.P {
+				d[tr.reload].sigs[o.N] = sg[o.i]
 			}
 		}
 		coreDump(d[tr.reload], "reloaded_listing_new")

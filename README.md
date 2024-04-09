@@ -562,7 +562,7 @@ You can find more examples in the `.saved` directory.
 |	abs		|		no		|		absolute value, all inputs become positive (removes negative sign)
 |	tanh	|		no		|		hyperbolic tangent, useful for 'soft clipping'
 |	clip	|		no		|		restrict input between symmetrical thresholds ±operand value. 0 is a special case resulting in thresholds of 0 and 1
-|	noise	|		no		|		result is a pseudo-random series of numbers in range ( [-1, 1] * input )
+|	nois	|		no		|		result is a pseudo-random series of numbers in range ( [-1, 1] * input )
 |	pow		|		yes		|		result is operand raised to the power of input, for convenience the sign of both input and operand is ignored (always positive, |n|)
 |	base	|		yes		|		result is input raised to the power of operand. Sign of operand (±) is ignored
 |	\<sync	|		yes		|		receive sync pulse which zeros whatever is passed through. Operand adds phase offset on pulse
@@ -692,6 +692,7 @@ You can find more examples in the `.saved` directory.
 |	/b		|		2		|		creates a rising ramp in sync with a ramp sent to `sync` signal
 |	def		|		2		|		sends tempo and sync to other listings, first argument is tempo, second is number of beats which the sync wave spans. Launches listing
 |	def_	|		2		|		like `def` but can be followed by other operators (doesn't launch)
+|	noise	|		no		|		output 'white' noise, input controls volume
 |           |               |
 
 **List of pre-defined constants**	

@@ -24,6 +24,31 @@
 			}
 		]
 	},
+	"noise": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "0.25"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "nois",
+				"Opd": ""
+			}
+		]
+	},
 	".mlfr": {
 		"Comment": "",
 		"Body": [
@@ -897,7 +922,7 @@
 				"Opd": ""
 			},
 			{
-				"Op": "noise",
+				"Op": "nois",
 				"Opd": ""
 			},
 			{
@@ -925,7 +950,7 @@
 				"Opd": ""
 			},
 			{
-				"Op": "noise",
+				"Op": "nois",
 				"Opd": ""
 			},
 			{
@@ -953,7 +978,7 @@
 				"Opd": ""
 			},
 			{
-				"Op": "noise",
+				"Op": "nois",
 				"Opd": ""
 			},
 			{
@@ -3447,7 +3472,7 @@
 				"Opd": ""
 			},
 			{
-				"Op": "noise",
+				"Op": "nois",
 				"Opd": ""
 			},
 			{
@@ -4088,7 +4113,7 @@
 				"Opd": ""
 			},
 			{
-				"Op": "noise",
+				"Op": "nois",
 				"Opd": ""
 			},
 			{
@@ -4591,7 +4616,7 @@
 				"Opd": ""
 			},
 			{
-				"Op": "noise",
+				"Op": "nois",
 				"Opd": ""
 			},
 			{
@@ -5724,7 +5749,7 @@
 				"Opd": ""
 			},
 			{
-				"Op": "noise",
+				"Op": "nois",
 				"Opd": ""
 			},
 			{

@@ -100,7 +100,6 @@ const ( // operating system
 	MAX_WAVS      = 12
 	lenReserved   = 11
 	maxExports    = 12
-	NOISE_FREQ    = 0.25
 	DEFAULT_FREQ  = 0.0625 // 3kHz @ 48kHz Sample rate
 	FDOUT         = 1e-4
 	MIN_FADE      = 125e-3 // 125ms
@@ -220,7 +219,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"pow":    {yes, 12, noCheck},      // power
 	"base":   {yes, 13, noCheck},      // operand to the power of input
 	"clip":   {yes, 14, noCheck},      // clip input
-	"noise":  {not, 15, setNoiseFreq}, // white noise source
+	"nois":   {not, 15, noCheck},      // white noise source
 	"push":   {not, 16, noCheck},      // push to listing stack
 	"pop":    {not, 17, checkPushPop}, // pop from listing stack
 	"buff":   {yes, 18, buffUnique},   // listing buff loop
@@ -1522,7 +1521,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					case d[i].sigs[d[i].listing[ii].N] < 0:
 						r = math.Min(-d[i].sigs[d[i].listing[ii].N], math.Max(d[i].sigs[d[i].listing[ii].N], r))
 					}
-				case 15: // "noise"
+				case 15: // "nois"
 					r *= no.ise() // roll a fresh one
 					//if r > 0.9999 { panic("test") } // for testing
 				case 16: // "push"
@@ -2288,11 +2287,6 @@ func enactSolo(s systemState) (systemState, int) {
 		tokens <- token{"mix", -1, not}
 	}
 	return s, startNewOperation
-}
-
-func setNoiseFreq(s systemState) (systemState, int) {
-	s.newListing = append(s.newListing, listing{{Op: "push"}, {Op: "in", Opd: sf("%v", NOISE_FREQ)}, {Op: "out", Opd: "^freq"}, {Op: "pop"}}...)
-	return s, nextOperation
 }
 
 func beginFunctionDefine(s systemState) (systemState, int) {

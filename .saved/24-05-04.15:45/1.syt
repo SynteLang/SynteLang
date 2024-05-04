@@ -1,0 +1,10 @@
+in pitch
+mod 1
+8bit 12
+base 2
+mul 110hz
+sino
+mul Vca
+lpf 220hz
+lpf 220hz
+mix

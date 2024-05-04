@@ -1,0 +1,17 @@
+in 7s
+osc
+tri
+mul 0.2
+base 2
+mul 44hz
+out p
+mul 0.99
+saw
+out m
+in p
+saw
+sum m
+lpf 44hz
+lpf 44hz
+mul 7
+mix

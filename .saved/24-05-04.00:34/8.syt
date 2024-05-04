@@ -1,0 +1,22 @@
+/euc 3*4,8*4
+dirac
+down 120ms
+smooth
+smooth
+out vca
+/b 1,0
+base 2
+mod 0.25
+s/h grid
+8bit 5
++ 0.8
+8bit 12
+base 2
+mul 440hz
+sqr
+hpf 4khz
+lpf 4khz
+mul vca
+pad
+pad
+mix

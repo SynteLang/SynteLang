@@ -1520,6 +1520,9 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					//if r > 0.9999 { panic("test") } // for testing
 				case 16: // "push"
 					d[i].stack = append(d[i].stack, r)
+					if len(d[i].stack) > 100 { // arbitrary limit
+						panic("stack_overflow")
+					}
 				case 17: // "pop"
 					r = d[i].stack[len(d[i].stack)-1]
 					d[i].stack = d[i].stack[:len(d[i].stack)-1]

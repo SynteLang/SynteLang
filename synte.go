@@ -1837,8 +1837,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				panic(sf("listing: %d, %d - NaN", i, current))
 			}
 			c += d[i].m // add mute to mix factor
+			d[i].sigs[0] *= d[i].m * d[i].lv
 			out := d[i].sigs[0]
-			out *= d[i].m * d[i].lv // sigs[0] left intact for `from` operator
 			d[i].limPre = ( d[i].limPre + out - d[i].limPreX ) * hpf5120Hz
 			d[i].limPreX = out
 			det := math.Abs(20 * d[i].limPre + 0.92 * out)

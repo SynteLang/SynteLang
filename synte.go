@@ -108,7 +108,7 @@ const ( // operating system
 	MAX_RELEASE   = 50    // 50s
 	twoInvMaxUint = 2.0 / math.MaxUint64
 	alpLen        = 2400
-	baseGain      = 0.25
+	baseGain      = 1.0
 )
 
 var SampleRate float64 = SAMPLE_RATE // should be 'de-globalised'
@@ -336,7 +336,8 @@ type listingStack struct {
 	ifft2 [N]float64
 	z, zf [N]complex128
 	ffrz  bool
-	lim   float64
+	lim, limPre,
+	limPreX float64
 }
 
 const infoBuffer = 96
@@ -363,7 +364,7 @@ var (
 	levels  []float64
 	rs      bool                                     // root-sync between running instances
 	fade    = 1 / (MIN_FADE * SAMPLE_RATE)           //Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
-	release = math.Pow(8000, -1.0/(.5*SAMPLE_RATE)) // 500ms
+	release = math.Pow(8000, -1.0/(.25*SAMPLE_RATE)) // 250ms
 	gain    = baseGain
 	clipThr = 1.0 // individual listing limiter threshold
 	rst   bool
@@ -1309,15 +1310,17 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		lpf15Hz = lpf_coeff(15, sc.sampleRate)
 		lpf1kHz = lpf_coeff(1e3, sc.sampleRate)
 		lpf2Hz  = lpf_coeff(2, sc.sampleRate)
-		lpf150Hz = lpf_coeff(150, sc.sampleRate)
 
-		hpf2s  = hpf_coeff(0.5, sc.sampleRate)
-		hpf40Hz = hpf_coeff(40, sc.sampleRate)
+		// per-listing limiter
+		hpf5120Hz = hpf_coeff(5120, sc.sampleRate)
+		hpf2s     = hpf_coeff(0.5, sc.sampleRate)
 
-		hiBandCoeff      = hpf_coeff(14481, sc.sampleRate) // x43
-		midBandCoeff     = hpf_coeff(320, sc.sampleRate) // x4
-		postLowBandCoeff = lpf_coeff(65, sc.sampleRate) // x0.9
-		postHiBandCoeff  = lpf_coeff(octave(9), sc.sampleRate) // x0.1
+		// main out DC blocking
+		hpf2point5Hz     = hpf_coeff(2.5, sc.sampleRate)
+
+		// main output limiter
+		hiBandCoeff      = hpf_coeff(10240, sc.sampleRate)
+		midBandCoeff     = hpf_coeff(320, sc.sampleRate)
 	)
 
 	const Thr = 1.0 // must be less than or equal to one
@@ -1326,7 +1329,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		no = noise(time.Now().UnixNano())
 		tapeLen = int(sc.sampleRate) * TAPE_LENGTH
 
-		l, h float64 = Thr, 2 // limiter, hold
+		l, ll, h float64 = Thr, Thr, 2 // limiter, hold
 		env  float64 = 1      // for exit envelope
 		mid, // output
 		peak, // vu meter
@@ -1345,7 +1348,6 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		g      float64        // gain smooth intermediate
 		hiBand, hiBandPrev,
 		midBand, midBandPrev float64    // limiter pre-emphasis
-		postLowBand, postHiBand float64 // limiter de-emphasis
 		α       = 1 / (sc.sampleRate/(2*math.Pi*194) + 1) // co-efficient for setmix
 		hroom   = (sc.convFactor - 1.0) / sc.convFactor   // headroom for positive dither
 		pd      int                                       // slated for removal
@@ -1642,7 +1644,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					a = math.Max(20/sc.sampleRate, a) // minimum 20Hz
 					delta := a - d[i].peakfreq
 					d[i].peakfreq += delta * α * (math.Abs(delta) * a / d[i].peakfreq)
-					r *= math.Min(1, math.Sqrt(100/(d[i].peakfreq*sc.sampleRate+20)))
+					r *= math.Min(1, math.Sqrt(40/(d[i].peakfreq*sc.sampleRate+20)))
 				case 35: // "print"
 					pd++ // unnecessary?
 					if (pd)%32768 == 0 && !exit {
@@ -1837,10 +1839,14 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			c += d[i].m // add mute to mix factor
 			out := d[i].sigs[0]
 			out *= d[i].m * d[i].lv // sigs[0] left intact for `from` operator
-			if math.Abs(out) > d[i].lim+clipThr { // limiter
+			d[i].limPre = ( d[i].limPre + out - d[i].limPreX ) * hpf5120Hz
+			d[i].limPreX = out
+			det := math.Abs(20 * d[i].limPre + 0.92 * out)
+			if det > d[i].lim+clipThr { // limiter
 				d[i].lim = d[i].lim + (math.Abs(out-clipThr)-d[i].lim)*lpf15Hz
 			}
 			out /= (d[i].lim + clipThr) * (d[i].lim + clipThr + 4) / 5 // over-limit
+			display.GR = d[i].lim > 3e-4
 			d[i].lim *= hpf2s // release
 			sides += out * d[i].pan * 0.5
 			mid += out * (1 - math.Abs(d[i].pan*0.5))
@@ -1853,35 +1859,29 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		c = 0
 		mid /= mixF
 		sides /= mixF
-		g += (gain - g)*lpf2Hz
+		g += (gain - g)*lpf15Hz
 		mid *= g
 		sides *= g
-		hpf = (hpf + mid - x) * hpf40Hz
-		x = mid
-		mid = hpf
-		// pre-emphasis
-		hiBand = (hiBand + mid - hiBandPrev) * hiBandCoeff
-		hiBandPrev = mid
-		midBand = (midBand + mid - midBandPrev) * midBandCoeff
-		midBandPrev = mid
-		mid = 43*hiBand + 4*midBand + mid
-		// limiter
-		det := math.Abs(mid)
-		if det > l+Thr {
-			l += (det - l)*lpf150Hz // attack
+		hpf = (hpf + mid - x) * hpf2point5Hz
+		x, mid = mid, hpf
+		// sidechain pre-emphasis
+		channelOR := math.Max(mid+sides, mid-sides)
+		hiBand = (hiBand + channelOR - hiBandPrev) * hiBandCoeff
+		hiBandPrev = channelOR
+		midBand = (midBand + channelOR - midBandPrev) * midBandCoeff
+		midBandPrev = channelOR
+		det := math.Abs(25*hiBand + 2.3*midBand + 0.9*channelOR)
+		if det > l+Thr { // limiter detection
+			l = det
 			h = release
 			display.GR = yes
 		}
-		mid /= l+Thr // VCA
-		sides /= l
+		mid /= ll+Thr // VCA
+		sides /= ll+Thr
 		h /= release
 		l *= release + 1/(h+1/(1-release))
-		display.GR = l > 3e-4
-		// de-emphasis
-		postLowBand = postLowBand + (mid-postLowBand)*postLowBandCoeff
-		postHiBand = postHiBand + (mid-postHiBand)*postHiBandCoeff
-		mid = 0.9*postLowBand + 0.045*postHiBand
-		mid *= 1.3
+		ll += (l - ll) * lpf15Hz // low-pass filter to mitigate low-end modulation
+		display.GR = ll > 3e-4
 		if exit {
 			mid *= env // fade out
 			sides *= env

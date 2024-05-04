@@ -83,7 +83,7 @@ const ( // operating system
 	AFMT_S16_LE  = 0x00000010
 	AFMT_S8      = 0x00000040
 	//AFMT_S32_BE = 0x00002000 // Big Endian
-	SELECTED_FMT = AFMT_S32_LE
+	SELECTED_FMT = AFMT_S16_LE
 	// for Stereo
 	SNDCTL_DSP_CHANNELS = 0xC0045003
 	STEREO              = 1
@@ -145,7 +145,7 @@ type createListing struct {
 	newListing  listing
 	dispListing listing
 	newSignals  []float64
-	signals     map[string]float64
+	signals     map[string]int
 }
 
 type number struct {
@@ -162,6 +162,7 @@ type newOperation struct {
 
 type listingState struct {
 	createListing
+	reload int
 	out map[string]struct{} // to check for multiple outs to same signal name
 	clr clear
 	newOperation
@@ -179,17 +180,18 @@ type fn struct {
 
 type systemState struct {
 	dispListings []listing // these are relied on to track len of SE listings, checked after transfer
-	verbose      []listing // for tools/listings.go
-	wmap         map[string]bool
-	wavNames     string // for display purposes
-	funcs        map[string]fn
-	funcsave     bool
-	solo         int // index of most recent solo
-	unsolo       muteSlice
-	hasOperand   map[string]bool
-	reload       int
-	daisyChains  []int
-	tapeLen      int
+	verbose         []listing // for tools/listings.go
+	wmap            map[string]bool
+	wavNames        string // for display purposes
+	funcs           map[string]fn
+	funcsave        bool
+	solo            int // index of most recent solo
+	unsolo          muteSlice
+	hasOperand      map[string]bool
+	daisyChains     []int
+	tapeLen         int
+	lenExported     int
+	exportedSignals map[string]int
 	listingState
 	soundcard
 }
@@ -501,7 +503,6 @@ func emptyTokens() {
 
 func run(from io.Reader) {
 	saveJson([]listing{{operation{Op: advisory}}}, "displaylisting.json")
-
 	go infoDisplay()
 
 	sc, success := setupSoundCard("/dev/dsp")
@@ -514,14 +515,14 @@ func run(from io.Reader) {
 	if writeLog {
 		log.WriteString(sf("soundcard: %dbit %2gkHz %s\n", sc.format, sc.sampleRate, sc.channels))
 	}
-	SampleRate = sc.sampleRate // TODO change later
-
+	SampleRate = sc.sampleRate // TODO remove later
 	t, twavs, wavSlice := newSystemState(sc)
 
 	go SoundEngine(sc, twavs)
 	go mouseRead()
 
-	go func() { // watchdog, anonymous to use variables in scope: dispListings, sc, twavs
+	// TODO add sc, twavs as args to watchdog, they don't mutate
+	go func() { // watchdog, anonymous to use variable in scope: dispListings
 		// This function will restart the sound engine in the event of a panic
 		for {
 			current := <-report // unblocks on sound engine panic
@@ -548,50 +549,33 @@ func run(from io.Reader) {
 			<-lockLoad
 			msg("listing %d deleted, %scan edit and reload%s", current, italic, reset)
 			msg("%s>>> Sound Engine restarted%s", italic, reset)
-			time.Sleep(5 * time.Second) // hold-off
+			time.Sleep(1 * time.Second) // hold-off
 		}
 	}()
 
 	go readInput(from) // scan stdin from goroutine to allow external concurrent input
 	go reloadListing() // poll '.temp/*.syt' modified time and reload if changed
 
-	// set-up state
-	reservedSignalNames := [lenReserved + maxExports]string{ // order is important
-		"dac",
-		"", // nil signal for unused operand
-		"pitch",
-		"tempo",
-		"mousex",
-		"mousey",
-		"butt1",
-		"butt3",
-		"butt2",
-		"grid",
-		"sync",
-	}
-	for i := lenReserved; i < maxExports; i++ { // add 12 reserved signals for inter-list signals
-		reservedSignalNames[i] = sf("***%d", i+lenReserved) // placeholder
-	}
-	lenExported := 0
 	usage := loadUsage() // local usage telemetry
-	loadExternalFile := not
+	loadExternalFile := not // TODO move this to listingState
 
 start:
 	for { // main loop
-		t = initialiseListing(t, reservedSignalNames)
-		for i, w := range wavSlice { // add to signals map, with current sample rate
-			t.signals[w.Name] = float64(i)
-			t.signals["l."+w.Name] = float64(len(w.Data)-1) / (WAV_TIME * sc.sampleRate)
-			t.signals["r."+w.Name] = 1.0 / float64(len(w.Data))
+		t = initialiseListing(t)
+		for i, w := range wavSlice {
+			t.createListing = addSignal(t.createListing, w.Name, float64(i))
+			rate := 1.0 / float64(len(w.Data))
+			name := "r."+w.Name
+			t.createListing = addSignal(t.createListing, name, rate)
 		}
 		// the purpose of clr is to reset the input if error while receiving tokens from external source, declared in this scope to read value of loadExternalFile
 		t.clr = func(s string, i ...interface{}) int {
 			emptyTokens()
 			info <- fmt.Sprintf(s, i...)
 			<-carryOn
-			if loadExternalFile {
-				return startNewListing
-			}
+			if loadExternalFile { // TODO remove this
+				return startNewListing //
+			} //
 			return startNewOperation
 		}
 		if !loadExternalFile {
@@ -609,37 +593,38 @@ start:
 			switch do {
 			case startNewListing:
 				loadExternalFile = not
+			//	emptyTokens()
 				continue start
 			case startNewOperation:
 				if loadExternalFile {
 					loadExternalFile = not
+					emptyTokens()
 					continue start
 				}
 				continue input
 			case exitNow:
 				break start
 			}
+			usage[t.operator] += 1
+
 			// process exported signals
-			// TODO make this a function and add to parseFunction
-			reservedOrExported := not
-			for _, v := range reservedSignalNames {
-				if v == t.operand {
-					reservedOrExported = yes
-				}
-			}
-			_, inSg := t.signals[t.operand]
-			if !inSg && !reservedOrExported && !t.num.Is && !t.fIn && t.operator != "//" && isUppercaseInitial(t.operand) { // optional: && t.operator == "out"
-				if lenExported > maxExports {
+			// TODO make this a function and add to parseFunction too
+			if _, inSg := t.signals[t.operand]; !inSg &&
+			isUppercaseInitial(t.operand) &&
+			!t.num.Is && !t.fIn &&
+			t.operator != "//" { // optional: && t.operator == "out"
+				if t.lenExported > maxExports {
 					msg("we've ran out of exported signals :(")
 					continue
 				}
-				reservedSignalNames[lenReserved+lenExported] = t.operand
-				t.daisyChains = append(t.daisyChains, lenReserved+lenExported)
-				lenExported++
-				msg("%s%s added to exported signals%s", t.operand, italic, reset)
+				if _, exported := t.exportedSignals[t.operand]; !exported {
+					t.exportedSignals[t.operand] = lenReserved + t.lenExported
+					t.daisyChains = append(t.daisyChains, lenReserved+t.lenExported)
+					t.lenExported++
+					msg("%s%s added to exported signals%s", t.operand, italic, reset)
+				}
+				t.signals[t.operand] = t.exportedSignals[t.operand]
 			}
-			// add to listing
-			usage[t.operator] += 1
 			o := operation{Op: t.operator, Opd: t.operand, num: t.num.Is, ber: t.num.Ber}
 			t.dispListing = append(t.dispListing, o)
 			if !t.isFunction { // contents of function have been added already
@@ -648,9 +633,9 @@ start:
 			if t.fIn {
 				continue
 			}
-			// break and launch
+			// include contents of a function
 			switch o := t.newListing[len(t.newListing)-1]; o.Op {
-			case "out", ">":
+			case "out":
 				if o.Opd == "dac" {
 					break input
 				}
@@ -661,27 +646,32 @@ start:
 				msg(" ")
 			}
 		}
-		// end of input
 
 		for _, o := range t.newListing {
-			if _, in := t.signals[o.Opd]; in || len(o.Opd) == 0 {
+			infoIfLogging("assign: num=%t,%f -> %s %s", o.num, o.ber, o.Op, o.Opd)
+			if _, in := t.signals[o.Opd]; in {
 				continue
 			}
-			if strings.ContainsAny(o.Opd[:1], "+-.0123456789") { // wavs already in signals map
-				t.signals[o.Opd], _ = parseType(o.Opd, o.Op) // number assigned, error checked above
-				continue
-			}
-			i := 0
-			if o.Opd[:1] == "^" {
-				i++
-			}
-			switch o.Opd[i : i+1] {
-			case "'":
+			if o.Opd == "" {
 				t.signals[o.Opd] = 1
+				continue
+			}
+			if o.num {
+				t.createListing = addSignal(t.createListing, o.Opd, o.ber)
+				infoIfLogging("  num: %s at %d -> %f", o.Opd, len(t.newSignals)-1, o.ber)
+				continue
+			}
+			def := 0.0
+			switch strings.TrimPrefix(o.Opd, "^")[:1] {
+			case "'":
+				def = 1
 			case "\"":
-				t.signals[o.Opd] = 0.5
-			default:
-				t.signals[o.Opd] = 0
+				def = 0.5
+			}
+			t.createListing = addSignal(t.createListing, o.Opd, def)
+			infoIfLogging("  sig: %s at %d, def: %2.1f", o.Opd, len(t.newSignals)-1, def)
+		}
+
 		if t.reload > -1 && t.reload < len(t.verbose) {
 			for l, o := range t.newListing {
 				for _, v := range t.verbose[t.reload] {
@@ -694,21 +684,11 @@ start:
 			}
 		}
 
-		for sig, val := range t.signals { // assign signals to slice from map
-			t.newSignals = append(t.newSignals, val)
-			n := len(t.newSignals)-1
-			for ii, o := range t.newListing {
-				if o.Opd == sig {
-					o.N = n
-				}
-				for i, pre := range reservedSignalNames { // reserved signals are added in order
-					if o.Opd == pre {
-						o.N = i
-					}
-				}
-				o.Opn = operators[o.Op].N
-				t.newListing[ii] = o
-			}
+		for i, o := range t.newListing {
+			t.newListing[i].N = t.signals[o.Opd]
+			s := t.signals[o.Opd]
+			infoIfLogging("adding: %s at %d -> %f", o.Opd, s, t.newSignals[s])
+			t.newListing[i].Opn = operators[o.Op].N
 		}
 
 		if display.Paused {
@@ -720,7 +700,6 @@ start:
 		if !started { // anull/truncate these in case sound engine restarted
 			t.dispListings = make([]listing, 0, 15) // arbitrary capacity
 			t.verbose = make([]listing, 0, 15)
-			t.daisyChains = t.daisyChains[:4]
 		}
 		transmit <- collate(&t)
 		a := <-accepted
@@ -922,6 +901,7 @@ func readTokenPair(t *systemState) (bool, int) {
 		r := t.clr("")
 		return tt.ext, r // parseType will report error
 	}
+	//infoIfLogging("token num: %f -> %s %s", t.num.Is, t.num.Ber, t.operator, t.operand)
 	return tt.ext, nextOperation
 }
 
@@ -949,7 +929,7 @@ func parseFunction(t systemState) (listing, bool) {
 		}
 	}
 	for i, o := range function {
-		if len(o.Opd) == 0 {
+		if o.Opd == "" {
 			continue
 		}
 		switch o.Opd {
@@ -971,7 +951,7 @@ func parseFunction(t systemState) (listing, bool) {
 func processFunction(fun int, t systemState, f listing) (args, listing) {
 	funArgs := args{}
 	for i, o := range f {
-		if len(o.Opd) == 0 {
+		if o.Opd == "" {
 			continue
 		}
 		if _, in := t.signals[o.Opd]; in || isUppercaseInitialOrDefaultExported(o.Opd) {
@@ -983,8 +963,7 @@ func processFunction(fun int, t systemState, f listing) (args, listing) {
 			continue
 		}
 		if strings.ContainsAny(o.Opd[:1], "+-.0123456789") {
-			_, isNum := parseType(o.Opd, o.Op)
-			if isNum {
+			if _, num := parseType(o.Opd, o.Op); num {
 				continue
 			}
 		}
@@ -1279,6 +1258,7 @@ func transfer(d []listingStack, tr *data) ([]listingStack, []int) {
 		coreDump(d[tr.reload], "reloaded_listing_new")
 		return d, tr.daisyChains
 	}
+	coreDump(tr.listingStack, "launched_listing")
 	return append(d, tr.listingStack), tr.daisyChains
 }
 
@@ -1369,10 +1349,12 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			return // exit normally
 		default:
 			msg("oops - %s", err) // report error to infoDisplay
-			var buf [4096]byte
-			n := runtime.Stack(buf[:], false)
-			infoIfLogging("%s", buf[:n]) // print stack trace
-			coreDump(d[current], "panicked_listing")
+			stack := debug.Stack()
+			infoIfLogging("%s", stack) // print stack trace
+			if !writeLog {
+				save(stack, sf("debug/%s_stack_trace.txt", time.Now()))
+				coreDump(d[current], "panicked_listing")
+			}
 			env = 0
 			started = not
 			report <- current
@@ -1403,6 +1385,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	d = append(d, tr.listingStack)
 	daisyChains = tr.daisyChains
 	accepted <- len(d)
+	coreDump(d[0], "first_listing")
 
 	lastTime = time.Now()
 	for {
@@ -2146,7 +2129,8 @@ func checkIn(s systemState) (systemState, int) {
 	if priorOut {
 		return s, nextOperation
 	}
-	msg("%sno prior out for%s %s", italic, reset, s.operand)
+	// false positives for wav rate:
+	//msg("%sno prior out for%s %s", italic, reset, s.operand)
 	return s, nextOperation
 }
 
@@ -2594,7 +2578,7 @@ func enactWait(s systemState) (systemState, int) {
 
 func isUppercaseInitialOrDefaultExported(operand string) bool {
 	switch operand {
-	case "dac", "tempo", "pitch", "grid", "sync":
+	case "dac", "tempo", "pitch", "grid", "sync": // needs to include wav signals
 		return yes
 	}
 	return isUppercaseInitial(operand)
@@ -2619,10 +2603,11 @@ func isUppercaseInitial(operand string) bool {
 
 func newSystemState(sc soundcard) (systemState, [][]float64, wavs) {
 	t := systemState{
-		soundcard:   sc,
-		funcs:       make(map[string]fn),
-		daisyChains: []int{2, 3, 9, 10}, // pitch,tempo,grid,sync
-		solo:        -1,
+		soundcard:       sc,
+		funcs:           make(map[string]fn),
+		daisyChains:     []int{2, 3, 9, 10}, // pitch,tempo,grid,sync
+		solo:            -1,
+		exportedSignals: map[string]int{},
 	}
 
 	loadFunctions(&t.funcs)
@@ -2654,33 +2639,68 @@ func newSystemState(sc soundcard) (systemState, [][]float64, wavs) {
 	return t, wavs, wavSlice
 }
 
-func initialiseListing(t systemState, res [lenReserved + maxExports]string) systemState {
+func initialiseListing(t systemState) systemState {
 	t.listingState = listingState{}
-	t.newSignals = make([]float64, len(res), 30) // capacity is nominal
-	t.out = make(map[string]struct{}, 30)        // to check for multiple outs to same signal name
-	t.reload = -1 // index to be launched to
-	// signals map with predefined constants, mutable
-	t.signals = map[string]float64{ // reset and add predefined signals
-		"ln2":      math.Ln2,
-		"ln3":      math.Log(3),
-		"ln5":      math.Log(5),
-		"E":        math.E,   // e
-		"Pi":       math.Pi,  // π
-		"Phi":      math.Phi, // φ
-		"invSR":    1 / t.sampleRate,
-		"SR":       t.sampleRate,
-		"Epsilon":  math.SmallestNonzeroFloat64, // ε, epsilon
-		"wavR":     1.0 / (WAV_TIME * t.sampleRate),
-		"semitone": math.Pow(2, 1.0/12),
-		"Tau":      2 * math.Pi, // 2π
-		"ln7":      math.Log(7),
-		"^freq":    DEFAULT_FREQ,           // default frequency for setmix, suitable for noise
-		"null":     0,                    // only necessary if zero is banned in Syntə again
-		"fifth":    math.Pow(2, 7.0/12),  // equal temperament ≈ 1.5 (2:3)
-		"third":    math.Pow(2, 1.0/3),   // major, equal temperament ≈ 1.25 (4:5)
-		"seventh":  math.Pow(2, 11.0/12), // major, equal temperament ≈ 1.875 (8:15)
+	t.newSignals = make([]float64, 0, 30) // capacity is nominal
+	t.signals = make(map[string]int, 30)
+	t.out = make(map[string]struct{}, 30) // arbitrary capacity
+	// set-up state
+	res := [lenReserved]string{
+		"dac",
+		"", // nil signal for unused operand
+		"pitch",
+		"tempo",
+		"mousex",
+		"mousey",
+		"butt1",
+		"butt3",
+		"butt2",
+		"grid",
+		"sync",
+	}
+	for _, name := range res {
+		t.createListing = addSignal(t.createListing, name, 0)
+		t.out[name] = assigned
+	}
+	// clear space for exported signals
+	t.newSignals = append(t.newSignals, make([]float64, maxExports)...)
+	preDefined := []struct{
+		name string
+		val  float64
+	}{
+		{"ln2", math.Ln2},
+		{"ln3", math.Log(3)},
+		{"ln5", math.Log(5)},
+		{"E", math.E},     // e
+		{"Pi", math.Pi},   // π
+		{"Phi", math.Phi}, // φ
+		{"invSR", 1 / t.sampleRate},
+		{"SR", t.sampleRate},
+		{"Epsilon", math.SmallestNonzeroFloat64}, // ε, epsilon
+		{"wavR", 1.0 / (WAV_TIME * t.sampleRate)},
+		{"semitone", math.Pow(2, 1.0/12)},
+		{"Tau", 2 * math.Pi}, // 2π
+		{"ln7", math.Log(7)},
+		{"^freq", DEFAULT_FREQ},           // for setmix
+		{"fifth", math.Pow(2, 7.0/12)},    // equal temperament ≈ 1.5 (2:3)
+		{"third", math.Pow(2, 1.0/3)},     // major, equal temperament ≈ 1.25 (4:5)
+		{"seventh", math.Pow(2, 11.0/12)}, // major, equal temperament ≈ 1.875 (8:15)
+	}
+	for _, p := range preDefined {
+		t.createListing = addSignal(t.createListing, p.name, p.val)
 	}
 	t.tapeLen = TAPE_LENGTH * int(t.sampleRate)
+	t.reload = -1
+	return t
+}
+
+func addSignal(t createListing, name string, val float64) createListing {
+	if _, in := t.signals[name]; in {
+		return t
+	}
+	t.newSignals = append(t.newSignals, val)
+	t.signals[name] = len(t.newSignals)-1
+	//infoIfLogging("addSignal: index=%s val=%f,   index=%d", name, val, t.signals[name])
 	return t
 }
 

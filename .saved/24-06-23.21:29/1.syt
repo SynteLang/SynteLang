@@ -1,0 +1,7 @@
+in 135bpm
+mul 3/8
+sq
+s/h grid
+bd 0.85
+mul -6db
+mix

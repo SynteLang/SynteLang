@@ -1,0 +1,13 @@
+in 7s
+pulse 0.2
+mul 0.25
++ 1
+out p
+/euc 3,8
+down 200ms
+mul p
+mul 65/1.5hz
+sino
+mul Duck
+pad
+mix

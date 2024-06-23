@@ -1,0 +1,33 @@
+/b 2,0
+lt 0.25
+mul 0.5
+out ph
+mul 16
++ 8
+out b
+/b b,ph
+trn 4
+out vca
+in 55/2hz
+osc
+tri
+mul 0.005
++ 1
+mul 33ms
+out t
+in 438/2hz
+saw
+out m
+in 442/2hz
+pulse 0.25
++ m
+hpf 440hz
+lpf 460hz
+lpf 460hz
+out c
+tape t
++ c
+mul vca
+out Send
+pad
+mix

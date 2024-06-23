@@ -1,0 +1,4 @@
+in 110bpm
+/ 4
+osc
+.out sync

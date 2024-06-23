@@ -1,0 +1,20 @@
+in 2s
+sq
+mul 4
++ 6
+out b
+/euc b,16
+push
+down 50ms
+gt 0.5
+mul B
+clip 0
+lpf 25hz
+lpf 8hz
+out Duck
+pop
+bd 0.5
+pad
+lpf 240hz
+lpf 440hz
+mix

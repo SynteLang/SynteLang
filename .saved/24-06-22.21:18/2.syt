@@ -1,0 +1,30 @@
+in 2s
+pulse 0.75
+mul 3
++ 1
+mul 200ms
+out w
+in 7s
+sq
++ 1
+out p
+in 155bpm
+/ 1.25
+sq
+s/h grid
+dirac
+down w
+push
+gt 0.01
+smooth
+smooth
+out vca
+pop
+exp 12
+mul 90hz
+mul p
++ 25hz
+sino
+mul vca
+pad
+mix

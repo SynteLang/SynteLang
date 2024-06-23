@@ -1,0 +1,10 @@
+/b 4,0
+flip
+exp 5
+smooth
+level 0
+/euc 3,8
+bd 1.0
+tanh
+out m
+mix

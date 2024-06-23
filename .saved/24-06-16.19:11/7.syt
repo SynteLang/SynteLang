@@ -1,0 +1,50 @@
+in 1hz
+osc
+s/h grid
+8bit 2
++ 1
+out p
+in 3s
+sq
+mul 2
++ 2
+mul 4
+out b
+/b b,0
+trn 1.5
+lpf 70hz
+out vca
+in 65*16hz
+* p
+/ 2
+out pitch
+saw
+out m
+in pitch
+mul 4/3
+saw
+out+ m
+in pitch
+mul 1.47
+saw
++ m
+mul vca
+lpf 440hz
+mul G
++ c
+push
+push
+in 3.7hz
+sino
+mul 0.003
++ 1
+mul 123ms
+out t
+pop
+tape t
+4lp
+mul 0.1
+out c
+pop
+pad
+mix

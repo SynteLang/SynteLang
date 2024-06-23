@@ -1,0 +1,9 @@
+in 1.05s
+osc
+mul 155bpm
+mul 2
+sq
+s/h grid
+bd 0.5
+pad
+mix

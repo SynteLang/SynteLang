@@ -1,0 +1,20 @@
+in 10s
+osc
+tri
++ 0.1
+mul .2s
+pulse 0.5
+s/h grid
+smooth
+out vca
+in 0.7s
+pulse 0.25
+mul 8
++ 16
+out b
+/b b,0
+trn 5
+noise
+mul vca
+mul -10db
+mix

@@ -1,0 +1,13 @@
+/b 4,0
+gt 0.875
+mul 2
++ 1
+mul 32
+out b
+/b b,0
+lt 0.3
+push
+flip
+pop
+bd 0.5
+mix

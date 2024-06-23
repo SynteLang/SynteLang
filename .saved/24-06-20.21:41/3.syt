@@ -1,0 +1,73 @@
+in 1.2s
+pulse 0.7
+mul grid
+s/h grid
+lpf 25hz
+out g
+in 3s
+pulse 0.5
+flip
+mul -0.17
++ 1.5
+out pf
+in 330hz
+/ pf
+out p
+in 3s
+osc
+mul 12
++ 4
+out s
+in 1.2s
+sq
+s/h grid
+mul 3
++ 5
+out b
+/b b,0
+trn 3
+mul s
+base 2
+mul 3hz
+out f
+in 25hz
+osc
+tri
+mul 0.02
++ 1
+mul 330/2hz
+saw
+out m
+in 33hz
+osc
+tri
+mul 0.03
++ 1
+mul p
+sqr
+out+ m
+in 15hz
+osc
+tri
+mul 0.04
++ 1
+mul 330hz
+saw
++ m
+/ 3
+lpf f
+lpf f
+lpf f
++ c
+mul g
+push
+hpf 100hz
+tape 135*4bpm
+4lp
+mul 0.3
+lpf 5khz
+out c
+pop
+pad
+pad
+mix

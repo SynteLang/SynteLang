@@ -1,0 +1,21 @@
+in 3s
+sino
+mul 0.3
++ 1
+mul 60ms
+out t
+in 1s
+pulse 0.05
+smooth
+out vca
+in 500hz
+sino
+mul vca
++ c
+push
+tape t
+lpf 2khz
+mul 0.9
+out c
+pop
+mix

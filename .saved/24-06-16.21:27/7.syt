@@ -1,0 +1,12 @@
+in 2s
+osc
+tri
++ 0.3
+clip 0
+smooth
+out vca
+/b 8,0.5
+lt 0.5
+hh 25ms
+mul vca
+mix

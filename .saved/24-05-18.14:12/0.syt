@@ -1,0 +1,27 @@
+/b 64,0
+lt 0.5
+dirac
+out x
+down 300ms
+exp 5
+- 1/32
+smooth
+smooth
+out Vca
+in "a
+mul 1.5
+- "a
+mul x
++ "a
+mod 1.2
+out "a
+8bit 5
++ 0.8
+out pitch
+8bit 12
+base 2
+mul 440hz
+sino
+mul Vca
+pad
+mix

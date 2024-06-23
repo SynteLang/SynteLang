@@ -1,0 +1,18 @@
+from 8
+out m
+from 5
+out+ m
+in Send
+mul 0.1
+out+ m
+from 0
+sum m
++ c
+push
+tape 6hz
+lpf 2khz
+4lp
+mul 0.5
+out c
+pop
+out dac

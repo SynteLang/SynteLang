@@ -1,0 +1,7 @@
+/b 32,0
+lt 0.3
+push
+flip
+pop
+bd 0.25
+mix

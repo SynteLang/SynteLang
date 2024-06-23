@@ -1,0 +1,36 @@
+/b 8,0
+lt 0.5
+out sh
+/b 4,0
+s/h sh
+flip
+mul 2
+- 6
+base 2
+out b
+in 7hz
+osc
+mul 30
+mod 1
+s/h grid
+8bit 12
+base 2
+mul 880hz
+out pitch
+/b 8,0
+lt 0.25
+mul .25
++ 1
+out p
+/b 64,0
+trn 2
+smooth
+out vca
+in b
+mul pitch
+mul p
+sino
+mul vca
+mul Duck
+pad
+mix

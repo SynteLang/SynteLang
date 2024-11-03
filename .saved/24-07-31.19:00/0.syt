@@ -1,0 +1,17 @@
+in 1.7s
+osc
+mul 0.5
++ 0.5
+out d
+in 2.7hz
+pulse d
+mul 2
+- 1
+in 116bpm
+/ 8
+osc
+out sync
+mul 8*32!
+mod 1
+lt 0.5
+.out grid

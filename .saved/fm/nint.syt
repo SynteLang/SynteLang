@@ -1,0 +1,17 @@
+[ fmp
+exp 5
+- 1/32
+smooth
+out vca
+in @
+saw
+mul 0.1
++ 1
+out fm
+in vca
+mul 15hz
++ @
+mul fm
+sino
+mul vca
+]

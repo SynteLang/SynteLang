@@ -1,0 +1,13 @@
+in 1.5/2s
+osc
+tri
++ 1
+mul 12hz
+out t
+/b 8,0
+lt 0.55
+hpf t
+abs
+mul -6db
+noise
+mix

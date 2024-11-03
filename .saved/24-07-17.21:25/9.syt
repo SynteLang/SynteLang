@@ -1,0 +1,10 @@
+in 0.27s
+sq
+mul 8
++ 16
+out b
+/b b,0
+lt 0.5
+s/h grid
+hh 22ms
+mix

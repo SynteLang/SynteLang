@@ -1,0 +1,22 @@
+in 1hz
+osc
+tri
+s/h grid
+mul 8
++ 4
+out b
+mul 1s
+out t
+/b b,0
+lt 0.5
+s/h grid
+dirac
+down t
+lpf 100hz
+lpf 100hz
+out vca
+mul 550/16hz
++ 550/32hz
+sino
+mul vca
+mix

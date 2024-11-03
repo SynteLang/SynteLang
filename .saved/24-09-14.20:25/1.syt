@@ -1,0 +1,39 @@
+in 3hz
+sq
+s/h grid
+flip
+mul 4
++ 4
+out b
+/b b,0
+lt 0.5
+dirac
+down 80ms
+out env
+lt 0
+-- 1
+push
+hpf 20hz
+clip 0
+out tr
+pop
+lpf 20hz
++ tr
+push
+flip
++ 0.35
+clip 0
+smooth
+out Duck
+pop
+out vca
+in env
+exp 5
+- 1/32
+mul 500hz
+sino
+mul vca
+tanh
+lpf 200hz
+lpf 800hz
+out dac

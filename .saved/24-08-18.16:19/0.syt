@@ -1,0 +1,5 @@
+in 116bpm
+out tempo
+mul 4
+sq
+.out grid

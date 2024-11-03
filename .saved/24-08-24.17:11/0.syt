@@ -1,0 +1,34 @@
+in 2.5/2hz
+sq
+mul 3hz
++ 4hz
+osc
+trn 4
+smooth
+out vca
+in 1s
+sq
+mul 4hz
++ 3hz
+sq
+dirac
+out sh
+in 3
+log
+mul sh
++ a
+mod 1
+out a
+base 2
+mul 440hz
+sino
+mul vca
++ c
+push
+tape 73ms
+lpf 2khz
+4lp
+mul 0.1
+out c
+pop
+mix

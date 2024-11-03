@@ -1,0 +1,25 @@
+in 1.7s
+sq
+s/h grid
+smooth
+flip
+level 5
+in 132*1bpm
+pulse 0.5
+in 1
+lpf grid
+smooth
+level 1
+in 3s
+osc
+tri
+mul 380ms
++ 100ms
+out t
+in 130*4bpm
+pulse 0.5
+s/h grid
+dirac
+down t
+smooth
+.level 6

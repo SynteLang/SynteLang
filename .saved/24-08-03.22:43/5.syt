@@ -1,0 +1,18 @@
+in 5/4hz
+sq
+flip
+sn 82ms
+mul 0.3
+out m
+in 8hz
+sq
+out t
+in 7*1.1hz
+sq
+mul t
+s/h grid
+lt 0.5
+hh 75ms
++ m
+pad
+mix

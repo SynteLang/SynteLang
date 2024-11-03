@@ -1,0 +1,28 @@
+in 3.4hz
+sino
+mul 0.003
++ 1
+mul 73ms
+out t
+in 3.7hz
+sino
+mul 0.015
++ 1
+mul 330hz
+out p
+saw
+out m
+in 2.7hz
+sino
+mul 0.02
++ 1
+mul p
+mul 1.02
+saw
++ m
++ c
+tape t
+lpf 500hz
+mul 0.9
+out c
+mix

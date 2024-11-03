@@ -1,0 +1,30 @@
+/b 8,0
+flip
+trn 16
+mul 0.25
+out v
+/b 2,0.5
+trn 16
++ v
+out vca
+in 0.2
+out th
+in 1
+noise
+- 1
++ th
+/ th
+out x
+mul x
+mul x
+clip 0
+out n
+gt 0
+mul n
+hpf 400hz
+mul 6
+lpf 2khz
+tanh
+mul vca
+mul 10db
+mix

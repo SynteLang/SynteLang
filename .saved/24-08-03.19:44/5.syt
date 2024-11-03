@@ -1,0 +1,7 @@
+in 7*1.1hz
+sq
+s/h grid
+lt 0.5
+hh 95ms
+pad
+mix

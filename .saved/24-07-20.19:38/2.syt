@@ -1,0 +1,11 @@
+in 135bpm
+/ 3
+sq
+mul 2
++ 2
+out b
+/b b,0
+lt 0.5
+s/h grid
+bd 1.0
+mix

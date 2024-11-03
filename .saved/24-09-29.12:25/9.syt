@@ -1,0 +1,18 @@
+from 1
+out m
+from 3
+out+ m
+from 5
+out+ m
+from 6
+out+ m
+from 2
++ m
++ c
+hpf 200hz
+tape 73ms
+lpf 4khz
+4lp
+mul 0.3
+out c
+mix

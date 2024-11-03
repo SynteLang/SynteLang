@@ -1,0 +1,17 @@
+in 17*3s
+sq
+s/h grid
+smooth
+level 1
+flip
+level 5
+in 13s
+pulse 0.75
+s/h grid
+smooth
+level 3
+in 21*2s
+pulse 0.25
+s/h grid
+lpf 5s
+.level 6

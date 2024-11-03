@@ -1,0 +1,27 @@
+in 1s
+sq
+s/h grid
+mul 0.2
++ 1
+out s
+in 4.7hz
+sq
+out g
+in 7s
+sq
+mul 8
++ 24
+out b
+/b b,0
+lt 0.5
+mul g
+s/h grid
+hh 35ms
+tanh
+hpf 1khz
+out m
+4lp
+mul 0.05
++ m
+mix
+

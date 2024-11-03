@@ -1,0 +1,12 @@
+in 1hz
+sq
+mul 1
++ 1
+mul 2
+out b
+in sync
+mul b
+mod 1
+trn 10
+noise
+mix

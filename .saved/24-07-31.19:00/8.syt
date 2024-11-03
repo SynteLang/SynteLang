@@ -1,0 +1,8 @@
+/b 4.25,0
+lt 0.5
+s/h grid
+bd 0.5
+lpf 220hz
+lpf 220hz
+lpf 220hz
+mix

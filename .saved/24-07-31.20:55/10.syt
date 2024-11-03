@@ -1,0 +1,28 @@
+in 1.7s
+osc
+tri
+exp 5
+mul 440hz
++ 44hz
+out f
+/b 13,0
+lt 0.5
+s/h grid
+smooth
+out vca
+/b 5,0
+mul 33hz
++ 33hz
+out p
+saw
+out m
+mul 0.1
++ p
+mul 1.007
+saw
++ m
+mul vca
+hpf f
+lpf f
+lpf f
+mix

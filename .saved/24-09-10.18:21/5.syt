@@ -1,0 +1,17 @@
+/b 4,0
+trn 1
+exp 5
+- 1/32
+lpf 75hz
+out vca
+/b 1,0
+lt 0.125
+mul 0.5
++ 1
+lpf 80hz
+mul 440hz
+mul semitone
+sino
+chorII
+mul vca
+mix

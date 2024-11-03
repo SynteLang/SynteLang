@@ -1,0 +1,17 @@
+in 0.75s
+osc
+tri
+mul 4
++ 4
+mul tempo
+sq
+s/h grid
+dirac
+down 100ms
+exp 5
+- 1/32
+noise
+hpf 8khz
+hpf 8khz
+mul 8db
+mix

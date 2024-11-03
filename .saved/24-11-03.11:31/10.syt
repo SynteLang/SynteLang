@@ -1,0 +1,15 @@
+in 2s
+sq
+mul 0.5
+out s
+in 4s
+osc
+mod 0.125
++ s
+wav win95
++ c
+tape 3hz
+lpf 2khz
+mul 0.7
+out c
+out dac

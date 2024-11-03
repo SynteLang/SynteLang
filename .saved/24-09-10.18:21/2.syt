@@ -1,0 +1,12 @@
+/b 6,0
+lt 0.5
+out sh
+/b 1.5,0
+s/h sh
+out ph
+s/h grid
+/b 4,ph
+lt 0.5
+bd 1.0
+hpf 100hz
+mix

@@ -1,0 +1,16 @@
+in 30s
+sq
+s/h grid
+smooth
+level 4
+in 50s
+sq
+s/h grid
+in 1
+lpf 25s
+level 5
+/b 2,0.25
+gt 0.75
+s/h grid
+smooth
+.level 7

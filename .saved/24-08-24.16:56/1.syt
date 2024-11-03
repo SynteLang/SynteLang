@@ -1,0 +1,21 @@
+/b 3,0
+lt 0.5
+s/h grid
+bd 66/135
+push
+abs
+lpf 50hz
+lpf 5hz
+flip
+out Duck
+pop
+out m
+out x
+mul x
+- 0.5
+mul 1.5
++ m
+clip 0
+mul 2.5
+lpf 150hz
+mix

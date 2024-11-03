@@ -1,0 +1,37 @@
+in 3s
+sq
+s/h grid
++ 1
+out o
+/b 2.75,0.25
+lt 0.5
+s/h grid
+dirac
+down 120ms
+push
+flip
+mul 0.5
+base 2
+out s
+pop
+smooth
+smooth
+out vca
+/b 1,0
+gt 0.5
+mul 0.125/2
++ 1
+mul 88*2hz
+mul s
+mul o
+out p
+saw
+out m
+in p
+mul 1.03
+saw
++ m
+mul vca
+hpf 200hz
+lpf 1khz
+mix

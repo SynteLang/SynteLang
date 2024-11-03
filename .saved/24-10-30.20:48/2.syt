@@ -1,0 +1,25 @@
+/b 1,0.875
+lt 0.25
+mul 6
++ 2
+out b
+/b b,0
+trn 12
+push
+gt 0.9
+dirac
+down 180ms
+gt 0.5
+lpf 250hz
+out vca
+pop
+exp 3
+- 1/8
+mul 2.5
+base 2
+mul 65hz
+sino
+mul vca
+tanh
+lpf 1khz
+mix

@@ -1,0 +1,28 @@
+in P
+- 1
+out p
+in tempo
+sq
+mul p
++ 1
+lpf 5hz
+mul 220/1.5hz
+mul pitch
+out o
+in tempo
+mul 2.4/1.5
+sq
+s/h grid
+dirac
+down 1s
+flip
+pian o
++ c
+hpf 200hz
+push
+tape 83ms
+lpf 3khz
+mul 0.3
+out c
+pop
+mix

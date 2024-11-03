@@ -1,0 +1,22 @@
+in 1.2s
+osc
+tri
+mul 22ms
++ 100ms
+out t
+/b 16/3,0
+lt 0.01
+mul grid
+dirac
+down t
+out vca
+in 2khz
+sqr
+out m
+in Phi
+mul 1khz
+sqr
++ m
+mul vca
+mul 3db
+mix

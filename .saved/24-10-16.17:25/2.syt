@@ -1,0 +1,60 @@
+in tempo
+/ 32
+pulse 0.25
+out n
+/b 1,0.75
+gt 0.125
++ 1
+out o
+in 1.3s
+osc
+s/h grid
+mul 0.25
+mul n
++ 1
+/ o
+out p
+in 1.2*4s
+pulse 0.125
+s/h grid
+mul 13
++ 3
+out b
+/b b,0
+lt 0.125
+mul grid
+dirac
+down 350ms
+exp 6
+- 1/64
+smooth
+smooth
+mul 3
+out env
+push
+mul 6.5
+tanh
+out vca
+pop
+mul 3
+base 2
+mul 55hz
+* p
+out f
+in 55hz
+* p
+mul 6
+sino
+mul 110hz
+* p
+mul env
++ 55hz
+* p
+sino
+out x
+mul x
+- 0.5
+mul 0.35
++ x
+mul vca
+mix

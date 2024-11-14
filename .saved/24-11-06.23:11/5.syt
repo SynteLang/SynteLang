@@ -1,0 +1,5 @@
+in 123s
+pulse 0.25
+flip
+lpf 10s
+.level 1

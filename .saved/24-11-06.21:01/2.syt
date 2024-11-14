@@ -1,0 +1,22 @@
+in 4.1hz
+sq
+s/h grid
+out v
+in grid
+dirac
+down 224ms
+exp 12
+mul v
+out vca
+in 330/2hz
+sqr
+out m
+in 110/2hz
+mul Phi
+sqr
++ m
+hpf 6khz
+hpf 5khz
+mul 6db
+mul vca
+mix

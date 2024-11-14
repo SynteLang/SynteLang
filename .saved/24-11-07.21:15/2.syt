@@ -1,0 +1,55 @@
+in 45s
+pulse 0.75
+flip
+mul 0.5
++ 1
+out s1
+in 35s
+pulse 0.75
+flip
+mul 1.25
++ 1
+mul s1
+out s
+in 5s
+osc
+tri
+lpf 5s
+out vca
+base 2
+mul 330*1.5hz
+out f
+in 0.1
+noise
+out m
+in 5hz
+sino
+mul 0.01
++ 1
+mul p
+saw
+out+ m
+in 15s
+sq
+mul 0.5
++ 1
+mul s
+lpf 5hz
+mul 330/2hz
+out p
+mul 1.002
+osc
+cv2a
++ m
+lpf f
+lpf f
+mul vca
++ c
+push
+tape 123ms
+4lp
+mul 0.3
+lpf 10khz
+out c
+pop
+mix

@@ -1,0 +1,19 @@
+in 24*8s
+sq
+flip
+smooth
+out vca
+in 24s
+osc
+mul 4
+- 1
+clip 0
+mul 1
+base 2
+mul 110hz
+saw
+cv2a
+mul vca
+lpf 4khz
+mul -8db
+mix

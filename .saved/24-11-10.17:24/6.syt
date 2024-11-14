@@ -1,0 +1,13 @@
+in 1s
+sino
+flip
+pan 6
+in 3s
+osc
+tri
+mul 1
+base 2
+mul 22hz
+sino
+mul -2db
+mix

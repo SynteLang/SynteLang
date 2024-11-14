@@ -1,0 +1,7 @@
+from 2
++ c
+tape 6hz
+lpf 4khz
+mul 0.2
+out c
+out dac

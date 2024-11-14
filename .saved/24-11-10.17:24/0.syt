@@ -1,0 +1,26 @@
+/b 1,1/8
+lt 0.5
+range 2.3hz,2/3hz
+* 1.5
+sq
+s/h grid
+dirac
+down 400ms
+exp 3
+lpf 50hz
+out vca
+mul 2
+base 2
+mul 80hz
+out f
+in 4/3
+mul 55hz
+saw
+mul vca
+lpf f
+lpf f
+lpf f
+hpf 55*1.2hz
+lpf 440hz
+mul 18db
+mix

@@ -1,0 +1,41 @@
+in 1s
+sino
+pan 7
+in 32*16s
+sq
+flip
+lpf 2s
+out gt
+/b 4,0
+lt 0.5
+range 1/1.5,1.0
+mul 880hz
+out p
+/b 8,0
+flip
+exp 3
+smooth
+out vca
+mul 4
+base 2
+mul p
+out f
+in p
+/ 1.008
+saw
+out m
+in p
+* 1.008
+saw
++ m
+mul vca
+mul gt
+lpf f
++ c
+push
+tape 6hz
+lpf 3khz
+mul -12db
+out c
+pop
+mix

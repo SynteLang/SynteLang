@@ -1,0 +1,11 @@
+in 5hz
+sq
+s/h grid
+dirac
+down 160ms
+mul 440/4hz
+sino
+hpf 20hz
+clip 1
+lpf 800hz
+mix

@@ -24,31 +24,6 @@
 			}
 		]
 	},
-	"noise": {
-		"Comment": "",
-		"Body": [
-			{
-				"Op": "push",
-				"Opd": ""
-			},
-			{
-				"Op": "in",
-				"Opd": "0.25"
-			},
-			{
-				"Op": "out",
-				"Opd": "^freq"
-			},
-			{
-				"Op": "pop",
-				"Opd": ""
-			},
-			{
-				"Op": "nois",
-				"Opd": ""
-			}
-		]
-	},
 	".mlfr": {
 		"Comment": "",
 		"Body": [
@@ -650,7 +625,7 @@
 		]
 	},
 	"bd": {
-		"Comment": "",
+		"Comment": "Bass drum. The operand is the pitch, 1.0 = 90hz",
 		"Body": [
 			{
 				"Op": "out",
@@ -854,6 +829,10 @@
 			},
 			{
 				"Op": "sine",
+				"Opd": ""
+			},
+			{
+				"Op": "tanh",
 				"Opd": ""
 			},
 			{
@@ -1061,6 +1040,359 @@
 			{
 				"Op": "mul",
 				"Opd": "vca"
+			}
+		]
+	},
+	"chorII": {
+		"Comment": "fixed triple lfo chorus with feedback",
+		"Body": [
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "3.7hz"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "^'z"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "sine",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "0.01"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "53ms"
+			},
+			{
+				"Op": "out",
+				"Opd": "t0"
+			},
+			{
+				"Op": "in",
+				"Opd": "2.5hz"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "^'z"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.1"
+			},
+			{
+				"Op": "sine",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "0.01"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "7ms"
+			},
+			{
+				"Op": "out",
+				"Opd": "t1"
+			},
+			{
+				"Op": "in",
+				"Opd": "7hz"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.2"
+			},
+			{
+				"Op": "mul",
+				"Opd": "^'z"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.2"
+			},
+			{
+				"Op": "sine",
+				"Opd": ""
+			},
+			{
+				"Op": "--",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "0.01"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "35ms"
+			},
+			{
+				"Op": "out",
+				"Opd": "t2"
+			},
+			{
+				"Op": "in",
+				"Opd": "5hz"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.4"
+			},
+			{
+				"Op": "mul",
+				"Opd": "^'z"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.4"
+			},
+			{
+				"Op": "sine",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "0.01"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "22ms"
+			},
+			{
+				"Op": "out",
+				"Opd": "t3"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "+",
+				"Opd": "c"
+			},
+			{
+				"Op": "out",
+				"Opd": "i"
+			},
+			{
+				"Op": "buff0",
+				"Opd": "t0"
+			},
+			{
+				"Op": "out",
+				"Opd": "m"
+			},
+			{
+				"Op": "in",
+				"Opd": "i"
+			},
+			{
+				"Op": "buff1",
+				"Opd": "t1"
+			},
+			{
+				"Op": "out+",
+				"Opd": "m"
+			},
+			{
+				"Op": "in",
+				"Opd": "i"
+			},
+			{
+				"Op": "buff2",
+				"Opd": "t2"
+			},
+			{
+				"Op": "out+",
+				"Opd": "m"
+			},
+			{
+				"Op": "in",
+				"Opd": "i"
+			},
+			{
+				"Op": "buff3",
+				"Opd": "t3"
+			},
+			{
+				"Op": "+",
+				"Opd": "m"
+			},
+			{
+				"Op": "/",
+				"Opd": "4"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "-",
+				"Opd": "x.5"
+			},
+			{
+				"Op": "+",
+				"Opd": "y.5"
+			},
+			{
+				"Op": "out",
+				"Opd": "r.5"
+			},
+			{
+				"Op": "in",
+				"Opd": "50hz"
+			},
+			{
+				"Op": "mul",
+				"Opd": "Tau"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "\\",
+				"Opd": "1"
+			},
+			{
+				"Op": "clip",
+				"Opd": "0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "r.5"
+			},
+			{
+				"Op": "out",
+				"Opd": "y.5"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "x.5"
+			},
+			{
+				"Op": "in",
+				"Opd": "y.5"
+			},
+			{
+				"Op": "mul",
+				"Opd": "0.5"
+			},
+			{
+				"Op": "tanh",
+				"Opd": ""
+			},
+			{
+				"Op": "-",
+				"Opd": "b.6"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.6"
+			},
+			{
+				"Op": "in",
+				"Opd": "12khz"
+			},
+			{
+				"Op": "f2c",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.6"
+			},
+			{
+				"Op": "+",
+				"Opd": "b.6"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.6"
+			},
+			{
+				"Op": "out",
+				"Opd": "c"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
 			}
 		]
 	},
@@ -1953,6 +2285,151 @@
 			}
 		]
 	},
+	"fmp": {
+		"Comment": "fm piano-like sound",
+		"Body": [
+			{
+				"Op": "sub",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "ln2"
+			},
+			{
+				"Op": "mul",
+				"Opd": "5"
+			},
+			{
+				"Op": "base",
+				"Opd": "E"
+			},
+			{
+				"Op": "-",
+				"Opd": "1/32"
+			},
+			{
+				"Op": "-",
+				"Opd": "b.0.1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "0.02"
+			},
+			{
+				"Op": "+",
+				"Opd": "b.0.1"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.0.1"
+			},
+			{
+				"Op": "out",
+				"Opd": "vca"
+			},
+			{
+				"Op": "in",
+				"Opd": "@"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.2"
+			},
+			{
+				"Op": "mul",
+				"Opd": "b.2"
+			},
+			{
+				"Op": "lt",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.2"
+			},
+			{
+				"Op": "in",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.2"
+			},
+			{
+				"Op": "mul",
+				"Opd": "b.2"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.2"
+			},
+			{
+				"Op": "-",
+				"Opd": "0.5"
+			},
+			{
+				"Op": "mul",
+				"Opd": "0.1"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "fm"
+			},
+			{
+				"Op": "in",
+				"Opd": "vca"
+			},
+			{
+				"Op": "mul",
+				"Opd": "15hz"
+			},
+			{
+				"Op": "+",
+				"Opd": "@"
+			},
+			{
+				"Op": "mul",
+				"Opd": "fm"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.3"
+			},
+			{
+				"Op": "mul",
+				"Opd": "^'z"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.3"
+			},
+			{
+				"Op": "sine",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "vca"
+			}
+		]
+	},
 	"for": {
 		"Comment": "input sets frequency of pulse which stays high for time interval given by operand, output is [0, 1] ",
 		"Body": [
@@ -2191,7 +2668,7 @@
 		]
 	},
 	"hh": {
-		"Comment": "",
+		"Comment": "808-style hihat. Operand is the decay in milliseconds",
 		"Body": [
 			{
 				"Op": "out",
@@ -3087,6 +3564,155 @@
 			}
 		]
 	},
+	"kd": {
+		"Comment": "deep and loud kick drum. Operand is the starting pitch, decays to 0. Feed input with an envelope like `/b 4,0, trn 6` ",
+		"Body": [
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "gt",
+				"Opd": "0.1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "gt",
+				"Opd": "c.0"
+			},
+			{
+				"Op": "--",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "d.0"
+			},
+			{
+				"Op": "--",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "e.0"
+			},
+			{
+				"Op": "in",
+				"Opd": "c.0"
+			},
+			{
+				"Op": "-",
+				"Opd": "80ms"
+			},
+			{
+				"Op": "mul",
+				"Opd": "d.0"
+			},
+			{
+				"Op": "+",
+				"Opd": "e.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "c.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "vca"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "sub",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "ln2"
+			},
+			{
+				"Op": "mul",
+				"Opd": "8"
+			},
+			{
+				"Op": "base",
+				"Opd": "E"
+			},
+			{
+				"Op": "mul",
+				"Opd": "@"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.2"
+			},
+			{
+				"Op": "mul",
+				"Opd": "^'z"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.2"
+			},
+			{
+				"Op": "sine",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "6db"
+			},
+			{
+				"Op": "mul",
+				"Opd": "vca"
+			},
+			{
+				"Op": "-",
+				"Opd": "b.3"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.3"
+			},
+			{
+				"Op": "in",
+				"Opd": "880hz"
+			},
+			{
+				"Op": "f2c",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.3"
+			},
+			{
+				"Op": "+",
+				"Opd": "b.3"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.3"
+			}
+		]
+	},
 	"lmap": {
 		"Comment": "implements the Logistic Map, modified to constrain the output to range [0,1] using `mod` (to prevent divergence at high values of r). Iterates on zero-crossing of the input. Operand is the r value, suggested between 3 and 4. Preceed with `ramp` and follow with `cv2a` for audio output ",
 		"Body": [
@@ -3377,6 +4003,31 @@
 			{
 				"Op": "mul",
 				"Opd": "vca"
+			}
+		]
+	},
+	"noise": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "0.25"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "nois",
+				"Opd": ""
 			}
 		]
 	},
@@ -3879,6 +4530,191 @@
 			{
 				"Op": "pop",
 				"Opd": ""
+			}
+		]
+	},
+	"pian": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "mul",
+				"Opd": "3"
+			},
+			{
+				"Op": "clip",
+				"Opd": "0"
+			},
+			{
+				"Op": "--",
+				"Opd": "1"
+			},
+			{
+				"Op": "sub",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "ln2"
+			},
+			{
+				"Op": "mul",
+				"Opd": "2"
+			},
+			{
+				"Op": "base",
+				"Opd": "E"
+			},
+			{
+				"Op": "-",
+				"Opd": "1/4"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "@"
+			},
+			{
+				"Op": "mul",
+				"Opd": "2"
+			},
+			{
+				"Op": "out",
+				"Opd": "f"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "sub",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "ln2"
+			},
+			{
+				"Op": "mul",
+				"Opd": "2"
+			},
+			{
+				"Op": "base",
+				"Opd": "E"
+			},
+			{
+				"Op": "-",
+				"Opd": "1/4"
+			},
+			{
+				"Op": "-",
+				"Opd": "b.0.3"
+			},
+			{
+				"Op": "mul",
+				"Opd": "0.02"
+			},
+			{
+				"Op": "+",
+				"Opd": "b.0.3"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.0.3"
+			},
+			{
+				"Op": "out",
+				"Opd": "vca"
+			},
+			{
+				"Op": "in",
+				"Opd": "@"
+			},
+			{
+				"Op": "mul",
+				"Opd": "0.999"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.4"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.4"
+			},
+			{
+				"Op": "out",
+				"Opd": "m"
+			},
+			{
+				"Op": "in",
+				"Opd": "@"
+			},
+			{
+				"Op": "mul",
+				"Opd": "1.001"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.5"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.5"
+			},
+			{
+				"Op": "+",
+				"Opd": "m"
+			},
+			{
+				"Op": "-",
+				"Opd": "b.6"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.6"
+			},
+			{
+				"Op": "in",
+				"Opd": "f"
+			},
+			{
+				"Op": "f2c",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.6"
+			},
+			{
+				"Op": "+",
+				"Opd": "b.6"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.6"
+			},
+			{
+				"Op": "mul",
+				"Opd": "vca"
 			}
 		]
 	},
@@ -5093,6 +5929,10 @@
 			{
 				"Op": "-",
 				"Opd": "0.5"
+			},
+			{
+				"Op": "mul",
+				"Opd": "-8db"
 			}
 		]
 	},
@@ -5546,7 +6386,7 @@
 		]
 	},
 	"sn": {
-		"Comment": "",
+		"Comment": "snare-ish. Operand is decay",
 		"Body": [
 			{
 				"Op": "out",
@@ -5784,7 +6624,7 @@
 		]
 	},
 	"sqr": {
-		"Comment": "square wave at audio levels, output is in range [-1,1] ",
+		"Comment": "square wave at audio levels, output is in range [-0.5,0.5] ",
 		"Body": [
 			{
 				"Op": "mul",
@@ -5815,12 +6655,12 @@
 				"Opd": "0.5"
 			},
 			{
-				"Op": "mul",
-				"Opd": "2"
+				"Op": "sub",
+				"Opd": "0.5"
 			},
 			{
-				"Op": "sub",
-				"Opd": "1"
+				"Op": "mul",
+				"Opd": "-8db"
 			}
 		]
 	},
@@ -6151,7 +6991,7 @@
 		]
 	},
 	"tape": {
-		"Comment": "",
+		"Comment": "tape loop based on `buff`. operand is offset of read from write",
 		"Body": [
 			{
 				"Op": "push",

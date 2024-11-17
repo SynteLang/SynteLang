@@ -2238,6 +2238,47 @@
 			}
 		]
 	},
+	"exb": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "out",
+				"Opd": "e"
+			},
+			{
+				"Op": "in",
+				"Opd": "@"
+			},
+			{
+				"Op": "base",
+				"Opd": "2"
+			},
+			{
+				"Op": "-",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "x"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "pow",
+				"Opd": "e"
+			},
+			{
+				"Op": "-",
+				"Opd": "1"
+			},
+			{
+				"Op": "/",
+				"Opd": "x"
+			}
+		]
+	},
 	"excl": {
 		"Comment": "like clip, but removes signal betwen +/- operand, shifts the remaining up or down to zero",
 		"Body": [
@@ -4727,7 +4768,7 @@
 			},
 			{
 				"Op": "mul",
-				"Opd": "0.9"
+				"Opd": "1.2"
 			},
 			{
 				"Op": "-",
@@ -4739,7 +4780,7 @@
 			},
 			{
 				"Op": "in",
-				"Opd": "65hz"
+				"Opd": "40hz"
 			},
 			{
 				"Op": "f2c",
@@ -4767,7 +4808,7 @@
 			},
 			{
 				"Op": "mul",
-				"Opd": "0.072"
+				"Opd": "0.11"
 			},
 			{
 				"Op": "-",
@@ -4779,7 +4820,7 @@
 			},
 			{
 				"Op": "in",
-				"Opd": "10240hz"
+				"Opd": "5120hz"
 			},
 			{
 				"Op": "f2c",
@@ -4803,7 +4844,7 @@
 			},
 			{
 				"Op": "mul",
-				"Opd": "4.5"
+				"Opd": "23db"
 			}
 		]
 	},

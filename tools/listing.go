@@ -70,20 +70,18 @@ func mutesOrVerboseChanged(mv muteVerb) (muteVerb, bool) {
 	Json, err := os.ReadFile(file2)
 	err2 := json.Unmarshal(Json, &d)
 	if err != nil || err2 != nil {
+		return mv, false
 		//fmt.Printf("error loading %s: %v %v\n", file2, err, err2)
-		//time.Sleep(2 * time.Second)
 	}
 	var m []bool
-	err2 = json.Unmarshal(d["Mute"], &m)
-	if err2 != nil {
+	if json.Unmarshal(d["Mute"], &m) != nil {
+		return mv, false
 		//fmt.Printf("error decoding %s: %v %v\n", file2, err, err2)
-		//time.Sleep(2 * time.Second)
 	}
 	var v bool
-	err2 = json.Unmarshal(d["Verbose"], &v)
-	if err2 != nil {
+	if json.Unmarshal(d["Verbose"], &v) != nil {
+		return mv, false
 		//fmt.Printf("error decoding %s: %v %v\n", file2, err, err2)
-		//time.Sleep(2 * time.Second)
 	}
 	if slices.Equal(mv.mute, m) && mv.verbose == v {
 		return mv, false
@@ -118,7 +116,7 @@ func readAndDisplay(file string, info muteVerb) {
 		}
 		fmt.Printf("\n%d ", i)
 		if list[0].Op == "/*" {
-			fmt.Printf("%s", list[0].Opd)
+			fmt.Printf("%s%s%s", bold, list[0].Opd, reset)
 		}
 		fmt.Printf("\t")
 		m, c, y := magenta, cyan, yellow

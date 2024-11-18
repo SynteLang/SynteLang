@@ -3605,6 +3605,379 @@
 			}
 		]
 	},
+	"juno": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "out",
+				"Opd": "p"
+			},
+			{
+				"Op": "in",
+				"Opd": "@"
+			},
+			{
+				"Op": "base",
+				"Opd": "2"
+			},
+			{
+				"Op": "mul",
+				"Opd": "p"
+			},
+			{
+				"Op": "out",
+				"Opd": "f"
+			},
+			{
+				"Op": "in",
+				"Opd": "7hz"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "2"
+			},
+			{
+				"Op": "+",
+				"Opd": "-1"
+			},
+			{
+				"Op": "abs",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "a.2"
+			},
+			{
+				"Op": "in",
+				"Opd": "0.75"
+			},
+			{
+				"Op": "sub",
+				"Opd": "0.25"
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.2"
+			},
+			{
+				"Op": "+",
+				"Opd": "0.25"
+			},
+			{
+				"Op": "out",
+				"Opd": "pw"
+			},
+			{
+				"Op": "in",
+				"Opd": "p"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.3"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.3"
+			},
+			{
+				"Op": "in",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "gt",
+				"Opd": "pw"
+			},
+			{
+				"Op": "mul",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "pw"
+			},
+			{
+				"Op": "gt",
+				"Opd": "a.3"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.4"
+			},
+			{
+				"Op": "gt",
+				"Opd": "c.4"
+			},
+			{
+				"Op": "--",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "d.4"
+			},
+			{
+				"Op": "--",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.4"
+			},
+			{
+				"Op": "out",
+				"Opd": "e.4"
+			},
+			{
+				"Op": "in",
+				"Opd": "c.4"
+			},
+			{
+				"Op": "-",
+				"Opd": "440hz"
+			},
+			{
+				"Op": "mul",
+				"Opd": "d.4"
+			},
+			{
+				"Op": "+",
+				"Opd": "e.4"
+			},
+			{
+				"Op": "out",
+				"Opd": "c.4"
+			},
+			{
+				"Op": "out",
+				"Opd": "m"
+			},
+			{
+				"Op": "in",
+				"Opd": "p"
+			},
+			{
+				"Op": "mul",
+				"Opd": "0.5"
+			},
+			{
+				"Op": "mul",
+				"Opd": "4"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "mul",
+				"Opd": "0.25"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.5"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.5"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0.5"
+			},
+			{
+				"Op": "sub",
+				"Opd": "0.5"
+			},
+			{
+				"Op": "mul",
+				"Opd": "-8db"
+			},
+			{
+				"Op": "out+",
+				"Opd": "m"
+			},
+			{
+				"Op": "in",
+				"Opd": "p"
+			},
+			{
+				"Op": "mul",
+				"Opd": "1.01"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.6"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.6"
+			},
+			{
+				"Op": "mul",
+				"Opd": "2"
+			},
+			{
+				"Op": "+",
+				"Opd": "-1"
+			},
+			{
+				"Op": "clip",
+				"Opd": "1"
+			},
+			{
+				"Op": "+",
+				"Opd": "m"
+			},
+			{
+				"Op": "-",
+				"Opd": "b.8"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.8"
+			},
+			{
+				"Op": "in",
+				"Opd": "f"
+			},
+			{
+				"Op": "f2c",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.8"
+			},
+			{
+				"Op": "+",
+				"Opd": "b.8"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.8"
+			},
+			{
+				"Op": "-",
+				"Opd": "b.9"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.9"
+			},
+			{
+				"Op": "in",
+				"Opd": "f"
+			},
+			{
+				"Op": "f2c",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.9"
+			},
+			{
+				"Op": "+",
+				"Opd": "b.9"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.9"
+			},
+			{
+				"Op": "-",
+				"Opd": "b.10"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.10"
+			},
+			{
+				"Op": "in",
+				"Opd": "f"
+			},
+			{
+				"Op": "f2c",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.10"
+			},
+			{
+				"Op": "+",
+				"Opd": "b.10"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.10"
+			},
+			{
+				"Op": "-",
+				"Opd": "b.11"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.11"
+			},
+			{
+				"Op": "in",
+				"Opd": "f"
+			},
+			{
+				"Op": "f2c",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.11"
+			},
+			{
+				"Op": "+",
+				"Opd": "b.11"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.11"
+			}
+		]
+	},
 	"kd": {
 		"Comment": "deep and loud kick drum. Operand is the starting pitch, decays to 0. Feed input with an envelope like `/b 4,0, trn 6` ",
 		"Body": [

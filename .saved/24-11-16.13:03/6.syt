@@ -1,0 +1,45 @@
+in 1.25/2hz
+sino
+pan 6
+in 140bpm
+/ 16
+sq
+flip
+range 1/1.125,1
+out o
+in 2s
+pulse 0.75
+range 140bpm,3.5hz
+sq
+s/h grid
+out g
+dirac
+down 500ms
+exb 5
+smooth
+out vca
+in 2.5s
+sq
+s/h grid
+range 1,1.5
+out s
+in 2hz
+sq
+s/h grid
+range 1,1.25
+mul s
+out s1
+in 3.5/2hz
+sq
+s/h grid
+range 0.75,1
+mul s1
+mul o
+s/h g
+smooth
+mul 330*2hz
+sino
+mul vca
+mul -2db
+tanh
+mix

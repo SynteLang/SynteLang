@@ -1,0 +1,40 @@
+in 3s
+sq
+s/h grid
+range 1/6,2/3
+out s
+in 4s
+sq
+s/h grid
+range 1/3,1/2
+out s1
+in 3hz
+sq
+s/h grid
+range s,s1
+out p
+/b 2,0
+lt 0.5
+out v
+/b 16,0
+lt 0.5
+mul v
+smooth
+out gt
+in 140bpm
+mul p
+/ 1.2
+osc
+mod 0.2
++ 0.7
+wav oooo
+lpf 1khz
++ c
+push
+tape 140*3bpm
+mul 0.8
+out c
+pop
+mul gt
+mul -8db
+mix

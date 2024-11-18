@@ -1,0 +1,32 @@
+in 8hz
+posc 0
+lt 0.5
+smooth
+out gt
+in 3s
+osc
+tri
+mul 2
+- 1
+clip 0
++ 1
+out ba
+in 4hz
+posc 0
+smooth
+out vca
+mul 3
+base ba
+mul 55hz
+mul 24
+out f
+mul 1/2
+pulse 0.25
+down 1ms
+hpf 110*2hz
+mul gt
+mul 3db
+lpf f
+lpf f
+lpf f
+mix

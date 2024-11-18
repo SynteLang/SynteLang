@@ -1,0 +1,23 @@
+/b 1.5,0
+trn 1.4
+push
+mul 1.3
+exp 5
+- 1/32
+clip 0
+smooth
+out vca
+pop
+mul 1/24
+base 2
+mul 44hz
+osc
+tri
+cv2a
+tanh
+mul vca
+clip 0.7
+mul 4db
+lpf 400hz
+lpf 400hz
+mix

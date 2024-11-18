@@ -1,0 +1,35 @@
+in 3s
+osc
+exb 3
+flip
+mul 15
+- 5
+s/h grid
+out t
+/b 8,0
+flip
+exb t
+mul 2.8
+smooth
+smooth
+level 1
+in 1.5/2s
+sq
+s/h grid
+range 1/2,1
+out o
+in 8.125s
+osc
+push
+gt 0.75
+range 1/1.2,1
+out s
+pop
+lt 0.5
+range 1.5,1.8
+mul s
+s/h grid
+mul 220hz
+lpf 5hz
+mul o
+.out pitch

@@ -1,0 +1,41 @@
+in 3hz
+sino
+pan 7
+in 140bpm
+/ 16
+sq
+range 1,1.5
+out s
+/b 6,0
+tri
+mul 3
++ 0.3
+out v
+base 2
+mul p
+mul 1/1.5
+out f
+in 330/2hz
+mul s
+out p
+osc
+cv2a
+out m
+in p
+mul 1.5/2
+osc
+cv2a
+out+ m
+in p
+mul 1.01
+osc
+cv2a
++ m
+mul 1/4
+/ v
+lpf f
+lpf f
+lpf f
+lpf f
+mul 10db
+mix

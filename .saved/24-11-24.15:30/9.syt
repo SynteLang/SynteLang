@@ -1,0 +1,23 @@
+/* vox
+in 3hz
+sq
+s/h grid
+dirac
+down 70ms
+out vca
+in grid
+dirac
+down 1.36*1s
++ 0.73
+wav sick
+hpf 500hz
+mul vca
+push
++ c
+tape 132bpm
+lpf 1khz
+mul 0.3
+out c
+pop
+mul -6db
+out dac

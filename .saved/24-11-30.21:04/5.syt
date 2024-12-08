@@ -1,0 +1,6 @@
+/b 4,0
+/ 4
+wav chill
+mul 18db
+hpf 1khz
+mix

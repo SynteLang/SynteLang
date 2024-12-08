@@ -1,0 +1,6 @@
+in 220/2hz
+out p
+in 132bpm
+mul 4
+sq
+.out grid

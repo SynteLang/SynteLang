@@ -1,0 +1,13 @@
+in 140bpm
+mul 2
+mul Phi
+sq
+s/h grid
+out gt
+/b 8,0
+flip
+exb 3
+mul gt
+smooth
+smooth
+.level 0

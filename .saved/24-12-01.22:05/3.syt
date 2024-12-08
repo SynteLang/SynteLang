@@ -1,0 +1,20 @@
+/* kd
+/b 1,0.5
+lt 3/8
+range 4,12
+mul 1
+out b
+/b b,0
+lt 0.5
+s/h grid
+dirac
+down 150ms
+exb 3
+mul 110hz
+sino
+mul 3
+clip 1
+hpf 10hz
+lpf 110hz
+lpf 110*3hz
+mix

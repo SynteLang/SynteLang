@@ -1,0 +1,7 @@
+from 0
++ c
+tape 140*3bpm
+lpf 4khz
+mul 0.3
+out c
+out dac

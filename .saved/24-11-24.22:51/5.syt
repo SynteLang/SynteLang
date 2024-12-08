@@ -1,0 +1,14 @@
+in 140bpm
+mul 3.1
+sq
+s/h grid
+dirac
+down 100ms
+mul 110hz
+sino
+clip 0.9
+tanh
+lpf 330hz
+hpf 3hz
+mul -2db
+mix

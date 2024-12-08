@@ -1,0 +1,53 @@
+/b 1,0.75
+lt 1/8
++ 1
+/ 2
+smooth
+out o
+in 7/8s
+osc
+tri
+mul 1.5
+clip 0
+exb 3
+mul 4
+out k
+in 3hz
+osc
+tri
+mul 3
+base 2
+mul 55hz
+mul o
+out f
+in 3s
+sino
+mul 0.01
++ 1
+mul 55hz
+mul o
+osc
+cv2a
+out m
+in 55hz
+mul o
+osc
+cv2a
++ m
+mul 1
+- r
+clip 1
+lpf f
+clip 1
+lpf f
+clip 1
+lpf f
+clip 1
+lpf f
+push
+mul k
+clip 1
+out r
+pop
+mul 14db
+mix

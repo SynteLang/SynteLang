@@ -1,0 +1,12 @@
+in 30s
+osc
+out t
+/b 4,0
++ 0.9
+/ 2
+mod 1
+/ 2
+wav chill
+mul -6db
+hpf 1khz
+mix

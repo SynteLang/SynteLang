@@ -38,6 +38,11 @@ func main() {
 		exit bool
 		stop = make(chan struct{})
 	)
+	if _, err := os.Open(file); err != nil {
+		fmt.Printf("error: %v\n", err)
+		fmt.Println("check you are in the correct directory")
+		return
+	}
 
 	go func() {
 		var (
@@ -68,20 +73,22 @@ func mutesOrVerboseChanged(mv muteVerb) (muteVerb, bool) {
 	file2 := "infodisplay.json"
 	d := make(map[string]json.RawMessage)
 	Json, err := os.ReadFile(file2)
-	err2 := json.Unmarshal(Json, &d)
-	if err != nil || err2 != nil {
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		fmt.Println("check you are in the correct directory")
 		return mv, false
-		//fmt.Printf("error loading %s: %v %v\n", file2, err, err2)
+
+	}
+	if json.Unmarshal(Json, &d) != nil {
+		return mv, false
 	}
 	var m []bool
 	if json.Unmarshal(d["Mute"], &m) != nil {
 		return mv, false
-		//fmt.Printf("error decoding %s: %v %v\n", file2, err, err2)
 	}
 	var v bool
 	if json.Unmarshal(d["Verbose"], &v) != nil {
 		return mv, false
-		//fmt.Printf("error decoding %s: %v %v\n", file2, err, err2)
 	}
 	if slices.Equal(mv.mute, m) && mv.verbose == v {
 		return mv, false
@@ -96,15 +103,11 @@ func readAndDisplay(file string, info muteVerb) {
 	}
 
 	Json, err := os.ReadFile(file)
-	err2 := json.Unmarshal(Json, &listing)
 	if err != nil {
-		//fmt.Printf("error loading %s: %v %v\n", file, err, err2)
-		//time.Sleep(2 * time.Second)
+		return
 	}
-	if err2 != nil {
-		//fmt.Printf("error decoding %s: %v %v\n", file, err, err2)
-		//time.Sleep(2 * time.Second)
-	}
+	json.Unmarshal(Json, &listing) // error unchecked
+
 	fmt.Printf("%sSyntə listings%s %spress enter to quit%s", cyan, reset, italic, reset)
 
 	for i, list := range listing {

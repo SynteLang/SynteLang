@@ -1,0 +1,12 @@
+in 1.5s
+sq
+mul 0.3
+out s
+/b 12,0.5
+flip
+exb 8.5
+mul 2
++ s
+clip 0
+smooth
+.level 0

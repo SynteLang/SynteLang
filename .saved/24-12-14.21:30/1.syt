@@ -1,0 +1,68 @@
+/* bass
+from 2
+abs
+mul 2
+clip 0
+flip
+smooth
+smooth
+out duck
+in 7.125s
+sq
+range 1,1.5
+out s1
+in 3.125s
+pulse 1/4
+range 3/4,1
+out s
+in 1s
+sq
+range 1,1.2
+mul s
+mul s1
+s/h grid
+mul 55*1.0hz
+out p
+in 1.5s
+sq
++ 1
+mul 8
+out b
+/b b,0.5
+flip
+exp 3
+lpf 20hz
+out vca
+push
+mul 2.5
+- 0.5
+base 2
+mul p
+out f
+pop
+mul 0.01
++ 1
+mul p
+osc
+cv2a
+out m
+in p
+mul 0.01
++ m
+lpf f
+lpf f
+lpf f
+lpf 110*2hz
+out x
+mul x
+- 0.5
+mul 0.125
++ x
+out eq
+hpf 55hz
+mul 1.5
++ eq
+mul 0.9
+mul duck
+mul vca
+mix

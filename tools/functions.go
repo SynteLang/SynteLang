@@ -167,6 +167,7 @@ func main() {
 	for k := range functions {
 		fmt.Printf("\t%s%s%s ", italic, k, reset)
 	}
+	fmt.Println()
 }
 
 func loadUsage() map[string]int {

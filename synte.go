@@ -378,6 +378,7 @@ var (
 	gain    = baseGain
 	clipThr = 1.0 // individual listing limiter threshold
 	rst   bool
+	eq bool = yes
 )
 
 type noise uint64
@@ -1335,6 +1336,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		s      float64 = 1    // sync=0
 		mx, my float64 = 1, 1 // mouse smooth intermediates
 		hpf, x float64        // DC-blocking high pass filter
+		eqM, eqXM float64     // loudness eq, mid
+		eqS, eqXS float64     // loudness eq, sides
 		g      float64        // gain smooth intermediate
 		hiBand, hiBandPrev,
 		midBand, midBandPrev float64    // limiter pre-emphasis
@@ -1933,6 +1936,13 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		l *= release + 1/(h+1/(1-release))
 		ll += (l - ll) * lpf15Hz // low-pass filter to mitigate low-end modulation
 		display.GR = ll > 3e-4
+		eqM = (eqM + mid - eqXM) * hpf160Hz
+		eqXM = mid
+		eqS = (eqS + sides - eqXS) * hpf160Hz
+		eqXS = sides
+		if eq { // ~6dB high shelving boost
+			mid = 0.9 * ( eqM + mid )
+			sides = 0.9 * (eqS + sides)
 		if exit {
 			mid *= env // fade out
 			sides *= env
@@ -2487,6 +2497,13 @@ func modeSet(s systemState) (systemState, int) {
 	case "reset":
 		rst = !rst
 		msg("reset: %t", rst)
+	case "eq":
+		eq = !eq
+		s := "off"
+		if eq {
+			s = "on"
+		}
+		msg("%seq:%s %s", italic, reset, s)
 	default:
 		msg("%sunrecognised mode: %s%s", italic, reset, s.operand)
 	}

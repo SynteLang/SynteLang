@@ -40,6 +40,7 @@ func main() {
 		Mute    []bool
 		SR      float64
 		GR      bool
+		GRl     int
 		Sync    bool
 		v       bool
 		Format  int
@@ -55,11 +56,6 @@ func main() {
 	}
 	messages := make([]message, 11)
 
-	clip := ""
-	paused := ""
-	sync := " "
-	GRhold := 0
-
 	file := "infodisplay.json"
 
 	var start time.Time
@@ -68,11 +64,13 @@ func main() {
 	var exit bool
 	stop := make(chan struct{})
 	load := ""
+	loadV := 0.0
 	overload := 0
 
 	go func() { // anonymous to include above variables in scope
 		n := 0
 		dB := "     "
+		df := -120.0 // filter
 		for {
 			Json, err := os.ReadFile(file)
 			json.Unmarshal(Json, &display)
@@ -82,10 +80,9 @@ func main() {
 				//messages[10].Content = "info display out of order"
 			}
 
+			paused := "      "
 			if display.Paused {
 				paused = green + "paused" + reset
-			} else {
-				paused = "      "
 			}
 			if display.On {
 				if !started {
@@ -97,24 +94,29 @@ func main() {
 				started = false
 			}
 
-			sync = " "
+			sync := " "
 			if display.Sync {
 				sync = fmt.Sprintf("%s●%s", yellow, reset)
 			}
 
 			if display.Mode == "on" {
-				display.Mode = italic + "funcsave: " + reset + display.Mode
+				display.Mode = italic + "funcsave on" + reset
 			} else {
 				display.Mode = "\t"
 			}
 
 			loadColour := ""
-			l := float64(display.Load) / (1e9 / display.SR)
+			l := float64(display.Load) / 1e9 * display.SR
+			loadV *= 0.999
+			if l > loadV {
+				loadV = l
+			}
 			if overload == 0 {
-				load = fmt.Sprintf("%0.2f", l)
+				load = fmt.Sprintf("%0.2f", loadV)
 			}
 			if !started {
 				load = "0"
+				display.Vu = 0
 			}
 			if overload > 0 {
 				overload--
@@ -138,37 +140,34 @@ func main() {
 					messages[i].Content = ""
 				}
 			}
-			clip = ""
+			clip := ""
 			if display.Clip {
-				clip = red
+				clip = bold+red
 			}
-			if display.GR {
-				GRhold = 5
-			}
-			gr := ""
-			if GRhold > 0 {
-				gr = yellow + "GR" + reset
-				GRhold--
-			}
-			db := math.Log10(display.Vu)
+			db := 20*math.Log10(display.Vu)
 			if math.IsInf(db, -1) {
-				db = -6
+				db = -120
 			}
-			if n%10 == 0 {
-				dB = fmt.Sprintf("%-+5.3g", math.Round(db*20))
-				if db <= -6 {
+			df += (db - df) * 0.3
+			if n%15 == 0 { // decimate in time
+				dB = fmt.Sprintf("%-+5.3g", math.Round(df))
+				if db <= -120 {
 					dB = "     "
 				}
 			}
 			n++
-			vu := 1 + (db / 2.5)
-			if vu > 1 {
-				vu = 1
+			vu := int(math.Min(22, 22 + (db / 2.5)))
+			gr := "  "
+			if display.GR {
+				gr = "GR"
 			}
-			VU := fmt.Sprintf("\r          |                         %s|%s  %s", clip, reset, gr)
-			VU += fmt.Sprintf("\r           %s%s%s|", green, dB, reset)
-			nn := int(vu*20 - 0.5)
-			for i := 0; i < nn; i++ {
+			grl := ""
+			if display.GRl > 0 {
+				gr = fmt.Sprintf("%d", display.GRl-1)
+			}
+			VU := fmt.Sprintf("\r          ┃                          %s┃%s  %s%s%s", clip, yellow, gr, grl, reset)
+			VU += fmt.Sprintf("\r       %s%s%s VU ┃", green, dB, reset)
+			for i := 0; i < vu; i++ {
 				VU += "|"
 			}
 

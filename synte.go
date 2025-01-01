@@ -83,7 +83,7 @@ const ( // operating system
 	AFMT_S16_LE  = 0x00000010
 	AFMT_S8      = 0x00000040
 	//AFMT_S32_BE = 0x00002000 // Big Endian
-	SELECTED_FMT = AFMT_S16_LE
+	SELECTED_FMT = AFMT_S32_LE
 	// for Stereo
 	SNDCTL_DSP_CHANNELS = 0xC0045003
 	STEREO              = 1
@@ -102,13 +102,16 @@ const ( // operating system
 	maxExports    = 12
 	DEFAULT_FREQ  = 0.0625 // 3kHz @ 48kHz Sample rate
 	FDOUT         = 1e-4
-	MIN_FADE      = 125e-3 // 125ms
-	MAX_FADE      = 120   // 120s
-	MIN_RELEASE   = 50e-3 // 50ms
-	MAX_RELEASE   = 50    // 50s
+	MIN_FADE      = 75e-3 // 75ms
+	MAX_FADE      = 120   // seconds
+	defaultRelease = 0.5  // seconds
+	MIN_RELEASE   = 25e-3 // 25ms
+	MAX_RELEASE   = 1     // seconds
 	twoInvMaxUint = 2.0 / math.MaxUint64
 	alpLen        = 2400
-	baseGain      = 1.0
+	baseGain      = 0.5
+	writeBufferLen = 2400
+//	LOAD_THRESH = 17708 // approx. 0.85 * 1e9 / SAMPLE_RATE, 85% in nanoseconds per sample
 )
 
 var SampleRate float64 = SAMPLE_RATE // should be 'de-globalised'
@@ -242,12 +245,12 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	">sync":  {not, 26, noCheck},      // send sync pulse
 	".>sync": {not, 26, noCheck},      // alias, launches listing
 	//	"jl0":    {yes, 27, noCheck},    // jump if less than zero
-	"level":  {yes, 28, checkIndexIncl}, // vary level of a listing
 	"/*":      {yes, 27, noCheck},		 // comments and/or name
+	"level":  {yes, 28, noCheck}, // vary level of a listing
 	".level": {yes, 28, checkIndexIncl}, // alias, launches listing
 	"lvl":    {yes, 28, checkIndexIncl}, // vary level of a listing
 	".lvl":   {yes, 28, checkIndexIncl}, // alias, launches listing
-	"from":   {yes, 29, checkIndex},     // receive output from a listing
+	"from":   {yes, 29, noCheck},     // receive output from a listing
 	"sgn":    {not, 30, noCheck},        // sign of input
 	"log":    {not, 31, noCheck},        // base-2 logarithm of input
 	"/":      {yes, 32, noCheck},        // division
@@ -256,8 +259,8 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"setmix": {yes, 34, noCheck},        // set sensible level
 	"print":  {not, 35, noCheck},        // print input to info display
 	"\\":     {yes, 36, noCheck},        // "\"
-	"pan":    {yes, 38, checkIndexIncl}, // vary pan of a listing
-	".pan":   {yes, 38, checkIndexIncl}, // alias, launches listing
+	"pan":    {yes, 38, noCheck}, // vary pan of a listing
+	".pan":   {yes, 38, noCheck}, // alias, launches listing
 	"all":    {not, 39, checkIndex},     // receive output of all preceding listings
 	"fft":    {not, 40, noCheck},        // create fourier transform
 	"ifft":   {not, 41, noCheck},        // receive from fourier representation
@@ -321,7 +324,7 @@ type opSE struct {
 	Opn int // operation switch index
 	P   bool
 	i   int // index of persisted signal
-	Opd string
+	//Opd string
 }
 
 type listingStack struct {
@@ -346,8 +349,9 @@ type listingStack struct {
 	ifft2 [N]float64
 	z, zf [N]complex128
 	ffrz  bool
-	lim, limPre,
-	limPreX float64
+	lim,
+	limPreH, limPreHX,
+	limPreL, limPreLX float64
 }
 
 const infoBuffer = 96
@@ -374,10 +378,11 @@ var (
 	levels  []float64
 	rs      bool                                     // root-sync between running instances
 	fade    = 1 / (MIN_FADE * SAMPLE_RATE)           //Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
-	release = math.Pow(8000, -1.0/(.25*SAMPLE_RATE)) // 250ms
+	release = releaseFrom(defaultRelease, SAMPLE_RATE) // should be calculated from sc.sampleRate
 	gain    = baseGain
-	clipThr = 1.0 // individual listing limiter threshold
+	clipThr = 1.25 // individual listing limiter threshold
 	rst   bool
+	underRun int
 	eq bool = yes
 )
 
@@ -409,6 +414,7 @@ type disp struct { // indicates:
 	Mute    []bool        // mutes of all listings
 	SR      float64       // current sample rate
 	GR      bool          // limiter is in effect
+	GRl     int          // per-listing limiter is in effect
 	Sync    bool          // sync pulse sent
 	Verbose bool          // show unrolled functions - all operations
 	Format	int           // output bit depth
@@ -463,27 +469,30 @@ func main() {
 		var err error
 		log, err = os.OpenFile("info.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			pf("unable to log: %s", err)
+			pf("unable to log: %s\n", err)
 			return
 		}
 		defer log.Close()
 		_, err = log.WriteString(sf("\n-- Syntə info log %s --\n", time.Now()))
 		if err != nil {
-			pf("unable to log: %s", err)
+			pf("unable to log: %s\n", err)
 			return
 		}
 		writeLog = true
 		p("logging...")
-	case "-prof", "-p":
+	case "--prof", "-p":
 		f, rr := os.Create("cpu.prof")
 		if e(rr) {
-			pf("no cpu profile: %v", rr)
+			pf("no cpu profile: %v\n", rr)
 		}
 		defer f.Close()
 		if rr := pprof.StartCPUProfile(f); e(rr) {
-			pf("profiling not started: %v", rr)
+			pf("profiling not started: %v\n", rr)
 		}
 		defer pprof.StopCPUProfile() //*/
+	case "-u", "--usage", "-h", "--help":
+		p("Available flags: --log, --prof, --sr <hz>. Only one may be used at a time")
+		return
 	}
 	run(os.Stdin)
 }
@@ -514,13 +523,31 @@ func run(from io.Reader) {
 	saveJson([]listing{{operation{Op: advisory}}}, "displaylisting.json")
 	go infoDisplay()
 
-	sc, success := setupSoundCard("/dev/dsp")
+	sc, success := setupSoundCard("/dev/dsp3")
 	if !success {
 		p("unable to setup soundcard")
 		sc.file.Close()
 		return
 	}
+
+	// hack to reset soundcard because of pops and clicks on first run.
+	// requires further investigation. System dependent
+	for range [1024]struct{}{} {
+		selectOutput(sc.format)(sc.file, 0)
+	}
+	if sc.file.Close() != nil {
+		p("unable to close soundcard")
+	}
+	sc, success = setupSoundCard("/dev/dsp3")
+	if !success {
+		p("unable to setup soundcard")
+		sc.file.Close()
+		return
+	}
+	// end of hack
+
 	defer sc.file.Close()
+
 	if writeLog {
 		log.WriteString(sf("soundcard: %dbit %2gkHz %s\n", sc.format, sc.sampleRate, sc.channels))
 	}
@@ -602,7 +629,9 @@ start:
 			switch do {
 			case startNewListing:
 				loadExternalFile = not
-			//	emptyTokens()
+		//		if loadExternalFile {
+					//	emptyTokens()
+		//		}
 				continue start
 			case startNewOperation:
 				if loadExternalFile {
@@ -654,6 +683,10 @@ start:
 			if !loadExternalFile {
 				msg(" ")
 			}
+		}
+
+		if !popPushParity(t) {
+			continue
 		}
 
 		for _, o := range t.newListing {
@@ -738,6 +771,9 @@ start:
 		closeWavFile()
 	}
 	saveUsage(usage, t)
+	if underRun > 0 {
+		pf("underruns: %d", underRun)
+	}
 }
 
 func parseNewOperation(t systemState) (systemState, bool, int) {
@@ -786,7 +822,7 @@ func loadNewListing(listing []operation) []opSE {
 			N:   o.N,
 			Opn: o.Opn,
 			P:   o.P,
-			Opd: o.Opd,
+			//Opd: o.Opd,
 			i:   o.i,
 		}
 	}
@@ -822,6 +858,10 @@ func collate(t *systemState) *data {
 		t.dispListings[t.reload] = t.dispListing
 		t.verbose[t.reload] = t.newListing
 		mutes.set(t.reload, m)
+		if levels[t.reload] < 0.1 {
+			 // to avoid ghost listings from previous level set to zero
+			levels[t.reload] = 1
+		}
 		return d
 	}
 	t.dispListings = append(t.dispListings, t.dispListing)
@@ -1197,8 +1237,9 @@ func infoIfLogging(s string, i ...interface{}) {
 
 func infoDisplay() {
 	file := "infodisplay.json"
-	c := 1
-	s := 1
+	var (
+		c, s, g, gl int
+	)
 	display.Info = "clear"
 	for {
 		if writeLog {
@@ -1231,21 +1272,26 @@ func infoDisplay() {
 		default: // passthrough
 		}
 		time.Sleep(20 * time.Millisecond) // coarse loop timing
-		if display.Clip {
-			c++
-		}
-		if c > 20 { // clip timeout
-			display.Clip = not
-			c = 1
-		}
-		if display.Sync {
-			s++
-		}
-		if s > 10 { // sync timeout
-			display.Sync = not
-			s = 1
+
+		display.Clip, c = holdIndicator(display.Clip, c)
+		display.Sync, s = holdIndicator(display.Sync, s)
+		display.GR, g   = holdIndicator(display.GR, g)
+		var dGRl bool
+		dGRl, gl        = holdIndicator(display.GRl > 0, gl)
+		if !dGRl {
+			display.GRl = 0
 		}
 	}
+}
+
+func holdIndicator(d bool, i int) (bool, int) {
+	if d {
+		i++
+	}
+	if i > 20 {
+		return not, 0
+	}
+	return d, i
 }
 
 type stereoPair struct {
@@ -1267,6 +1313,7 @@ func transfer(d []listingStack, tr *data) ([]listingStack, []int) {
 				d[tr.reload].sigs[o.N] = sg[o.i]
 			}
 		}
+		d[tr.reload].pan = 0 // to avoid 'stuck' pans
 		coreDump(d[tr.reload], "reloaded_listing_new")
 		return d, tr.daisyChains
 	}
@@ -1290,7 +1337,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	}
 
 	const Tau = 2 * math.Pi
-	const RateIntegrationTime = 2 << 14 // to display load
+	const RateIntegrationTime = writeBufferLen // to display load, number of samples
+												// or: sampleRate / 20
 
 	const (
 		run syncState = iota
@@ -1299,29 +1347,38 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	)
 
 	var (
+		// sample interval (1/SR) in nanoseconds
+		loadThresh = time.Duration(0.85 * 1e9 * (1 / sc.sampleRate))
+
 		lpf15Hz = lpf_coeff(15, sc.sampleRate)
 		lpf1kHz = lpf_coeff(1e3, sc.sampleRate)
-		lpf2Hz  = lpf_coeff(2, sc.sampleRate)
 
 		// per-listing limiter
-		hpf5120Hz = hpf_coeff(5120, sc.sampleRate)
-		hpf2s     = hpf_coeff(0.5, sc.sampleRate)
+		lpf2point4Hz  = lpf_coeff(2.4435, sc.sampleRate) // attack
+		hpf7241Hz = hpf_coeff(7241, sc.sampleRate) // high emphasis
+		hpf160Hz  = hpf_coeff(160, sc.sampleRate) // low emphasis, loudness eq
+		hpf2s     = hpf_coeff(0.5, sc.sampleRate) // release
 
 		// main out DC blocking
-		hpf2point5Hz     = hpf_coeff(2.5, sc.sampleRate)
+		hpf2point5Hz = hpf_coeff(2.5, sc.sampleRate)
 
 		// main output limiter
-		hiBandCoeff      = hpf_coeff(10240, sc.sampleRate)
-		midBandCoeff     = hpf_coeff(320, sc.sampleRate)
+		hiBandCoeff  = hpf_coeff(10240, sc.sampleRate)
+		midBandCoeff = hpf_coeff(320, sc.sampleRate)
 	)
 
-	const Thr = 1.0 // must be less than or equal to one
+	const (
+		Thr = 1.0 // must be less than or equal to one
+		holdTime = 0.02 // 20ms
+	)
 
 	var (
 		no = noise(time.Now().UnixNano())
 		tapeLen = int(sc.sampleRate) * TAPE_LENGTH
 
-		l, ll, h float64 = Thr, Thr, 2 // limiter, hold
+		lim, h float64 = Thr, 2 // limiter, hold
+		//hold = math.Pow(10, -2/(holdTime*sc.sampleRate))
+		hold = releaseFrom(holdTime, sc.sampleRate)
 		env  float64 = 1      // for exit envelope
 		mid, // output
 		peak, // vu meter
@@ -1335,12 +1392,14 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 
 		s      float64 = 1    // sync=0
 		mx, my float64 = 1, 1 // mouse smooth intermediates
-		hpf, x float64        // DC-blocking high pass filter
+		hpfM, xM float64      // DC-blocking high pass filter
+		hpfS, xS float64      // DC-blocking high pass filter
 		eqM, eqXM float64     // loudness eq, mid
 		eqS, eqXS float64     // loudness eq, sides
 		g      float64        // gain smooth intermediate
+		sum,				  // mono sum for detection
 		hiBand, hiBandPrev,
-		midBand, midBandPrev float64    // limiter pre-emphasis
+		midBand, midBandPrev float64                      // limiter pre-emphasis
 		α       = 1 / (sc.sampleRate/(2*math.Pi*194) + 1) // co-efficient for setmix
 		hroom   = (sc.convFactor - 1.0) / sc.convFactor   // headroom for positive dither
 		pd      int                                       // slated for removal
@@ -1348,8 +1407,9 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		current int                                       // tracks index of active listing for recover()
 		p       = 1.0                                     // pause variable
 
-		samples     = make(chan stereoPair, 2400) // buffer up to 50ms of samples (@ 48kHz), introduces latency
-		daisyChains = make([]int, 0, 16)          // made explicitly here to set capacity
+		samples     = make(chan stereoPair, writeBufferLen) // buffer up to 50ms of samples (@ 48kHz), introduces latency
+
+		daisyChains = make([]int, 0, 16) // made explicitly here to set capacity
 	)
 	defer close(samples)
 	no *= 77777777777 // force overflow
@@ -1378,19 +1438,32 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	 // anonymous to use var n in scope
 	go func(w *bufio.Writer, sc soundcard) {
 		lpf := stereoPair{}
-		for env > 0 || n%1024 != 0 { // finish on end of buffer, should be determined in setupSouncard instead of this default
+		for env > 0 || n%writeBufferLen != 0 { // finish on end of buffer, should be determined in setupSouncard instead of this default
 			select {
 			case <-stop: // if panic has occurred n will no longer be incrementing, so return here
 				return
 			case s := <-samples:
 				lpf.stereoLpf(s, 0.7)
 			default:
-				lpf.stereoLpf(stereoPair{}, lpf15Hz)
+				// only degrade when load is high, to avoid lazy underruns
+				// OR when exited to avoid clicks
+				if display.Load > loadThresh || (exit && env == 0) {
+					lpf.stereoLpf(stereoPair{}, lpf15Hz) // zero-stuffing
+					if env > 0 { // don't count if exited
+						underRun++
+					}
+				}
 			}
 			L := clip(lpf.left) * sc.convFactor  // clip will display info
 			R := clip(lpf.right) * sc.convFactor // clip will display info
-			output(w, L)
-			output(w, R)
+			// write to four channels for usb mixer
+			if output(w, L) != nil ||
+		       output(w, R) != nil ||
+			   output(w, L) != nil ||
+			   output(w, R) != nil {
+				pf("Write error occurred! Please restart")
+				os.Exit(1)
+			}
 		}
 	}(w, sc)
 
@@ -1417,6 +1490,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		if p == 0 && d[0].m < 1e-4 { // -80dB
 			pause <- not // blocks until `: play`, bool is purely semantic
 			if exit {
+				env = 0
+				time.Sleep(50 * time.Millisecond) // wait for 'glitch protection' go routine to complete
 				break
 			}
 			p = 1
@@ -1516,7 +1591,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					//if r > 0.9999 { panic("test") } // for testing
 				case 16: // "push"
 					d[i].stack = append(d[i].stack, r)
-					if len(d[i].stack) > 100 { // arbitrary limit
+					if len(d[i].stack) > 100 { // arbitrary limit, should be unnecessary
 						panic("stack_overflow")
 					}
 				case 17: // "pop"
@@ -1568,11 +1643,6 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					c3 := od1*-0.37917091811631082 + od2*0.11952965967158
 					c4 := ev1*0.04252164479749607 + ev2*-0.04289144034653719
 					r += (((c4*z+c3)*z+c2)*z+c1)*z + c0
-					// 4-point 2nd order "optimal" interpolation filter by Olli Niemitalo
-					//c0 := ev1*0.42334633257225274 + ev2*0.07668732202139628
-					//c1 := od1*0.26126047291143606 + od2*0.24778879018226652
-					//c2 := ev1*-0.213439787561776841 + ev2*0.21303593243799016
-					//r += (c2*z+c1)*z + c0
 				case 21: // "f2c" // r = 1 / (1 + 1/(Tau*r))
 					r = math.Abs(r)
 					r *= Tau
@@ -1613,6 +1683,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					case r > 0: // reset
 						d[i].syncSt8 = run
 					}
+				case 27:
+					// nop
 				/*case 27: // "jl0"
 				if r <= 0 {
 					op += int(d[i].sigs[d[i].listing[ii].N])
@@ -1621,21 +1693,38 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					op = len(list) - 2
 				}*/
 				case 28: // "level", ".level"
-					levels[int(d[i].sigs[d[i].listing[ii].N])] = r
+					l := int(d[i].sigs[d[i].listing[ii].N])
+					if l > len(d)-1 || l < 0 {
+						continue
+					}
+					levels[l] = r
 					//levels[Min(len(levels), int(d[i].sigs[d[i].listing[ii].N]))] = r // alternative
 				case 29: // "from"
-					r = d[int(d[i].sigs[d[i].listing[ii].N])%len(d)].sigs[0]
+					l := int(d[i].sigs[d[i].listing[ii].N])
+					if l > len(d)-1 || l < 0 {
+						continue
+					}
+					r = d[l].sigs[0]
 				case 30: // "sgn"
 					r = 1 - float64(math.Float64bits(r)>>62)
 				case 31: // "log"
 					r = math.Abs(r) // avoiding NaN
 					r = math.Log2(r)
 				case 32: // "/"
-					if d[i].sigs[d[i].listing[ii].N] == 0 {
-						d[i].sigs[d[i].listing[ii].N] = math.Copysign(1e-308, d[i].sigs[d[i].listing[ii].N])
+					//if d[i].sigs[d[i].listing[ii].N] == 0 {
+						// swap for arbitrary small number
+					//	d[i].sigs[d[i].listing[ii].N] = math.Copysign(1e-15, d[i].sigs[d[i].listing[ii].N])
+					//}
+					//r /= math.Max(-0.1, math.Min(0.1, d[i].sigs[d[i].listing[ii].N])) // alternative
+					d := d[i].sigs[d[i].listing[ii].N]
+					if d < 0.01 && d >= 0 {
+						d = 0.01
 					}
-					//r /= math.Max(0.1, math.Min(-0.1, d[i].sigs[d[i].listing[ii].N])) // alternative
-					r /= d[i].sigs[d[i].listing[ii].N]
+					if d > -0.01 && d < 0 {
+						d = -0.01
+					}
+					r /= d
+				//	r /= d[i].sigs[d[i].listing[ii].N]
 				case 33: // "sub"
 					r -= d[i].sigs[d[i].listing[ii].N]
 				case 34: // "setmix"
@@ -1651,16 +1740,28 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 						pd += int(no >> 50)
 					}
 				case 36: // "\\"
-					if r == 0 {
-						r = math.Copysign(1e-308, r)
+					//if r == 0 {
+					//	r = math.Copysign(1e-16, r)
+					//}
+					//r = d[i].sigs[d[i].listing[ii].N] / r
+
+					if r < 0.01 && r >= 0 {
+						r = 0.01
+					}
+					if r > -0.1 && r < 0 {
+						r = -0.01
 					}
 					r = d[i].sigs[d[i].listing[ii].N] / r
 				case 38: // "pan", ".pan"
-					d[int(d[i].sigs[d[i].listing[ii].N])].pan = math.Max(-1, math.Min(1, r))
+					l := int(d[i].sigs[d[i].listing[ii].N])
+					if l > len(d)-1 || l < 0 {
+						continue
+					}
+					d[l].pan = math.Max(-1, math.Min(1, r))
 				case 39: // "all"
 					// r := 0 // allow mixing in of preceding listing
 					for ii := range d[i].listing {
-						if ii == i { // ignore current listing
+						if ii >= i {
 							break // only 'all' preceding
 						}
 						r += d[ii].sigs[0]
@@ -1901,41 +2002,50 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			}
 			d[i].sigs[0] *= d[i].m * d[i].lv
 			out := d[i].sigs[0]
-			d[i].limPre = ( d[i].limPre + out - d[i].limPreX ) * hpf5120Hz
-			d[i].limPreX = out
-			det := math.Abs(20 * d[i].limPre + 0.92 * out)
-			if det > d[i].lim+clipThr { // limiter
-				d[i].lim = d[i].lim + (math.Abs(out-clipThr)-d[i].lim)*lpf15Hz
+			d[i].limPreH = ( d[i].limPreH + out - d[i].limPreHX ) * hpf7241Hz
+			d[i].limPreHX = out
+			d[i].limPreL = ( d[i].limPreL + out - d[i].limPreLX ) * hpf160Hz
+			d[i].limPreLX = out
+			det := math.Abs(28 * d[i].limPreH + 3.2 * d[i].limPreL + 0.56 * out)
+			lim := 0.0
+			if det > clipThr { // limiter
+				lim = det-clipThr
 			}
-			out /= (d[i].lim + clipThr) * (d[i].lim + clipThr + 4) / 5 // over-limit
-			display.GR = d[i].lim > 3e-4
+			// ~300ms integration attack
+			d[i].lim = d[i].lim + (lim - d[i].lim)*lpf2point4Hz*(6 + (-5 / (lim+1)))
+			out *= clipThr / (d[i].lim+clipThr * math.Min(50, (d[i].lim+clipThr+1) / 2))
+			if d[i].lim > 0.06 {
+				display.GRl = i+1
+			}
 			d[i].lim *= hpf2s // release
 			sides += out * d[i].pan * 0.5
 			mid += out * (1 - math.Abs(d[i].pan*0.5))
+			sum += out
 		}
+
 		g += (gain - g)*lpf15Hz
 		mid *= g
 		sides *= g
-		hpf = (hpf + mid - x) * hpf2point5Hz
-		x, mid = mid, hpf
+		sum *= g
+		hpfM = (hpfM + mid - xM) * hpf2point5Hz
+		xM, mid = mid, hpfM
+		hpfS = (hpfS + sides - xS) * hpf2point5Hz
+		xS, sides = sides, hpfS
 		// sidechain pre-emphasis
-		channelOR := math.Max(mid+sides, mid-sides)
-		hiBand = (hiBand + channelOR - hiBandPrev) * hiBandCoeff
-		hiBandPrev = channelOR
-		midBand = (midBand + channelOR - midBandPrev) * midBandCoeff
-		midBandPrev = channelOR
-		det := math.Abs(25*hiBand + 2.3*midBand + 0.9*channelOR)
-		if det > l+Thr { // limiter detection
-			l = det
-			h = release
-			display.GR = yes
+		hiBand = (hiBand + sum - hiBandPrev) * hiBandCoeff
+		hiBandPrev = sum
+		midBand = (midBand + sum - midBandPrev) * midBandCoeff
+		midBandPrev = sum
+		det := math.Abs(25*hiBand + 2.3*midBand + 0.9*sum) - Thr
+		if det > lim { // limiter detection
+			lim = det // peak detect
+			h = 1
 		}
-		mid /= ll+Thr // VCA
-		sides /= ll+Thr
-		h /= release
-		l *= release + 1/(h+1/(1-release))
-		ll += (l - ll) * lpf15Hz // low-pass filter to mitigate low-end modulation
-		display.GR = ll > 3e-4
+		mid *= Thr / (lim + Thr) // VCA
+		sides *= Thr / (lim + Thr)
+		h *= hold
+		lim *= release + 0.1 / (1/(0.01 + 1e3*h) + 0.1 / (1 - release))
+		display.GR = lim > 0.06
 		eqM = (eqM + mid - eqXM) * hpf160Hz
 		eqXM = mid
 		eqS = (eqS + sides - eqXS) * hpf160Hz
@@ -1943,6 +2053,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		if eq { // ~6dB high shelving boost
 			mid = 0.9 * ( eqM + mid )
 			sides = 0.9 * (eqS + sides)
+		}
 		if exit {
 			mid *= env // fade out
 			sides *= env
@@ -1957,14 +2068,15 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		dither *= 0.5
 		mid *= hroom
 		mid += dither / sc.convFactor         // dither dac value ±1 from xorshift lfsr
-		if abs := math.Abs(mid); abs > peak { // peak detect
-			peak = abs
-		}
+		peak += (math.Abs(mid) - peak) * lpf2point4Hz // 'VU' style metering
+		//if abs := math.Abs(mid); abs > peak { // peak detect metering
+		//	peak = abs
+		//}
 		display.Vu = peak
-		peak -= 5e-5 // meter ballistics, linear (effectively logarithmic decay in dB)
-		if peak < 0 {
-			peak = 0
-		}
+		//peak -= 5e-5 // meter ballistics, linear (effectively logarithmic decay in dB)
+		//if peak < 0 {
+		//	peak = 0
+		//}
 		sides = math.Max(-0.5, math.Min(0.5, sides))
 		if record {
 			L := math.Max(-1, math.Min(1, mid+sides)) * sc.convFactor
@@ -1980,9 +2092,13 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		if n%RateIntegrationTime == 0 {
 			display.Load = rate / RateIntegrationTime
 		}
-		mid, sides = 0, 0
+		mid, sides, sum = 0, 0, 0
 		n++
 	}
+}
+
+func releaseFrom(t, SR float64) float64 {
+	return math.Pow(10, -4/(t*SR))
 }
 
 func octave(oct float64) float64 {
@@ -2166,8 +2282,9 @@ func checkOut(s systemState) (systemState, int) {
 	case s.operand[:1] == "@":
 		return s, s.clr("%scan't send to @, represents function operand%s", italic, reset)
 	case isUppercaseInitialOrDefaultExported(s.operand):
+		// TODO this needs to check for no prior `out` to same signal
 		if _, exp := s.exportedSignals[s.operand]; !exp && s.operator ==  "out+" {
-			msg("remember to reset %s with `in 0` once in the cycle", s.operand)
+			msg("remember to reset %s with `out` once in the cycle", s.operand)
 		}
 		return s, nextOperation
 	case s.operator == "out+":
@@ -2257,6 +2374,24 @@ func checkPushPop(s systemState) (systemState, int) {
 	return s, nextOperation
 }
 
+func popPushParity(s systemState) bool {
+	p := 0
+	for _, o := range s.newListing {
+		if o.Op == "push" {
+			p++
+		}
+		if o.Op == "pop" {
+			p--
+		}
+	}
+	if p != 0 {
+		// this will also catch pop without push, however that will have been checked previously 
+		msg("%spush without pop%s", italic, reset)
+		return false
+	}
+	return true
+}
+
 func buffUnique(s systemState) (systemState, int) {
 	for _, o := range s.newListing {
 		if o.Op == "buff" {
@@ -2268,7 +2403,7 @@ func buffUnique(s systemState) (systemState, int) {
 }
 
 func parseIndex(s listingState, l int) (int, bool) {
-	if l < 1 {
+	if l < 0 {
 		msg("%snothing to %s%s", italic, reset, s.operator)
 		return 0, not
 	}
@@ -2277,7 +2412,7 @@ func parseIndex(s listingState, l int) (int, bool) {
 	}
 	n, rr := strconv.Atoi(s.operand)
 	if e(rr) {
-		msg("%s %snot an integer%s", s.operand, italic, reset)
+		msg("%s %sis not an integer%s", s.operand, italic, reset)
 		return 0, not
 	}
 	if n < 0 || n > l {
@@ -2496,7 +2631,11 @@ func modeSet(s systemState) (systemState, int) {
 		msg("%snext launch will sync to root instance%s", italic, reset)
 	case "reset":
 		rst = !rst
-		msg("reset: %t", rst)
+		s := "off"
+		if rst {
+			s = "on"
+		}
+		msg("%sreset:%s %s", italic, reset, s)
 	case "eq":
 		eq = !eq
 		s := "off"
@@ -2587,14 +2726,16 @@ func checkFade(s systemState) (systemState, int) {
 func checkRelease(s systemState) (systemState, int) {
 	if s.operand == "time" || s.operand == "is" {
 		msg("%slimiter release is:%s %.4gms", italic, reset,
-			-1000/(math.Log(release)*s.sampleRate/math.Log(8000)))
+		// inverse of: math.Pow(10, -4/(t*SR)) from func releaseFrom()
+		1000 * ((-4 / math.Log10(release)) / s.sampleRate))
 		return s, startNewOperation
 	}
 	v, ok := parseFloat(s.num, 1/(MAX_RELEASE*s.sampleRate), 1/(MIN_RELEASE*s.sampleRate))
 	if !ok { // error reported by parseFloat
 		return s, startNewOperation
 	}
-	release = math.Pow(125e-6, v)
+	//release = math.Pow(125e-6, v)
+	release = releaseFrom(1/(v*s.sampleRate), s.sampleRate)
 	reportFloatSet("limiter "+s.operator, v) // report embellished
 	return s, startNewOperation
 }
@@ -2840,7 +2981,7 @@ func (o opSE) String() string {
 			if o.Opn == 0 {
 				operator = "// or deleted"
 			}
-			return sf("%s %s_%d %s, ", operator, o.Opd, o.N, p)
+			return sf("%s ?_%d %s, ", operator, /*o.Opd,*/ o.N, p)
 		}
 	}
 	return sf("%d %d, ", o.Opn, o.N)

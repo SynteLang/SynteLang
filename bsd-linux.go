@@ -60,7 +60,8 @@ func setupSoundCard(file string) (sc soundcard, success bool) {
 		return sc, not
 	}
 	if data != SELECTED_FMT {
-		info <- "Bit format not available! Change requested format in file"
+		info <- sf("Bit format %#x not available!", SELECTED_FMT)
+		info <- sf("Change requested format to %#x in synte.go", data)
 	}
 	sc.format = 16
 	switch {
@@ -268,9 +269,10 @@ func decodeWavs() wavs {
 			msg("error loading: %s %s", file, rr)
 			continue
 		}
-		length := WAV_TIME * 192000
+		length := WAV_TIME * 192000 * 2
 		data := make([]byte, 44+8*length) // enough for 32bit stereo WAV_TIME @ 192kHz
 		n, err := io.ReadFull(r, data)
+		//msg("bytes: %d", n)
 		if errors.Is(err, io.ErrUnexpectedEOF) {
 			data = data[:n] // truncate silent data
 		} else if e(rr) {
@@ -337,9 +339,9 @@ func decodeWavs() wavs {
 
 func decodeInt16(rb *bytes.Reader, file string, samples []int16, factor float64, to, channels int) []float64 {
 	rr := binary.Read(rb, binary.LittleEndian, &samples)
-	if e(rr) && !errors.Is(rr, io.ErrUnexpectedEOF) {
+	if e(rr) || errors.Is(rr, io.ErrUnexpectedEOF) {
 		msg("error decoding: %s %s", file, rr)
-		return nil
+		//return nil
 	}
 	// convert to syntə format
 	wav := make([]float64, 0, to)
@@ -475,7 +477,7 @@ func reloadListing() {
 	}
 	if !tempExtant {
 		os.Mkdir(tempDir, 0664)
-		pf("\n%s/ made\n", tempDir)
+		pf("\n%q directory added\n", tempDir)
 	}
 	l := 0
 	stat := make([]time.Time, 0)
@@ -498,6 +500,10 @@ func reloadListing() {
 			tokens <- token{"rld", i, yes}
 			tokens <- token{sf("%d", i), i, yes}
 			stat[i] = st.ModTime()
+			if levels[i] < 0.1 {
+				 // to avoid ghost listings from previous level set to zero
+				levels[i] = 1
+			}
 		}
 		<-lockLoad
 	}
@@ -553,23 +559,23 @@ func displayHeader() {
 	pf("\r->%sSyntə%s\n", cyan, reset)
 }
 
-func selectOutput(bits int) func(w io.Writer, f float64) {
-	output := func(w io.Writer, f float64) {
-		//binary.Write(w, BYTE_ORDER, int16(f))
-		w.Write([]byte{byte(uint32(f)), byte(uint32(f) >> 8)}) // errors ignored
-	}
+func selectOutput(bits int) (func(w io.Writer, f float64) error) {
+	output := func(w io.Writer, f float64) error {
+		return binary.Write(w, BYTE_ORDER, int16(f))
+		//w.Write([]byte{byte(uint32(f)), byte(uint32(f) >> 8)}) // errors ignored
+	} 
 	switch bits {
 	case 8:
-		output = func(w io.Writer, f float64) {
-			//binary.Write(w, BYTE_ORDER, int8(f))
-			w.Write([]byte{byte(f)}) // errors ignored
+		output = func(w io.Writer, f float64) error {
+			return binary.Write(w, BYTE_ORDER, int8(f))
+			//w.Write([]byte{byte(f)}) // errors ignored
 		}
 	case 16:
 		// already assigned
 	case 32:
-		output = func(w io.Writer, f float64) {
-			//binary.Write(w, BYTE_ORDER, int32(f))
-			w.Write([]byte{byte(uint32(f)), byte(uint32(f) >> 8), byte(uint32(f) >> 16), byte(uint32(f) >> 24)}) // errors ignored
+		output = func(w io.Writer, f float64) error {
+			return binary.Write(w, BYTE_ORDER, int32(f))
+			//w.Write([]byte{byte(uint32(f)), byte(uint32(f) >> 8), byte(uint32(f) >> 16), byte(uint32(f) >> 24)}) // errors ignored
 		}
 	default:
 		msg("unable to write to soundcard!")

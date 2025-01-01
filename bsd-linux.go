@@ -31,7 +31,8 @@ var (
 	BYTE_ORDER = binary.LittleEndian // not allowed in constants
 	// record indicates recording in progress
 	record    bool
-	wavHeader = []byte{82, 73, 70, 70, 36, 228, 87, 0, 87, 65, 86, 69, 102, 109, 116, 32, 16, 0, 0, 0, 1, 0, 2, 0, 128, 187, 0, 0, 0, 238, 2, 0, 4, 0, 16, 0, 100, 97, 116, 97, 0, 208, 221, 6} // 16bit signed PCM 48kHz
+	wavHeader = []byte{82, 73, 70, 70, 36, 228, 87, 0, 87, 65, 86, 69, 102, 109, 116, 32, 16, 0, 0, 0, 1, 0, 2, 0, 128, 187, 0, 0, 0, 220, 5, 0, 8, 0, 32, 0, 100, 97, 116, 97, 0, 160, 187, 13} // 32bit stereo PCM 48kHz, 600s
+	// wavHeader = []byte{82, 73, 70, 70, 36, 228, 87, 0, 87, 65, 86, 69, 102, 109, 116, 32, 16, 0, 0, 0, 1, 0, 2, 0, 128, 187, 0, 0, 0, 238, 2, 0, 4, 0, 16, 0, 100, 97, 116, 97, 0, 208, 221, 6} // 16bit stereo PCM 48kHz, 600s
 	wavFile   *os.File
 )
 
@@ -156,8 +157,8 @@ func checkFlag(sr uint32) uint32 {
 }
 
 func recordWav(s systemState) (systemState, int) {
-	if s.sampleRate != 48000 || s.format != 16 {
-		msg("can only record at 16bit 48kHz")
+	if s.sampleRate != 48000 || s.format != 32 {
+		msg("can only record at 32bit 48kHz")
 		return s, startNewOperation
 	}
 	dir := "./audio-recordings/"
@@ -181,7 +182,7 @@ func recordWav(s systemState) (systemState, int) {
 	}
 	wavFile.Write(wavHeader)
 	for i := 0; i < 9600; i++ {
-		binary.Write(wavFile, BYTE_ORDER, int16(0))
+		binary.Write(wavFile, binary.LittleEndian, int16(0))
 	}
 	record = yes
 	msg("%snow recording to:%s", italic, reset)
@@ -191,8 +192,8 @@ func recordWav(s systemState) (systemState, int) {
 }
 
 func writeWav(L, R float64) {
-	binary.Write(wavFile, binary.LittleEndian, int16(L))
-	binary.Write(wavFile, binary.LittleEndian, int16(R))
+	binary.Write(wavFile, binary.LittleEndian, int32(L))
+	binary.Write(wavFile, binary.LittleEndian, int32(R))
 }
 func closeWavFile() {
 	wavFile.Close()

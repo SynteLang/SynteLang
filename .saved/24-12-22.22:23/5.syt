@@ -1,0 +1,26 @@
+/* kick
+in 2*8hz
+sq
+out grid
+in 1.5s
+pulse 1/2
+flip
+range 4hz,6hz
+sq
+s/h grid
+dirac
+down 110ms
+push
+mul 10
+clip 0
+out vca
+pop
+exb 10
+mul 440hz
+sino
+mul vca
+mul 3
+tanh
+lpf 440hz
+lpf 880hz
+mix

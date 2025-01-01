@@ -1,0 +1,12 @@
+in 55*0.99hz
+osc
++ f
+sine
+push
++ 1
+mul 0.15
+out f
+pop
+mul -1db
+mix
+

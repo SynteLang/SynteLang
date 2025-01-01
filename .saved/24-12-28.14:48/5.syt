@@ -1,0 +1,27 @@
+/* kick
+/b 8*16!,0
+lt 0.5
+out grid
+in 1.5s
+pulse 1/2
+flip
+range 64,64*1.5!
+out b
+/b 32*1.5,0
+lt 0.5
+s/h grid
+dirac
+down 100ms
+push
+mul 3
+clip 0
+smooth
+out vca
+pop
+exb 10
+range 330/4hz,330hz
+sino
+mul vca
+lpf 440hz
+lpf 880hz
+mix

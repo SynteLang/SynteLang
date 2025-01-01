@@ -1,0 +1,23 @@
+/* hh
+in 1.5s
+osc
+tri
+range 0.25,0.75
+out pw
+in 2.6hz
+pulse pw
+s/h grid
+hpf 8hz
+abs
+out vca
+noise
+out n
+in 20hz
+pulse 0.1
+hpf 2khz
++ n
+hpf 6khz
+mul grid
+mul vca
+mul -16db
+mix

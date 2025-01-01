@@ -239,6 +239,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	".>sync": {not, 26, noCheck},      // alias, launches listing
 	//	"jl0":    {yes, 27, noCheck},    // jump if less than zero
 	"level":  {yes, 28, checkIndexIncl}, // vary level of a listing
+	"/*":      {yes, 27, noCheck},		 // comments and/or name
 	".level": {yes, 28, checkIndexIncl}, // alias, launches listing
 	"lvl":    {yes, 28, checkIndexIncl}, // vary level of a listing
 	".lvl":   {yes, 28, checkIndexIncl}, // alias, launches listing
@@ -612,7 +613,7 @@ start:
 			if _, inSg := t.signals[t.operand]; !inSg &&
 			isUppercaseInitial(t.operand) &&
 			!t.num.Is && !t.fIn &&
-			t.operator != "//" { // optional: && t.operator == "out"
+			t.operator != "//" && t.operator != "/*" { // optional: && t.operator == "out"
 				if t.lenExported > maxExports {
 					msg("we've ran out of exported signals :(")
 					continue

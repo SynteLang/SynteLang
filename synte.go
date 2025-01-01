@@ -1334,7 +1334,6 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 
 		s      float64 = 1    // sync=0
 		mx, my float64 = 1, 1 // mouse smooth intermediates
-		c, mixF = 4.0, 4.0    // mix factor
 		hpf, x float64        // DC-blocking high pass filter
 		g      float64        // gain smooth intermediate
 		hiBand, hiBandPrev,
@@ -1657,16 +1656,12 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					d[int(d[i].sigs[d[i].listing[ii].N])].pan = math.Max(-1, math.Min(1, r))
 				case 39: // "all"
 					// r := 0 // allow mixing in of preceding listing
-					c := 0.0
 					for ii := range d[i].listing {
 						if ii == i { // ignore current listing
 							break // only 'all' preceding
 						}
 						r += d[ii].sigs[0]
-						c++ // yikes
 					}
-					c = math.Max(c, 1)
-					r /= math.Sqrt(c)
 				case 40: // "fft"
 					d[i].fftArr[n%N] = r
 					if n%N2 == 0 && n >= N && !d[i].ffrz {
@@ -1890,10 +1885,6 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				}
 				//op++
 			}
-			// This can introduce distortion, which is mitigated by mixF filter below
-			// Skipping loop early isn't really necessary, but it has been kept in as a source of character
-			// The distortion arises because c is not incremented by 1 for unmuted listings
-			// whose output is intermittently zero, thereby modulating the mix factor
 			if d[i].sigs[0] == 0 {
 				continue
 			}
@@ -1905,7 +1896,6 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				d[i].sigs[0] = 0
 				panic(sf("listing: %d, %d - NaN", i, current))
 			}
-			c += d[i].m // add mute to mix factor
 			d[i].sigs[0] *= d[i].m * d[i].lv
 			out := d[i].sigs[0]
 			d[i].limPre = ( d[i].limPre + out - d[i].limPreX ) * hpf5120Hz
@@ -1920,14 +1910,6 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			sides += out * d[i].pan * 0.5
 			mid += out * (1 - math.Abs(d[i].pan*0.5))
 		}
-		if c < 1 { // c = max(c, 1)
-			c = 1
-		}
-		c = math.Max(1, math.Sqrt(c) + 0.9/(c*c+ 1)) // because eg. two signals sum by 3db, not 6db
-		mixF = mixF + (c-mixF)*lpf2Hz
-		c = 0
-		mid /= mixF
-		sides /= mixF
 		g += (gain - g)*lpf15Hz
 		mid *= g
 		sides *= g

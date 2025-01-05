@@ -88,7 +88,7 @@ func setupSoundCard(file string) (sc soundcard, success bool) {
 		uintptr(unsafe.Pointer(&data)),
 	)
 	if ern != 0 || data != CHANNELS {
-		p("\n--requested channels not accepted--")
+		pf("\nrequested channels: %d\navailable: %d\n", CHANNELS, data)
 		return sc, not
 	}
 	switch data {

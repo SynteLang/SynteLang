@@ -147,7 +147,7 @@ You will probably want to use the function `mix` which contains `out dac` and so
 The `sino` function combines `osc` and `sine` so can be used in their place.
 
 Once you have added one listing in this way, you can add more.  
-Each listing has a number indicated at the beginning of the first line.  This is used to reference the listing for operators like `del` which silences a listing and removes all its code. When inputting a new listing, typing `: erase` removes all operations input so far and starts again from the top. Once a listing has been launched it will be saved in the `.temp/` directory and will relaunch if edited and saved.  
+In the code display window (running `tools/listing.go`), each listing has a number indicated at the beginning of the first line.  This is used to reference the listing for operators like `del` which silences a listing and removes all its code. When inputting a new listing, typing `: erase` removes all operations input so far and starts again from the top. Once a listing has been launched it will be saved in the `.temp/` directory and will relaunch if edited and saved.  
 
 You don't need to understand all of this right away. Everyone learns at different rates, and has a different learning style. Some need to experiment, some need a lot of detail, some by example etc. In future you may be able to find a workshop to attend if that is helpful too. If you want you can skip to the [Examples](#eg) section below to try out some listings directly.  
 
@@ -562,7 +562,7 @@ You can find more examples in the `.saved` directory.
 |	abs		|		no		|		absolute value, all inputs become positive (removes negative sign)
 |	tanh	|		no		|		hyperbolic tangent, useful for 'soft clipping'
 |	clip	|		no		|		restrict input between symmetrical thresholds ±operand value. 0 is a special case resulting in thresholds of 0 and 1
-|	nois	|		no		|		result is a pseudo-random series of numbers in range ( [-1, 1] * input )
+|	nois	|		no		|		result is a pseudo-random series of numbers in range ( [-1, 1] * input ). Use `noise` for audio
 |	pow		|		yes		|		result is operand raised to the power of input, for convenience the sign of both input and operand is ignored (always positive, |n|)
 |	base	|		yes		|		result is input raised to the power of operand. Sign of operand (±) is ignored
 |	\<sync	|		yes		|		receive sync pulse which zeros whatever is passed through. Operand adds phase offset on pulse
@@ -575,7 +575,7 @@ You can find more examples in the `.saved` directory.
 |	f2c		|		no		|		convert frequency to filter coefficient. Numbers less than than 0 will be multiplied by -1 (sign removed, become positive)
 |	wav		|		yes   	|		will play the corresponding sample of a loaded WAV file given by the operand. Expects an input in range [0, 1], values outside this range will wrap around this interval. See section below for more information
 |	8bit	|		yes   	|		quantises input to 8 bits of resolution (-128 to +127). The operand is the size of quantisation steps. So to quantise a ±1 signal, use 127 as the operand. Alternatively, quantise to integers with an operand of 1.
-|	level	|		yes   	|		changes the output level of the listing at the index given by operand, which must be a number (not a signal). The preceding input sets the level. Level will persist after deletion of the listed, this can be reverted by reloading the relevant listing. Capable of modulation up to 1100Hz, but because of this sudden large changes in level may produce clicks. Operation independent of mute. Indexes out of range are silently ignored
+|	level	|		yes   	|		changes the output level of the listing at the index given by operand, which must be a number (not a signal). The preceding input sets the level. Capable of modulation up to 1100Hz, but because of this sudden large changes in level may produce clicks. Filter with eg. `lpf 50hz` or `smooth` to avoid this. Operation independent of mute. Indexes out of range are silently ignored
 |	x		|		yes   	|		alias of `mul`
 |	*		|		yes   	|		alias of `x`
 |	from	|		yes   	|		receives mono output of listing given by operand. By design operand must be a number not a named signal. Indexes out of range are silently ignored
@@ -591,9 +591,9 @@ You can find more examples in the `.saved` directory.
 |	all		|		no   	|		output is sum of all listings including preceding listing, but not including its own output. Not affected by mutes
 |	.out	|		yes   	|		use to end silent listing, for use with signals `tempo`, `pitch`, `grid`, or Exported signals.
 |	jl0		|		yes   	|		jump if less than zero. The next n number of operations are skipped if input is less than or equal to zero, where n is given by operand.  Bear in mind that this number of skips includes all the operations within any functions within the listing. The final operation in a listing will always execute. An operand of zero is no jump. Added for fun in a vague attempt to make syntə turing-complete
-|	pan		|		yes   	|		input (limited to ±1) sets the stereo pan of the listing given by operand (which must be a number, similarly to `level`). Positive input pans right and negative input pans left. The pan curve chosen ensures neither channel is boosted at full pan, while centrally panned sounds remain at unity gain in both channels. This is achieved by turning down the mono channel while pan increases. Because of this a sound with modulated (changing) pan summed to mono will fluctuate in volume, so we recommend modulating with a signal `pan` on stereo playback systems only. That is to say - for full mono compatibility only apply static `pan` (input is unchanging) at most. But don't worry as this is somewhat of a niche concern. Pan will persist after deletion
+|	pan		|		yes   	|		input (limited to ±1) sets the stereo pan of the listing given by operand (which must be a number, similarly to `level`). Positive input pans right and negative input pans left. The pan curve chosen ensures neither channel is boosted at full pan, while centrally panned sounds remain at unity gain in both channels. This is achieved by turning down the mono channel while pan increases. Because of this a sound with modulated (changing) pan summed to mono will fluctuate in volume, so we recommend modulating with a signal `pan` on stereo playback systems only. That is to say - for full mono compatibility only apply static `pan` (input is unchanging) at most. But don't worry as this is somewhat of a niche concern
 |	--		|		yes   	|		output = operand - input. Useful for r = 1-r in particular
-|	fft		|		no		|		applies a fast fourier transform to the input, which is registered internally (on a per-listing basis) for use by related operators below
+|	fft		|		no		|		applies a fast fourier transform to the input, which is registered internally (on a per-listing basis) for use by related operators below. This is quite a rudementary implementation that works best on sustained sounds
 |	ifft	|		no		|		output is an inverse fast fourier transform applied to the internal frequency domain representation
 |	ffrz	|		yes		|		when operand is zero, freeze the process in `fft`
 |	gafft	|		yes		|		gating in the frequency domain. All frequencies in magnitude below the given operand are zeroed when the operand is positive, frequencies above absolute value of operand are zeroed when it is negative

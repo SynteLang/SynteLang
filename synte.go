@@ -1365,6 +1365,9 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		// main output limiter
 		hiBandCoeff  = hpf_coeff(10240, sc.sampleRate)
 		midBandCoeff = hpf_coeff(320, sc.sampleRate)
+
+		// output filtering
+		lpf12kHz = lpf_coeff(12000, sc.sampleRate)
 	)
 
 	const (
@@ -1438,12 +1441,15 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	 // anonymous to use var n in scope
 	go func(w *bufio.Writer, sc soundcard) {
 		lpf := stereoPair{}
+		lFilter, rFilter := 0.0, 0.0
 		for env > 0 || n%writeBufferLen != 0 { // finish on end of buffer, should be determined in setupSouncard instead of this default
 			select {
 			case <-stop: // if panic has occurred n will no longer be incrementing, so return here
 				return
 			case s := <-samples:
-				lpf.stereoLpf(s, 0.7)
+				lFilter += (s.left - lFilter) * lpf12kHz
+				rFilter += (s.right - rFilter) * lpf12kHz
+				lpf.stereoLpf(stereoPair{lFilter, rFilter}, lpf12kHz)
 			default:
 				// only degrade when load is high, to avoid lazy underruns
 				// OR when exited to avoid clicks

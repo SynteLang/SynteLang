@@ -559,23 +559,29 @@ func displayHeader() {
 	pf("\r->%sSyntə%s\n", cyan, reset)
 }
 
-func selectOutput(bits int) (func(w io.Writer, f float64) error) {
-	output := func(w io.Writer, f float64) error {
-		return binary.Write(w, BYTE_ORDER, int16(f))
-		//w.Write([]byte{byte(uint32(f)), byte(uint32(f) >> 8)}) // errors ignored
+func selectOutput(bits int) (func(w io.Writer, l, r float64) error) {
+	output := func(w io.Writer, l, r float64) error {
+		if err := binary.Write(w, BYTE_ORDER, int16(l)); err != nil {
+			return err
+		}
+		return binary.Write(w, BYTE_ORDER, int16(r))
 	} 
 	switch bits {
 	case 8:
-		output = func(w io.Writer, f float64) error {
-			return binary.Write(w, BYTE_ORDER, int8(f))
-			//w.Write([]byte{byte(f)}) // errors ignored
+		output = func(w io.Writer, l, r float64) error {
+			if err := binary.Write(w, BYTE_ORDER, int8(l)); err != nil {
+				return err
+			}
+			return binary.Write(w, BYTE_ORDER, int8(r))
 		}
 	case 16:
 		// already assigned
 	case 32:
-		output = func(w io.Writer, f float64) error {
-			return binary.Write(w, BYTE_ORDER, int32(f))
-			//w.Write([]byte{byte(uint32(f)), byte(uint32(f) >> 8), byte(uint32(f) >> 16), byte(uint32(f) >> 24)}) // errors ignored
+		output = func(w io.Writer, l, r float64) error {
+			if err := binary.Write(w, BYTE_ORDER, int32(l)); err != nil {
+				return err
+			}
+			return binary.Write(w, BYTE_ORDER, int32(r))
 		}
 	default:
 		msg("unable to write to soundcard!")

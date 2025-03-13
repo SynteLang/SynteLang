@@ -54,6 +54,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"math"
@@ -540,7 +541,7 @@ func run(from io.Reader) {
 	// hack to reset soundcard because of pops and clicks on first run.
 	// requires further investigation. System dependent
 	for range [1024]struct{}{} {
-		selectOutput(sc.format)(sc.file, 0)
+		selectOutput(sc.format)(sc.file, 0, 0)
 	}
 	if sc.file.Close() != nil {
 		p("unable to close soundcard")
@@ -1337,6 +1338,21 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	defer w.Flush()
 	//w := sc.file // unbuffered alternative
 	output := selectOutput(sc.format)
+	 // TODO: ideally this should be in `bsd-linux.go` and shouldn't be fixed at 32 bit
+	if len(os.Args) > 1 && ( os.Args[1] == "--mackie" || os.Args[1] == "-m" ){
+		output = func(w io.Writer, l, r float64) error {
+			if err := binary.Write(w, BYTE_ORDER, int32(l)); err != nil {
+				return err
+			}
+			if err := binary.Write(w, BYTE_ORDER, int32(r)); err != nil {
+				return err
+			}
+			if err := binary.Write(w, BYTE_ORDER, int32(l)); err != nil {
+				return err
+			}
+			return binary.Write(w, BYTE_ORDER, int32(r))
+		}
+	}
 	if output == nil {
 		return
 	}
@@ -1384,6 +1400,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		tapeLen = int(sc.sampleRate) * TAPE_LENGTH
 
 		twentyHz = 20/sc.sampleRate
+
 		lim, h float64 = Thr, 2 // limiter, hold
 		//hold = math.Pow(10, -2/(holdTime*sc.sampleRate))
 		hold = releaseFrom(holdTime, sc.sampleRate)
@@ -1468,10 +1485,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			L := clip(lpf.left) * sc.convFactor  // clip will display info
 			R := clip(lpf.right) * sc.convFactor // clip will display info
 			// write to four channels for usb mixer
-			if output(w, L) != nil ||
-		       output(w, R) != nil ||
-			   output(w, L) != nil ||
-			   output(w, R) != nil {
+			if output(w, L, R) != nil {
 				pf("Write error occurred! Please restart")
 				os.Exit(1)
 			}

@@ -109,7 +109,7 @@ const ( // operating system
 	MAX_RELEASE   = 1     // seconds
 	twoInvMaxUint = 2.0 / math.MaxUint64
 	alpLen        = 2400
-	baseGain      = 0.5
+	baseGain      = 0.35
 	writeBufferLen = 2400
 //	LOAD_THRESH = 17708 // approx. 0.85 * 1e9 / SAMPLE_RATE, 85% in nanoseconds per sample
 )
@@ -379,7 +379,7 @@ var (
 	fade    = 1 / (MIN_FADE * SAMPLE_RATE)           //Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
 	release = releaseFrom(defaultRelease, SAMPLE_RATE) // should be calculated from sc.sampleRate
 	gain    = baseGain
-	clipThr = 1.25 // individual listing limiter threshold
+	clipThr = 1.0 // individual listing limiter threshold
 	rst   bool
 	underRun int
 	eq bool = yes
@@ -1349,17 +1349,16 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		// sample interval (1/SR) in nanoseconds
 		loadThresh = time.Duration(0.85 * 1e9 * (1 / sc.sampleRate))
 
-		lpf15Hz = lpf_coeff(15, sc.sampleRate)
-		lpf1kHz = lpf_coeff(1e3, sc.sampleRate)
+		lpf15Hz = lpf_coeff(15, sc.sampleRate)  // smooth mouse, mutes, gain
+		lpf1kHz = lpf_coeff(1e3, sc.sampleRate) // smooth levels
 
 		// per-listing limiter
+		hpf7241Hz = hpf_coeff(7241, sc.sampleRate)       // high emphasis
+		hpf160Hz  = hpf_coeff(160, sc.sampleRate)        // low emphasis, loudness eq
 		lpf2point4Hz  = lpf_coeff(2.4435, sc.sampleRate) // attack
-		hpf7241Hz = hpf_coeff(7241, sc.sampleRate) // high emphasis
-		hpf160Hz  = hpf_coeff(160, sc.sampleRate) // low emphasis, loudness eq
-		hpf2s     = hpf_coeff(0.5, sc.sampleRate) // release
 
 		// main out DC blocking
-		hpf2point5Hz = hpf_coeff(2.5, sc.sampleRate)
+		hpf20Hz = hpf_coeff(20, sc.sampleRate)
 
 		// main output limiter
 		hiBandCoeff  = hpf_coeff(10240, sc.sampleRate)
@@ -2007,22 +2006,19 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			}
 			d[i].sigs[0] *= d[i].m * d[i].lv
 			out := d[i].sigs[0]
+
 			d[i].limPreH = ( d[i].limPreH + out - d[i].limPreHX ) * hpf7241Hz
 			d[i].limPreHX = out
 			d[i].limPreL = ( d[i].limPreL + out - d[i].limPreLX ) * hpf160Hz
 			d[i].limPreLX = out
-			det := math.Abs(28 * d[i].limPreH + 3.2 * d[i].limPreL + 0.56 * out)
-			lim := 0.0
-			if det > clipThr { // limiter
-				lim = det-clipThr
-			}
-			// ~300ms integration attack
-			d[i].lim = d[i].lim + (lim - d[i].lim)*lpf2point4Hz*(6 + (-5 / (lim+1)))
-			out *= clipThr / (d[i].lim+clipThr * math.Min(50, (d[i].lim+clipThr+1) / 2))
-			if d[i].lim > 0.06 {
+			det := math.Abs((45 * d[i].limPreH + 2 * d[i].limPreL + 0.48 * out)) - clipThr
+			// ~300ms integration
+			d[i].lim = d[i].lim + (math.Max(0, det) - d[i].lim)*lpf2point4Hz
+			out *= clipThr / (d[i].lim + clipThr)
+			if d[i].lim > 0.06 { // indicate meaningful limiting only
 				display.GRl = i+1
 			}
-			d[i].lim *= hpf2s // release
+
 			sides += out * d[i].pan * 0.5
 			mid += out * (1 - math.Abs(d[i].pan*0.5))
 			sum += out

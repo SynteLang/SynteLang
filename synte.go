@@ -853,6 +853,7 @@ func collate(t *systemState) *data {
 			buff2:    make([]float64, t.tapeLen),
 			buff3:    make([]float64, t.tapeLen),
 			sigs:     safe,
+			stack:    make([]float64, 0, 4),
 		},
 	}
 	m := 1.0
@@ -1603,9 +1604,6 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					//if r > 0.9999 { panic("test") } // for testing
 				case 16: // "push"
 					d[i].stack = append(d[i].stack, r)
-					if len(d[i].stack) > 100 { // arbitrary limit, should be unnecessary
-						panic("stack_overflow")
-					}
 				case 17: // "pop"
 					r = d[i].stack[len(d[i].stack)-1]
 					d[i].stack = d[i].stack[:len(d[i].stack)-1]
@@ -2001,6 +1999,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				}
 				//op++
 			}
+			d[i].stack = d[i].stack[:0] // delete stack
 			if d[i].sigs[0] == 0 {
 				continue
 			}

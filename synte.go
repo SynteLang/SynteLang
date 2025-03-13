@@ -230,7 +230,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"nois":   {not, 15, noCheck},      // white noise source
 	"push":   {not, 16, noCheck},      // push to listing stack
 	"pop":    {not, 17, checkPushPop}, // pop from listing stack
-	"buff":   {yes, 18, buffUnique},   // listing buff loop
+	"buff":   {yes, 18, buffUnique},   // listing buff loop, alias of buff0
 	"buff0":  {yes, 18, noCheck},      // listing buff loop
 	"buff1":  {yes, 18, noCheck},      // listing buff loop
 	"buff2":  {yes, 18, noCheck},      // listing buff loop

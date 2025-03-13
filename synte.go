@@ -2120,11 +2120,12 @@ func hpf_coeff(f, SR float64) float64 {
 
 func clip(in float64) float64 { // hard clip
 	if in > 1 {
-		in = 1
 		display.Clip = yes
-	} else if in < -1 {
-		in = -1
+		return 1
+	}
+	if in < -1 {
 		display.Clip = yes
+		return -1
 	}
 	return in
 }

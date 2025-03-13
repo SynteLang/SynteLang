@@ -1916,22 +1916,22 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					}
 					time.Sleep(time.Microsecond * t)*/
 				case 52: // "4lp"
-					in := r + d[i].alp[(n+int(0.0047*sc.sampleRate))%alpLen]/2
+					in := r - d[i].alp[(n+alpLen-int(0.0047*sc.sampleRate))%alpLen]/2
 					d[i].alp[n%alpLen] = in
-					a := d[i].alp[(n+int(0.0047*sc.sampleRate))%alpLen] - r/2 // 4.7ms
+					a := d[i].alp[(n+alpLen-int(0.0047*sc.sampleRate))%alpLen] + in/2 // 4.7ms
 
-					in2 := a + d[i].alp1[(n+int(0.0076*sc.sampleRate))%alpLen]/2
+					in2 := a - d[i].alp1[(n+alpLen-int(0.0076*sc.sampleRate))%alpLen]/2
 					d[i].alp1[n%alpLen] = in2
-					a2 := d[i].alp1[(n+int(0.0076*sc.sampleRate))%alpLen] - a/2 // 7.6ms
+					a2 := d[i].alp1[(n+alpLen-int(0.0076*sc.sampleRate))%alpLen] + in2/2 // 7.6ms
 
-					in3 := a2 + d[i].alp2[(n+int(0.0123*sc.sampleRate))%alpLen]/2
+					in3 := a2 - d[i].alp2[(n+alpLen-int(0.0123*sc.sampleRate))%alpLen]/2
 					d[i].alp2[n%alpLen] = in3
-					a3 := d[i].alp2[(n+int(0.0123*sc.sampleRate))%alpLen] - a2/2 // 12.3ms
+					a3 := d[i].alp2[(n+alpLen-int(0.0123*sc.sampleRate))%alpLen] + in3/2 // 12.3ms
 
-					in4 := a3 + d[i].alp3[(n+int(0.0198*sc.sampleRate))%alpLen]/2
+					in4 := a3 - d[i].alp3[(n+alpLen-int(0.0198*sc.sampleRate))%alpLen]/2
 					d[i].alp3[n%alpLen] = in4
-					r = d[i].alp3[(n+int(0.0198*sc.sampleRate))%alpLen] - a3/2 // 19.8ms
-					r *= 0.25
+					r = d[i].alp3[(n+alpLen-int(0.0198*sc.sampleRate))%alpLen] + in4/2 // 19.8ms
+					r *= 0.5
 					r = math.Max(-5, math.Min(5, r)) // to mitigate possible instability
 					// 4.7, 5.4, 9.1, 1.27 // alternative delays
 				case 53: // "panic"

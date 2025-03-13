@@ -1383,6 +1383,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		no = noise(time.Now().UnixNano())
 		tapeLen = int(sc.sampleRate) * TAPE_LENGTH
 
+		twentyHz = 20/sc.sampleRate
 		lim, h float64 = Thr, 2 // limiter, hold
 		//hold = math.Pow(10, -2/(holdTime*sc.sampleRate))
 		hold = releaseFrom(holdTime, sc.sampleRate)
@@ -1735,11 +1736,12 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				case 33: // "sub"
 					r -= d[i].sigs[d[i].listing[ii].N]
 				case 34: // "setmix"
-					a := math.Abs(d[i].sigs[d[i].listing[ii].N])
-					a = math.Max(20/sc.sampleRate, a) // minimum 20Hz
-					delta := a - d[i].peakfreq
-					d[i].peakfreq += delta * α * (math.Abs(delta) * a / d[i].peakfreq)
-					r *= math.Min(1, math.Sqrt(40/(d[i].peakfreq*sc.sampleRate+20)))
+					a := math.Max(twentyHz , math.Abs(d[i].sigs[d[i].listing[ii].N]))
+					δ := a - d[i].peakfreq
+					s := 0.0007 + math.Min(1, (math.Abs(δ) * a / d[i].peakfreq))
+					d[i].peakfreq += δ * α * s
+					//r *= math.Min(1, math.Sqrt(40/(d[i].peakfreq*sc.sampleRate+20)))
+					r *= math.Sqrt(twentyHz/d[i].peakfreq)
 				case 35: // "print"
 					pd++ // unnecessary?
 					if (pd)%32768 == 0 && !exit {

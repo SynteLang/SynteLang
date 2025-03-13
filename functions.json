@@ -232,6 +232,35 @@
 			}
 		]
 	},
+	"/s": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "in",
+				"Opd": "sync"
+			},
+			{
+				"Op": "mul",
+				"Opd": "@"
+			},
+			{
+				"Op": "-",
+				"Opd": "@1"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0.5"
+			}
+		]
+	},
 	"3sum": {
 		"Comment": "output is sum of input and both operands",
 		"Body": [
@@ -246,6 +275,19 @@
 			{
 				"Op": "/",
 				"Opd": "3"
+			}
+		]
+	},
+	";": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "setmix",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "out",
+				"Opd": "dac"
 			}
 		]
 	},
@@ -882,6 +924,203 @@
 			{
 				"Op": "pop",
 				"Opd": ""
+			}
+		]
+	},
+	"bdfm": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "2"
+			},
+			{
+				"Op": "clip",
+				"Opd": "0"
+			},
+			{
+				"Op": "-",
+				"Opd": "b.0.0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "0.02"
+			},
+			{
+				"Op": "+",
+				"Opd": "b.0.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.0.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "vca"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "e.1"
+			},
+			{
+				"Op": "in",
+				"Opd": "@"
+			},
+			{
+				"Op": "base",
+				"Opd": "2"
+			},
+			{
+				"Op": "-",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "x.1"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "pow",
+				"Opd": "e.1"
+			},
+			{
+				"Op": "-",
+				"Opd": "1"
+			},
+			{
+				"Op": "/",
+				"Opd": "x.1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "@1"
+			},
+			{
+				"Op": "out",
+				"Opd": "env"
+			},
+			{
+				"Op": "in",
+				"Opd": "80hz"
+			},
+			{
+				"Op": "/",
+				"Opd": "tempo"
+			},
+			{
+				"Op": "mul",
+				"Opd": "sync"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "sine",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "env"
+			},
+			{
+				"Op": "out",
+				"Opd": "fm"
+			},
+			{
+				"Op": "in",
+				"Opd": "80hz"
+			},
+			{
+				"Op": "+",
+				"Opd": "a"
+			},
+			{
+				"Op": "+",
+				"Opd": "fm"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a"
+			},
+			{
+				"Op": "sine",
+				"Opd": ""
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "-",
+				"Opd": "x.2"
+			},
+			{
+				"Op": "+",
+				"Opd": "y.2"
+			},
+			{
+				"Op": "out",
+				"Opd": "r.2"
+			},
+			{
+				"Op": "in",
+				"Opd": "20hz"
+			},
+			{
+				"Op": "mul",
+				"Opd": "Tau"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "\\",
+				"Opd": "1"
+			},
+			{
+				"Op": "clip",
+				"Opd": "0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "r.2"
+			},
+			{
+				"Op": "out",
+				"Opd": "y.2"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "x.2"
+			},
+			{
+				"Op": "in",
+				"Opd": "y.2"
+			},
+			{
+				"Op": "mul",
+				"Opd": "vca"
 			}
 		]
 	},
@@ -1535,6 +1774,91 @@
 			}
 		]
 	},
+	"dec": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "out",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "gt",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "'b.0"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0"
+			},
+			{
+				"Op": "out",
+				"Opd": "'b.0"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "a.1"
+			},
+			{
+				"Op": "gt",
+				"Opd": "c.1"
+			},
+			{
+				"Op": "--",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "d.1"
+			},
+			{
+				"Op": "--",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.1"
+			},
+			{
+				"Op": "out",
+				"Opd": "e.1"
+			},
+			{
+				"Op": "in",
+				"Opd": "c.1"
+			},
+			{
+				"Op": "-",
+				"Opd": "@"
+			},
+			{
+				"Op": "mul",
+				"Opd": "d.1"
+			},
+			{
+				"Op": "+",
+				"Opd": "e.1"
+			},
+			{
+				"Op": "out",
+				"Opd": "c.1"
+			}
+		]
+	},
 	"decay": {
 		"Comment": "will decay away to nothing from 1. 0.9997 is approx 20s, lower is quicker decay. Resets when input goes from 0 to 1. Using `down` and `exp` usually easier ",
 		"Body": [
@@ -1914,6 +2238,91 @@
 			}
 		]
 	},
+	"drop": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "out",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "gt",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "'b.0"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0"
+			},
+			{
+				"Op": "out",
+				"Opd": "'b.0"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "a.1"
+			},
+			{
+				"Op": "gt",
+				"Opd": "c.1"
+			},
+			{
+				"Op": "--",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "d.1"
+			},
+			{
+				"Op": "--",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.1"
+			},
+			{
+				"Op": "out",
+				"Opd": "e.1"
+			},
+			{
+				"Op": "in",
+				"Opd": "c.1"
+			},
+			{
+				"Op": "-",
+				"Opd": "@"
+			},
+			{
+				"Op": "mul",
+				"Opd": "d.1"
+			},
+			{
+				"Op": "+",
+				"Opd": "e.1"
+			},
+			{
+				"Op": "out",
+				"Opd": "c.1"
+			}
+		]
+	},
 	"dvd": {
 		"Comment": "if input is a [0,1] square wave, will produce a square wave at half the frequency. Useful for breaking out of the constraint a sync loop",
 		"Body": [
@@ -2239,7 +2648,7 @@
 		]
 	},
 	"exb": {
-		"Comment": "",
+		"Comment": "scaled exponential converter. Increasing positive values change linear sweeps into steeper sharper peaks, negative ones create the inverse. Operand of zero produces zero",
 		"Body": [
 			{
 				"Op": "out",
@@ -5141,7 +5550,7 @@
 			},
 			{
 				"Op": "mul",
-				"Opd": "1.2"
+				"Opd": "0.9"
 			},
 			{
 				"Op": "-",
@@ -5181,7 +5590,7 @@
 			},
 			{
 				"Op": "mul",
-				"Opd": "0.11"
+				"Opd": "0.1"
 			},
 			{
 				"Op": "-",
@@ -5193,7 +5602,7 @@
 			},
 			{
 				"Op": "in",
-				"Opd": "5120hz"
+				"Opd": "3620hz"
 			},
 			{
 				"Op": "f2c",
@@ -5299,6 +5708,71 @@
 			{
 				"Op": "wav",
 				"Opd": "@"
+			}
+		]
+	},
+	"pmix": {
+		"Comment": "equivalent to  `mix`, except prints the attentuaion in dB",
+		"Body": [
+			{
+				"Op": "out",
+				"Opd": "a"
+			},
+			{
+				"Op": "setmix",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "10"
+			},
+			{
+				"Op": "log",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "lg10"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "/",
+				"Opd": "a"
+			},
+			{
+				"Op": "log",
+				"Opd": ""
+			},
+			{
+				"Op": "/",
+				"Opd": "lg10"
+			},
+			{
+				"Op": "mul",
+				"Opd": "20"
+			},
+			{
+				"Op": "print",
+				"Opd": ""
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "dac"
 			}
 		]
 	},

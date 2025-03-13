@@ -1,0 +1,17 @@
+in 3s
+sq
++ 2
+/ 4
+out s
+in 120bpm
+/ 2
+pulse 3/4
+in 120/4bpm
+in r.aloud
+/ 2
+osc
+out sync
+mul 16
+mod 1
+lt 0.5
+.out grid

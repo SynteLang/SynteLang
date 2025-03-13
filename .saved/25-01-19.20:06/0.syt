@@ -1,0 +1,71 @@
+/* pian
+/b 12,0
+lt 0.5
+s/h grid
+dirac
+down 100ms
+exb 3
+mul 2
+clip 0
+smooth
+out vca
+in 3hz
+osc
+tri
+mul 9
+base 2
+mul 660*3hz
+out f
+in 3hz
+osc
+tri
+mul 0.05
++ 1
+mul 7ms
+out ch0
+in 7hz
+osc
+tri
+mul 0.03
++ 1
+mul 13ms
+out ch1
+/b 1,0
+gt 0.875
+range 1/1.2,1
+out s
+/b 1,0
+gt 0.75
+range 1,1.5
+mul s
+lpf 1s
+mul 330*2hz
+out p
+juno f
+out m
+in p
+juno f
+out+ m
+in p
+mul 1.01
+juno f
+out+ m
+in p
+mul 0.99
+juno f
++ m
+out fx
++ c
+push
+tape ch0
+tap 35ms
+tap ch1
+mul 0.2
+clip 1
+out c
+pop
++ fx
+hpf 660hz
+mul vca
+mul -18db
+mix

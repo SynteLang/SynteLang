@@ -1,0 +1,14 @@
+/s 2.5,0
+s/h grid
+dec 1800ms
+smooth
+out vca
+mul 0.01
++ 1
+mul 55/2hz
+sino
+mul vca
+mul 2
+tanh
+mul 4db
+;

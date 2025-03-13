@@ -1,0 +1,15 @@
+/* sh
+in 1hz
+sq
+mul 7/6hz
+pulse 1/4
+hpf 12hz
+abs
+- 0.2
+mul 2
+clip 0
+lpf 20hz
+noise
+hpf 3khz
+mul 12db
+mix

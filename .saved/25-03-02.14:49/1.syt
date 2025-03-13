@@ -1,0 +1,12 @@
+/* bd
+/b 3,0
+lt 1/4
+range 4,16
+out b
+/s b,0
+bd 1/1.5
+mul 1.2
+tanh
+mul 6db
+lpf 250hz
+;

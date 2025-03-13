@@ -1,0 +1,43 @@
+/* bass
+in 3s
+osc
+s/h grid
+mul 8
+out b1
+/b 1,0
+lt 1/4
+range 1/1.2,1
+in 1
+out p
+/b 1,0
+gt 1/4
+range 4,1
+mul b1
+out b
+in tempo
+/ 2
+sq
+flip
+range 1,2
+out b2
+/b b,0
+/b b2,1/4
+trn 1.3
+smooth
+smooth
+out vca
+mul 0.01
++ 1
+mul 55hz
+mul p
+sino
+mul vca
+mul 1.5
+tanh
+out x
+mul x
+- 0.5
++ x
+lpf 220hz
+mul -3db
+mix

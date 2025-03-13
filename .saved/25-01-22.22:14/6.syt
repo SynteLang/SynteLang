@@ -1,0 +1,21 @@
+in 140/3bpm
+osc
+tri
+mul 2
+base 2
+mul 110/4hz
+out f
+in R
+mul 5
+clip 2
+- r
+clip 1
+lpf f
+lpf f
+lpf f
+push
+hpf f
+mul 5
+out r
+pop
+out dac

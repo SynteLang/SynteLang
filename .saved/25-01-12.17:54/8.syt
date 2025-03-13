@@ -1,0 +1,6 @@
+in 2hz
+sq
+s/h grid
+hh 35ms
+mul 6db
+mix

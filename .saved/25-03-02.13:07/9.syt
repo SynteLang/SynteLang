@@ -1,0 +1,27 @@
+/* chip
+in 3hz
+sq
+s/h grid
++ 1
+out o
+in 3.5s
+osc
+out gt
+in 1.5hz
+sino
+pan 9
+/b 8,0
+flip
+exb 8
+mul gt
+smooth
+out vca
+/s 16,0
+range 1,1.5
+mul o
+mul 880hz
+sino
+mul vca
+tanh
+mul -6db
+;

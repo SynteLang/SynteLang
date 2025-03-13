@@ -1,0 +1,36 @@
+/* rvrb
+in 7hz
+sino
+mul 0.007
++ 1
+mul 55ms
+out t
+from 0
+mul 3db
+out m
+from 1
+hpf 400hz
+mul -8db
+out+ m
+from 6
+mul -3db
+out+ m
+from 4
+mul -4db
+out+ m
+from 3
++ m
++ c
+hpf 500hz
+tape t
+mul 2.0
+tap 35ms
+out fx
+4lp
+mul 0.4
++ fx
+lpf 5khz
+mul 0.35
+out c
+mul -8db
+mix

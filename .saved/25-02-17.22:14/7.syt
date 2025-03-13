@@ -1,0 +1,24 @@
+/* rvrb
+in 3hz
+sino
+mul 0.003
++ 1
+mul 73ms
+out t
+from 1
+out m
+from 5
+out+ m
+from 11
+out+ m
+from 4
++ m
++ c
+tape t
+lpf 3khz
+out fx
+4lp
++ fx
+mul 0.2
+out c
+out dac

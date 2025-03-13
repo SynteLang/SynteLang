@@ -1,0 +1,7 @@
+in 140/16bpm
+osc
+out sync
+mul 16*3
+mod 1
+lt 0.5
+.out grid

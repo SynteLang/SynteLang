@@ -1,0 +1,25 @@
+in 4hz
+osc
+tri
+mul 1/2
++ 1/4
+out pwm
+in 7hz
+pulse pwm
+s/h grid
+down 30ms
+smooth
+smooth
+out gt
+in 2hz
+osc
+flip
+exb 2
+mul 2
+clip 0
+mul gt
+mul -6db
+smooth
+smooth
+level 0
+.level 1

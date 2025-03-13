@@ -1,0 +1,15 @@
+/* hh
+/s 3,0
+s/h grid
+out gt
+in 2.5hz
+osc
+tri
+range 75ms,22ms
+out t
+/s 16,0
+mul gt
+s/h grid
+hh t
+mul 6db
+mix

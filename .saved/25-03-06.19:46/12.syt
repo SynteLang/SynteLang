@@ -1,0 +1,11 @@
+/b 6,0
+lt 1/2
+s/h grid
+lpf 50hz
+lpf 50hz
+lvl 8
+lvl 11
+lvl 9
+flip
+lvl 6
+.lvl 4

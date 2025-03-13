@@ -1,0 +1,28 @@
+/* bd
+/b 3,0
+lt 0.5
+mul 4
+out b
+/b b,0
+lt 0.5
+s/h grid
+hpf 32hz
+lpf 60hz
+mul 1.5
+out v
+/b 3,0
+lt 0.5
+s/h grid
+dirac
+down 230ms
+exb 3
++ v
+mul 120hz
+sino
+hpf 180hz
+mul 6db
+tanh
+mul 4db
+lpf 300hz
+lpf 600hz
+mix

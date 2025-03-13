@@ -1,0 +1,7 @@
+/* sn
+/s 7,0.5
+s/h grid
+sn 35ms
+lpf 4khz
+mul 8db
+;

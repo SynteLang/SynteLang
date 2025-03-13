@@ -1,0 +1,8 @@
+/* hh8
+/b 8,0
+flip
+exb 22
+noise
+hpf 7khz
+mul 6db
+;

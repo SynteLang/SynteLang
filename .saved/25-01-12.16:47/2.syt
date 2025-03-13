@@ -1,0 +1,57 @@
+/* bass
+in 64s
+sq
+flip
+mul 0.5
+out n
+/b 32,0
+gt 0.5
+mul n
++ 1
+out p
+/b 8*16!,0
+lt 0.5
+out grid
+/b 17,0.5
+lt 0.5
+mul g
+s/h grid
+dirac
+down 230ms
+exb 5
+out v2
+/b 2,0
+lt 0.5
+flip
+out g
+flip
+range 4,32
+out b
+/b b,0
+trn 1.5
+exb 5
+push
++ v2
+mul 1.2
+clip 0
+lpf 55hz
+out vca
+exb 2
+mul 3.5
+base 2
+mul 110/2hz
+out f
+pop
+mul 0.03
++ 1
+mul 110/1.875hz
+mul p
+osc
+mul 1.15
+sine
+mul vca
+lpf f
+lpf f
+lpf 440hz
+mul 2db
+mix

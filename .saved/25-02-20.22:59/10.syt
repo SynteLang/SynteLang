@@ -1,0 +1,28 @@
+/* kick
+in 2.5s
+osc
+tri
+range 1/4,5/8
+out b1
+/b 1.6,0
+lt b1
+mul 8
+out b
+/b b,0
+lt 0.5
+s/h grid
+dirac
+down 55ms
+tanh
+mul 85*2hz
+sino
+hpf 50hz
+out x
+mul x
+- 0.5
++ x
+mul 1.9
+clip 1.2
+lpf 200hz
+lpf 400hz
+mix

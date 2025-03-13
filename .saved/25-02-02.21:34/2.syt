@@ -1,0 +1,44 @@
+/* bass
+in 3s
+pulse 7/8
+s/h grid
+range 1/1.5,1
+lpf 25hz
+out s
+in 12s
+step 4
+out z
+/b 2,z
+lt 0.5
+s/h grid
+mul 3
+out b
+/b b,0
+trn 2
+hpf 1s
+abs
+mul 4
+clip 0
+smooth
+smooth
+out vca
+in 100hz
+noise
+lpf 20hz
++ 40hz
+out p
+in 3hz
+sino
+mul 0.03
++ 1
+mul 83hz
+sino
+mul 130hz
++ p
+mul s
+sino
+out R
+mul vca
+tanh
+mul 4db
+mix

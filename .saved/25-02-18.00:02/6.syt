@@ -1,0 +1,27 @@
+/* tom
+/b 4,0
+trn 1.5
+exb 1.5
+smooth
+smooth
+mul 6
+base 2
+mul 110/6hz
+out f
+in 55hz
+sino
+mul 2
+clip 1
+- r
+clip 1
+lpf f
+lpf f
+lpf f
+push
+hpf f
+mul 5.5
+out r
+pop
+hpf 20hz
+lpf 600hz
+out dac

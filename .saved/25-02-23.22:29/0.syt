@@ -1,0 +1,51 @@
+/* girls
+in 3s
+sino
++ 1
+mul 1/2
+out vca
+in 40s
+osc
+out t
+in r.aloud
+osc
+mod 1/10
+out o
+push
+mul 10
+out sync
+in o
+- 1/20
+abs
+-- 1/20
+mul 20
+clip 0
+out w
+pop
+mul 1/2
++ t
+wav aloud
+hpf 100hz
+mul w
+out m
+in o
++ 0.5
+mod 1/10
+push
+- 1/20
+abs
+-- 1/20
+mul 10
+clip 0
+out w2
+pop
+mul 1/2
++ t
+wav aloud
+hpf 200hz
+mul w2
++ m
+out FX
+mul -6db
+mul vca
+out dac

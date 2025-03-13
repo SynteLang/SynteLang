@@ -1,0 +1,9 @@
+in 14s
+osc
+exb 5
+in 1
+level 3
+in 12/8s
+osc
+exb 5
+.level 5

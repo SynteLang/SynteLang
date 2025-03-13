@@ -1,0 +1,30 @@
+/b 8,0
+trn 4
+out vca
+in 10
+noise
+lpf 30s
++ 0.3
+range 1s,330hz
+out t
+in 10
+noise
+lpf 30s
+in 1
+out f
+in 1
+noise
+out x
+clip 0.5
+- x
+hpf f
+mul vca
+lpf f
+mul 28db
++ c
+push
+tape t
+mul 0.7
+out c
+pop
+mix

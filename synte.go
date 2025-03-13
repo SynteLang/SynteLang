@@ -494,6 +494,14 @@ func main() {
 		return
 	}
 	run(os.Stdin)
+	if os.Args[1] == "--mem" {
+		f, rr := os.Create("mem.prof")
+		if e(rr) {
+			pf("no mem profile: %v\n", rr)
+		}
+		pprof.WriteHeapProfile(f)
+		f.Close()
+	}
 }
 
 const advisory = `

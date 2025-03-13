@@ -54,7 +54,7 @@ func main() {
 			lt := st.ModTime()
 			mvn, ch := mutesOrVerboseChanged(mv)
 			if !lt.Equal(t) || ch {
-				fmt.Printf("\n\n\033[H\033[2J")
+				fmt.Printf("\033[H\033[2J")
 				readAndDisplay(file, mvn)
 			}
 			t = lt

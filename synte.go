@@ -1109,9 +1109,6 @@ func parseType(expr, op string) (n float64, b bool) { // TODO pass in s.sampleRa
 			msg("%.fbpm? You're 'aving a larf mate", n)
 			return 0, false
 		}
-		if n < 10 {
-			msg("erm, why?")
-		}
 		n /= 60
 		n /= SampleRate
 	case len(expr) > 1 && expr[len(expr)-1:] == "m":

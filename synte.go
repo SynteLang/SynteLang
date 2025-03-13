@@ -104,7 +104,7 @@ const ( // operating system
 	FDOUT         = 1e-4
 	MIN_FADE      = 75e-3 // 75ms
 	MAX_FADE      = 120   // seconds
-	defaultRelease = 0.5  // seconds
+	defaultRelease = 0.25  // seconds
 	MIN_RELEASE   = 25e-3 // 25ms
 	MAX_RELEASE   = 1     // seconds
 	twoInvMaxUint = 2.0 / math.MaxUint64
@@ -2032,16 +2032,16 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		mid *= g
 		sides *= g
 		sum *= g
-		hpfM = (hpfM + mid - xM) * hpf2point5Hz
+		hpfM = (hpfM + mid - xM) * hpf20Hz
 		xM, mid = mid, hpfM
-		hpfS = (hpfS + sides - xS) * hpf2point5Hz
+		hpfS = (hpfS + sides - xS) * hpf20Hz
 		xS, sides = sides, hpfS
 		// sidechain pre-emphasis
 		hiBand = (hiBand + sum - hiBandPrev) * hiBandCoeff
 		hiBandPrev = sum
 		midBand = (midBand + sum - midBandPrev) * midBandCoeff
 		midBandPrev = sum
-		det := math.Abs(25*hiBand + 2.3*midBand + 0.9*sum) - Thr
+		det := math.Abs(23*hiBand + 3.25*midBand + 0.55*sum) - Thr
 		if det > lim { // limiter detection
 			lim = det // peak detect
 			h = 1

@@ -307,6 +307,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"d":       {yes, 0, enactDelete},         // alias of del
 	"deleted": {not, 0, noCheck},             // for internal use
 	"m+":      {yes, 0, enactMute},           // add to mute group
+	"n":       {yes, 0, enactMute},           // add to mute group
 	"gain":    {yes, 0, adjustGain},          // set overall mono gain before limiter
 	"record":  {yes, 0, recordWav},           // commence recording of wav file
 	"wait":    {yes, 0, enactWait},           // for testing scripts, rounded to Milliseconds
@@ -2477,8 +2478,9 @@ func enactMute(s systemState) (systemState, int) {
 	if !ok || excludeCurrent(s.operator, i, len(mutes)) {
 		return s, startNewOperation // error reported by parseIndex
 	}
-	if s.operator == "m+" {
+	if s.operator == "m+" || s.operator == "n" {
 		s.muteGroup = append(s.muteGroup, i) // add to mute group
+		s.unsolo[i] = 1 -s.unsolo[i]         // toggle
 		return s, startNewOperation
 	}
 	s.muteGroup = append(s.muteGroup, i)

@@ -29,7 +29,6 @@ func main() {
 
 	type Disp struct { // TODO import this from a types package
 		On      bool
-		Mode    string // func add fon/foff
 		Vu      float64
 		Clip    bool
 		Load    time.Duration
@@ -97,12 +96,6 @@ func main() {
 			sync := " "
 			if display.Sync {
 				sync = fmt.Sprintf("%s●%s", yellow, reset)
-			}
-
-			if display.Mode == "on" {
-				display.Mode = italic + "funcsave on" + reset
-			} else {
-				display.Mode = "\t"
 			}
 
 			loadColour := ""
@@ -180,7 +173,7 @@ func main() {
 			fmt.Printf("%sSyntə info%s %spress enter to quit%s", cyan, reset, italic, reset)
 			fmt.Printf(`   %s   %s  %3s
 ╭───────────────────────────────────────────────────╮
-   %sLoad:%s %v      %s     %s
+   %sLoad:%s %v           %s
 %s
 %s
 %s
@@ -196,7 +189,7 @@ func main() {
       %sMouse-X:%s %5.4g       %sMouse-Y:%s %5.4g
 ╰───────────────────────────────────────────────────╯`,
 				sync, paused, timer,
-				yellow, reset, L, display.Mode, soundcard,
+				yellow, reset, L, soundcard,
 				messages[0].Content,
 				messages[1].Content,
 				messages[2].Content,

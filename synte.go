@@ -187,7 +187,6 @@ type systemState struct {
 	wmap            map[string]bool
 	wavNames        string // for display purposes
 	funcs           map[string]fn
-	funcsave        bool
 	solo            int // index of most recent solo
 	unsolo          muteSlice
 	hasOperand      map[string]bool
@@ -2348,12 +2347,10 @@ func endFunctionDefine(t systemState) (systemState, int) {
 	t.hasOperand[name] = h
 	t.funcs[name] = fn{Comment: t.funcs[name].Comment, Body: t.newListing[t.st+1:]}
 	msg("%sfunction %s%s%s ready%s.", italic, reset, name, italic, reset)
-	if t.funcsave {
-		if !saveJson(t.funcs, "functions.json") {
-			msg("function not saved!")
-		} else {
-			msg("%sfunction saved%s", italic, reset)
-		}
+	if !saveJson(t.funcs, "functions.json") {
+		msg("function not saved!")
+	} else {
+		msg("%sfunction saved%s", italic, reset)
 	}
 	t.fIn = not
 	if t.newListing[0].Op == "[" {
@@ -2565,24 +2562,10 @@ func modeSet(s systemState) (systemState, int) {
 		}
 		saveJson([]listing{{operation{Op: advisory}}}, "displaylisting.json")
 		p("Stopped")
-		if s.funcsave && !saveJson(s.funcs, "functions.json") {
-			msg("functions not saved!")
-		}
 		time.Sleep(30 * time.Millisecond) // wait for infoDisplay to finish
 		return s, exitNow
 	case "erase", "e":
 		return s, startNewListing
-	case "foff":
-		s.funcsave = not
-		display.Mode = "off"
-	case "fon":
-		s.funcsave = yes
-		display.Mode = "on"
-		if !saveJson(s.funcs, "functions.json") {
-			msg("functions not saved!")
-			return s, startNewOperation
-		}
-		msg("%sfunctions saved%s", italic, reset)
 	case "pause":
 		if started && !display.Paused {
 			pause <- yes // bool is purely semantic

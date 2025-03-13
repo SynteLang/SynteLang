@@ -2055,9 +2055,9 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		eqXM = mid
 		eqS = (eqS + sides - eqXS) * hpf160Hz
 		eqXS = sides
-		if eq { // ~6dB high shelving boost
-			mid = 0.9 * ( eqM + mid )
-			sides = 0.9 * (eqS + sides)
+		if eq { // high shelving boost
+			mid = eqM * 1.3 + mid * 0.9
+			sides = eqS * 1.3 + sides * 0.9
 		}
 		if exit {
 			mid *= env // fade out

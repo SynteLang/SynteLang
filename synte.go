@@ -1358,11 +1358,12 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		return
 	}
 
-	const Tau = 2 * math.Pi
-	const RateIntegrationTime = writeBufferLen // to display load, number of samples
-												// or: sampleRate / 20
-
 	const (
+		Tau = 2 * math.Pi
+		thirtySixDB = 63 
+
+		RateIntegrationTime = writeBufferLen // to display load, number of samples
+
 		run syncState = iota
 		on
 		off
@@ -1378,7 +1379,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		// per-listing limiter
 		hpf7241Hz = hpf_coeff(7241, sc.sampleRate)       // high emphasis
 		hpf160Hz  = hpf_coeff(160, sc.sampleRate)        // low emphasis, loudness eq
-		lpf2point4Hz  = lpf_coeff(2.4435, sc.sampleRate) // attack
+		lpf2point4Hz  = lpf_coeff(2.4435, sc.sampleRate) // 'VU' averaging ~400ms
 
 		// main out DC blocking
 		hpf20Hz = hpf_coeff(20, sc.sampleRate)

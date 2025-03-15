@@ -1622,51 +1622,22 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					r = d[i].stack[len(d[i].stack)-1]
 					d[i].stack = d[i].stack[:len(d[i].stack)-1]
 				case 18: // "buff", "buff0"
-					d[i].buff[n%tapeLen] = r // record head
-					tl := float64(tapeLen)
-					//t := math.Abs(math.Min(1/d[i].sigs[d[i].listing[ii].N], tl))
-					t := math.Mod((1 / d[i].sigs[d[i].listing[ii].N]), tl)
-					if d[i].sigs[d[i].listing[ii].N] == 0 {
-						t = 0
-					}
-					xa := (n + tapeLen - int(t)) % tapeLen
-					x := mod(float64(n+tapeLen)-(t), tl)
-					ta0 := d[i].buff[(n+tapeLen-int(t)-1)%tapeLen]
-					ta := d[i].buff[xa] // play heads
-					tb := d[i].buff[(n+tapeLen-int(t)+1)%tapeLen]
-					tb1 := d[i].buff[(n+tapeLen-int(t)+2)%tapeLen]
-					z := mod(x-float64(xa), tl-1) - 0.5 // to avoid end of loop clicks
-					// 4-point 4th order "optimal" interpolation filter by Olli Niemitalo
-					ev1, od1 := tb+ta, tb-ta
-					ev2, od2 := tb1+ta0, tb1-ta0
-					c0 := ev1*0.45645918406487612 + ev2*0.04354173901996461
-					c1 := od1*0.47236675362442071 + od2*0.17686613581136501
-					c2 := ev1*-0.253674794204558521 + ev2*0.25371918651882464
-					c3 := od1*-0.37917091811631082 + od2*0.11952965967158
-					c4 := ev1*0.04252164479749607 + ev2*-0.04289144034653719
-					r = (((c4*z+c3)*z+c2)*z+c1)*z + c0
+					r = interpolatedBuffer(
+						d[i].buff,
+						d[i].sigs[d[i].listing[ii].N],
+						r,
+						n,
+						tapeLen,
+					)
 				case 19: // "--"
 					r = d[i].sigs[d[i].listing[ii].N] - r
 				case 20: // "tap"
-					tl := float64(tapeLen)
-					//t := math.Abs(math.Min(1/d[i].sigs[d[i].listing[ii].N], tl))
-					t := math.Min(math.Abs(1/d[i].sigs[d[i].listing[ii].N]), tl)
-					xa := (n + tapeLen - int(t)) % tapeLen
-					x := mod(float64(n+tapeLen)-(t), tl)
-					ta0 := d[i].buff[(n+tapeLen-int(t)-1)%tapeLen]
-					ta := d[i].buff[xa] // play heads
-					tb := d[i].buff[(n+tapeLen-int(t)+1)%tapeLen]
-					tb1 := d[i].buff[(n+tapeLen-int(t)+2)%tapeLen]
-					z := mod(x-float64(xa), tl-1) - 0.5 // to avoid end of loop clicks
-					// 4-point 4th order "optimal" interpolation filter by Olli Niemitalo
-					ev1, od1 := tb+ta, tb-ta
-					ev2, od2 := tb1+ta0, tb1-ta0
-					c0 := ev1*0.45645918406487612 + ev2*0.04354173901996461
-					c1 := od1*0.47236675362442071 + od2*0.17686613581136501
-					c2 := ev1*-0.253674794204558521 + ev2*0.25371918651882464
-					c3 := od1*-0.37917091811631082 + od2*0.11952965967158
-					c4 := ev1*0.04252164479749607 + ev2*-0.04289144034653719
-					r += (((c4*z+c3)*z+c2)*z+c1)*z + c0
+					r += interpolatedTap(
+						d[i].buff,
+						d[i].sigs[d[i].listing[ii].N],
+						n,
+						tapeLen,
+					)
 				case 21: // "f2c" // r = 1 / (1 + 1/(Tau*r))
 					r = math.Abs(r)
 					r *= Tau
@@ -1938,77 +1909,29 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				case 53: // "panic"
 					panic("test")
 				case 54: // "buff1"
-					d[i].buff1[n%tapeLen] = r // record head
-					tl := float64(tapeLen)
-					//t := math.Abs(math.Min(1/d[i].sigs[d[i].listing[ii].N], tl))
-					t := math.Mod((1 / d[i].sigs[d[i].listing[ii].N]), tl)
-					if d[i].sigs[d[i].listing[ii].N] == 0 {
-						t = 0
-					}
-					xa := (n + tapeLen - int(t)) % tapeLen
-					x := mod(float64(n+tapeLen)-(t), tl)
-					ta0 := d[i].buff1[(n+tapeLen-int(t)-1)%tapeLen]
-					ta := d[i].buff1[xa] // play heads
-					tb := d[i].buff1[(n+tapeLen-int(t)+1)%tapeLen]
-					tb1 := d[i].buff1[(n+tapeLen-int(t)+2)%tapeLen]
-					z := mod(x-float64(xa), tl-1) - 0.5 // to avoid end of loop clicks
-					// 4-point 4th order "optimal" interpolation filter by Olli Niemitalo
-					ev1, od1 := tb+ta, tb-ta
-					ev2, od2 := tb1+ta0, tb1-ta0
-					c0 := ev1*0.45645918406487612 + ev2*0.04354173901996461
-					c1 := od1*0.47236675362442071 + od2*0.17686613581136501
-					c2 := ev1*-0.253674794204558521 + ev2*0.25371918651882464
-					c3 := od1*-0.37917091811631082 + od2*0.11952965967158
-					c4 := ev1*0.04252164479749607 + ev2*-0.04289144034653719
-					r = (((c4*z+c3)*z+c2)*z+c1)*z + c0
+					r = interpolatedBuffer(
+						d[i].buff1,
+						d[i].sigs[d[i].listing[ii].N],
+						r,
+						n,
+						tapeLen,
+					)
 				case 55: // "buff2"
-					d[i].buff2[n%tapeLen] = r // record head
-					tl := float64(tapeLen)
-					//t := math.Abs(math.Min(1/d[i].sigs[d[i].listing[ii].N], tl))
-					t := math.Mod((1 / d[i].sigs[d[i].listing[ii].N]), tl)
-					if d[i].sigs[d[i].listing[ii].N] == 0 {
-						t = 0
-					}
-					xa := (n + tapeLen - int(t)) % tapeLen
-					x := mod(float64(n+tapeLen)-(t), tl)
-					ta0 := d[i].buff2[(n+tapeLen-int(t)-1)%tapeLen]
-					ta := d[i].buff2[xa] // play heads
-					tb := d[i].buff2[(n+tapeLen-int(t)+1)%tapeLen]
-					tb1 := d[i].buff2[(n+tapeLen-int(t)+2)%tapeLen]
-					z := mod(x-float64(xa), tl-1) - 0.5 // to avoid end of loop clicks
-					// 4-point 4th order "optimal" interpolation filter by Olli Niemitalo
-					ev1, od1 := tb+ta, tb-ta
-					ev2, od2 := tb1+ta0, tb1-ta0
-					c0 := ev1*0.45645918406487612 + ev2*0.04354173901996461
-					c1 := od1*0.47236675362442071 + od2*0.17686613581136501
-					c2 := ev1*-0.253674794204558521 + ev2*0.25371918651882464
-					c3 := od1*-0.37917091811631082 + od2*0.11952965967158
-					c4 := ev1*0.04252164479749607 + ev2*-0.04289144034653719
-					r = (((c4*z+c3)*z+c2)*z+c1)*z + c0
+					r = interpolatedBuffer(
+						d[i].buff2,
+						d[i].sigs[d[i].listing[ii].N],
+						r,
+						n,
+						tapeLen,
+					)
 				case 56: // "buff3"
-					d[i].buff3[n%tapeLen] = r // record head
-					tl := float64(tapeLen)
-					//t := math.Abs(math.Min(1/d[i].sigs[d[i].listing[ii].N], tl))
-					t := math.Mod((1 / d[i].sigs[d[i].listing[ii].N]), tl)
-					if d[i].sigs[d[i].listing[ii].N] == 0 {
-						t = 0
-					}
-					xa := (n + tapeLen - int(t)) % tapeLen
-					x := mod(float64(n+tapeLen)-(t), tl)
-					ta0 := d[i].buff3[(n+tapeLen-int(t)-1)%tapeLen]
-					ta := d[i].buff3[xa] // play heads
-					tb := d[i].buff3[(n+tapeLen-int(t)+1)%tapeLen]
-					tb1 := d[i].buff3[(n+tapeLen-int(t)+2)%tapeLen]
-					z := mod(x-float64(xa), tl-1) - 0.5 // to avoid end of loop clicks
-					// 4-point 4th order "optimal" interpolation filter by Olli Niemitalo
-					ev1, od1 := tb+ta, tb-ta
-					ev2, od2 := tb1+ta0, tb1-ta0
-					c0 := ev1*0.45645918406487612 + ev2*0.04354173901996461
-					c1 := od1*0.47236675362442071 + od2*0.17686613581136501
-					c2 := ev1*-0.253674794204558521 + ev2*0.25371918651882464
-					c3 := od1*-0.37917091811631082 + od2*0.11952965967158
-					c4 := ev1*0.04252164479749607 + ev2*-0.04289144034653719
-					r = (((c4*z+c3)*z+c2)*z+c1)*z + c0
+					r = interpolatedBuffer(
+						d[i].buff3,
+						d[i].sigs[d[i].listing[ii].N],
+						r,
+						n,
+						tapeLen,
+					)
 				default:
 					continue listings
 				}
@@ -2994,4 +2917,34 @@ func (o opSE) String() string {
 		}
 	}
 	return sf("%d %d, ", o.Opn, o.N)
+}
+func interpolatedBuffer(buff []float64, sig, r float64, n, tapeLen int) float64 {
+	buff[n%tapeLen] = r // record head
+
+	return interpolatedTap(buff, sig, n, tapeLen)
+}
+
+func interpolatedTap(buff []float64, sig float64, n, tapeLen int) float64 {
+	tl := float64(tapeLen)
+	//t := math.Abs(math.Min(1/d[i].sigs[d[i].listing[ii].N], tl))
+	t := math.Mod((1 / sig), tl)
+	if sig == 0 {
+		t = 0
+	}
+	xa := (n + tapeLen - int(t)) % tapeLen
+	x := mod(float64(n+tapeLen)-(t), tl)
+	ta0 := buff[(n+tapeLen-int(t)-1)%tapeLen]
+	ta := buff[xa] // play heads
+	tb := buff[(n+tapeLen-int(t)+1)%tapeLen]
+	tb1 := buff[(n+tapeLen-int(t)+2)%tapeLen]
+	z := mod(x-float64(xa), tl-1) - 0.5 // to avoid end of loop clicks
+	// 4-point 4th order "optimal" interpolation filter by Olli Niemitalo
+	ev1, od1 := tb+ta, tb-ta
+	ev2, od2 := tb1+ta0, tb1-ta0
+	c0 := ev1*0.45645918406487612 + ev2*0.04354173901996461
+	c1 := od1*0.47236675362442071 + od2*0.17686613581136501
+	c2 := ev1*-0.253674794204558521 + ev2*0.25371918651882464
+	c3 := od1*-0.37917091811631082 + od2*0.11952965967158
+	c4 := ev1*0.04252164479749607 + ev2*-0.04289144034653719
+	return (((c4*z+c3)*z+c2)*z+c1)*z + c0
 }

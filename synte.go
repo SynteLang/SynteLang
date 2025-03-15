@@ -232,9 +232,9 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"pop":    {not, 17, checkPushPop}, // pop from listing stack
 	"buff":   {yes, 18, buffUnique},   // listing buff loop, alias of buff0
 	"buff0":  {yes, 18, noCheck},      // listing buff loop
-	"buff1":  {yes, 18, noCheck},      // listing buff loop
-	"buff2":  {yes, 18, noCheck},      // listing buff loop
-	"buff3":  {yes, 18, noCheck},      // listing buff loop
+	"buff1":  {yes, 54, noCheck},      // listing buff loop
+	"buff2":  {yes, 55, noCheck},      // listing buff loop
+	"buff3":  {yes, 56, noCheck},      // listing buff loop
 	"--":     {yes, 19, noCheck},      // subtract from operand
 	"tap":    {yes, 20, noCheck},      // tap from loop
 	"f2c":    {not, 21, noCheck},      // convert frequency to co-efficient
@@ -335,14 +335,14 @@ type listingStack struct {
 	stack   []float64
 	syncSt8 syncState
 	m       float64
-	buff []float64
-	buff1 []float64
-	buff2 []float64
-	buff3 []float64
-	alp  [alpLen]float64
-	alp1 [alpLen]float64
-	alp2 [alpLen]float64
-	alp3 [alpLen]float64
+	buff    []float64
+	buff1   []float64
+	buff2   []float64
+	buff3   []float64
+	alp     [alpLen]float64
+	alp1    [alpLen]float64
+	alp2    [alpLen]float64
+	alp3    [alpLen]float64
 	lv, pan,
 	peakfreq float64
 	fftArr,
@@ -2922,6 +2922,7 @@ func (o opSE) String() string {
 	}
 	return sf("%d %d, ", o.Opn, o.N)
 }
+
 func interpolatedBuffer(buff []float64, sig, r float64, n, tapeLen int) float64 {
 	buff[n%tapeLen] = r // record head
 

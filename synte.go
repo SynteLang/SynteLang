@@ -1959,11 +1959,15 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			det := math.Abs((45 * d[i].limPreH + 2 * d[i].limPreL + 0.48 * out)) - clipThr
 			// ~300ms integration
 			d[i].lim = d[i].lim + (math.Max(0, det) - d[i].lim)*lpf2point4Hz
+			if d[i].lim > thirtySixDB {
+				d[i].lim *= hpf20Hz // to mitigate 'stuck' limiting following excessive input
+			}
 			out *= clipThr / (d[i].lim + clipThr)
 			if d[i].lim > 0.06 { // indicate meaningful limiting only
 				display.GRl = i+1
 			}
-
+			// +36dB artificial headroom, to block unbounded DC
+			out = math.Max(-thirtySixDB, math.Min(thirtySixDB, out))
 			sides += out * d[i].pan * 0.5
 			mid += out * (1 - math.Abs(d[i].pan*0.5))
 			sum += out

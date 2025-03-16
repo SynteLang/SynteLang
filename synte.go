@@ -903,7 +903,7 @@ func (m *muteSlice) set(i int, v float64) {
 		infoIfLogging("out of bounds mutes access: %d, len=%d", i, len(*m))
 		return
 	}
-	display.Mute[i] = v == 0 // convert to bool
+	display.Mute[i] = v == mute // convert to bool
 	(*m)[i] = v
 }
 
@@ -2408,7 +2408,6 @@ func enactMute(s systemState) (systemState, int) {
 	}
 	if s.operator == "m+" || s.operator == "n" {
 		s.muteGroup = append(s.muteGroup, i) // add to mute group
-		s.unsolo[i] = 1 -s.unsolo[i]         // toggle
 		return s, startNewOperation
 	}
 	s.muteGroup = append(s.muteGroup, i)
@@ -2452,6 +2451,10 @@ func enactSolo(s systemState) (systemState, int) {
 			s.unsolo[ii] = mutes[ii] // save all mutes
 			mutes.set(ii, mute)      // mute all other listings
 		}
+		for _, i := range s.muteGroup {
+			mutes.set(i, unmute) // unmute from above
+		}
+		s.muteGroup = []int{}
 		s.solo = i // save index of solo
 	}
 	if s.operator[:1] == "." && len(s.newListing) > 0 {

@@ -1360,7 +1360,6 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 
 	const (
 		Tau = 2 * math.Pi
-		thirtySixDB = 63 
 
 		RateIntegrationTime = writeBufferLen // to display load, number of samples
 
@@ -1380,6 +1379,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		hpf7241Hz = hpf_coeff(7241, sc.sampleRate)       // high emphasis
 		hpf160Hz  = hpf_coeff(160, sc.sampleRate)        // low emphasis, loudness eq
 		lpf2point4Hz  = lpf_coeff(2.4435, sc.sampleRate) // 'VU' averaging ~400ms
+		headroom = math.Pow10(18/20) // decibels
 
 		// main out DC blocking
 		hpf20Hz = hpf_coeff(20, sc.sampleRate)
@@ -1959,7 +1959,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			det := math.Abs((45 * d[i].limPreH + 2 * d[i].limPreL + 0.48 * out)) - clipThr
 			// ~300ms integration
 			d[i].lim = d[i].lim + (math.Max(0, det) - d[i].lim)*lpf2point4Hz
-			if d[i].lim > thirtySixDB {
+			if d[i].lim > headroom {
 				d[i].lim *= hpf20Hz // to mitigate 'stuck' limiting following excessive input
 			}
 			out *= clipThr / (d[i].lim + clipThr)
@@ -1967,7 +1967,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				display.GRl = i+1
 			}
 			// +36dB artificial headroom, to block unbounded DC
-			out = math.Max(-thirtySixDB, math.Min(thirtySixDB, out))
+			out = math.Max(-headroom, math.Min(headroom, out))
 			sides += out * d[i].pan * 0.5
 			mid += out * (1 - math.Abs(d[i].pan*0.5))
 			sum += out

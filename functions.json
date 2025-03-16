@@ -621,6 +621,67 @@
 			}
 		]
 	},
+	"VU": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "abs",
+				"Opd": ""
+			},
+			{
+				"Op": "-",
+				"Opd": "b.5.6"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.5.6"
+			},
+			{
+				"Op": "in",
+				"Opd": "2.4435hz"
+			},
+			{
+				"Op": "f2c",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.5.6"
+			},
+			{
+				"Op": "+",
+				"Opd": "b.5.6"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.5.6"
+			},
+			{
+				"Op": "log",
+				"Opd": ""
+			},
+			{
+				"Op": "/",
+				"Opd": "3.321928095"
+			},
+			{
+				"Op": "mul",
+				"Opd": "20"
+			},
+			{
+				"Op": "print",
+				"Opd": ""
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			}
+		]
+	},
 	"alp": {
 		"Comment": "first-order all-pass delay line using `buff0`. First operand is delay time, second operand is damping coefficient [0,1]. Potentially unstable",
 		"Body": [
@@ -3815,6 +3876,91 @@
 			{
 				"Op": "in",
 				"Opd": "y"
+			}
+		]
+	},
+	"hy2": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "out",
+				"Opd": "x"
+			},
+			{
+				"Op": "-",
+				"Opd": "d"
+			},
+			{
+				"Op": "gt",
+				"Opd": "0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "2"
+			},
+			{
+				"Op": "-",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "x"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "\\",
+				"Opd": "x"
+			},
+			{
+				"Op": "-",
+				"Opd": "b.4"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.4"
+			},
+			{
+				"Op": "in",
+				"Opd": "20hz"
+			},
+			{
+				"Op": "f2c",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.4"
+			},
+			{
+				"Op": "+",
+				"Opd": "b.4"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.4"
+			},
+			{
+				"Op": "+",
+				"Opd": "x"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "x"
+			},
+			{
+				"Op": "out",
+				"Opd": "d"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
 			}
 		]
 	},
@@ -8168,6 +8314,27 @@
 			}
 		]
 	},
+	"tnh": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "out",
+				"Opd": "x"
+			},
+			{
+				"Op": "abs",
+				"Opd": ""
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "\\",
+				"Opd": "x"
+			}
+		]
+	},
 	"tri": {
 		"Comment": "shape a value in range [0, 1] from saw/ramp to triangle. (mul 2, + -1, abs) ",
 		"Body": [
@@ -8248,67 +8415,6 @@
 			{
 				"Op": "out",
 				"Opd": "acc"
-			}
-		]
-	},
-	"VU": {
-		"Comment": "",
-		"Body": [
-			{
-				"Op": "push",
-				"Opd": ""
-			},
-			{
-				"Op": "abs",
-				"Opd": ""
-			},
-			{
-				"Op": "-",
-				"Opd": "b.5.6"
-			},
-			{
-				"Op": "out",
-				"Opd": "a.5.6"
-			},
-			{
-				"Op": "in",
-				"Opd": "2.4435hz"
-			},
-			{
-				"Op": "f2c",
-				"Opd": ""
-			},
-			{
-				"Op": "mul",
-				"Opd": "a.5.6"
-			},
-			{
-				"Op": "+",
-				"Opd": "b.5.6"
-			},
-			{
-				"Op": "out",
-				"Opd": "b.5.6"
-			},
-			{
-				"Op": "log",
-				"Opd": ""
-			},
-			{
-				"Op": "/",
-				"Opd": "3.321928095"
-			},
-			{
-				"Op": "mul",
-				"Opd": "20"
-			},
-			{
-				"Op": "print",
-				"Opd": ""
-			},
-			{
-				"Op": "pop",
-				"Opd": ""
 			}
 		]
 	},

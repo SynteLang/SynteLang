@@ -1379,7 +1379,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		hpf7241Hz = hpf_coeff(7241, sc.sampleRate)       // high emphasis
 		hpf160Hz  = hpf_coeff(160, sc.sampleRate)        // low emphasis, loudness eq
 		lpf2point4Hz  = lpf_coeff(2.4435, sc.sampleRate) // 'VU' averaging ~400ms
-		headroom = math.Pow10(18/20) // decibels
+		headroom = math.Pow10(36/20) // decibels
 
 		// main out DC blocking
 		hpf20Hz = hpf_coeff(20, sc.sampleRate)
@@ -1941,9 +1941,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				//op++
 			}
 			d[i].stack = d[i].stack[:0] // delete stack
-			if d[i].sigs[0] == 0 {
-				continue
-			}
+
 			if math.IsInf(d[i].sigs[0], 0) { // infinity to '93
 				d[i].sigs[0] = 0
 				panic(sf("listing: %d, %d - ±Inf", i, current))
@@ -1959,7 +1957,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			d[i].limPreHX = out
 			d[i].limPreL = ( d[i].limPreL + out - d[i].limPreLX ) * hpf160Hz
 			d[i].limPreLX = out
-			det := math.Abs((45 * d[i].limPreH + 2 * d[i].limPreL + 0.48 * out)) - clipThr
+			det := math.Abs((28 * d[i].limPreH + 2 * d[i].limPreL + 0.48 * out)) - clipThr
 			// ~300ms integration
 			d[i].lim = d[i].lim + (math.Max(0, det) - d[i].lim)*lpf2point4Hz
 			if d[i].lim > headroom {

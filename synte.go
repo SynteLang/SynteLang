@@ -1643,22 +1643,12 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					r *= Tau
 					r /= (r + 1)
 				case 22: // "wav"
+					w:= wavs[int(d[i].sigs[d[i].listing[ii].N])]
 					r += 1 // to allow negative input to reverse playback
 					r = math.Abs(r)
-					l := len(wavs[int(d[i].sigs[d[i].listing[ii].N])])
+					l := len(w)
 					r *= float64(l)
-					x1 := int(r) % l
-					w0 := wavs[int(d[i].sigs[d[i].listing[ii].N])][(l+int(r-1))%l]
-					w1 := wavs[int(d[i].sigs[d[i].listing[ii].N])][x1]
-					w2 := wavs[int(d[i].sigs[d[i].listing[ii].N])][int(r+1)%l]
-					w3 := wavs[int(d[i].sigs[d[i].listing[ii].N])][int(r+2)%l]
-					z := mod(r-float64(x1), float64(l-1)) - 0.5
-					ev1, od1 := w2+w1, w2-w1
-					ev2, od2 := w3+w0, w3-w0
-					c0 := ev1*0.42334633257225274 + ev2*0.07668732202139628
-					c1 := od1*0.26126047291143606 + od2*0.24778879018226652
-					c2 := ev1*-0.213439787561776841 + ev2*0.21303593243799016
-					r = (c2*z+c1)*z + c0
+					r = interpolation(w, int(r), l, r)
 				case 23: // "8bit"
 					if d[i].sigs[d[i].listing[ii].N] == 0 {
 						continue
@@ -2935,18 +2925,20 @@ func interpolatedBuffer(buff []float64, sig, r float64, n, tapeLen int) float64 
 
 func interpolatedTap(buff []float64, sig float64, n, tapeLen int) float64 {
 	tl := float64(tapeLen)
-	//t := math.Abs(math.Min(1/d[i].sigs[d[i].listing[ii].N], tl))
-	t := math.Mod((1 / sig), tl)
-	if sig == 0 {
-		t = 0
+	t := 0.0
+	if sig != 0 {
+		t = math.Mod((1 / sig), tl)
 	}
-	xa := (n + tapeLen - int(t)) % tapeLen
-	x := mod(float64(n+tapeLen)-(t), tl)
-	ta0 := buff[(n+tapeLen-int(t)-1)%tapeLen]
+	return interpolation(buff, n+tapeLen-int(t), tapeLen, mod(float64(n+tapeLen)-(t), tl))
+}
+
+func interpolation(buff []float64, i, l int, x float64) float64 {
+	xa := i%l
+	ta0 := buff[(i-1)%l]
 	ta := buff[xa] // play heads
-	tb := buff[(n+tapeLen-int(t)+1)%tapeLen]
-	tb1 := buff[(n+tapeLen-int(t)+2)%tapeLen]
-	z := mod(x-float64(xa), tl-1) - 0.5 // to avoid end of loop clicks
+	tb := buff[(i+1)%l]
+	tb1 := buff[(i+2)%l]
+	z := mod(x-float64(xa), float64(l-1)) - 0.5 // to avoid end of loop clicks
 	// 4-point 4th order "optimal" interpolation filter by Olli Niemitalo
 	ev1, od1 := tb+ta, tb-ta
 	ev2, od2 := tb1+ta0, tb1-ta0

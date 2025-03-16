@@ -1660,6 +1660,9 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					c2 := ev1*-0.213439787561776841 + ev2*0.21303593243799016
 					r = (c2*z+c1)*z + c0
 				case 23: // "8bit"
+					if d[i].sigs[d[i].listing[ii].N] == 0 {
+						continue
+					}
 					r = float64(int8(r*d[i].sigs[d[i].listing[ii].N])) / d[i].sigs[d[i].listing[ii].N]
 				case 24: // "index"
 					r = float64(i)

@@ -1,0 +1,28 @@
+/* plate
+in v
+abs
+lpf 4hz
+mul -35db
+noise
+out n
+from 9
+mul -12db
+out m
+from 5
+mul -8db
+out+ m
+from 0
++ m
+out v
+tape 53ms
+- c
+tap 43ms
++ n
+hpf 500hz
+4lp
+alp1 125*1.5ms,0.85
+clip 1
+lpf 4khz
+mul -2db
+out c
+out dac

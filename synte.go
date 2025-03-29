@@ -259,6 +259,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"setmix": {yes, 34, noCheck},        // set sensible level
 	"print":  {not, 35, noCheck},        // print input to info display
 	"\\":     {yes, 36, noCheck},        // "\"
+	"out*":   {yes, 37, checkOut},     // multiply named signal
 	"pan":    {yes, 38, noCheck}, // vary pan of a listing
 	".pan":   {yes, 38, noCheck}, // alias, launches listing
 	"all":    {not, 39, checkIndex},     // receive output of all preceding listings
@@ -1741,6 +1742,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 						r = -0.01
 					}
 					r = d[i].sigs[d[i].listing[ii].N] / r
+				case 37: // "out*"
+					d[i].sigs[d[i].listing[ii].N] *= r
 				case 38: // "pan", ".pan"
 					l := int(d[i].sigs[d[i].listing[ii].N])
 					if l > len(d)-1 || l < 0 {
@@ -2229,7 +2232,7 @@ func checkOut(s systemState) (systemState, int) {
 			msg("remember to reset %s with `out` once in the cycle", s.operand)
 		}
 		return s, nextOperation
-	case s.operator == "out+":
+	case s.operator == "out+" || s.operator == "out*":
 		priorOut := not
 		for _, o := range s.newListing {
 			if o.Op == "out" && o.Opd == s.operand {

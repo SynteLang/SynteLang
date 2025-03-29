@@ -110,7 +110,7 @@ const ( // operating system
 	MAX_RELEASE   = 1     // seconds
 	twoInvMaxUint = 2.0 / math.MaxUint64
 	alpLen        = 2400
-	baseGain      = 0.35
+	baseGain      = 0.27
 	writeBufferLen = 2400
 //	LOAD_THRESH = 17708 // approx. 0.85 * 1e9 / SAMPLE_RATE, 85% in nanoseconds per sample
 )

@@ -2296,11 +2296,7 @@ func endFunctionDefine(t systemState) (systemState, int) {
 		msg("%sfunction saved%s", italic, reset)
 	}
 	t.fIn = not
-	if t.newListing[0].Op == "[" {
-		return t, startNewListing
-	}
-	t.newListing = t.newListing[:t.st]
-	return t, nextOperation
+	return t, startNewListing
 }
 
 func checkPushPop(s systemState) (systemState, int) {

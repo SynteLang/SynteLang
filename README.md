@@ -632,7 +632,7 @@ You can find more examples in the `.saved` directory.
 |	e	 	|		yes		|		alias of `erase`
 |	rld 	|		yes		|		reload edited listing, file in `.temp/` is not updated. if index not extant, will append to listings, but won't overwrite that particular `.temp/` file
 |	r 		|		yes		|		alias of `rld`
-|	do 		|		yes		|		repeat next operation or function n times, where n is given by the operand. Define a temporary function for this purpose if needs be. any instance of the string "{i}" will be replaced by index of do loop number i.e. 0 to 9, for `do 9`. Alternatively, "{i+1}" will produce 1 to 10 in that instance. Multiple listings can be reloaded with eg. `do 3, r {i}`
+|	do 		|		yes		|		repeat next operation or function n times, where n is given by the operand. Define a function for this purpose if needs be. any instance of the string "{i}" will be replaced by index of do loop number i.e. 0 to 9, for `do 9`. Alternatively, "{i+1}" will produce 1 to 10 in that instance. Multiple listings can be reloaded with eg. `do 3, r {i}`
 
 **List of built-in functions**
 
@@ -738,8 +738,6 @@ You can find more examples in the `.saved` directory.
 | e			| alias of `erase`
 | pause		| pause playback
 | play		| resume playback
-| fon		| save newly defined functions on exit
-| foff		| resume ephemeral functions
 | clear		| clear info message display
 | verbose	| show verbose listings in listing display, type again to toggle off
 | mc		| switch mouse curve to linear (default is exponential). Toggles
@@ -894,9 +892,9 @@ The `level` operator is used to adjust the audio level of a running listing, lik
 
 <a name="af"></a>
 ## Adding functions
-If you find yourself reusing the same chunk of code multiple times, it is possible to define a named function which will instantiate that chunk of code. To begin, type `[` followed by the new name. Then type the listing as normal and at the end type `]` (no operand) which will complete the function add, the listing will then be restarted blank. This function won't be saved on exit but may be used as you wish during the current session. To permanently save a function which you feel will be useful in future type `: fon` before exiting and it will be saved to the 'functions.json' file in the folder on exit from Syntə. To go back to ephemeral functions (useful for experimentation) type `: foff`.  
+If you find yourself reusing the same chunk of code multiple times, it is possible to define a named function which will instantiate that chunk of code. To begin, type `[` followed by the new name. Then type the listing as normal and at the end type `]` (no operand) which will complete the function add, the listing will then be restarted blank. The function will be saved for future use. You can delete functions by removing them from the `functions.json` file.  
 You may overwrite functions by typing in the same name.  
-N.B. No signals are exported from inside functions except `tempo`, `pitch, and `grid`.  
+N.B. No signals are exported from inside functions except `tempo`, `pitch, `sync` and `grid`.  
 The ability to make functions like this makes the language *extensible*, which means you are able to extend the language beyond what is written in this document. One of the project aims is to build up a library of abstractions in this way to make performance easier for beginners. However there is a limit to this, as just typing 'music' and stopping there would be quite boring!  
 An *abstraction* means wrapping up a bit of code into something simple to make it easier to use, for example the term 'global apartheid' is an abstraction of a system and history that involves many many processes, interconnections, organisations, trade-misinvoicing etc.
 

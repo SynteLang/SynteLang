@@ -231,7 +231,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"push":   {not, 16, noCheck},      // push to listing stack
 	"pop":    {not, 17, checkPushPop}, // pop from listing stack
 	"buff":   {yes, 18, buffUnique},   // listing buff loop, alias of buff0
-	"buff0":  {yes, 18, noCheck},      // listing buff loop
+	"buff0":  {yes, 18, buffUnique},   // listing buff loop
 	"buff1":  {yes, 54, noCheck},      // listing buff loop
 	"buff2":  {yes, 55, noCheck},      // listing buff loop
 	"buff3":  {yes, 56, noCheck},      // listing buff loop
@@ -696,6 +696,9 @@ start:
 		}
 
 		if !popPushParity(t) {
+			continue
+		}
+		if multipleBuff(t) {
 			continue
 		}
 
@@ -2335,9 +2338,36 @@ func popPushParity(s systemState) bool {
 	return true
 }
 
+// the error messages could be improved to give more context
+func multipleBuff(s systemState) bool {
+	var bf bool
+	var b [3]bool
+	for l, o := range s.newListing {
+		if o.Op == "buff" || o.Op == "buff0" {
+			if !bf {
+				bf = true
+				continue
+			}
+			msg("%d: %smore than one %sbuff", l, italic, reset)
+			return true
+		}
+		for i := range b {
+			if o.Op == fmt.Sprintf("buff%d", i+1) {
+				if !b[i] {
+					b[i] = true
+					continue
+				}
+				msg("%d: %smore than one %sbuff%d", l, italic, reset, i+1)
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func buffUnique(s systemState) (systemState, int) {
 	for _, o := range s.newListing {
-		if o.Op == "buff" {
+		if o.Op == "buff" || o.Op == "buff0" {
 			msg("%sonly one buff per listing%s", italic, reset)
 			return s, startNewOperation
 		}

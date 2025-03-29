@@ -1449,11 +1449,12 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		case nil:
 			return // exit normally
 		default:
-			msg("oops - %s", err) // report error to infoDisplay
+			msg("oops - %s %s (view log in `debug/`)", err) // report error to infoDisplay
 			stack := debug.Stack()
-			infoIfLogging("%s", stack) // print stack trace
+			infoIfLogging("%s", stack, err) // print stack trace
 			if !writeLog {
-				save(stack, sf("debug/%s_stack_trace.txt", time.Now()))
+				s := []byte(sf("err:\n%s \n\nstack:\n%s", err, stack))
+				save(s, sf("debug/%s_stack_trace.txt", time.Now()))
 				coreDump(d[current], "panicked_listing")
 			}
 			env = 0

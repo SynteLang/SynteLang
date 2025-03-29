@@ -1,0 +1,15 @@
+in 3hz
+sino
+mul 0.01
++ 1
+mul 23ms
+out t
+from 0
++ c
+tape t
+tap 140bpm
+mul 2
+alp1 72ms,0.5
+mul 0.1
+out c
+mix

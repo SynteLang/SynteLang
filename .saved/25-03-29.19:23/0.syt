@@ -1,0 +1,78 @@
+/* phry
+in 45s
+osc
+range 2s,2.5hz
+out t
+in 33s
+osc
+tri
+one2 4
+out e
+in 1.5s
+osc
+tri
+exb 3
+out sw
+in 140/3bpm
+sino
+pan 0
+/b 3,0
+lt 0.25
+s/h grid
++ 1
+out o
+/s 2,0
+range 6,12
+mul 2
+out b
+in 140/4bpm
+mul Phi
+pulse 2/3
+s/h grid
+out g
+/s b,0
+mul g
+s/h grid
+out g1
+- 0.5
+hpf t
+abs
+exb e
+mul 2
+clip 0
+lpf 50hz
+out vca
+in 7s
+osc
+tri
+mul 1/3
+out s1
+in 140/4bpm
+osc
+out sync
+push
+mul 16
+mod 1
+lt 0.5
+out grid
+pop
++ s1
+mul 2/3
+s/h g1
+phryg
+lpf 15hz
+mul 440/2hz
+mul o
+osc
++ pm
+sine
+push
+mul 0.2
+mul sw
+mul vca
+out pm
+pop
+mul vca
+lpf 3khz
+mul 4db
+mix

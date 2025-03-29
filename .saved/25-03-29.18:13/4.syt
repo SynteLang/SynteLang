@@ -1,0 +1,21 @@
+/* cl
+in 3s
+pulse 1/4
+range 1,4
+out b
+/b b,0.75
+trn 20
+exb 5
+out vca
+in 80hz
+osc
+flip
+exp 3
+noise
+hpf 1khz
+mul vca
+mul 22db
+tanh
+mul 14db
+lpf 2khz
+mix

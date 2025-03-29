@@ -137,7 +137,7 @@ func readAndDisplay(file string, info muteVerb) {
 			}
 			mm := m
 			switch v.Op {
-			case "noise", "sino", "saw", "sqr", "pulse":
+			case "noise", "sino", "saw", "sqr", "cv2a":
 				mm = y
 			}
 			fmt.Printf("%s%s%s", mm, v.Op, reset)
@@ -148,7 +148,7 @@ func readAndDisplay(file string, info muteVerb) {
 				continue
 			}
 			switch list[i+1].Op {
-			case "in", "pop", ")", "index", "ifft", "/b", "all":
+			case "in", "pop", ")", "index", "ifft", "/b", "/s", "all":
 				//fmt.Printf(" %s|%s  ", y, reset)
 				fmt.Printf("\n\t")
 			default:

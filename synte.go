@@ -2014,7 +2014,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		dither += no.ise()
 		dither *= 0.5
 		mid *= hroom
-		mid += dither / sc.convFactor         // dither dac value ±1 from xorshift lfsr
+		mid += dither / math.MaxInt16 // set to fixed amount
 		peak += (math.Abs(mid) - peak) * lpf2point4Hz // 'VU' style metering
 		//if abs := math.Abs(mid); abs > peak { // peak detect metering
 		//	peak = abs

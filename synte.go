@@ -2461,6 +2461,10 @@ func enactSolo(s systemState) (systemState, int) {
 			}
 			mutes.set(ii, s.unsolo[ii]*(1-mutes[ii])) // restore all other mutes
 		}
+		for _, i := range s.muteGroup {
+			mutes.set(i, unmute) // unmute from above
+		}
+		s.muteGroup = []int{}
 		s.solo = -1 // unset solo index
 	} else { // solo index given by operand
 		for ii := range mutes {

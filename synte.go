@@ -1653,7 +1653,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					r = math.Abs(r)
 					l := len(w)
 					r *= float64(l)
-					r = interpolation(w, int(r), l, r)
+					r = interpolation(w, r)
 				case 23: // "8bit"
 					if d[i].sigs[d[i].listing[ii].N] == 0 {
 						continue
@@ -2957,28 +2957,55 @@ func interpolatedBuffer(buff []float64, sig, r float64, n, tapeLen int) float64 
 }
 
 func interpolatedTap(buff []float64, sig float64, n, tapeLen int) float64 {
-	tl := float64(tapeLen)
 	t := 0.0
 	if sig != 0 {
-		t = math.Mod((1 / sig), tl)
+		t = 1 / sig
 	}
-	return interpolation(buff, n+tapeLen-int(t), tapeLen, mod(float64(n+tapeLen)-(t), tl))
+	x := mod(float64(n+tapeLen)-t, float64(tapeLen)) // cound also be len(buff)
+	return interpolation(buff, x)
 }
 
-func interpolation(buff []float64, i, l int, x float64) float64 {
-	xa := i%l
-	ta0 := buff[(i-1)%l]
-	ta := buff[xa] // play heads
-	tb := buff[(i+1)%l]
-	tb1 := buff[(i+2)%l]
-	z := mod(x-float64(xa), float64(l-1)) - 0.5 // to avoid end of loop clicks
+func interpolation(buff []float64, x float64) float64 {
+	l := len(buff)
+	x = math.Max(0, math.Min(float64(l), math.Abs(x))) // bounds enforcing
+	i := int(x) // effective floor()
+	x0 := buff[(i+l-2)%l] // these two wrap around
+	x1 := buff[(i+l-1)%l]
+	x2 := buff[i%l]
+	x3 := buff[(i+1)%l]
+	x4 := buff[(i+2)%l]
+	x5 := buff[(i+3)%l]
+	x6 := buff[(i+4)%l]
+	// half-band sinc, 13-tap
+	y0 := x2
+	y1 := a5*(x0+x5) + a3*(x1+x4) + a1*(x2+x3)
+	y2 := x3
+	y3 := a5*(x1+x6) + a3*(x2+x5) + a1*(x3+x4)
+	z := x - math.Floor(x) - 0.5
 	// 4-point 4th order "optimal" interpolation filter by Olli Niemitalo
-	ev1, od1 := tb+ta, tb-ta
-	ev2, od2 := tb1+ta0, tb1-ta0
+	ev1, od1 := y2+y1, y2-y1
+	ev2, od2 := y3+y0, y3-y0
 	c0 := ev1*0.45645918406487612 + ev2*0.04354173901996461
 	c1 := od1*0.47236675362442071 + od2*0.17686613581136501
 	c2 := ev1*-0.253674794204558521 + ev2*0.25371918651882464
 	c3 := od1*-0.37917091811631082 + od2*0.11952965967158
 	c4 := ev1*0.04252164479749607 + ev2*-0.04289144034653719
 	return (((c4*z+c3)*z+c2)*z+c1)*z + c0
+}
+
+var ( // these could be hard-coded as constants
+	a1 = sincCoeff(1.0)
+	a3 = sincCoeff(3.0)
+	a5 = sincCoeff(5.0)
+)
+
+func sincCoeff(x float64) float64 {
+	return math.Sin(0.5*x*math.Pi)/(math.Pi*x) * (math.Cos(x*math.Pi/7)+1)
+}
+
+func init() {
+	norm := 1.0 / (2*(a1+a3+a5))
+	a1 *= norm
+	a3 *= norm
+	a5 *= norm
 }

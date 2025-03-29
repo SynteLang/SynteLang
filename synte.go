@@ -247,9 +247,9 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	//	"jl0":    {yes, 27, noCheck},    // jump if less than zero
 	"/*":      {yes, 27, noCheck},		 // comments and/or name
 	"level":  {yes, 28, noCheck}, // vary level of a listing
-	".level": {yes, 28, checkIndexIncl}, // alias, launches listing
-	"lvl":    {yes, 28, checkIndexIncl}, // vary level of a listing
-	".lvl":   {yes, 28, checkIndexIncl}, // alias, launches listing
+	".level": {yes, 28, noCheck}, // alias, launches listing
+	"lvl":    {yes, 28, noCheck}, // vary level of a listing
+	".lvl":   {yes, 28, noCheck}, // alias, launches listing
 	"from":   {yes, 29, noCheck},     // receive output from a listing
 	"sgn":    {not, 30, noCheck},        // sign of input
 	"log":    {not, 31, noCheck},        // base-2 logarithm of input

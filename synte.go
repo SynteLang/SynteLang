@@ -1900,7 +1900,6 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					in4 := a3 - d[i].alp3[(n+alpLen-int(0.0198*sc.sampleRate))%alpLen]/2
 					d[i].alp3[n%alpLen] = in4
 					r = d[i].alp3[(n+alpLen-int(0.0198*sc.sampleRate))%alpLen] + in4/2 // 19.8ms
-					r *= 0.5
 					r = math.Max(-5, math.Min(5, r)) // to mitigate possible instability
 					// 4.7, 5.4, 9.1, 1.27 // alternative delays
 				case 53: // "panic"

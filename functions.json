@@ -853,7 +853,7 @@
 				"Opd": ""
 			},
 			{
-				"Op": "buff2",
+				"Op": "buff3",
 				"Opd": "@"
 			},
 			{
@@ -1140,7 +1140,7 @@
 		]
 	},
 	"bdfm": {
-		"Comment": "",
+		"Comment": "sync'ed fm bassdrum. first operand is envelope shape like `exb`, second operand is pitch range above 80hz",
 		"Body": [
 			{
 				"Op": "push",
@@ -1495,7 +1495,7 @@
 		]
 	},
 	"chorII": {
-		"Comment": "fixed triple lfo chorus with feedback",
+		"Comment": "fixed quad lfo chorus with feedback",
 		"Body": [
 			{
 				"Op": "push",
@@ -5201,6 +5201,31 @@
 			}
 		]
 	},
+	"one2": {
+		"Comment": "spreads input from 0 to ±1 across a range of values from the 1 to the operand. Eg. `one2 1.125`",
+		"Body": [
+			{
+				"Op": "out",
+				"Opd": "a"
+			},
+			{
+				"Op": "in",
+				"Opd": "@"
+			},
+			{
+				"Op": "sub",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "a"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			}
+		]
+	},
 	"osc": {
 		"Comment": "ramp wave, (phase accumulator). Output in range [0,1]. Has DC offset of ½ ",
 		"Body": [
@@ -5650,6 +5675,203 @@
 			{
 				"Op": "pop",
 				"Opd": ""
+			}
+		]
+	},
+	"phryg": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "out",
+				"Opd": "s"
+			},
+			{
+				"Op": "gt",
+				"Opd": "1/7"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.15"
+			},
+			{
+				"Op": "in",
+				"Opd": "25/24"
+			},
+			{
+				"Op": "sub",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.15"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "p"
+			},
+			{
+				"Op": "in",
+				"Opd": "s"
+			},
+			{
+				"Op": "gt",
+				"Opd": "2/7"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.16"
+			},
+			{
+				"Op": "in",
+				"Opd": "1.2"
+			},
+			{
+				"Op": "sub",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.16"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "out*",
+				"Opd": "p"
+			},
+			{
+				"Op": "in",
+				"Opd": "s"
+			},
+			{
+				"Op": "gt",
+				"Opd": "3/7"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.17"
+			},
+			{
+				"Op": "in",
+				"Opd": "16/15"
+			},
+			{
+				"Op": "sub",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.17"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "out*",
+				"Opd": "p"
+			},
+			{
+				"Op": "in",
+				"Opd": "s"
+			},
+			{
+				"Op": "gt",
+				"Opd": "4/7"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.18"
+			},
+			{
+				"Op": "in",
+				"Opd": "1.125"
+			},
+			{
+				"Op": "sub",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.18"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "out*",
+				"Opd": "p"
+			},
+			{
+				"Op": "in",
+				"Opd": "s"
+			},
+			{
+				"Op": "gt",
+				"Opd": "5/7"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.19"
+			},
+			{
+				"Op": "in",
+				"Opd": "16/15"
+			},
+			{
+				"Op": "sub",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.19"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "out*",
+				"Opd": "p"
+			},
+			{
+				"Op": "in",
+				"Opd": "s"
+			},
+			{
+				"Op": "gt",
+				"Opd": "6/7"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.20"
+			},
+			{
+				"Op": "in",
+				"Opd": "1.125"
+			},
+			{
+				"Op": "sub",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.20"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "p"
 			}
 		]
 	},
@@ -6326,7 +6548,7 @@
 		]
 	},
 	"range": {
-		"Comment": "spreads input from 0 to ±1 across a range of values from the first operand to the second. Eg. `range 220hz,440hz`. If the second operand is smaller the range will be negative. Operands should be in order of slow to fast, eg. 2s,1s ",
+		"Comment": "spreads input from 0 to ±1 across a range of values from the first operand to the second. Eg. `range 220hz,440hz`",
 		"Body": [
 			{
 				"Op": "out",

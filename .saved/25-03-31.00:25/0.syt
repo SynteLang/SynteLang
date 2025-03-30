@@ -1,0 +1,42 @@
+/* twng
+/b 0.075,0
+range 500ms,250ms
+out t
+in 130/4bpm
+osc
+out sync
+push
+mul 16
+mod 1
+lt 0.5
+out grid
+pop
+mul 2
+mod 1
+smooth
+smooth
+flip
+exb 8
+out env
+in 440/2hz
+osc
++ pm
+sine
+push
+out x
+mul x
+- 0.5
+mul 2
++ x
+mul 0.075
+mul env
+out pm
+pop
+mul env
+out fx
+tape t
++ fx
+mul -4db
+setmix ^freq
+out F
+out dac

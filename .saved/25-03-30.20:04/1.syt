@@ -1,0 +1,25 @@
+/* bass
+/b 4,0
+out p
+mul 2
+mod 1
+trn 2
+exb 2
+smooth
+smooth
+out vca
+in p
+gt 0.5
++ 1
+lpf 50hz
+mul 220/4hz
+sino
+out x
+mul x
+- 0.5
++ x
+out fx
+4lp
++ fx
+mul vca
+mix

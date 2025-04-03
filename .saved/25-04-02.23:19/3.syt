@@ -1,0 +1,13 @@
+/* sh
+/b 4,0
+lt 0.53
+hpf 50hz
+abs
+mul 3
+- 0.3
+clip 0
+lpf 40hz
+noise
+hpf 4khz
+mul 10db
+mix

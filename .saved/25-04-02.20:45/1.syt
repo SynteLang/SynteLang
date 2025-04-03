@@ -1,0 +1,34 @@
+/* bass
+/b 1,0
+mul 2
+- 1
+clip 0
+exb 8
+smooth
+mul 0.6
++ 0.4
+out env
+/s 3,0.5
+s/h grid
+dec 400ms
+exb 3
+smooth
+smooth
+out vca
+in 220/4hz
+osc
++ pm
+sine
+push
+mul 0.13
+mul env
+out pm
+pop
+out x
+mul x
+- 0.5
++ x
+hpf 80hz
+mul vca
+mul 7db
+mix

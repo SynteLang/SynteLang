@@ -1,0 +1,38 @@
+/* wb
+in 3hz
+sino
+pan 5
+in 7hz
+sino
+mul 0.05
++ 1
+mul 5ms
+out t
+/b 16,0
+flip
+exb 7
+smooth
+smooth
+out vca
+in 13s
+sq
+mul 8
+out s1
+/s s1,0
+one2 1.2
+out s
+/s 16,0
+one2 1.5
+mul s
+mul 330*2hz
+osc
++ pm
+sine
+push
+mul 0.13
+mul vca
+out pm
+pop
+hpf 330*6hz
+mul vca
+mix

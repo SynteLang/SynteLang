@@ -1651,6 +1651,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					w:= wavs[int(d[i].sigs[d[i].listing[ii].N])]
 					r += 1 // to allow negative input to reverse playback
 					r = math.Abs(r)
+					r = math.Mod(r, 1)
 					l := len(w)
 					r *= float64(l)
 					r = interpolation(w, r)

@@ -1,0 +1,20 @@
+/* cp
+in 12s
+step 8
+s/h grid
+out s
+/b 1,s
+trn 20
+mul 2
+clip 0
+out vca
+in 330/8hz
+osc
+flip
+exb 3
+noise
+hpf 1khz
+mul vca
+lpf 1khz
+mul 26db
+mix

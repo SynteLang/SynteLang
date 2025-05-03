@@ -413,7 +413,7 @@ Note that the operator `gt` (greater than or equal) shapes the `osc` into a puls
 
 </Test>
 
-The `mousex` register supplies the relative X co-ordinate motion transmitted by the mouse. The second example simulates vinyl and the third controls the sample length. `out dac` is used here instead of `mix` assuming the sample is already pre-mixed.
+The `mousex` register supplies the relative X co-ordinate motion transmitted by the mouse. Not currently available on all systems. ◊ The second example simulates vinyl and the third controls the sample length. `out dac` is used here instead of `mix` assuming the sample is already pre-mixed.
 
 **Simple time-stretch algorithm**
 
@@ -723,8 +723,8 @@ You can find more examples in the `.saved` directory.
 |	dac		|		signal represents output to soundcard. For use as `out dac` only	|
 |	tempo	|		signal is daisy chained between listings, can be set with `out`. Will be zero until set by an `out` or `.out`, value will persist if this is deleted |
 |	pitch	|		acts the same as tempo	|
-|	mousex	|		value of mousepad X-coordinate |
-|	mousey	|		value of mousepad Y-coordinate |
+|	mousex	|		value of mousepad X-coordinate (not available on all systems) |
+|	mousey	|		value of mousepad Y-coordinate (not available on all systems) |
 |	butt1	|		value of left mouse button, 0 or 1	|
 |	butt2	|		value of centre mouse button, 0 or 1	|
 |	butt3	|		value of right mouse button, 0 or 1	|

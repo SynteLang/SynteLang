@@ -3001,7 +3001,7 @@ var ( // these could be hard-coded as constants
 )
 
 func sincCoeff(x float64) float64 {
-	return math.Sin(0.5*x*math.Pi)/(math.Pi*x) * (math.Cos(x*math.Pi/7)+1)
+	return math.Sin(0.5*x*math.Pi)/(math.Pi*x)  * (math.Cos(x*math.Pi/6)+1)
 }
 
 func init() {

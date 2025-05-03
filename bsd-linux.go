@@ -20,9 +20,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
-	"unsafe" // :D
 )
 
 const tempDir = ".temp"
@@ -36,99 +34,7 @@ var (
 	wavFile   *os.File
 )
 
-func setupSoundCard(file string) (sc soundcard, success bool) {
-	// open audio output (everything is a file...)
-	var rr error
-	sc.file, rr = os.OpenFile(file, os.O_WRONLY, 0644)
-	if e(rr) {
-		p(rr)
-		p("soundcard not available, shutting down...")
-		return sc, not
-	}
-
-	// set bit format
-	var req uint32 = SNDCTL_DSP_SETFMT
-	var data uint32 = SELECTED_FMT
-	_, _, ern := syscall.Syscall(
-		syscall.SYS_IOCTL,
-		uintptr(sc.file.Fd()),
-		uintptr(req),
-		uintptr(unsafe.Pointer(&data)),
-	)
-	if ern != 0 {
-		p("set format:", ern)
-		return sc, not
-	}
-	switch data {
-	case AFMT_S16_LE:
-		sc.convFactor = math.MaxInt16
-		sc.format = 16
-	case AFMT_S24_LE:
-		sc.convFactor = math.MaxInt32
-		sc.format = 24
-	case AFMT_S32_LE:
-		sc.convFactor = math.MaxInt32
-		sc.format = 32
-	case AFMT_S8:
-		sc.convFactor = math.MaxInt8
-		sc.format = 8
-	default:
-		pf("\n--Incompatible bit format!--\nChange requested format to\n%#08x in file\n", data)
-		return sc, not
-	}
-	if data != SELECTED_FMT {
-		info <- sf("Requested bit format changed to %dbit", sc.format)
-	}
-
-	// set channels here, stereo or mono
-	req = SNDCTL_DSP_CHANNELS
-	data = CHANNELS
-	_, _, ern = syscall.Syscall(
-		syscall.SYS_IOCTL,
-		uintptr(sc.file.Fd()),
-		uintptr(req),
-		uintptr(unsafe.Pointer(&data)),
-	)
-	if ern != 0 || data != CHANNELS {
-		pf("\nrequested channels: %d\navailable: %d\n", CHANNELS, data)
-		return sc, not
-	}
-	switch data {
-	case STEREO:
-		sc.channels = "stereo"
-	case MONO:
-		sc.channels = "mono"
-	default:
-		p("\n--Incompatible channels! Change requested format in file--\n")
-		return sc, not
-	}
-
-	// set sample rate
-	req = SNDCTL_DSP_SPEED
-	sr := checkFlag(SAMPLE_RATE)
-	data = sr
-	_, _, ern = syscall.Syscall(
-		syscall.SYS_IOCTL,
-		uintptr(sc.file.Fd()),
-		uintptr(req),
-		uintptr(unsafe.Pointer(&data)),
-	)
-	if ern != 0 {
-		p("set rate:", ern) // do something else here
-		time.Sleep(time.Second)
-	}
-	sc.sampleRate = float64(data)
-	if data != sr {
-		info <- "--requested sample rate not accepted--"
-		info <- sf("new sample rate: %vHz", sc.sampleRate)
-	}
-	display.SR = sc.sampleRate
-	display.Format = sc.format
-	display.Channel = sc.channels
-	return sc, yes
-}
-
-func checkFlag(sr uint32) uint32 {
+func checkFlag(sr float64) float64 {
 	if len(os.Args) < 3 {
 		return sr
 	}
@@ -141,7 +47,7 @@ func checkFlag(sr uint32) uint32 {
 	if os.Args[2] == "44.1" { // for convenience
 		os.Args[2] = "44"
 	}
-	flag, err := strconv.Atoi(os.Args[2])
+	flag, err := strconv.ParseFloat(os.Args[2], 64)
 	if err != nil {
 		return sr
 	}
@@ -156,12 +62,12 @@ func checkFlag(sr uint32) uint32 {
 	if flag < 12000 || flag > 192000 {
 		return sr
 	}
-    return uint32(flag)
+    return flag
 }
 
 func recordWav(s systemState) (systemState, int) {
-	if s.sampleRate != 48000 || s.format != 32 {
-		msg("can only record at 32bit 48kHz")
+	if s.sampleRate != 48000 {
+		msg("can only record at 48kHz")
 		return s, startNewOperation
 	}
 	dir := "./audio-recordings/"
@@ -559,56 +465,6 @@ func rootSync() bool {
 
 func displayHeader() {
 	pf("\r->%sSyntə%s\n", cyan, reset)
-}
-
-func selectOutput(bits int) (func(w io.Writer, l, r float64) error) {
-	output := func(w io.Writer, l, r float64) error {
-		if err := binary.Write(w, BYTE_ORDER, int16(l)); err != nil {
-			return err
-		}
-		return binary.Write(w, BYTE_ORDER, int16(r))
-	} 
-	switch bits {
-	case 8:
-		output = func(w io.Writer, l, r float64) error {
-			if err := binary.Write(w, BYTE_ORDER, int8(l)); err != nil {
-				return err
-			}
-			return binary.Write(w, BYTE_ORDER, int8(r))
-		}
-	case 16:
-		// already assigned
-	case 24: // this is hacky, odd and potentially slow
-		output = func(w io.Writer, l, r float64) error {
-			var buf [3]byte
-			v := int32(l)
-			_ = buf[2]
-			buf[0] = byte(v>>8)
-			buf[1] = byte(v>>16)
-			buf[2] = byte(v>>24)
-			// above implies big endian?
-			if err := binary.Write(w, BYTE_ORDER, buf); err != nil {
-				return err
-			}
-			v = int32(r)
-			_ = buf[2]
-			buf[0] = byte(v>>8)
-			buf[1] = byte(v>>16)
-			buf[2] = byte(v>>24)
-			return binary.Write(w, BYTE_ORDER, buf)
-		}
-	case 32:
-		output = func(w io.Writer, l, r float64) error {
-			if err := binary.Write(w, BYTE_ORDER, int32(l)); err != nil {
-				return err
-			}
-			return binary.Write(w, BYTE_ORDER, int32(r))
-		}
-	default:
-		msg("unable to write to soundcard!")
-		return nil
-	}
-	return output
 }
 
 func ls(s systemState) (systemState, int) {

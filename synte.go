@@ -53,8 +53,6 @@
 package main
 
 import (
-	"bufio"
-	"encoding/binary"
 	"fmt"
 	"io"
 	"math"
@@ -67,35 +65,17 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	pa "github.com/gordonklaus/portaudio"
 )
 
 // constants for setting format and rate of OSS interface
 // these values are from '/sys/sys/soundcard.h' on freebsd13.0
 // currently using `sudo sysctl dev.pcm.X.bitperfect=1`
 // where X is the output found in `cat /dev/sndstat`
-const ( // operating system
-	// set output only
-	IOC_INOUT = 0xC0000000
-	// set bit width
-	SNDCTL_DSP_SETFMT = IOC_INOUT | (0x04&((1<<13)-1))<<16 | 0x50<<8 | 0x05
-	// SNDCTL_DSP_SETFMT	= 0xC0045005
-	// Format in Little Endian, see BYTE_ORDER
-	AFMT_S32_LE  = 0x00001000
-	AFMT_S24_LE  = 0x00010000
-	AFMT_S16_LE  = 0x00000010
-	AFMT_S8      = 0x00000040
-	//AFMT_S32_BE = 0x00002000 // Big Endian
-	SELECTED_FMT = AFMT_S32_LE
-	// for Stereo
-	SNDCTL_DSP_CHANNELS = 0xC0045003
-	STEREO              = 1
-	MONO                = 0
-	CHANNELS            = STEREO // will halve pitches/frequencies/tempos if mono!
-	// set Sample Rate, specific rate defined below
-	// SNDCTL_DSP_SPEED	= IOC_INOUT |(0x04 & ((1 << 13)-1))<<16 | 0x50 << 8 | 0x02
-	SNDCTL_DSP_SPEED       = 0xC0045002
-	SAMPLE_RATE            = 48000 //hertz
-	SNDCTL_DSP_SETFRAGMENT = IOC_INOUT | (0x04&((1<<13)-1))<<16 | 0x50<<8 | 0x0A
+const (
+	CHANNELS      = 2 // will halve pitches/frequencies/tempos if mono!
+	SAMPLE_RATE   = 48000 //hertz
 
 	WAV_TIME      = 4 //seconds
 	TAPE_LENGTH   = 1 //seconds
@@ -103,8 +83,7 @@ const ( // operating system
 	lenReserved   = 11
 	maxExports    = 12
 	DEFAULT_FREQ  = 0.0625 // 3kHz @ 48kHz Sample rate
-	FDOUT         = 1e-4
-	MIN_FADE      = 75e-3 // 75ms
+	MIN_FADE      = 175e-3 // 75ms
 	MAX_FADE      = 120   // seconds
 	defaultRelease = 0.25  // seconds
 	MIN_RELEASE   = 25e-3 // 25ms
@@ -113,7 +92,6 @@ const ( // operating system
 	alpLen        = 2400
 	baseGain      = 0.27
 	writeBufferLen = 2 << 11
-//	LOAD_THRESH = 17708 // approx. 0.85 * 1e9 / SAMPLE_RATE, 85% in nanoseconds per sample
 )
 
 var SampleRate float64 = SAMPLE_RATE // should be 'de-globalised'
@@ -383,7 +361,7 @@ var (
 	mutes   muteSlice
 	levels  []float64
 	rs      bool                                     // root-sync between running instances
-	fade    = 1 / (MIN_FADE * SAMPLE_RATE)           //Pow(FDOUT, 1/(MIN_FADE*SAMPLE_RATE))
+	fade    = 1 / (MIN_FADE * SAMPLE_RATE)
 	release = releaseFrom(defaultRelease, SAMPLE_RATE) // should be calculated from sc.sampleRate
 	gain    = baseGain
 	clipThr = 1.0 // individual listing limiter threshold
@@ -428,9 +406,11 @@ type disp struct { // indicates:
 }
 
 var display = disp{
-	Mode:   "off",
-	MouseX: 1,
-	MouseY: 1,
+	Mode:    "off",
+	MouseX:  1,
+	MouseY:  1,
+	Format:  32,
+	Channel: "stereo",
 }
 
 type wavs []struct {
@@ -549,33 +529,45 @@ func run(from io.Reader) {
 	saveJson([]listing{{operation{Op: advisory}}}, "displaylisting.json")
 	go infoDisplay()
 
-	sc, success := setupSoundCard("/dev/dsp3")
-	if !success {
-		p("unable to setup soundcard")
-		sc.file.Close()
+	err := pa.Initialize()
+	if err != nil {
+		pf("unable to setup soundcard, quitting\n%s", err)
 		return
 	}
-
-	// hack to reset soundcard because of pops and clicks on first run.
-	// requires further investigation. System dependent
-	for range [1024]struct{}{} {
-		selectOutput(sc.format)(sc.file, 0, 0)
-	}
-	if sc.file.Close() != nil {
-		p("unable to close soundcard")
-	}
-	sc, success = setupSoundCard("/dev/dsp3")
-	if !success {
-		p("unable to setup soundcard")
-		sc.file.Close()
+	defer shutdown()
+/*	d, err := pa.DefaultOutputDevice()
+	if err != nil {
+		msg("error opening default output:\n%s", err)
 		return
+	}*/
+	var channels int = CHANNELS
+	buf := make([]float32, writeBufferLen)
+	out := make([][]float32, 2)
+	out[0], out[1] = buf, buf
+	if len(os.Args) > 1 && ( os.Args[1] == "--mackie" || os.Args[1] == "-m" ) {
+		msg("mackie")
+		channels = 4
+		buf = make([]float32, writeBufferLen)
+		out = make([][]float32, 4)
+		out[0], out[1], out[2], out[3] = buf, buf, buf, buf
 	}
-	// end of hack
+	s, err := pa.OpenDefaultStream(
+		0, channels,
+		checkFlag(SAMPLE_RATE),
+		writeBufferLen, &out,
+	)
+	sc := soundcard{
+		s,
+		&out,
+		s.Info().SampleRate,
+		32,
+	}
 
-	defer sc.file.Close()
+	defer s.Close()
+	display.SR = s.Info().SampleRate
 
 	if writeLog {
-		log.WriteString(sf("soundcard: %dbit %2gkHz %s\n", sc.format, sc.sampleRate, sc.channels))
+		log.WriteString(sf("soundcard: %dbit %2gkHz\n", sc.format, sc.sampleRate))
 	}
 	SampleRate = sc.sampleRate // TODO remove later
 	t, twavs, wavSlice := newSystemState(sc)
@@ -803,6 +795,7 @@ start:
 	if underRun > 0 {
 		pf("underruns: %d", underRun)
 	}
+	time.Sleep(200 * time.Millisecond)
 }
 
 func parseNewOperation(t systemState) (systemState, bool, int) {
@@ -928,11 +921,12 @@ func (m *muteSlice) set(i int, v float64) {
 }
 
 type soundcard struct {
-	file       *os.File
-	channels   string
+	s          *pa.Stream
+	buff	   *[][]float32
+//	channels   string
 	sampleRate float64
 	format     int
-	convFactor float64
+//	convFactor float64
 }
 
 func readTokenPair(t *systemState) (bool, int) {
@@ -1364,28 +1358,6 @@ func transfer(d []listingStack, tr *data) ([]listingStack, []int) {
 // Now with glitch protection! IO handled in separate go routine. Pitch accuracy will degrade under heavy load
 func SoundEngine(sc soundcard, wavs [][]float64) {
 	defer close(stop)
-	w := bufio.NewWriterSize(sc.file, 256) // need to establish whether buffering is necessary here
-	defer w.Flush()
-	//w := sc.file // unbuffered alternative
-	output := selectOutput(sc.format)
-	 // TODO: ideally this should be in `bsd-linux.go` and shouldn't be fixed at 32 bit
-	if len(os.Args) > 1 && ( os.Args[1] == "--mackie" || os.Args[1] == "-m" ){
-		output = func(w io.Writer, l, r float64) error {
-			if err := binary.Write(w, BYTE_ORDER, int32(l)); err != nil {
-				return err
-			}
-			if err := binary.Write(w, BYTE_ORDER, int32(r)); err != nil {
-				return err
-			}
-			if err := binary.Write(w, BYTE_ORDER, int32(l)); err != nil {
-				return err
-			}
-			return binary.Write(w, BYTE_ORDER, int32(r))
-		}
-	}
-	if output == nil {
-		return
-	}
 
 	const (
 		Tau = 2 * math.Pi
@@ -1457,7 +1429,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		hiBand, hiBandPrev,
 		midBand, midBandPrev float64                      // limiter pre-emphasis
 		α       = 1 / (sc.sampleRate/(2*math.Pi*194) + 1) // co-efficient for setmix
-		hroom   = (sc.convFactor - 1.0) / sc.convFactor   // headroom for positive dither
+		//hroom   = (sc.convFactor - 1.0) / sc.convFactor   // headroom for positive dither
 		pd      int                                       // slated for removal
 		sides   float64                                   // for stereo
 		current int                                       // tracks index of active listing for recover()
@@ -1493,36 +1465,51 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 
 	 // if samples channel runs empty insert zeros instead and filter heavily
 	 // anonymous to use var n in scope
-	go func(w *bufio.Writer, sc soundcard) {
+	go func(sc soundcard) {
+		s := sc.s
+		chans := len(*sc.buff)
+		err := s.Start()
+		if err != nil {
+			panic(err)
+		}
+		defer s.Stop()
 		lpf := stereoPair{}
 		lFilter, rFilter := 0.0, 0.0
-		for env > 0 || n%writeBufferLen != 0 { // finish on end of buffer, should be determined in setupSouncard instead of this default
-			select {
-			case <-stop: // if panic has occurred n will no longer be incrementing, so return here
-				return
-			case s := <-samples:
-				lFilter += (s.left - lFilter) * lpf12kHz
-				rFilter += (s.right - rFilter) * lpf12kHz
-				lpf.stereoLpf(stereoPair{lFilter, rFilter}, lpf12kHz)
-			default:
-				// only degrade when load is high, to avoid lazy underruns
-				// OR when exited to avoid clicks
-				if display.Load > loadThresh || (exit && env == 0) {
-					lpf.stereoLpf(stereoPair{}, lpf15Hz) // zero-stuffing
-					if env > 0 { // don't count if exited
-						underRun++
+		for env > 0 {
+			buffL := make([]float32, writeBufferLen)
+			buffR := make([]float32, writeBufferLen)
+			for i := 0; i < writeBufferLen; i++ {
+				select {
+				case <-stop: // if panic has occurred n will no longer be incrementing, so return here
+					return
+				case s := <-samples:
+					lFilter += (s.left - lFilter) * lpf12kHz
+					rFilter += (s.right - rFilter) * lpf12kHz
+					lpf.stereoLpf(stereoPair{lFilter, rFilter}, lpf12kHz)
+				default:
+					// only degrade when load is high, to avoid lazy underruns
+					// OR when exited to avoid clicks
+					if display.Load > loadThresh || (exit && env == 0) {
+						lpf.stereoLpf(stereoPair{}, lpf15Hz) // zero-stuffing
+						if env > 0 { // don't count if exited
+							underRun++
+						}
 					}
 				}
+				L := clip(lpf.left) // clip will display info
+				R := clip(lpf.right) // clip will display info
+				buffL[i] = float32(L)
+				buffR[i] = float32(R)
 			}
-			L := clip(lpf.left) * sc.convFactor  // clip will display info
-			R := clip(lpf.right) * sc.convFactor // clip will display info
-			// write to four channels for usb mixer
-			if output(w, L, R) != nil {
-				pf("Write error occurred! Please restart")
-				os.Exit(1)
+			for i := 0; i < chans; i += 2 {
+				(*sc.buff)[i] = buffL
+				(*sc.buff)[i+1] = buffR
+			}
+			if err := s.Write(); err != nil {
+				panic(sf("\nwrite error - %v", err))
 			}
 		}
-	}(w, sc)
+	}(sc)
 
 	tr := *<-transmit
 	d = append(d, tr.listingStack)
@@ -1548,7 +1535,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			pause <- not // blocks until `: play`, bool is purely semantic
 			if exit {
 				env = 0
-				time.Sleep(50 * time.Millisecond) // wait for 'glitch protection' go routine to complete
+				time.Sleep(550 * time.Millisecond) // wait for 'glitch protection' go routine to complete
 				break
 			}
 			p = 1
@@ -2032,15 +2019,16 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			sides *= env
 			env -= fade // linear fade-out (perceived as logarithmic)
 			if env < 0 {
-				time.Sleep(50 * time.Millisecond) // wait for 'glitch protection' go routine to complete
+				time.Sleep(150 * time.Millisecond) // wait for 'glitch protection' go routine to complete
 				break                             // equivalent to: return
 			}
 		}
 		dither = no.ise()
 		dither += no.ise()
 		dither *= 0.5
-		mid *= hroom
+		//mid *= hroom
 		mid += dither / math.MaxInt16 // set to fixed amount
+		sides += dither / math.MaxInt16
 		peak += (math.Abs(mid) - peak) * lpf2point4Hz // 'VU' style metering
 		//if abs := math.Abs(mid); abs > peak { // peak detect metering
 		//	peak = abs
@@ -2052,8 +2040,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		//}
 		sides = math.Max(-0.5, math.Min(0.5, sides))
 		if record {
-			L := math.Max(-1, math.Min(1, mid+sides)) * sc.convFactor
-			R := math.Max(-1, math.Min(1, mid-sides)) * sc.convFactor
+			L := math.Max(-1, math.Min(1, mid+sides)) * math.MaxInt32
+			R := math.Max(-1, math.Min(1, mid-sides)) * math.MaxInt32
 			writeWav(L, R)
 		}
 		t = time.Since(lastTime)
@@ -2705,7 +2693,7 @@ func checkFade(s systemState) (systemState, int) {
 	if !ok { // error reported by parseFloat
 		return s, startNewOperation
 	}
-	fade = fd //Pow(FDOUT, fd)
+	fade = fd
 	reportFloatSet(s.operator, fd)
 	return s, startNewOperation
 }
@@ -3032,4 +3020,11 @@ func init() {
 	a1 *= norm
 	a3 *= norm
 	a5 *= norm
+}
+
+func shutdown() {
+	err := pa.Terminate()
+	if err != nil {
+		pf("termination error: %s", err)
+	}
 }

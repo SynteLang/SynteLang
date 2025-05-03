@@ -59,23 +59,25 @@ func setupSoundCard(file string) (sc soundcard, success bool) {
 		p("set format:", ern)
 		return sc, not
 	}
-	if data != SELECTED_FMT {
-		info <- sf("Bit format %#x not available!", SELECTED_FMT)
-		info <- sf("Change requested format to %#x in synte.go", data)
-	}
-	sc.format = 16
-	switch {
-	case data == AFMT_S16_LE:
+	switch data {
+	case AFMT_S16_LE:
 		sc.convFactor = math.MaxInt16
-	case data == AFMT_S32_LE:
+		sc.format = 16
+	case AFMT_S24_LE:
+		sc.convFactor = math.MaxInt32
+		sc.format = 24
+	case AFMT_S32_LE:
 		sc.convFactor = math.MaxInt32
 		sc.format = 32
-	case data == AFMT_S8:
+	case AFMT_S8:
 		sc.convFactor = math.MaxInt8
 		sc.format = 8
 	default:
-		p("\n--Incompatible bit format!--\nChange requested format in file--\n")
+		pf("\n--Incompatible bit format!--\nChange requested format to\n%#08x in file\n", data)
 		return sc, not
+	}
+	if data != SELECTED_FMT {
+		info <- sf("Requested bit format changed to %dbit", sc.format)
 	}
 
 	// set channels here, stereo or mono
@@ -461,7 +463,7 @@ func pf(s string, i ...interface{}) {
 	fmt.Printf(s, i...)
 }
 
-// poll '.temp/*.syt' modified time and reload if changed
+// poll '<tempDir>/*.syt' modified time and reload if changed
 func reloadListing() {
 	dir := "./"
 	files, rr := os.ReadDir(dir)
@@ -510,7 +512,7 @@ func reloadListing() {
 }
 
 func reloadExcept(current, i int) error {
-	f, rr := os.Open(sf(".temp/%d.syt", i))
+	f, rr := os.Open(sf("%s/%d.syt", tempDir, i))
 	if e(rr) {
 		return rr
 	}
@@ -576,6 +578,25 @@ func selectOutput(bits int) (func(w io.Writer, l, r float64) error) {
 		}
 	case 16:
 		// already assigned
+	case 24: // this is hacky, odd and potentially slow
+		output = func(w io.Writer, l, r float64) error {
+			var buf [3]byte
+			v := int32(l)
+			_ = buf[2]
+			buf[0] = byte(v>>8)
+			buf[1] = byte(v>>16)
+			buf[2] = byte(v>>24)
+			// above implies big endian?
+			if err := binary.Write(w, BYTE_ORDER, buf); err != nil {
+				return err
+			}
+			v = int32(r)
+			_ = buf[2]
+			buf[0] = byte(v>>8)
+			buf[1] = byte(v>>16)
+			buf[2] = byte(v>>24)
+			return binary.Write(w, BYTE_ORDER, buf)
+		}
 	case 32:
 		output = func(w io.Writer, l, r float64) error {
 			if err := binary.Write(w, BYTE_ORDER, int32(l)); err != nil {

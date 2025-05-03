@@ -1,0 +1,3 @@
+information from running instance will be logged in this file.
+
+to access, type `tail -F -n 12 info.txt`

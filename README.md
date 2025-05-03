@@ -73,9 +73,8 @@ You should end up with a directory (folder) containing the following files and d
 	synte.go  
 	bsd-linux.go 
 	functions.json  
-	tools/info.go (optional, recommended)  
-	tools/listing.go (optional, recommended)  
-	tools/functions.go (optional) 
+	info.go  
+	listing.go  
 	a directory named 'wavs' containing wav files (optional, can contain a README.md)
 	an empty directory named '.temp' (can contain a README file) 
 	an empty directory named 'recordings' (can contain a README.md) 

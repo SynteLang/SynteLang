@@ -1,0 +1,74 @@
+/* maj7
+in 43s
+osc
+- 0.5
+clip 0
+lpf 5hz
+mul 2*3.5
+in 0.3
+out v
+in 1s
+posc 0
+tri
+range 1,7
+out t
+in 3s
+posc 0
+out s
+- 0.5
+>sync
+in s
+lt 0.5
+out g
+in s
+mul 16
+mod 1
+lt 0.5
+out grid
+in 3/8s
+sq
+s/h grid
+dec 300ms
+push
+in s
+flip
+exb 5
+pop
+exb t
+mul 1.2
+clip 0
+lpf 50hz
+out vca
+mul v
+out f
+in 1.25s
+mul 2
+osc
++ 0.25
+mod 1/3.5
+s/h g
++ 1
+log
+8bit 12
+base 2
+mul 440/2hz
+out p
+pm f
+out m
+in p
+mul 1.25
+pm f
+out+ m
+in p
+mul 1.5
+pm f
+out+ m
+in 15/16
+mul p
+pm f
++ m
+hpf 100hz
+mul vca
+lpf 1800hz
+mul -4db
+mix

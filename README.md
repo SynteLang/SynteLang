@@ -80,10 +80,13 @@ You should end up with a directory (folder) containing the following files and d
 	an empty directory named '.temp' (can contain a README file) 
 	an empty directory named 'recordings' (can contain a README.md) 
 
-Open a terminal, navigate to the directory and type `go run synte.go bsd-linux.go` to begin. ◊ Open another terminal and run `info.go` similarly. This will display useful information and feedback as you input and run code, if you run this before synte.go it will display details of any loaded wavs.  
-Open another terminal and run `listing.go` to view currently running code, this will also show mute status in italics. You may wish to arrange these using a tiling window manager, terminal multiplexer, or equivalent.
+Open a terminal, navigate to the directory and type `go run .` to begin (the full stop is important). ◊ Open another terminal and type `go run . --info` similarly. This will display useful visual feedback as you input and run code.  
+Open another terminal and type `go run . --listings` to view currently running code, this will also show mute status in italics.
+To display info and error messages open another terminal and type `tail -f info.txt`.  
+You may wish to arrange these terminal windows using a tiling window manager, terminal multiplexer, or equivalent.  
+You may also wish to open `.syt` files contained in `.temp/` to edit them. These contain the running code, numbered by listing and will be reloaded automatically once saved.  
 
-You will be prompted to write your first syntə listing, a program that will make sounds.  
+In the first terminal window you can write your first syntə listing, a program that will make sounds.  
 The listing is input one line at a time. You must write the name of an operator or function, usually followed by a space and a number or signal name. The first character of a name cannot be either a number, plus, minus or dot, to avoid confusion.  
 Some names have special meaning, such as ones beginning with the `@` or `^` characters.
 

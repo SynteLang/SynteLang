@@ -120,8 +120,11 @@ var SampleRate float64 = SAMPLE_RATE // should be 'de-globalised'
 
 const ( // terminal colours, eg. sf("%stest%s test", yellow, reset)
 	reset   = "\x1b[0m"
+	bold    = "\x1b[1m"
 	italic  = "\x1b[3m"
 	red     = "\x1b[31m"
+	green   = "\x1b[32m"
+	blue    = "\x1b[34m"
 	yellow  = "\x1b[33m"
 	magenta = "\x1b[35m"
 	cyan    = "\x1b[36m"
@@ -467,7 +470,7 @@ func main() {
 		return
 	}
 	switch os.Args[1] {
-	case "--log", "-l":
+	case "--log":
 		var err error
 		log, err = os.OpenFile("info.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
@@ -494,6 +497,12 @@ func main() {
 		defer pprof.StopCPUProfile() //*/
 	case "-u", "--usage", "-h", "--help":
 		p("Available flags: --log, --prof, --sr <hz>. Only one may be used at a time")
+		return
+	case "--info", "-i":
+		infoTelem()
+		return
+	case "--listings", "--listing", "-l":
+		listingsDisplay()
 		return
 	}
 	run(os.Stdin)

@@ -496,7 +496,14 @@ func main() {
 		}
 		defer pprof.StopCPUProfile() //*/
 	case "-u", "--usage", "-h", "--help":
-		p("Available flags: --log, --prof, --sr <hz>. Only one may be used at a time")
+		p(`Available flags:
+		--log
+		--prof
+		--mem
+		--sr <hz>
+		--info
+		--listings.
+Only one may be used at a time`)
 		return
 	case "--info", "-i":
 		infoTelem()

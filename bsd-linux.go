@@ -113,10 +113,14 @@ var embeddedFunctions []byte
 // loads Syntə functions from file in project root called 'functions.json'
 func loadFunctions(data *map[string]fn) {
 	f := "functions.json"
-//	j, rr := os.ReadFile(f)
-	rr := json.Unmarshal(embeddedFunctions, data)
+	j, rr := os.ReadFile(f)
 	if e(rr) {
-		pf("Error loading '%s': %v\n", f, rr)
+		msg("loading from embedded functions")
+		j = embeddedFunctions
+	}
+	rr = json.Unmarshal(j, data)
+	if e(rr) {
+		pf("Error decoding '%s': %v\n", f, rr)
 	}
 }
 
@@ -153,7 +157,7 @@ func decodeWavs() wavs {
 	}
 	files, rr := os.ReadDir("./wavs")
 	if e(rr) {
-		msg("%sno wavs:%s %v\n", italic, reset, rr)
+		msg("no wavs: %v\n", rr)
 		return nil
 	}
 	limit := 0
@@ -387,7 +391,7 @@ func reloadListing() {
 	}
 	if !tempExtant {
 		os.Mkdir(tempDir, 0664)
-		pf("\n%q directory added\n", tempDir)
+		msg("\n%q directory added\n", tempDir)
 	}
 	l := 0
 	stat := make([]time.Time, 0)

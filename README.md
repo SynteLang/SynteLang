@@ -78,9 +78,10 @@ You should end up with a directory (folder) containing the following files and d
 	an empty directory named '.temp' (can contain a README file) 
 	an empty directory named 'recordings' (can contain a README.md) 
 
-Open a terminal, navigate to the directory and type `go run .` to begin (the full stop is important). ◊ Open another terminal and type `go run . --info` similarly. This will display useful visual feedback as you input and run code.  
+Open a terminal, navigate to the directory and type `go run .` to begin (the full stop is important). ◊  
+Open another terminal and type `go run . --info` similarly. This will display useful visual feedback as you input and run code.  
 Open another terminal and type `go run . --listings` to view currently running code, this will also show mute status in italics.
-To display info and error messages open another terminal and type `tail -f info.txt`.  
+To display info and error messages open another terminal and type `tail -f info.txt`. To quit this, type `CTRL+C` (the 'Ctrl' key followed by the 'C' key at the same time)   
 You may wish to arrange these terminal windows using a tiling window manager, terminal multiplexer, or equivalent.  
 You may also wish to open `.syt` files contained in `.temp/` to edit them. These contain the running code, numbered by listing and will be reloaded automatically once saved.  
 

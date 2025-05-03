@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	_ "embed"
 	"errors"
 	"fmt"
 	"io"
@@ -106,13 +107,16 @@ func closeWavFile() {
 	wavFile.Close()
 }
 
+//go:embed functions.json
+var embeddedFunctions []byte
+
 // loads Syntə functions from file in project root called 'functions.json'
 func loadFunctions(data *map[string]fn) {
 	f := "functions.json"
-	j, rr := os.ReadFile(f)
-	rr2 := json.Unmarshal(j, data)
-	if e(rr) || e(rr2) {
-		pf("Error loading '%s': %v %v\n", f, rr, rr2)
+//	j, rr := os.ReadFile(f)
+	rr := json.Unmarshal(embeddedFunctions, data)
+	if e(rr) {
+		pf("Error loading '%s': %v\n", f, rr)
 	}
 }
 
@@ -149,7 +153,7 @@ func decodeWavs() wavs {
 	}
 	files, rr := os.ReadDir("./wavs")
 	if e(rr) {
-		pf("%sno wavs:%s %v\n", italic, reset, rr)
+		msg("%sno wavs:%s %v\n", italic, reset, rr)
 		return nil
 	}
 	limit := 0

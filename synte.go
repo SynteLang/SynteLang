@@ -53,6 +53,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"math"
@@ -405,13 +406,7 @@ type disp struct { // indicates:
 	Channel string        // stereo/mono
 }
 
-var display = disp{
-	Mode:    "off",
-	MouseX:  1,
-	MouseY:  1,
-	Format:  32,
-	Channel: "stereo",
-}
+var display = disp{}
 
 type wavs []struct {
 	Name string
@@ -526,10 +521,24 @@ func emptyTokens() {
 }
 
 func run(from io.Reader) {
+	Json, err := os.ReadFile("infodisplay.json")
+	json.Unmarshal(Json, &display)
+	if display.On {
+		pf("instance of synte already running in this directory")
+		return
+	}
+	display = disp{
+		On:		 true,
+		Mode:    "off",
+		MouseX:  1,
+		MouseY:  1,
+		Format:  32,
+		Channel: "stereo",
+	}
 	saveJson([]listing{{operation{Op: advisory}}}, "displaylisting.json")
 	go infoDisplay()
 
-	err := pa.Initialize()
+	err = pa.Initialize()
 	if err != nil {
 		pf("unable to setup soundcard, quitting\n%s", err)
 		return
@@ -773,7 +782,6 @@ start:
 		<-lockLoad
 
 		if !started {
-			display.On = yes
 			started = yes
 		}
 

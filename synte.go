@@ -2593,7 +2593,7 @@ func modeSet(s systemState) (systemState, int) {
 	case "rs": // root sync, is this needed any more?
 		rs = yes
 		msg("%snext launch will sync to root instance%s", italic, reset)
-	case "reset":
+	case "reset", "r":
 		rst = !rst
 		s := "off"
 		if rst {

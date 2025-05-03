@@ -76,11 +76,12 @@ import (
 const ( // operating system
 	// set output only
 	IOC_INOUT = 0xC0000000
-	// set bit width to 32bit
+	// set bit width
 	SNDCTL_DSP_SETFMT = IOC_INOUT | (0x04&((1<<13)-1))<<16 | 0x50<<8 | 0x05
 	// SNDCTL_DSP_SETFMT	= 0xC0045005
 	// Format in Little Endian, see BYTE_ORDER
 	AFMT_S32_LE  = 0x00001000
+	AFMT_S24_LE  = 0x00010000
 	AFMT_S16_LE  = 0x00000010
 	AFMT_S8      = 0x00000040
 	//AFMT_S32_BE = 0x00002000 // Big Endian
@@ -111,7 +112,7 @@ const ( // operating system
 	twoInvMaxUint = 2.0 / math.MaxUint64
 	alpLen        = 2400
 	baseGain      = 0.27
-	writeBufferLen = 2400
+	writeBufferLen = 2 << 11
 //	LOAD_THRESH = 17708 // approx. 0.85 * 1e9 / SAMPLE_RATE, 85% in nanoseconds per sample
 )
 
@@ -425,7 +426,6 @@ type disp struct { // indicates:
 
 var display = disp{
 	Mode:   "off",
-	Info:   "clear",
 	MouseX: 1,
 	MouseY: 1,
 }
@@ -926,7 +926,11 @@ func readTokenPair(t *systemState) (bool, int) {
 		return tt.ext, startNewOperation
 	}
 	t.operator = strings.TrimSuffix(t.operator, ",")  // to allow comma separation of tokens
-	if len(t.operator) > 1 && t.operator[:1] == ":" { // hacky shorthand
+	if len(t.operator) < 1 {
+		<-tokens
+		return tt.ext, startNewOperation
+	}
+	if t.operator[:1] == ":" { // hacky shorthand
 		t.operand = t.operator[1:]
 		t.operator = ":"
 		return tt.ext, nextOperation
@@ -1251,7 +1255,17 @@ func infoDisplay() {
 	var (
 		c, s, g, gl int
 	)
-	display.Info = "clear"
+	infoTxt := "info.txt"
+	infoF, err := os.OpenFile(infoTxt, os.O_TRUNC|os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		pf("unable to write messages to %q: %s\n", infoTxt, err)
+	}
+	defer infoF.Close()
+	h := sf("\n-- Syntə -- \t\t%s\n\n", time.Now().Format("02/01/06 15:04"))
+	_, err = infoF.WriteString(h)
+	if err != nil {
+		pf("unable to log: %s\n", err)
+	}
 	for {
 		if writeLog {
 			display.Info = "Logging..."
@@ -1263,13 +1277,8 @@ func infoDisplay() {
 			return
 		}
 		select {
-		case display.Info = <-info:
-			if writeLog {
-				_, err := log.WriteString(sf("%s\n", display.Info))
-				if err != nil {
-					pf("logging error: %s", err)
-				}
-			}
+		case i := <-info:
+			infoF.WriteString(i + "\n")
 		case carryOn <- yes: // semaphore: received, continue
 		case <-stop:
 			if !exit {
@@ -1452,7 +1461,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		case nil:
 			return // exit normally
 		default:
-			msg("oops - %s %s (view log in `debug/`)", err) // report error to infoDisplay
+			msg("oops - %s (view log in `debug/`)", err) // report error to infoDisplay
 			stack := debug.Stack()
 			infoIfLogging("%s", stack, err) // print stack trace
 			if !writeLog {
@@ -2552,8 +2561,6 @@ func modeSet(s systemState) (systemState, int) {
 		}
 		<-pause
 		display.Paused = not
-	case "clear", "c":
-		msg("clear")
 	case "verbose":
 		switch display.Verbose {
 		case not:

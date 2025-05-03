@@ -32,7 +32,6 @@ func main() {
 		Vu      float64
 		Clip    bool
 		Load    time.Duration
-		Info    string
 		MouseX  float64
 		MouseY  float64
 		Paused  bool
@@ -49,12 +48,6 @@ func main() {
 		SR: 48000,
 	}
 
-	type message struct {
-		Content string
-		Added   time.Time // redundant
-	}
-	messages := make([]message, 11)
-
 	file := "infodisplay.json"
 
 	var start time.Time
@@ -70,13 +63,13 @@ func main() {
 		n := 0
 		dB := "     "
 		df := -120.0 // filter
+		msg := ""
 		for {
 			Json, err := os.ReadFile(file)
 			json.Unmarshal(Json, &display)
 			//if err != nil || err2 != nil {
 			if err != nil { // ignore unmarshal errors
-				messages[9].Content = fmt.Sprintf("error loading %s: %v\n", file, err)
-				//messages[10].Content = "info display out of order"
+				msg = fmt.Sprintf("error loading %s: %v\n", file, err)
 			}
 
 			paused := "      "
@@ -105,7 +98,7 @@ func main() {
 				loadV = l
 			}
 			if overload == 0 {
-				load = fmt.Sprintf("%0.2f", loadV)
+				load = fmt.Sprintf("%2.f", loadV*100)
 			}
 			if !started {
 				load = "0"
@@ -123,16 +116,6 @@ func main() {
 			}
 			L := loadColour + load + reset
 
-			if display.Info != messages[10].Content {
-				m := message{display.Info, time.Now()}
-				messages = append(messages, m)
-				messages = messages[1:]
-			}
-			if display.Info == "clear" {
-				for i := range messages {
-					messages[i].Content = ""
-				}
-			}
 			clip := ""
 			if display.Clip {
 				clip = bold+red
@@ -169,42 +152,18 @@ func main() {
 				soundcard = "\t\t"
 			}
 
-			fmt.Printf("\033[H\033[2J")
-			fmt.Printf("%sSyntə info%s %spress enter to quit%s", cyan, reset, italic, reset)
+			fmt.Printf("\033[2J")
+			fmt.Printf("%s Syntə info%s %spress enter to quit%s", cyan, reset, italic, reset)
 			fmt.Printf(`   %s   %s  %3s
-╭───────────────────────────────────────────────────╮
-   %sLoad:%s %v           %s
-%s
-%s
-%s
-%s
-%s
-%s
-%s
-%s
-%s
-%s
-%s
-%s
-      %sMouse-X:%s %5.4g       %sMouse-Y:%s %5.4g
-╰───────────────────────────────────────────────────╯`,
+%s%s
+  %v%%     %s    %smx:%s%5.4g   %smy:%s%5.4g`,
 				sync, paused, timer,
-				yellow, reset, L, soundcard,
-				messages[0].Content,
-				messages[1].Content,
-				messages[2].Content,
-				messages[3].Content,
-				messages[4].Content,
-				messages[5].Content,
-				messages[6].Content,
-				messages[7].Content,
-				messages[8].Content,
-				messages[9].Content,
-				messages[10].Content,
-				VU,
+				msg, VU,
+				L, soundcard,
 				blue, reset, display.MouseX,
 				blue, reset, display.MouseY,
 			)
+			fmt.Printf("\033[H")
 
 			time.Sleep(20 * time.Millisecond)
 			if exit {
@@ -218,5 +177,5 @@ func main() {
 		exit = true
 		<-stop
 	}
-	fmt.Printf("info display closed.\n")
+	fmt.Printf("\n\ninfo display closed.                                 \n")
 }

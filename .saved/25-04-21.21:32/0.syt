@@ -1,0 +1,24 @@
+in 150/1.6bpm
+sq
+count 4
++ 1
+base 2
+\ 1
+>sync
+out d
+mul 1/2
+out d2
+in 4
+out bars
+in 150/4bpm
+/ bars
+out tempo
+osc
+mod d
+clip d2
+out sync
+mul 16
+mul bars
+mod 1
+lt 0.5
+.out grid

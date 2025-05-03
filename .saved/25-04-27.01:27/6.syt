@@ -1,0 +1,19 @@
+/* sn
+in 8hz
+posc 0
+lt 0.5
+out g
+in 2.5/2s
+sino
+exb 5
+range 35ms,85ms
+out t
+in 16/3hz
+posc 0.5
+lt 0.5
+s/h g
+sn t
+hpf 200hz
+lpf 3khz
+mul 0
+mix

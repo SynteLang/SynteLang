@@ -1,0 +1,14 @@
+in tempo
+mul 1/16
+osc
+out s
+/b 1,0
+mod 1/32
+mul 0.82873
+mul 7/8
++ s
+wav aloud
+lpf 3khz
+hpf 3khz
+hpf 3khz
+out dac

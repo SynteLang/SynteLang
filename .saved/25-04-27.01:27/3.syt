@@ -1,0 +1,11 @@
+/* sh
+in 3s
+pulse 1/8
++ 1
+mul 4hz
+posc 0.5
+gt 0.55
+hpf 120ms
+gt 0.5
+hh 35ms
+mix

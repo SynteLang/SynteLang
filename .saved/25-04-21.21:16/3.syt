@@ -1,0 +1,18 @@
+in 3hz
+osc
+tri
+out f
+/b 64,0
+flip
+exb 8
+hpf 1s
+clip 0
+smooth
+out vca
+/s 16,0
+one2 1.5
+mul 880*2hz
+pm f
+tanh
+mul vca
+mix

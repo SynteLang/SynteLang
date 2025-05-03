@@ -1,0 +1,29 @@
+in 1.2s
+sq
+s/h grid
+in 1.5
+out o
+/s 6,0
++ 1
+mul 8
+out b
+/b b,0
+exb 8
+out env
+lpf 5hz
+out vca
+in 7s
+osc
+tri
+mul 1/24
+base 2
+mul 440/2hz
+mul o
+pm env
+mul vca
+out fx
+chorII
++ fx
+lpf 2khz
+mul 8db
+mix

@@ -1,0 +1,44 @@
+in 3hz
+pulse 1/8
+s/h grid
+range 1,1.5
+out s
+in 5hz
+pulse 1/8
+s/h grid
+range 1,1.2
+mul s
+out p
+/s 3,0
++ 1
+range 3,6
+out b
+/b b,0
+flip
+exb 10
+lpf 50hz
+smooth
+out vca
+in 441hz
+mul p
+sino
+mul vca
+tanh
+out m
+in 440*2hz
+mul p
++ a
++ pm
+mod 1
+out a
+sine
+push
+mul 440hz
+mul 0.3
+mul vca
+out pm
+pop
++ m
+mul vca
+mul 4db
+mix

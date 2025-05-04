@@ -21,11 +21,10 @@ type muteVerb struct {
 
 func listingsDisplay() {
 	var (
-		file = "displaylisting.json"
 		exit bool
 		stop = make(chan struct{})
 	)
-	if _, err := os.Open(file); err != nil {
+	if _, err := os.Open(listingsFile); err != nil {
 		fmt.Printf("error: %v\n", err)
 		fmt.Println("check you are in the correct directory")
 		return
@@ -37,12 +36,12 @@ func listingsDisplay() {
 			mv muteVerb
 		)
 		for !exit {
-			st, _ := os.Stat(file)
+			st, _ := os.Stat(listingsFile)
 			lt := st.ModTime()
 			mvn, ch := mutesOrVerboseChanged(mv)
 			if !lt.Equal(t) || ch {
 				fmt.Printf("\033[H\033[2J")
-				readAndDisplay(file, mvn)
+				readAndDisplay(listingsFile, mvn)
 			}
 			t = lt
 			mv = mvn
@@ -57,9 +56,8 @@ func listingsDisplay() {
 }
 
 func mutesOrVerboseChanged(mv muteVerb) (muteVerb, bool) {
-	file2 := "infodisplay.json"
 	d := make(map[string]json.RawMessage)
-	Json, err := os.ReadFile(file2)
+	Json, err := os.ReadFile(infoFile)
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
 		fmt.Println("check you are in the correct directory")

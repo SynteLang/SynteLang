@@ -176,7 +176,7 @@ func decodeWavs() wavs {
 		msg("no wav files found")
 		return nil
 	}
-	pf("%sProcessing wavs...%s\n", italic, reset)
+	msg("wavs:")
 	for _, file := range filelist {
 		r, rr := os.Open("./wavs/" + file)
 		if e(rr) {
@@ -377,22 +377,6 @@ func pf(s string, i ...interface{}) {
 
 // poll '<tempDir>/*.syt' modified time and reload if changed
 func reloadListing() {
-	dir := "./"
-	files, rr := os.ReadDir(dir)
-	if e(rr) {
-		msg("unable to access '%s': %s", dir, rr)
-		return
-	}
-	tempExtant := not
-	for _, f := range files {
-		if f.IsDir() && f.Name() == tempDir {
-			tempExtant = yes
-		}
-	}
-	if !tempExtant {
-		os.Mkdir(tempDir, 0664)
-		msg("\n%q directory added\n", tempDir)
-	}
 	l := 0
 	stat := make([]time.Time, 0)
 	for {
@@ -504,8 +488,34 @@ func ls(s systemState) (systemState, int) {
 	return s, startNewOperation
 }
 
+func makeDirIfNotExtant(dir string) bool {
+	files, rr := os.ReadDir("./")
+	if e(rr) {
+		msg("unable to access this directory: %s", rr)
+		return false
+	}
+	tempExtant := not
+	for _, f := range files {
+		if f.IsDir() && f.Name() == dir {
+			tempExtant = yes
+		}
+	}
+	if !tempExtant {
+		err := os.Mkdir(dir, 0750)
+		if err != nil {
+			msg("unable to create dir: %q", dir)
+			return false
+		}
+		msg("\n%q directory added\n", dir)
+	}
+	return true
+}
+
 func saveTempFile(t systemState, l int) {
 	if t.newListing[0].Op == "deleted" {
+		return
+	}
+	if !makeDirIfNotExtant(tempDir) {
 		return
 	}
 	// save listing as <n>.syt for the reload
@@ -519,7 +529,7 @@ func saveTempFile(t systemState, l int) {
 		content += "\n"
 	}
 	if rr := os.WriteFile(f, []byte(content), 0666); e(rr) {
-		msg("%v", rr)
+		msg("unable to save temp file: %v", rr)
 	}
 }
 

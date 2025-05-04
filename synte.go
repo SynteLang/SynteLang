@@ -70,10 +70,6 @@ import (
 	pa "github.com/gordonklaus/portaudio"
 )
 
-// constants for setting format and rate of OSS interface
-// these values are from '/sys/sys/soundcard.h' on freebsd13.0
-// currently using `sudo sysctl dev.pcm.X.bitperfect=1`
-// where X is the output found in `cat /dev/sndstat`
 const (
 	CHANNELS      = 2 // will halve pitches/frequencies/tempos if mono!
 	SAMPLE_RATE   = 48000 //hertz
@@ -95,12 +91,19 @@ const (
 	writeBufferLen = 2 << 11
 )
 
+const (
+	infoFile     = "infodisplay.json"
+	logFile      = "info.txt"
+	listingsFile = "displaylisting.json"
+	funcsFile    = "functions.json"
+)
+
 var SampleRate float64 = SAMPLE_RATE // should be 'de-globalised'
 
 const ( // terminal colours, eg. sf("%stest%s test", yellow, reset)
 	reset   = "\x1b[0m"
 	bold    = "\x1b[1m"
-	italic  = "\x1b[3m"
+	italic  = ""
 	red     = "\x1b[31m"
 	green   = "\x1b[32m"
 	blue    = "\x1b[34m"
@@ -362,8 +365,8 @@ var (
 	mutes   muteSlice
 	levels  []float64
 	rs      bool                                     // root-sync between running instances
-	fade    = 1 / (MIN_FADE * SAMPLE_RATE)
-	release = releaseFrom(defaultRelease, SAMPLE_RATE) // should be calculated from sc.sampleRate
+	fade    = 1 / (MIN_FADE * SampleRate)
+	release = releaseFrom(defaultRelease, SampleRate) // should be calculated from sc.sampleRate
 	gain    = baseGain
 	clipThr = 1.0 // individual listing limiter threshold
 	rst   bool
@@ -402,7 +405,6 @@ type disp struct { // indicates:
 	GRl     int          // per-listing limiter is in effect
 	Sync    bool          // sync pulse sent
 	Verbose bool          // show unrolled functions - all operations
-	Format	int           // output bit depth
 	Channel string        // stereo/mono
 }
 
@@ -521,66 +523,80 @@ func emptyTokens() {
 }
 
 func run(from io.Reader) {
-	Json, err := os.ReadFile("infodisplay.json")
+	Json, err := os.ReadFile(infoFile)
 	json.Unmarshal(Json, &display)
 	if display.On {
-		pf("instance of synte already running in this directory")
+		pf("instance of synte already running in this directory\n")
 		return
 	}
-	display = disp{
-		On:		 true,
-		Mode:    "off",
-		MouseX:  1,
-		MouseY:  1,
-		Format:  32,
-		Channel: "stereo",
-	}
-	saveJson([]listing{{operation{Op: advisory}}}, "displaylisting.json")
-	go infoDisplay()
+	saveJson([]listing{{operation{Op: advisory}}}, listingsFile)
 
 	err = pa.Initialize()
 	if err != nil {
-		pf("unable to setup soundcard, quitting\n%s", err)
+		pf("unable to setup soundcard, quitting\n%s\n", err)
 		return
 	}
 	defer shutdown()
-/*	d, err := pa.DefaultOutputDevice()
+	d, err := pa.DefaultOutputDevice()
 	if err != nil {
-		msg("error opening default output:\n%s", err)
+		pf("error opening default output:\n%s\n", err)
 		return
-	}*/
+	}
 	var channels int = CHANNELS
-	buf := make([]float32, writeBufferLen)
-	out := make([][]float32, 2)
+	buf := make([]format, writeBufferLen)
+	out := make([][]format, 2)
 	out[0], out[1] = buf, buf
-	if len(os.Args) > 1 && ( os.Args[1] == "--mackie" || os.Args[1] == "-m" ) {
-		msg("mackie")
+	if d.MaxOutputChannels >= 4 {
 		channels = 4
-		buf = make([]float32, writeBufferLen)
-		out = make([][]float32, 4)
+		out = make([][]format, 4)
 		out[0], out[1], out[2], out[3] = buf, buf, buf, buf
 	}
+	SampleRate = checkFlag(SampleRate)
 	s, err := pa.OpenDefaultStream(
 		0, channels,
-		checkFlag(SAMPLE_RATE),
+		SampleRate,
 		writeBufferLen, &out,
 	)
+	if err != nil {
+		pf("unable to setup soundcard\n%s\n", err)
+		return
+	}
+	defer s.Close()
 	sc := soundcard{
 		s,
 		&out,
 		s.Info().SampleRate,
 		32,
 	}
+	SampleRate = s.Info().SampleRate
 
-	defer s.Close()
-	display.SR = s.Info().SampleRate
+	display = disp{
+		On:		 true,
+		Mode:    "off",
+		MouseX:  1,
+		MouseY:  1,
+		SR:		 SampleRate,
+		Channel: "stereo",
+	}
+	go infoDisplay()
+
+	api, _ := pa.DefaultHostApi()
+	msg("%s", strings.Split(pa.VersionText(), ",")[0])
+	msg(`Audio output: %s %s
+channels: %d
+default SR: %.f
+`,
+		api.Type,
+		d.Name,
+		channels,
+		d.DefaultSampleRate,
+	)
 
 	if writeLog {
 		log.WriteString(sf("soundcard: %dbit %2gkHz\n", sc.format, sc.sampleRate))
 	}
-	SampleRate = sc.sampleRate // TODO remove later
-	t, twavs, wavSlice := newSystemState(sc)
 
+	t, twavs, wavSlice := newSystemState(sc)
 	go SoundEngine(sc, twavs)
 	go mouseRead()
 
@@ -788,12 +804,11 @@ start:
 		timestamp := time.Now().Format("02-01-06.15:04")
 		f := "recordings/listing." + timestamp + ".json"
 		if !saveJson(t.newListing, f) {
-			msg("%slisting not recorded, check 'recordings/' directory exists%s", italic, reset)
+			msg("listing not recorded, check 'recordings/' directory exists")
 		}
 		display.Verbose = not
-		if !saveJson(t.dispListings, "displaylisting.json") {
-			msg("%slisting display not updated, check file %s'displaylisting.json'%s exists%s",
-				italic, reset, italic, reset)
+		if !saveJson(t.dispListings, listingsFile) {
+			msg("listing display not updated, check %q exists", listingsFile)
 		}
 	}
 	if record {
@@ -930,7 +945,7 @@ func (m *muteSlice) set(i int, v float64) {
 
 type soundcard struct {
 	s          *pa.Stream
-	buff	   *[][]float32
+	buff	   *[][]format
 //	channels   string
 	sampleRate float64
 	format     int
@@ -1269,14 +1284,12 @@ func infoIfLogging(s string, i ...interface{}) {
 }
 
 func infoDisplay() {
-	file := "infodisplay.json"
 	var (
 		c, s, g, gl int
 	)
-	infoTxt := "info.txt"
-	infoF, err := os.OpenFile(infoTxt, os.O_TRUNC|os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	infoF, err := os.OpenFile(logFile, os.O_TRUNC|os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		pf("unable to write messages to %q: %s\n", infoTxt, err)
+		pf("unable to write messages to %q: %s\n", logFile, err)
 	}
 	defer infoF.Close()
 	h := sf("\n-- Syntə -- \t\t%s\n\n", time.Now().Format("02/01/06 15:04"))
@@ -1288,9 +1301,9 @@ func infoDisplay() {
 		if writeLog {
 			display.Info = "Logging..."
 		}
-		if !saveJson(display, file) {
+		if !saveJson(display, infoFile) {
 			pf("%sinfo display not updated, check file %s%s%s exists%s\n",
-				italic, reset, file, italic, reset)
+				italic, reset, infoFile, italic, reset)
 			time.Sleep(2 * time.Second)
 			return
 		}
@@ -1304,8 +1317,9 @@ func infoDisplay() {
 			}
 			display.Info = sf("%sSyntə closed%s", italic, reset)
 			display.On = not // stops timer in info display
-			display.Format = 0 // so previous soundcard info not displayed, in case different
-			saveJson(display, file)
+			display.SR = 0 // so previous soundcard info not displayed, in case different
+			display.Load = 0
+			saveJson(display, infoFile)
 			return
 		default: // passthrough
 		}
@@ -1484,8 +1498,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		lpf := stereoPair{}
 		lFilter, rFilter := 0.0, 0.0
 		for env > 0 {
-			buffL := make([]float32, writeBufferLen)
-			buffR := make([]float32, writeBufferLen)
+			buffL := make([]format, writeBufferLen)
+			buffR := make([]format, writeBufferLen)
 			for i := 0; i < writeBufferLen; i++ {
 				select {
 				case <-stop: // if panic has occurred n will no longer be incrementing, so return here
@@ -1506,8 +1520,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				}
 				L := clip(lpf.left) // clip will display info
 				R := clip(lpf.right) // clip will display info
-				buffL[i] = float32(L)
-				buffR[i] = float32(R)
+				buffL[i] = format(L)
+				buffR[i] = format(R)
 			}
 			for i := 0; i < chans; i += 2 {
 				(*sc.buff)[i] = buffL
@@ -2312,7 +2326,7 @@ func endFunctionDefine(t systemState) (systemState, int) {
 	t.hasOperand[name] = h
 	t.funcs[name] = fn{Comment: t.funcs[name].Comment, Body: t.newListing[t.st+1:]}
 	msg("%sfunction %s%s%s ready%s.", italic, reset, name, italic, reset)
-	if !saveJson(t.funcs, "functions.json") {
+	if !saveJson(t.funcs, funcsFile) {
 		msg("function not saved!")
 	} else {
 		msg("%sfunction saved%s", italic, reset)
@@ -2556,7 +2570,7 @@ func modeSet(s systemState) (systemState, int) {
 		} else {
 			close(stop)
 		}
-		saveJson([]listing{{operation{Op: advisory}}}, "displaylisting.json")
+		saveJson([]listing{{operation{Op: advisory}}}, listingsFile)
 		p("Stopped")
 		time.Sleep(30 * time.Millisecond) // wait for infoDisplay to finish
 		return s, exitNow
@@ -2576,14 +2590,12 @@ func modeSet(s systemState) (systemState, int) {
 	case "verbose":
 		switch display.Verbose {
 		case not:
-			if !saveJson(s.verbose, "displaylisting.json") {
-				msg("%slisting display not updated, check %s'displaylisting.json'%s exists%s",
-					italic, reset, italic, reset)
+			if !saveJson(s.verbose, listingsFile) {
+				msg("listing display not updated, check %q exists", listingsFile)
 			}
 		case yes:
-			if !saveJson(s.dispListings, "displaylisting.json") {
-				msg("%slisting display not updated, check %s'displaylisting.json'%s exists%s",
-					italic, reset, italic, reset)
+			if !saveJson(s.dispListings, listingsFile) {
+				msg("listing display not updated, check %q exists", listingsFile)
 			}
 		}
 		display.Verbose = !display.Verbose
@@ -3036,3 +3048,21 @@ func shutdown() {
 		pf("termination error: %s", err)
 	}
 }
+
+type format float32
+
+/* alternate
+	p := pa.StreamParameters{
+		pa.StreamDeviceParameters{},
+		pa.StreamDeviceParameters{d, channels, d.DefaultHighOutputLatency},
+		d.DefaultSampleRate,
+		writeBufferLen,
+		0,
+	}
+	err = pa.IsFormatSupported(p, &out)
+	if err != nil {
+		pf("format not supported")
+		return
+	}
+	s, err := pa.OpenStream(p, &out)
+	*/

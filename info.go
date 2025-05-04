@@ -17,8 +17,6 @@ func infoTelem() {
 		SR: 48000,
 	}
 
-	file := "infodisplay.json"
-
 	var (
 		start time.Time
 		timer time.Duration
@@ -37,11 +35,11 @@ func infoTelem() {
 		df := -120.0 // filter
 		msg := ""
 		for {
-			Json, err := os.ReadFile(file)
+			Json, err := os.ReadFile(infoFile)
 			json.Unmarshal(Json, &display)
 			//if err != nil || err2 != nil {
 			if err != nil { // ignore unmarshal errors
-				msg = fmt.Sprintf("error loading %s: %v\n", file, err)
+				msg = fmt.Sprintf("error loading %s: %v\n", infoFile, err)
 			}
 
 			paused := "      "
@@ -119,8 +117,8 @@ func infoTelem() {
 				VU += "|"
 			}
 
-			soundcard := fmt.Sprintf("%dbit %2gkhz %s", display.Format, display.SR/1000, display.Channel)
-			if display.Format == 0 {
+			soundcard := fmt.Sprintf("%2gkhz %s", display.SR/1000, display.Channel)
+			if display.SR == 0 {
 				soundcard = "\t\t"
 			}
 

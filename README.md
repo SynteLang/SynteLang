@@ -56,7 +56,7 @@ The ◊ symbol indicates a sentence or section that may need updating in future.
 **Requirements:**  
 >Computer with a soundcard (internal or external)  
 >Operating system: FreeBSD / Linux / MacOs / Windows (not all are tested) ◊  
->Go programming language installed - requires at minimum version 1.18 ◊  
+>Go programming language installed - requires at minimum version 1.21 ◊  
 >Desire to learn about audio synthesis  
 >Unicode support
 
@@ -1024,7 +1024,7 @@ Many influences and inspirations have been drawn upon either deliberately or sub
 
 ### Future possibilities for Syntə  
 The main focus of development is building up a library of functions which provide useful and intuitive abstractions to speed up and simplify performing.  
-It would be great if translations of this document and the language itself become available in future, get in touch if you can help with this. A live distro with Syntə included could be useful for users of other operating systems to boot from. Another possibility for the code is integration with a terminal library such as tcell or bubbletea for a slicker UI. Future additions include providing for audio and MIDI input and use of other sound drivers than OSS/ALSA. A browser-based interface is another option, which would make the program extremely portable. This could be as simple as redirecting stdout to a local websocket server.
+It would be great if translations of this document and the language itself become available in future, get in touch if you can help with this. A live distro with Syntə included could be useful for users of other operating systems to boot from. Another possibility for the code is integration with a terminal library such as tcell or bubbletea for a slicker UI. Future additions include providing for audio and MIDI input. A browser-based interface is another option, which would make the program extremely portable. This could be as simple as redirecting stdout to a local websocket server.
 You may consider the current implementation of Syntə to be a prototype. At present most of the basic features have been taken care of, and as the language is tried out by different people, changes and adjustments that will tidy up and make performing easier may become apparent. The core aims of fun and accessibility won't change. 
 
 ### General principles of live coding performance  

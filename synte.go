@@ -523,6 +523,8 @@ func emptyTokens() {
 }
 
 func run(from io.Reader) {
+	saveJson(disp{On: false}, infoFile)
+	time.Sleep(30 * time.Millisecond) // infodisplay would be written in this time
 	Json, err := os.ReadFile(infoFile)
 	json.Unmarshal(Json, &display)
 	if display.On {

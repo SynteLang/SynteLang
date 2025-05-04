@@ -93,9 +93,9 @@ func recordWav(s systemState) (systemState, int) {
 		binary.Write(wavFile, binary.LittleEndian, int16(0))
 	}
 	record = yes
-	msg("%snow recording to:%s", italic, reset)
+	msg("now recording to:")
 	msg("%s", f)
-	msg("%s(ends on exit)%s", italic, reset)
+	msg("(ends on exit)")
 	return s, startNewOperation
 }
 
@@ -599,7 +599,7 @@ func loadReloadAppend(t systemState) (systemState, int) {
 	case "rld", "r":
 		n, rr := strconv.Atoi(t.operand) // allow any index, no bounds check
 		if e(rr) || n < 0 {
-			msg("%soperand not valid:%s %s", italic, reset, t.operand)
+			msg("operand not valid: %s", t.operand)
 			return t, startNewOperation
 		}
 		t.reload = n

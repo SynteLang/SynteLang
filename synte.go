@@ -102,8 +102,8 @@ var SampleRate float64 = SAMPLE_RATE // should be 'de-globalised'
 
 const ( // terminal colours, eg. sf("%stest%s test", yellow, reset)
 	reset   = "\x1b[0m"
+	italic  = "\x1b[3m"
 	bold    = "\x1b[1m"
-	italic  = ""
 	red     = "\x1b[31m"
 	green   = "\x1b[32m"
 	blue    = "\x1b[34m"
@@ -261,7 +261,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"ffaze":  {yes, 49, noCheck},        // rotate phases by operand
 	"reu":    {not, 50, noCheck},        // reverse each half of complex spectrum
 	"halt":   {not, 51, noCheck},        // halt sound engine for time specified by input (experimental)
-	"4lp":    {not, 52, checkAlp},        // prototype all-pass filter, to allow 4 buffers in one listing for this specific purpose
+	"4lp":    {not, 52, checkAlp},        // prototype all-pass filter
 	"panic":  {not, 53, noCheck},        // artificially induce a SE panic, for testing
 
 	// specials. Not intended for sound engine, except 'deleted'
@@ -628,8 +628,8 @@ default SR: %.f
 			}
 			t.do = 0
 			<-lockLoad
-			msg("listing %d deleted, %scan edit and reload%s", current, italic, reset)
-			msg("%s>>> Sound Engine restarted%s", italic, reset)
+			msg("listing %d deleted, scan edit and reload", current)
+			msg(">>> Sound Engine restarted")
 			time.Sleep(1 * time.Second) // hold-off
 		}
 	}()
@@ -704,7 +704,7 @@ start:
 					t.exportedSignals[t.operand] = lenReserved + t.lenExported
 					t.daisyChains = append(t.daisyChains, lenReserved+t.lenExported)
 					t.lenExported++
-					msg("%s%s added to exported signals%s", t.operand, italic, reset)
+					msg("%s added to exported signals", t.operand)
 				}
 				t.signals[t.operand] = t.exportedSignals[t.operand]
 			}
@@ -972,7 +972,7 @@ func readTokenPair(t *systemState) (bool, int) {
 	}
 	hO, in := t.hasOperand[t.operator]
 	if !in {
-		r := t.clr("%soperator or function doesn't exist:%s %s", italic, reset, t.operator)
+		r := t.clr("operator or function doesn't exist: %s", t.operator)
 		return tt.ext, r
 	}
 	_, t.isFunction = t.funcs[t.operator]
@@ -1112,18 +1112,18 @@ func argsCorrect(op string, funArgs args, clr clear, l int) bool {
 	if a < l {
 		switch {
 		case l-a == 1:
-			msg("%s: %slast operand ignored%s", op, italic, reset)
+			msg("%s: last operand ignored", op)
 		case l-a > 1:
-			msg("%slast %d operands ignored%s", italic, l-a, reset)
+			msg("last %d operands ignored", l-a)
 		}
 	}
 	if a > l {
 		switch {
 		case a == 1:
-			clr("%s %srequires an operand%s", op, italic, reset)
+			clr("%s requires an operand", op)
 			return not
 		case a > 1:
-			clr("%s %srequires %d operands%s", op, italic, a, reset)
+			clr("%s requires %d operands", op, a)
 			return not
 		}
 	}
@@ -1139,7 +1139,7 @@ func parseType(expr, op string) (n float64, b bool) { // TODO pass in s.sampleRa
 		}
 	case len(expr) > 2 && expr[len(expr)-2:] == "ms":
 		if n, b = evaluateExpr(expr[:len(expr)-2]); !b {
-			msg("erm s")
+			msg("erm s?")
 			return 0, false
 		}
 		n = 1 / ((n / 1000) * SampleRate)
@@ -1217,7 +1217,7 @@ func parseType(expr, op string) (n float64, b bool) { // TODO pass in s.sampleRa
 func nyquist(n float64, e string) bool {
 	ny := 2e4 / SampleRate
 	if bounds(n, ny) {
-		msg("'%s' %sis an inaudible frequency >20kHz%s", e, italic, reset)
+		msg("'%s' is an inaudible frequency >20kHz", e)
 		if bounds(n, 1) {
 			msg(" and frequency out of range, not accepted")
 			return false
@@ -1257,7 +1257,7 @@ func evaluateExpr(expr string) (float64, bool) {
 		return n, true
 	}
 	if len(opds) > 2 {
-		msg("%s third operand in expression ignored%s", italic, reset)
+		msg("third operand in expression ignored")
 		return 0, false
 	}
 	if n2, rr = strconv.ParseFloat(opds[1], 64); e(rr) {
@@ -1304,8 +1304,7 @@ func infoDisplay() {
 			display.Info = "Logging..."
 		}
 		if !saveJson(display, infoFile) {
-			pf("%sinfo display not updated, check file %s%s%s exists%s\n",
-				italic, reset, infoFile, italic, reset)
+			pf("info display not updated, check file %s exists\n", infoFile)
 			time.Sleep(2 * time.Second)
 			return
 		}
@@ -1317,7 +1316,7 @@ func infoDisplay() {
 			if !exit {
 				break
 			}
-			display.Info = sf("%sSyntə closed%s", italic, reset)
+			display.Info = sf("Syntə closed")
 			display.On = not // stops timer in info display
 			display.SR = 0 // so previous soundcard info not displayed, in case different
 			display.Load = 0
@@ -2264,9 +2263,9 @@ func checkOut(s systemState) (systemState, int) {
 	_, alreadyOut := s.out[s.operand]
 	switch {
 	case s.num.Is:
-		return s, s.clr("%soutput to number not permitted%s", italic, reset)
+		return s, s.clr("output to number not permitted")
 	case s.operand[:1] == "@":
-		return s, s.clr("%scan't send to @, represents function operand%s", italic, reset)
+		return s, s.clr("can't send to @, represents function operand")
 	case isUppercaseInitialOrDefaultExported(s.operand):
 		// TODO this needs to check for no prior `out` to same signal
 		if _, exp := s.exportedSignals[s.operand]; !exp && s.operator ==  "out+" {
@@ -2281,11 +2280,11 @@ func checkOut(s systemState) (systemState, int) {
 			}
 		}
 		if !priorOut {
-			msg("%sfirst instance changed to%s out", italic, reset)
+			msg("first instance changed to out")
 			s.operator = "out"
 		}
 	case alreadyOut:
-		return s, s.clr("%s: %sduplicate output to signal, c'est interdit%s", s.operand, italic, reset)
+		return s, s.clr("%s: duplicate output to signal, c'est interdit", s.operand)
 	}
 	if s.operator == "out" && s.operand[:1] != "^" {
 		// not in switch because s.operator may be changed above
@@ -2307,14 +2306,13 @@ func checkIn(s systemState) (systemState, int) {
 	if priorOut {
 		return s, nextOperation
 	}
-	// false positives for wav rate:
-	//msg("%sno prior out for%s %s", italic, reset, s.operand)
+	// false positives for wav rate
 	return s, nextOperation
 }
 
 func endFunctionDefine(t systemState) (systemState, int) {
 	if !t.fIn || len(t.newListing[t.st+1:]) < 1 {
-		msg("%sno function definition%s", italic, reset)
+		msg("no function definition")
 		return t, startNewOperation
 	}
 	h := not
@@ -2327,11 +2325,11 @@ func endFunctionDefine(t systemState) (systemState, int) {
 	name := t.newListing[t.st].Opd
 	t.hasOperand[name] = h
 	t.funcs[name] = fn{Comment: t.funcs[name].Comment, Body: t.newListing[t.st+1:]}
-	msg("%sfunction %s%s%s ready%s.", italic, reset, name, italic, reset)
+	msg("function %q ready.", name)
 	if !saveJson(t.funcs, funcsFile) {
 		msg("function not saved!")
 	} else {
-		msg("%sfunction saved%s", italic, reset)
+		msg("function saved")
 	}
 	t.fIn = not
 	return t, startNewListing
@@ -2348,7 +2346,7 @@ func checkPushPop(s systemState) (systemState, int) {
 		}
 	}
 	if p <= 0 {
-		msg("%sno push to pop%s", italic, reset)
+		msg("no push to pop")
 		return s, startNewOperation
 	}
 	return s, nextOperation
@@ -2366,7 +2364,7 @@ func popPushParity(s systemState) bool {
 	}
 	if p != 0 {
 		// this will also catch pop without push, however that will have been checked previously 
-		msg("%spush without pop%s", italic, reset)
+		msg("push without pop")
 		return false
 	}
 	return true
@@ -2382,7 +2380,7 @@ func multipleBuff(s systemState) bool {
 				bf = true
 				continue
 			}
-			msg("%d: %smore than one %sbuff", l, italic, reset)
+			msg("%d: more than one buff", l)
 			return true
 		}
 		for i := range b {
@@ -2391,7 +2389,7 @@ func multipleBuff(s systemState) bool {
 					b[i] = true
 					continue
 				}
-				msg("%d: %smore than one %sbuff%d", l, italic, reset, i+1)
+				msg("%d: more than one buff%d", l, i+1)
 				return true
 			}
 		}
@@ -2402,7 +2400,7 @@ func multipleBuff(s systemState) bool {
 func buffUnique(s systemState) (systemState, int) {
 	for _, o := range s.newListing {
 		if o.Op == "buff" || o.Op == "buff0" {
-			msg("%sonly one buff per listing%s", italic, reset)
+			msg("only one buff per listing")
 			return s, startNewOperation
 		}
 	}
@@ -2411,7 +2409,7 @@ func buffUnique(s systemState) (systemState, int) {
 
 func parseIndex(s listingState, l int) (int, bool) {
 	if l < 0 {
-		msg("%snothing to %s%s", italic, reset, s.operator)
+		msg("nothing to %s", s.operator)
 		return 0, not
 	}
 	if s.operand == "" { // ignore checks for empty operands, iffy?
@@ -2419,11 +2417,11 @@ func parseIndex(s listingState, l int) (int, bool) {
 	}
 	n, rr := strconv.Atoi(s.operand)
 	if e(rr) {
-		msg("%s %sis not an integer%s", s.operand, italic, reset)
+		msg("%s is not an integer", s.operand)
 		return 0, not
 	}
 	if n < 0 || n > l {
-		msg("%s %sout of range%s", s.operand, italic, reset)
+		msg("%s out of range", s.operand)
 		return 0, not
 	}
 	return n, yes
@@ -2431,7 +2429,7 @@ func parseIndex(s listingState, l int) (int, bool) {
 
 func excludeCurrent(op string, i, l int) bool {
 	if i > l-1 {
-		msg("%scan't %s current or non-extant listing:%s %d", italic, op, reset, l)
+		msg("can't %s current or non-extant listing: %d", op, l)
 		return yes
 	}
 	return not
@@ -2456,7 +2454,7 @@ func checkWav(s systemState) (systemState, int) {
 	if s.wmap[s.operand] || (s.operand == "@" && s.fIn) {
 		return s, nextOperation
 	}
-	return s, s.clr("%s %sisn't in wav list%s", s.operand, italic, reset)
+	return s, s.clr("%q isn't in wav list", s.operand)
 }
 
 func enactMute(s systemState) (systemState, int) {
@@ -2527,15 +2525,15 @@ func enactSolo(s systemState) (systemState, int) {
 
 func beginFunctionDefine(s systemState) (systemState, int) {
 	if _, ok := s.funcs[s.operand]; ok {
-		msg("%swill overwrite existing function!%s", red, reset)
+		msg("will overwrite existing function!")
 	} else if _, ok := s.hasOperand[s.operand]; ok { // using this map to avoid cyclic reference of operators
-		msg("%sduplicate of extant operator, use another name%s", italic, reset)
+		msg("duplicate of extant operator, use another name")
 		return s, startNewOperation // only return early if not a function and in hasOperand map
 	}
 	s.st = len(s.newListing) // because current input hasn't been added yet
 	s.fIn = yes
-	msg("%sbegin function definition,%s", italic, reset)
-	msg("%suse @ for operand signal%s", italic, reset)
+	msg("begin function definition,")
+	msg("use @ for operand signal")
 	return s, nextOperation
 }
 
@@ -2543,10 +2541,10 @@ func doLoop(s systemState) (systemState, int) {
 	var rr error
 	s.do, rr = strconv.Atoi(s.operand)
 	if e(rr) { // returns do as zero
-		msg("%soperand not an integer%s", italic, reset)
+		msg("operand not an integer")
 		return s, startNewOperation
 	}
-	msg("%snext operation repeated%s %dx", italic, reset, s.do)
+	msg("next operation repeated %dx", s.do)
 	s.to = s.do
 	return s, startNewOperation
 }
@@ -2625,23 +2623,23 @@ func modeSet(s systemState) (systemState, int) {
 		mouse.mc = !mouse.mc
 	case "rs": // root sync, is this needed any more?
 		rs = yes
-		msg("%snext launch will sync to root instance%s", italic, reset)
+		msg("next launch will sync to root instance")
 	case "reset", "r":
 		rst = !rst
 		s := "off"
 		if rst {
 			s = "on"
 		}
-		msg("%sreset:%s %s", italic, reset, s)
+		msg("reset: %s", s)
 	case "eq":
 		eq = !eq
 		s := "off"
 		if eq {
 			s = "on"
 		}
-		msg("%seq:%s %s", italic, reset, s)
+		msg("eq: %s", s)
 	default:
-		msg("%sunrecognised mode: %s%s", italic, reset, s.operand)
+		msg("unrecognised mode: %s", s.operand)
 	}
 	return s, startNewOperation
 }
@@ -2704,10 +2702,10 @@ func parseFloat(num number, lowerBound, upperBound float64) (v float64, ok bool)
 }
 func reportFloatSet(op string, f float64) {
 	if f > 1/SampleRate {
-		msg("%s%s set to%s %.3gms", italic, op, reset, 1e3/(f*SampleRate)) //TODO
+		msg("%s set to %.3gms", op, 1e3/(f*SampleRate)) //TODO
 		return
 	}
-	msg("%s%s set to%s %.3gs", italic, op, reset, 1/(f*SampleRate)) //TODO
+	msg("%s set to %.3gs", op, 1/(f*SampleRate)) //TODO
 }
 
 func checkFade(s systemState) (systemState, int) {
@@ -2722,7 +2720,7 @@ func checkFade(s systemState) (systemState, int) {
 
 func checkRelease(s systemState) (systemState, int) {
 	if s.operand == "time" || s.operand == "is" {
-		msg("%slimiter release is:%s %.4gms", italic, reset,
+		msg("limiter release is: %.4gms",
 		// inverse of: math.Pow(10, -4/(t*SR)) from func releaseFrom()
 		1000 * ((-4 / math.Log10(release)) / s.sampleRate))
 		return s, startNewOperation
@@ -2740,11 +2738,11 @@ func checkRelease(s systemState) (systemState, int) {
 func adjustGain(s systemState) (systemState, int) {
 	if s.operand == "zero" {
 		gain = baseGain
-		msg("%sgain set to %s%.2gdb", italic, reset, 20*math.Log10(gain/baseGain))
+		msg("gain set to %.2gdb", 20*math.Log10(gain/baseGain))
 		return s, startNewOperation
 	}
 	if s.operand == "is" {
-		msg("%sgain set to %s%.2gdb", italic, reset, 20*math.Log10(gain/baseGain))
+		msg("gain set to %.2gdb", 20*math.Log10(gain/baseGain))
 		return s, startNewOperation
 	}
 	n, ok := parseType(s.operand, s.operator)
@@ -2752,27 +2750,27 @@ func adjustGain(s systemState) (systemState, int) {
 		return s, startNewOperation
 	}
 	gain *= math.Abs(n)
-	if math.Abs(math.Log10(gain/baseGain)) < 1e-12 { // if log(1) ≈ 0, reset to 1
+	if math.Abs(math.Log10(gain/baseGain)) < 1e-12 { // if log(1) ≈ 0 to 1
 		gain = baseGain
 	}
 	if gain < 0.05*baseGain { // lower bound ~ -26db
 		gain = 0.05 * baseGain
 	}
-	msg("%sgain set to %s%.2gdb", italic, reset, 20*math.Log10(gain/baseGain))
+	msg("gain set to %.2gdb", 20*math.Log10(gain/baseGain))
 	return s, startNewOperation
 }
 
 func adjustClip(s systemState) (systemState, int) {
 	if n, ok := parseType(s.operand, s.operator); ok { // permissive, no bounds check
 		clipThr = n
-		msg("%sclip threshold set to %.3g%s", italic, clipThr, reset)
+		msg("clip threshold set to %.3g", clipThr)
 	}
 	return s, startNewOperation
 }
 
 func checkComment(s systemState) (systemState, int) {
 	if len(s.newListing) > 0 {
-		msg("%sa comment has to be the first and only operation of a listing...%s", italic, reset)
+		msg("a comment has to be the first and only operation of a listing...")
 		return s, startNewOperation
 	}
 	return s, nextOperation
@@ -2781,7 +2779,7 @@ func checkComment(s systemState) (systemState, int) {
 func checkAlp(s systemState) (systemState, int) {
 	for _, o := range s.newListing {
 		if o.Op == "4lp" {
-			msg("%susing more than one %s4lp%s in a listing may cause instability%s", italic, reset, italic, reset)
+			msg("using more than one %s4lp%s in a listing may cause instability")
 			break
 		}
 	}
@@ -2790,7 +2788,7 @@ func checkAlp(s systemState) (systemState, int) {
 
 func enactWait(s systemState) (systemState, int) {
 	if t, ok := parseType(s.operand, s.operator); ok { // permissive, no bounds check
-		pf("%swaiting...%s\n\t", italic, reset)
+		pf("waiting...\n\t")
 		time.Sleep(time.Second * 1e3 / time.Duration(t * s.sampleRate * 1e3))
 	}
 	return s, startNewOperation

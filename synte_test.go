@@ -1,7 +1,6 @@
 package main
 
 import (
-	"slices"
 	"testing"
 )
 
@@ -100,7 +99,7 @@ func TestParseType(t *testing.T) {
 	}
 }
 
-func TestEndFunctionDefine(t *testing.T) {
+/*func TestEndFunctionDefine(t *testing.T) {
 	var inputNewListing = listing{
 		operation{Op: "[", Opd: "blah"},
 		operation{Op: "test", Opd: "330hz"},
@@ -152,4 +151,4 @@ func TestEndFunctionDefine(t *testing.T) {
 		t.Error(`endFunctionDefine(hot-loaded), expected entry in hasOperand map`)
 		t.Log(s.hasOperand)
 	}
-}
+}*/

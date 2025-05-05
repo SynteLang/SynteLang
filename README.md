@@ -65,7 +65,7 @@ The terminal emulator that has been used for development and testing is Alacritt
 **Getting Started**
 
 If you have `git` installed:
->   git clone https://github.com/syntelang/syntelang
+>   `git clone https://github.com/syntelang/syntelang`
 
 Or click on the green code link above this doc on the main page of the github repository (which you are probably looking at right now) and download as a zip file which will need to be unzipped. As the software is under continuous development it is a good idea to update the code regularly.  
 
@@ -86,10 +86,9 @@ You may need to install portaudio, on Linux type: `apt-get install portaudio`
 
 To install Syntə:
 + make sure you are in the directory `syntelang/` (downloaded/cloned above)
-+ make sure you have Go installed [(see here)](#install)
++ make sure you have Go installed [(see here)](https://go.dev/doc/install)
 + open a terminal (if not already)
-+ type: `go install` (this will build and install the code in the directory)
-On first install you may see Go download the portaudio library dependency
++ type: `go install` (this will build and install the code in the directory)  
 
 To run:
 + type: `synte` - you can now start typing and running code!
@@ -799,12 +798,12 @@ You can run on Android:
 + `git clone https://github.com/syntelang/syntelang`
 + `cd syntelang`
 + `go install`
-+ `synte`
++ `synte`  
 now type: `dial` to see if it makes sound :)
 
 ## Updating Syntə ◊
 
-You can use `git pull` to update the code, however certain files may have changed on you r local machine which complicates things. This process will be simplified in future. You can try `go install github.com/syntelang/syntelang` instead.
+You can use `git pull` to update the code, however certain files may have changed on you r local machine which complicates things. This process will be simplified in future by providing prebuilt binaries to download.  
 
 <a name="det"></a>
 

@@ -82,7 +82,7 @@ You should end up with a directory (folder) containing the following files and d
 	an empty directory named '.temp' (can contain a README file) 
 	an empty directory named 'recordings' (can contain a README.md) 
 
-You may need to install portaudio, on Linux type: `apt-get install portaudio`
+You may need to install portaudio, on Linux type: `sudo apt-get install portaudio` or `sudo apt-get install portaudio19-dev`
 
 To install Syntə:
 + make sure you are in the directory `syntelang/` (downloaded/cloned above)

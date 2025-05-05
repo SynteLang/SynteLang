@@ -55,7 +55,7 @@ The ◊ symbol indicates a sentence or section that may need updating in future.
 
 **Requirements:**  
 >Computer with a soundcard (internal or external)  
->Operating system: FreeBSD / Linux / MacOs / Windows (not all are tested) ◊  
+>Operating system: FreeBSD / Linux ( MacOs / Windows not tested, may work) ◊  
 >Go programming language installed - requires at minimum version 1.21 ◊  
 >Desire to learn about audio synthesis  
 >Unicode support
@@ -64,7 +64,11 @@ The terminal emulator that has been used for development and testing is Alacritt
 
 **Getting Started**
 
-To download the files use `git clone` on this repo or click on the green code link above this doc on the main page of the github repository (which you are probably looking at right now) and download as a zip file which will need to be unzipped. As the software is under continuous development it is a good idea to update the code regularly.  
+If you have `git` installed:
+>   git clone https://github.com/syntelang/syntelang
+
+Or click on the green code link above this doc on the main page of the github repository (which you are probably looking at right now) and download as a zip file which will need to be unzipped. As the software is under continuous development it is a good idea to update the code regularly.  
+
 You should end up with a directory (folder) containing the following files and directories:  
 
 >	
@@ -78,12 +82,25 @@ You should end up with a directory (folder) containing the following files and d
 	an empty directory named '.temp' (can contain a README file) 
 	an empty directory named 'recordings' (can contain a README.md) 
 
-Open a terminal, navigate to the directory and type `go run .` to begin (the full stop is important). ◊  
-Open another terminal and type `go run . --info` similarly. This will display useful visual feedback as you input and run code.  
-Open another terminal and type `go run . --listings` to view currently running code, this will also show mute status in italics.
-To display info and error messages open another terminal and type `tail -f info.txt`. To quit this, type `CTRL+C` (the 'Ctrl' key followed by the 'C' key at the same time)   
+You may need to install portaudio, on Linux type: `apt-get install portaudio`
+
+To install Syntə:
++ make sure you are in the directory `syntelang/` (downloaded/cloned above)
++ make sure you have Go installed [(see here)](#install)
++ open a terminal (if not already)
++ type: `go install` (this will build and install the code in the directory)
+On first install you may see Go download the portaudio library dependency
+
+To run:
++ type: `synte` - you can now start typing and running code!
++ Open another terminal and type `synte --info` similarly. This will display useful visual feedback as you input and run code.  
++ Open another terminal and type `synte --listings` to view currently running code, this will also show mute status in italics.
++ To display info and error messages open another terminal and type `tail -f info.txt`. To quit this, type `CTRL+C` (the 'Ctrl' key followed by the 'C' key at the same time)   
 You may wish to arrange these terminal windows using a tiling window manager, terminal multiplexer, or equivalent.  
+
 You may also wish to open `.syt` files contained in `.temp/` to edit them. These contain the running code, numbered by listing and will be reloaded automatically once saved.  
+
+If you have any problems please see the [Installing Syntə](#install) section below.
 
 In the first terminal window you can write your first syntə listing, a program that will make sounds.  
 The listing is input one line at a time. You must write the name of an operator or function, usually followed by a space and a number or signal name. The first character of a name cannot be either a number, plus, minus or dot, to avoid confusion.  
@@ -532,6 +549,7 @@ You can find more examples in the `.saved` directory.
 <a name="ref"></a>
 ## Reference
 
++ [Installing Syntə](#install)
 + [Sample playback](#sp)  
 + [Tape loop](#tl)
 + [Arithmetic operations](#ao)
@@ -764,6 +782,30 @@ The function syntax is:
 ---
 
 <br>
+<a name="install"></a>
+
+## Installing Syntə ◊
+
+At present it is not known if portaudio (used to output sound) will work on Windows. ◊ Please try it and share your results by email: synte@proton.me   
+Unfortunately it looks like portaudio is not compatible with MacOS anymore. An alternative backend (SDL) may be available soon. ◊   
+
+To install Go see information here: [Download and install Go](https://go.dev/doc/install)  
+
+Linux: You may need to add the directory that Go installs in to your $PATH environment variable. Or you can type `~/go/bin/synte` instead.  
+
+You can run on Android:
++ install the Termux app (you might need to do this via F-droid)
++ in termux: `apt-get install pkg-config portaudio golang git`
++ `git clone https://github.com/syntelang/syntelang`
++ `cd syntelang`
++ `go install`
++ `synte`
+now type: `dial` to see if it makes sound :)
+
+## Updating Syntə ◊
+
+You can use `git pull` to update the code, however certain files may have changed on you r local machine which complicates things. This process will be simplified in future. You can try `go install github.com/syntelang/syntelang` instead.
+
 <a name="det"></a>
 
 ## Exposition  

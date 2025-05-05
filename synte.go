@@ -441,9 +441,18 @@ var (
 	log *os.File
 )
 
+type driver int
+
+const (
+	pau driver = 0
+	sdl driver = 1
+)
+
 func main() {
 	if len(os.Args) < 2 {
-		run(os.Stdin)
+		if !run(os.Stdin, pau) {
+			run(os.Stdin, sdl)
+		}
 		return
 	}
 	switch os.Args[1] {
@@ -489,7 +498,9 @@ Only one may be used at a time`)
 		listingsDisplay()
 		return
 	}
-	run(os.Stdin)
+	if !run(os.Stdin, pau) {
+		run(os.Stdin, sdl)
+	}
 	if os.Args[1] == "--mem" {
 		f, rr := os.Create("mem.prof")
 		if e(rr) {
@@ -522,27 +533,28 @@ func emptyTokens() {
 	}
 }
 
-func run(from io.Reader) {
+func run(from io.Reader, da driver) bool {
 	saveJson(disp{On: false}, infoFile)
 	time.Sleep(30 * time.Millisecond) // infodisplay would be written in this time
 	Json, err := os.ReadFile(infoFile)
 	json.Unmarshal(Json, &display)
 	if display.On {
 		pf("instance of synte already running in this directory\n")
-		return
+		return true
 	}
 	saveJson([]listing{{operation{Op: advisory}}}, listingsFile)
 
 	err = pa.Initialize()
 	if err != nil {
 		pf("unable to setup soundcard, quitting\n%s\n", err)
-		return
+		return false
 	}
+	// wrapped to handle error inside defer
 	defer shutdown()
 	d, err := pa.DefaultOutputDevice()
 	if err != nil {
 		pf("error opening default output:\n%s\n", err)
-		return
+		return false
 	}
 	var channels int = CHANNELS
 	buf := make([]format, writeBufferLen)
@@ -561,14 +573,16 @@ func run(from io.Reader) {
 	)
 	if err != nil {
 		pf("unable to setup soundcard\n%s\n", err)
-		return
+		return false
 	}
 	defer s.Close()
+
 	sc := soundcard{
 		s,
 		&out,
 		s.Info().SampleRate,
 		32,
+		outputPA,
 	}
 	SampleRate = s.Info().SampleRate
 
@@ -821,6 +835,7 @@ start:
 		pf("underruns: %d", underRun)
 	}
 	time.Sleep(200 * time.Millisecond)
+	return true // success
 }
 
 func parseNewOperation(t systemState) (systemState, bool, int) {
@@ -948,10 +963,9 @@ func (m *muteSlice) set(i int, v float64) {
 type soundcard struct {
 	s          *pa.Stream
 	buff	   *[][]format
-//	channels   string
 	sampleRate float64
 	format     int
-//	convFactor float64
+	output     func(sc soundcard)
 }
 
 func readTokenPair(t *systemState) (bool, int) {
@@ -1349,7 +1363,8 @@ func holdIndicator(d bool, i int) (bool, int) {
 
 type stereoPair struct {
 	left,
-	right float64
+	right,
+	env float64
 }
 
 func transfer(d []listingStack, tr *data) ([]listingStack, []int) {
@@ -1374,6 +1389,8 @@ func transfer(d []listingStack, tr *data) ([]listingStack, []int) {
 	return append(d, tr.listingStack), tr.daisyChains
 }
 
+var samples = make(chan stereoPair, writeBufferLen)
+
 // The Sound Engine does the bare minimum to generate audio
 // It is freewheeling, it won't block on the action of any other goroutine, only on IO, namely writing to soundcard
 // The latency and jitter of the audio output is entirely dependent on the soundcard and its OS driver,
@@ -1393,9 +1410,6 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	)
 
 	var (
-		// sample interval (1/SR) in nanoseconds
-		loadThresh = time.Duration(0.85 * 1e9 * (1 / sc.sampleRate))
-
 		lpf15Hz = lpf_coeff(15, sc.sampleRate)  // smooth mouse, mutes, gain
 		lpf1kHz = lpf_coeff(1e3, sc.sampleRate) // smooth levels
 
@@ -1411,9 +1425,6 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		// main output limiter
 		hiBandCoeff  = hpf_coeff(10240, sc.sampleRate)
 		midBandCoeff = hpf_coeff(320, sc.sampleRate)
-
-		// output filtering
-		lpf12kHz = lpf_coeff(12000, sc.sampleRate)
 	)
 
 	const (
@@ -1458,8 +1469,6 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		current int                                       // tracks index of active listing for recover()
 		p       = 1.0                                     // pause variable
 
-		samples     = make(chan stereoPair, writeBufferLen) // buffer up to 50ms of samples (@ 48kHz), introduces latency
-
 		daisyChains = make([]int, 0, 16) // made explicitly here to set capacity
 	)
 	defer close(samples)
@@ -1487,52 +1496,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	}()
 
 	 // if samples channel runs empty insert zeros instead and filter heavily
-	 // anonymous to use var n in scope
-	go func(sc soundcard) {
-		s := sc.s
-		chans := len(*sc.buff)
-		err := s.Start()
-		if err != nil {
-			panic(err)
-		}
-		defer s.Stop()
-		lpf := stereoPair{}
-		lFilter, rFilter := 0.0, 0.0
-		for env > 0 {
-			buffL := make([]format, writeBufferLen)
-			buffR := make([]format, writeBufferLen)
-			for i := 0; i < writeBufferLen; i++ {
-				select {
-				case <-stop: // if panic has occurred n will no longer be incrementing, so return here
-					return
-				case s := <-samples:
-					lFilter += (s.left - lFilter) * lpf12kHz
-					rFilter += (s.right - rFilter) * lpf12kHz
-					lpf.stereoLpf(stereoPair{lFilter, rFilter}, lpf12kHz)
-				default:
-					// only degrade when load is high, to avoid lazy underruns
-					// OR when exited to avoid clicks
-					if display.Load > loadThresh || (exit && env == 0) {
-						lpf.stereoLpf(stereoPair{}, lpf15Hz) // zero-stuffing
-						if env > 0 { // don't count if exited
-							underRun++
-						}
-					}
-				}
-				L := clip(lpf.left) // clip will display info
-				R := clip(lpf.right) // clip will display info
-				buffL[i] = format(L)
-				buffR[i] = format(R)
-			}
-			for i := 0; i < chans; i += 2 {
-				(*sc.buff)[i] = buffL
-				(*sc.buff)[i+1] = buffR
-			}
-			if err := s.Write(); err != nil {
-				panic(sf("\nwrite error - %v", err))
-			}
-		}
-	}(sc)
+	go sc.output(sc)
 
 	tr := *<-transmit
 	d = append(d, tr.listingStack)
@@ -2068,7 +2032,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			writeWav(L, R)
 		}
 		t = time.Since(lastTime)
-		samples <- stereoPair{left: mid + sides, right: mid - sides}
+		samples <- stereoPair{left: mid + sides, right: mid - sides, env: env}
 		lastTime = time.Now()
 		rate += t
 		rates[n%RateIntegrationTime] = t // rolling average buffer
@@ -2078,6 +2042,54 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		}
 		mid, sides, sum = 0, 0, 0
 		n++
+	}
+}
+
+func outputPA(sc soundcard) {
+	s := sc.s
+	chans := len(*sc.buff)
+	err := s.Start()
+	if err != nil {
+		panic(err)
+	}
+	defer s.Stop()
+	var (
+		lpf stereoPair
+		lpf12kHz = lpf_coeff(12000, sc.sampleRate)
+		lpf15Hz = lpf_coeff(15, sc.sampleRate)
+		env float64 = 1
+		// sample interval (1/SR) in nanoseconds
+		loadThresh = time.Duration(0.85 * 1e9 * (1 / sc.sampleRate))
+		buffL = make([]format, writeBufferLen)
+		buffR = make([]format, writeBufferLen)
+	)
+	for env > 0 {
+		for i := 0; i < writeBufferLen; i++ {
+			select {
+			case <-stop: // if panic has occurred n will no longer be incrementing, so return here
+				return
+			case s := <-samples:
+				env = s.env
+				lpf.stereoLpf(s, lpf12kHz)
+				//lpf.stereoLpf(lpf, lpf12kHz)
+			default:
+				// only degrade when load is high, to avoid lazy underruns
+				if display.Load > loadThresh {
+					lpf.stereoLpf(stereoPair{}, lpf15Hz) // zero-stuffing
+				}
+			}
+			L := clip(lpf.left) // clip will display info
+			R := clip(lpf.right) // clip will display info
+			buffL[i] = format(L)
+			buffR[i] = format(R)
+		}
+		for i := 0; i < chans; i += 2 {
+			(*sc.buff)[i] = buffL
+			(*sc.buff)[i+1] = buffR
+		}
+		if err := s.Write(); err != nil {
+			panic(sf("\nwrite error - %v", err))
+		}
 	}
 }
 

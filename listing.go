@@ -9,7 +9,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"slices"
 	"os"
 	"time"
 )
@@ -75,10 +74,22 @@ func mutesOrVerboseChanged(mv muteVerb) (muteVerb, bool) {
 	if json.Unmarshal(d["Verbose"], &v) != nil {
 		return mv, false
 	}
-	if slices.Equal(mv.mute, m) && mv.verbose == v {
+	if equal(mv.mute, m) && mv.verbose == v {
 		return mv, false
 	}
 	return muteVerb{m, v}, true
+}
+
+func equal(a, b []bool) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func readAndDisplay(file string, info muteVerb) {

@@ -2065,15 +2065,15 @@ func outputPA(sc soundcard) {
 		lpf12kHz = lpf_coeff(12000, sc.sampleRate)
 		lpf15Hz = lpf_coeff(15, sc.sampleRate)
 		env float64 = 1
-		// sample interval (1/SR) in nanoseconds
-		loadThresh = time.Duration(0.85 * 1e9 * (1 / sc.sampleRate))
+		loadThresh = 85 * time.Second / (100 * time.Duration(sc.sampleRate)) // 85%
+		period = time.Second / time.Duration(sc.sampleRate-1)
 		buffL = make([]format, writeBufferLen)
 		buffR = make([]format, writeBufferLen)
 	)
 	for env > 0 {
 		for i := 0; i < writeBufferLen; i++ {
 			select {
-			case <-stop: // if panic has occurred n will no longer be incrementing, so return here
+			case <-stop: // if panic has occured
 				return
 			case s := <-samples:
 				env = s.env
@@ -2084,6 +2084,8 @@ func outputPA(sc soundcard) {
 				if display.Load > loadThresh {
 					lpf.stereoLpf(stereoPair{}, lpf15Hz) // zero-stuffing
 				}
+				// sleep to more evenly distribute any inserted zeros
+				time.Sleep(period)
 			}
 			L := clip(lpf.left) // clip will display info
 			R := clip(lpf.right) // clip will display info

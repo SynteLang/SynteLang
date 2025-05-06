@@ -657,61 +657,89 @@ You can find more examples in the `.saved` directory.
 
 |  Function	|Requires operand?| Notes                           |
 |-----------|---------------|-----------------------------------|
-|	flip	|		no		|		turn a value between [0, 1] 'upside down', the input is flipped around y=½. Not suitable for negative values |
-|	tri		|		no		|		shape a value in range [0, 1] from saw/ramp to triangle. (mul 2, + -1, abs)
-|	osc		|		no		|		ramp wave, (phase accumulator). Output in range [0,1]. Has DC offset of ½
-|	saw		|		no		|		saw wave, descending ramp. Output in range ±1
-|	mix		|		yes		|		output adjusted level to soundcard and end listing
-|	s/h		|		yes		|		samples and holds input when operand moves greater than zero from less than or equal to zero. Use ramp or square to supply operand. See 'Sample and hold melody' example above. Feed a `pulse` to operand of `lpf` for track and hold
-|	dist	|		yes		|		distortion, operand controls amount
-|	sino	|		no		|		sine wave oscillator
-|	lpf		|		yes		|		6dB per octave low-pass filter. Operand is cutoff frequency in Hertz. Cascade (repeat) for steeper cutoff
-|	heat	|		yes		|		'bulb-element' emulator (untested) ◊  
-|	cv2a	|		no		|		convert range [0, 1] to [-1, 1]
-|	test	|		yes		|		output a sine test tone at the frequency of the given operand. Output at full scale, so may be much louder than other listings and engage the limiter
-|	decay	|		yes		|		will decay away to nothing from 1. 0.9997 is approx 20s, lower is quicker decay. Resets when input goes from 0 to 1. Using `down` and `exp` usually easier
-|	half	|		yes		|		like `decay` but accepts an operand in seconds that defines the 'half-life' of the decay. Input will override decay.
-|	once	|		no		|		like `osc` but only completes one cycle and output remains at 1
-|	pulse	|		yes		|		pulse generator with duty cycle (pulse width) set by operand. Output is between 0 and 1, follow by `cv2a` for audio out. `pulse 0` will give a one sample pulse, any operand greater than or equal to 1 will be silent, i.e. output continuous zero. `pulse 0.5` is a square wave like `sq`
-|	ramp	|		no		|		like `osc` but with an output suitable for audio, i.e. spans -1 to 1
-|	posc	|		yes		|		like `osc` but will retrigger on a sync pulse. Operand sets phase offset. Can also use `out ^z` to control the phase independently of sync.
-|	slew	|		yes		|		swings to the input at a rate given by operand. Intended for pulses/square waves.  Maximum slew rate is 1% of the sample rate, typically this would be less than 500hz
-|	T2		|		no		|		implements Chebyshev polynomial of the first kind. In plain english this means it will double the frequency of anything passed through it
-|	zx		|		no		|		detects negative-going zero-crossing of input. A preceding `ramp` will generate a single pulse of 1 at the end of its cycle.
-|	lmap	|		yes		|		implements the Logistic Map, modified to constrain the output to range [0,1] using `mod` (to prevent divergence at high values of r). Iterates on zero-crossing of the input. Operand is the r value, suggested between 3 and 4. Precede with `ramp` and follow with `cv2a` for audio output
-|	euclid	|		3		|		outputs euclidean rhythms at the frequency given by input as a series of pulses. Eg. output for (3,8) = "X..X..X." the X will be 1 and the rests 0
-|	exp		|		yes		|		converts linear ramps on interval [0,1] to exponential. Operand is the number of times one is halved for an input of zero, eg. three would be ½ x ½ x ½ = ⅛, the greater the number the steeper the curve. Typically useful to shape a descending ramp. Negative operands will double instead of halve
-|	dial	|		no		|		plays uk telephone ringing tone
-|	dirac	|		no		|		outputs a single sample pulse when input goes from 0 to 1. Will trigger on first run of listing if input is 1
-|	range	|		2		|		spreads input from 0 to ±1 across a range of values from the first operand to the second. Eg. `range 220hz,440hz`. If the second operand is smaller the range will be negative. Operands should be in order of slow to fast, eg. 2s,1s
-|	bd909	|		2		|		unfinished '909' kick drum. first operand is decay and second is pitch. ◊  
-|	down	|		yes		|		slews downwards for decreasing signals, jumps immediately to an increasing or static (unchanging) signal value. Use with a narrow pulse to make a linear decay envelope. Descends at rate given by operand
-|	echo	|		2		|		repeated echo of input using `buff` internally. First operand is repeat interval (time), second operand is loop/feedback gain, >1 is infinite repeats (may distort), 0 is no repeats and no output. Use in conjunction with `from` or mix in with original input
-|	step	|		yes		|		generates a rising staircase of values with the operand number of steps within input time interval, eg `120bpm` or `2hz`. Output is between [0,1]. This implementation is not precise due to overflows (low frequency aliasing). Uses `s/h` internally. For precision use `osc` or `posc p` followed by `8bit n`, where p is the phase offset from sync and n is the equivalent of the `step` operand
-|	tempo	|		yes		|		operand sets the tempo across all listings, subsequent invocations will set tempo for subsequent listings
-|	grid	|		no		|		generates a square wave at frequency of input and sends out to grid, accessible across all listings in ascending order like tempo. The grid signal can be used to gate audio using `mul`. Euclidean rhythms can be generated by `s/h`-ing other gate signals at different frequencies. Contains `>sync`
-|	count	|		yes		|		generates a rising staircase of values from 1 up to and including operand. Use a pulse or square wave [0,1] as input. Uses `dirac` to detect edge transitions internally. Can be used with `in <tempo>, osc, lt 0.5, count n` as a more precise equivalent to `step`
-|	hpf		|		yes		|		6dB per octave high-pass filter. Operand is cutoff frequency in Hertz
-|	tape	|		yes		|		record and playback from a rotating buffer, analogous to a tape loop. Operand is the offset in seconds/milliseconds (use types). Contains a high-pass filter internally
-|	alp		|		2		|		first-order all-pass delay line using `buff`. First operand is delay time, second operand is damping coefficient [0,1]
-|	pink	|		no		|		approximation of pinkening filter, low pass at -3db per octave
-|	play	|		yes		|		plays wav given by operand once when input goes from 0 to 1
-|	sqr		|		no		|		square wave at audio levels, output is in range [-1,1]
-|	sq		|		no		|		square wave, equivalent to `pulse 0.5`, output is in range [0,1], contains `<sync`
-|	xvr		|		no		|		emulates class-B crossover distortion
-|	sclp	|		no		|		soft clipping, harsher than tanh
-|	every	|		yes		|		for a pulse (or square) input [0,1], outputs a pulse ending at second rising edge of input every n input pulses, where n is the operand. Uses `count` internally
-|	intfr	|		yes		|		non-linear feedback leads to radio-interference sounding patterns
-|	fractal	|		yes		|		fractal inspired non-linear feedback mangles input in interesting ways
-|	catch	|		no		|		output is zero until first sync pulse received, input is passed through to output thereafter. Use before last operation of a listing containing `posc` for a smooth launch
-|	smooth	|		no		|		alias of `lpf 150hz`, use to smoothen vca signals or other below audio rate CV's
-|	CB		|		yes		|		an 808-like cowbell, triggered like `dirac`. Operand multiplies pitch
-|	.grid	|		no		|		an experimental alternative to `grid`, will terminate listing. Not synced
-|	for		|		yes		|		input sets frequency of pulse which stays high for time interval given by operand, output is [0, 1]
-|	/b		|		2		|		creates a rising ramp in sync with a ramp sent to `sync` signal
-|	def		|		2		|		sends tempo and sync to other listings, first argument is tempo, second is number of beats which the sync wave spans. Launches listing
-|	def_	|		2		|		like `def` but can be followed by other operators (doesn't launch)
-|	noise	|		no		|		output 'white' noise, input controls volume
+|	/b	|	2	|	creates a rising ramp in sync with a ramp sent to `sync` signal	|
+|	/euc	|	2	|	outputs euclidean rhythms at the frequency given by a `sync` signal. Eg. output for (3,8) = 'X..X..X.' the X will be 1 and the rests 0 	|
+|	/s	|	2	|	like /b but outputs a square wave	|
+|	;	|	no	|	alternative to mix	|
+|	CB	|	yes	|	an 808-like cowbell, triggered like `dirac`. Operand multiplies pitch 	|
+|	T2	|	no	|	implements Chebyshev polynomial of the first kind. In plain english this means it will double the frequency of anything passed through it 	|
+|	VU	|	no	|	prints the VU level of the input	|
+|	alp	|	2	|	first-order all-pass delay line using `buff0`. First operand is delay time, second operand is damping coefficient [0,1]. Potentially unstable	|
+|	alp1	|	2	|	first-order all-pass delay line using `buff1`. First operand is delay time, second operand is damping coefficient [0,1]. Potentially unstable	|
+|	alp2	|	2	|	first-order all-pass delay line using `buff2`. First operand is delay time, second operand is damping coefficient [0,1]. Potentially unstable	|
+|	alp3	|	2	|	first-order all-pass delay line using `buff3`. First operand is delay time, second operand is damping coefficient [0,1]. Potentially unstable	|
+|	bd	|	yes	|	Bass drum. The operand is the pitch, 1.0 = 90hz	|
+|	bdfm	|	2	|	sync'ed fm bassdrum. first operand is envelope shape like `exb`, second operand is pitch range above 80hz	|
+|	catch	|	no	|	output is zero until first sync pulse received, input is passed through to output thereafter. Use before last operation of a listing containing `posc` for a smooth launch 	|
+|	chorII	|	no	|	fixed quad lfo chorus with feedback	|
+|	chorus	|	2	|	first argument is speed, second is depth	|
+|	count	|	yes	|	generates a rising staircase of values from 1 up to and including operand. Use a pulse or square wave [0,1] as input. Uses `dirac` to detect edge transitions internally. Can be used with `in <tempo>, osc, lt 0.5, count n` as a more precise equivalent to `step` 	|
+|	cv2a	|	no	|	convert range [0, 1] to [-1, 1] 	|
+|	dec	|	yes	|	converts a rising transistion from 0 to 1 to a linear ramp down in the time given by the operand	|
+|	decay	|	yes	|	will decay away to nothing from 1. 0.9997 is approx 20s, lower is quicker decay. Resets when input goes from 0 to 1. Using `down` and `exp` usually easier 	|
+|	def	|	2	|	sends tempo and sync to other listings, first argument is tempo, second is number of beats which the sync wave spans. Launches listing	|
+|	def_	|	2	|	like `def` but can be followed by other operators (doen't launch)	|
+|	dial	|	no	|	plays uk telephone ringing tone 	|
+|	dirac	|	no	|	outputs a single sample pulse when input goes from 0 to 1. Will trigger on first run of listing if input is 1 	|
+|	dist	|	yes	|	distortion, operand controls amount 	|
+|	down	|	yes	|	slews downwards for decreasing signals, jumps immediately to an increasing or static (unchanging) signal value. Use with a narrow pulse to make a linear decay envelope. Descends at rate given by operand	|
+|	dvd	|	yes	|	if input is a [0,1] square wave, will produce a square wave at half the frequency. Useful for breaking out of the constraint a sync loop	|
+|	echo	|	2	|	repeated echo of input using `tape` internally. First operand is repeat interval (time), second operand is loop/feeback gain, >1 is infinite repeats (may distort), 0 is no repeats and no output. Use in conjunction with `from` or mix in with original input 	|
+|	euclid	|	3	|	outputs euclidean rhythms at the frequency given by input as a series of pulses. Eg. output for (3,8) = 'X..X..X.' the X will be 1 and the rests 0 	|
+|	every	|	yes	|	for a pulse (or square) input [0,1], outputs a pulse ending at second rising edge of input every n input pulses, where n is the operand. Uses `count` internally 	|
+|	exb	|	yes	|	scaled exponential converter. Increasing positive values change linear sweeps into steeper sharper peaks, negative ones create the inverse. Operand of zero produces zero	|
+|	excl	|	yes	|	like clip, but removes signal betwen +/- operand, shifts the remaining up or down to zero	|
+|	exp	|	yes	|	converts linear ramps on interval [0,1] to exponential. Operand is the number of times one is halved for an input of zero, eg. three would be ½ x ½ x ½ = ⅛, the greater the number the steeper the curve. Typically useful to shape a descending ramp. Negative operands will double instead of halve 	|
+|	flip	|	no	|	turn a value between [0, 1] 'upside down', the input is flipped around y=½. Not suitable for negative values  	|
+|	fractal	|	yes	|	fractal inspired non-linear feedback mangles input in interesting ways 	|
+|	grid	|	yes	|	generates a square wave at frequency of input and sends out to grid, accessible across all listings in ascending order like tempo. The grid signal can be used to gate audio using `mul`. Euclidean rhythms can be generated by `s/h`-ing other gate signals at different frequencies. Contains `>sync` 	|
+|	hh	|	yes	|	808-style hihat. Operand is the decay in milliseconds	|
+|	hpf	|	yes	|	6dB per octave high-pass filter. Operand is cutoff frequency in Hertz 	|
+|	intfr	|	yes	|	non-linear feedback leads to radio-inteference sounding patterns 	|
+|	juno	|	yes	|	basic saw synth voice emulation	|
+|	kd	|	yes	|	deep and loud kick drum. Operand is the starting pitch, decays to 0. Feed input with an envelope like `/b 4,0, trn 6` 	|
+|	lmap	|	yes	|	implements the Logistic Map, modified to constrain the output to range [0,1] using `mod` (to prevent divergence at high values of r). Iterates on zero-crossing of the input. Operand is the r value, suggested between 3 and 4. Preceed with `ramp` and follow with `cv2a` for audio output 	|
+|	lpf	|	yes	|	6dB per octave low-pass filter. Operand is cutoff frequency in Hertz. Cascade (repeat) for steeper cutoff 	|
+|	maj7	|	no	|	produces a major seventh chord of sines at frequency given by input	|
+|	mix	|	no	|	output adjusted level to soundcard and end listing 	|
+|	noise	|	no	|	output 'white' noise, input controls volume	|
+|	once	|	no	|	like `osc` but only completes one cycle and output remains at 1 	|
+|	one2	|	yes	|	spreads input from 0 to ±1 across a range of values from the 1 to the operand. Eg. `one2 1.125`	|
+|	osc	|	no	|	ramp wave, (phase accumulator). Output in range [0,1]. Has DC offset of ½ 	|
+|	pad	|	no	|	reduces input by 4dB	|
+|	perlin	|	yes	|	basic implementation of one-dimensional perlin noise, operand sets grid spacing in hertz or seconds	|
+|	phaze	|	2	|	implements a basic phaser effect. 1st operand is centre frequency, second is bandwidth in [0,1]	|
+|	phryg	|	no	|	converts the input into a just-intonation version of the phyrgian dominant scale	|
+|	pink	|	no	|	approximation of pinkening filter, low pass at -3db per octave 	|
+|	play	|	yes	|	plays wav given by operand once when input goes from 0 to 1 	|
+|	pm	|	yes	|	simple fm saw. Input is frequency, operand is brightness (similar to lpf)	|
+|	pmix	|	no	|	equivalent to  `mix`, except prints the attentuaion in dB	|
+|	posc	|	yes	|	like `osc` but will retrigger on a sync pulse. Operand sets phase offset. Can also use `out ^z` to control the phase independently of sync. 	|
+|	pso	|	no	|	phase-shift oscillator, produces a sine wave. Not accurate in frequency response. Therectically lower computaional load than math.Sine()	|
+|	pulse	|	yes	|	pulse generator with duty cycle (pulse width) set by operand. Output is between 0 and 1, follow by `cv2a` for audio out. `pulse 0` will give a one sample pulse, any operand greater than or equal to 1 will be silent, i.e. output continuous zero. `pulse 0.5` is a square wave like `sq` 	|
+|	ramp	|	no	|	like `osc` but with an output suitable for audio, i.e. spans -1 to 1. Contains spurious products 	|
+|	range	|	2	|	spreads input from 0 to ±1 across a range of values from the first operand to the second. Eg. `range 220hz,440hz`	|
+|	res	|	2	|	resonant low-pass filter (frequency, resonance)	|
+|	reverb	|	no	|	a basic reverb	|
+|	s/h	|	yes	|	samples and holds input when operand moves greater than zero from less than or equal to zero. Use ramp or square to supply operand. See 'Sample and hold melody' example above. Feed a `pulse` to operand of `lpf` for track and hold 	|
+|	saw	|	no	|	saw wave, ascending ramp. Output in range ±1. Not pitch accurate, but without spurious products 	|
+|	sclp	|	no	|	soft clipping, harsher than tanh 	|
+|	sfcl	|	no	|	soft clipping	|
+|	sino	|	no	|	sine wave oscillator 	|
+|	slaw	|	yes	|	imperfect slew generator. Swings to the input at a rate given by operand. Intended for pulses/square waves. If slewing to a number between zero and previous input the jump will be immediate. If the signal crosses zero from positive to negative it will slew as expected. 	|
+|	slew	|	yes	|	swings to the input at a rate given by operand. Intended for pulses/square waves. Maximum slew rate is intentionally limited to 1% of the sample rate, typically this would be less than 500hz#. Internal comparator gain is 40x (less than it could be) to provide a smooth landing and mitigate any parasitic oscillation	|
+|	smooth	|	no	|	alias of `lpf 150hz`, use to smoothen vca signals or other below audio rate CV's 	|
+|	sn	|	yes	|	snare-ish. Triggers on rising edge of a square wave input. Operand is decay	|
+|	sq	|	no	|	square wave, equivalent to `pulse 0.5`, output is in range [0,1], contains `<sync` 	|
+|	sqr	|	no	|	square wave at audio levels, output is in range [-0.5,0.5] 	|
+|	step	|	yes	|	generates a rising staircase of values with the operand number of steps within input time interval, eg `120bpm` or `2hz`. Output is between [0,1]. This implementation is not precise due to overflows (low frequencing aliasing). Uses `s/h` internally. For precision use `osc` or `posc p` followed by `8bit n`, where p is the phase offset from sync and n is the equivalent of the `step` operand 	|
+|	sum	|	yes	|	output is sum of input and operand	|
+|	tape	|	yes	|	tape loop based on `buff`. operand is offset of read from write	|
+|	tempo	|	yes	|	operand sets the tempo across all listings, subsequent invocations will set tempo for subsequent listings 	|
+|	test	|	yes	|	output a sine test tone at the frequency of the given operand. Output at full scale, so may be much louder than other listings and engage the limiter 	|
+|	tnh	|	no	|	simple tanh approximation	|
+|	tri	|	no	|	shape a value in range [0, 1] from saw/ramp to triangle. (mul 2, + -1, abs) 	|
+|	trn	|	yes	|	shapes a rising ramp into a decay envelope. Operand is rate multiplier	|
 |           |               |
 
 **List of pre-defined constants**	

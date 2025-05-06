@@ -7729,7 +7729,7 @@
 		]
 	},
 	"sn": {
-		"Comment": "snare-ish. Operand is decay",
+		"Comment": "snare-ish.snare-ish. Triggers on rising edge of a square wave input. Operand is decay",
 		"Body": [
 			{
 				"Op": "out",

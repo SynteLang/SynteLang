@@ -803,14 +803,14 @@ now type: `dial` to see if it makes sound :)
 
 ## Updating Syntə ◊
 
-You can use `git pull` to update the code, however certain files may have changed on you r local machine which complicates things. This process will be simplified in future by providing prebuilt binaries to download.  
+You can use `git pull` to update the code, however certain files may have changed on your local machine which complicates things. This process will be simplified in future by providing prebuilt binaries to download.  
 
 <a name="det"></a>
 
 ## Exposition  
 Although theoretically possible, Syntə is not primarily designed for making 'normal' music. A suggested use is the composition of waves, frequencies, shapes and combinations thereof to express a feeling or to dance to.  
 The ideal aspect of Syntə is using the full power of a modern computer to produce musical structures that would otherwise be difficult to materialise. The simple building blocks help gain insight into the workings and provide almost orthogonal flexibility. (If something is orthogonal it means the smallest number of parts to realise the full possibilities of a concept space.)  
-Syntə enables detailed specification of sounds because it is built from small atomic operations. This gives a lot of freedom, which in turn requires some learning and practice. If you are new to synthesis you will need to learn that to, the program itself won't teach you. However, in the opinion of the author the concepts and maths of audio are a delight to uncover and play with. Most of the time simple arithmetic is all that is required for a deeper understanding. Take small steps and be surprised at what you achieve in time.  
+Syntə enables detailed specification of sounds because it is built from small atomic operations. This gives a lot of freedom, which in turn requires some learning and practice. If you are new to synthesis you will need to learn that too, the program itself won't teach you. However, in the opinion of the author the concepts and maths of audio are a delight to uncover and play with. Most of the time simple arithmetic is all that is required for a deeper understanding. Take small steps and be surprised at what you achieve in time.  
 The language is intended to expand and supplement the existing live-coding space to offer other possibilities and benefit the ecosystem as a whole.  
 
 Listings are asynchronous and will start immediately on submission to the sound engine. A `>sync` operation can be used to synchronise listings using `posc`, with any offset. 

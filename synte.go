@@ -88,7 +88,7 @@ const (
 	twoInvMaxUint = 2.0 / math.MaxUint64
 	alpLen        = 2400
 	baseGain      = 0.27
-	writeBufferLen = 2 << 11
+	writeBufferLen = 2 << 12
 )
 
 const (

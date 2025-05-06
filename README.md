@@ -813,8 +813,6 @@ The ideal aspect of Syntə is using the full power of a modern computer to produ
 Syntə enables detailed specification of sounds because it is built from small atomic operations. This gives a lot of freedom, which in turn requires some learning and practice. If you are new to synthesis you will need to learn that too, the program itself won't teach you. However, in the opinion of the author the concepts and maths of audio are a delight to uncover and play with. Most of the time simple arithmetic is all that is required for a deeper understanding. Take small steps and be surprised at what you achieve in time.  
 The language is intended to expand and supplement the existing live-coding space to offer other possibilities and benefit the ecosystem as a whole.  
 
-Listings are asynchronous and will start immediately on submission to the sound engine. A `>sync` operation can be used to synchronise listings using `posc`, with any offset. 
-
 <a name="sp"></a>
 ## Sample Playback ◊  
 Any wav files placed in a folder named `wavs` will be loaded on startup. They need to be either 16, 24 or 32bit resolution and either stereo or mono PCM format files. You will need to adjust the frequency of playback for wavs with non-standard sample rates. The nominal playback frequency is given by the pre-defined constant `wavR` which you can use for normal playback like so:  

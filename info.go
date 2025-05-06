@@ -25,7 +25,7 @@ func infoTelem() {
 		stop = make(chan struct{})
 
 		load string
-		loadV float64
+		loadPK float64
 		overload int
 	)
 
@@ -63,12 +63,12 @@ func infoTelem() {
 
 			loadColour := ""
 			l := float64(display.Load) / 1e9 * display.SR
-			loadV *= 0.999
-			if l > loadV {
-				loadV = l
+			loadPK *= 0.999
+			if l > loadPK {
+				loadPK = l
 			}
 			if overload == 0 {
-				load = fmt.Sprintf("%2.f", loadV*100)
+				load = fmt.Sprintf("%2.f", loadPK*100)
 			}
 			if !started {
 				load = "0"
@@ -77,11 +77,11 @@ func infoTelem() {
 			if overload > 0 {
 				overload--
 			}
-			if l > 1 {
+			if loadPK > 1 {
 				load = "OVLD"
 				overload = 50
 			}
-			if l > 0.9 {
+			if loadPK > 0.9 {
 				loadColour = red
 			}
 			L := loadColour + load + reset

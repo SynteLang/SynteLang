@@ -544,38 +544,46 @@ func run(from io.Reader, da driver) bool {
 	}
 	saveJson([]listing{{operation{Op: advisory}}}, listingsFile)
 
-	err = pa.Initialize()
-	if err != nil {
-		pf("unable to setup soundcard, quitting\n%s\n", err)
-		return false
-	}
-	// wrapped to handle error inside defer
-	defer shutdown()
-	d, err := pa.DefaultOutputDevice()
-	if err != nil {
-		pf("error opening default output:\n%s\n", err)
-		return false
-	}
+	d := new(pa.DeviceInfo)
 	var channels int = CHANNELS
-	buf := make([]format, writeBufferLen)
+	s := new(pa.Stream)
 	out := make([][]format, 2)
-	out[0], out[1] = buf, buf
-	if d.MaxOutputChannels >= 4 {
-		channels = 4
-		out = make([][]format, 4)
-		out[0], out[1], out[2], out[3] = buf, buf, buf, buf
+	switch da {
+	case pau:
+		err = pa.Initialize()
+		if err != nil {
+			pf("unable to setup portaudio:\n%s\n", err)
+			return false
+		}
+		// wrapped to handle error inside defer
+		defer shutdown()
+		d, err = pa.DefaultOutputDevice()
+		if err != nil {
+			pf("error opening default output via portaudio:\n%s\n", err)
+			return false
+		}
+		buf := make([]format, writeBufferLen)
+		out[0], out[1] = buf, buf
+		if d.MaxOutputChannels >= 4 {
+			channels = 4
+			out = make([][]format, 4)
+			out[0], out[1], out[2], out[3] = buf, buf, buf, buf
+		}
+		SampleRate = checkFlag(SampleRate)
+		s, err = pa.OpenDefaultStream(
+			0, channels,
+			SampleRate,
+			writeBufferLen, &out,
+		)
+		if err != nil {
+			pf("%sunable to setup portaudio%s\n%s\n", bold, reset, err)
+			return false
+		}
+		defer s.Close()
+	case sdl:
+		p("trying SDL instead...")
+		return true // remove later
 	}
-	SampleRate = checkFlag(SampleRate)
-	s, err := pa.OpenDefaultStream(
-		0, channels,
-		SampleRate,
-		writeBufferLen, &out,
-	)
-	if err != nil {
-		pf("unable to setup soundcard\n%s\n", err)
-		return false
-	}
-	defer s.Close()
 
 	sc := soundcard{
 		s,

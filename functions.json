@@ -174,7 +174,7 @@
 		]
 	},
 	"/s": {
-		"Comment": "",
+		"Comment": "like /b but outputs a square wave",
 		"Body": [
 			{
 				"Op": "in",
@@ -203,7 +203,7 @@
 		]
 	},
 	";": {
-		"Comment": "",
+		"Comment": "alternative to mix",
 		"Body": [
 			{
 				"Op": "setmix",
@@ -546,7 +546,7 @@
 		]
 	},
 	"VU": {
-		"Comment": "",
+		"Comment": "prints the VU level of the input",
 		"Body": [
 			{
 				"Op": "push",
@@ -1895,7 +1895,7 @@
 		]
 	},
 	"dec": {
-		"Comment": "",
+		"Comment": "converts a rising transistion from 0 to 1 to a linear ramp down in the time given by the operand",
 		"Body": [
 			{
 				"Op": "out",
@@ -4216,7 +4216,7 @@
 		]
 	},
 	"juno": {
-		"Comment": "",
+		"Comment": "basic saw synth voice emulation",
 		"Body": [
 			{
 				"Op": "out",
@@ -5014,7 +5014,7 @@
 		]
 	},
 	"noise": {
-		"Comment": "",
+		"Comment": "output 'white' noise, input controls volume",
 		"Body": [
 			{
 				"Op": "push",
@@ -5566,7 +5566,7 @@
 		]
 	},
 	"phryg": {
-		"Comment": "",
+		"Comment": "converts the input into a just-intonation version of the phyrgian dominant scale",
 		"Body": [
 			{
 				"Op": "out",
@@ -6118,7 +6118,7 @@
 		]
 	},
 	"pm": {
-		"Comment": "",
+		"Comment": "simple fm saw. Input is frequency, operand is brightness (similar to lpf)",
 		"Body": [
 			{
 				"Op": "out",
@@ -8469,7 +8469,7 @@
 		]
 	},
 	"tnh": {
-		"Comment": "",
+		"Comment": "simple tanh approximation",
 		"Body": [
 			{
 				"Op": "out",

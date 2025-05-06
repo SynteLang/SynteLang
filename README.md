@@ -943,11 +943,11 @@ An *abstraction* means wrapping up a bit of code into something simple to make i
 ## info.go and listing.go
 `info.go` is intended to run alongside Syntə to display useful information. The layout is as follows:
 ```
-Syntə info *press enter to quit*                0s      <-- elapsed running time in seconds. Also, a yellow dot indicates a sync event
-        0.00    |||||||             |                   <-- peak audio meter, approx 50dB of range, will display 'GR' if limiting takes place on the output.
-														(the top line of the audio meter will flicker red if clipping occurs internally)
-    0%                                                  <-- If the sound engine is overloaded, the sound quality will degrade
-                        mx: 0		my: 0               <-- value of mouse X and Y
+Syntə info *press enter to quit*             0s <-- elapsed running time in seconds. Also, a yellow dot indicates a sync event
+       0.00    |||||||             |            <-- peak audio meter, approx 50dB of range, will display 'GR' if limiting takes place on the output.
+                                                the top line of the audio meter will flicker red if clipping occurs internally. A number will appear in the place of 'GR' to show limiting is occuring on that specific listing.
+    0%                                          <-- If the sound engine is overloaded, the sound quality will degrade
+                        mx: 0		my: 0       <-- value of mouse X and Y
 ```
 
 `listing.go` displays the currently running necklaces. Any that are muted will show in italics. In verbose mode the functions within a listing are 'unrolled', that is to say they are shown in terms of their atomic operations.

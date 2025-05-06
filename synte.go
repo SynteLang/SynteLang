@@ -80,7 +80,7 @@ const (
 	lenReserved   = 11
 	maxExports    = 12
 	DEFAULT_FREQ  = 0.0625 // 3kHz @ 48kHz Sample rate
-	MIN_FADE      = 175e-3 // 75ms
+	MIN_FADE      = 175e-3 // 175ms
 	MAX_FADE      = 120   // seconds
 	defaultRelease = 0.25  // seconds
 	MIN_RELEASE   = 25e-3 // 25ms
@@ -842,7 +842,6 @@ start:
 	if underRun > 0 {
 		pf("underruns: %d", underRun)
 	}
-	time.Sleep(200 * time.Millisecond)
 	return true // success
 }
 
@@ -1530,7 +1529,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			pause <- not // blocks until `: play`, bool is purely semantic
 			if exit {
 				env = 0
-				time.Sleep(550 * time.Millisecond) // wait for 'glitch protection' go routine to complete
+				time.Sleep(150 * time.Millisecond) // wait for 'glitch protection' go routine to complete
 				break
 			}
 			p = 1

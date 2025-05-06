@@ -853,7 +853,7 @@ Each listing has a tape loop available which is accessed by the `buff` operator.
 
 <a name="ao"></a>
 ## Arithmetic operations
-An operand may be added in a listing of the form a/b or a\*b where a and b are valid numbers and the result is division and multiplication respectively. For example: typing  
+An operand may be added in a listing of the form a/b or a\*b where a and b are valid numbers and the result is division and multiplication respectively. For example, typing:  
 >
 	in 2/3  
 will result in  

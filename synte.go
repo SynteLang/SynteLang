@@ -1888,12 +1888,9 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 							d[ii].z[i], d[ii].z[j] = d[ii].z[j], d[ii].z[i]
 						}
 					}
-				case 51: // "halt" // needs more work
-				/*	t := time.Duration(1 / r)
-					if t > 1e6 {
-						t = 1e6
-					}
-					time.Sleep(time.Microsecond * t)*/
+				case 51: // "halt"
+					r = math.Max(0, math.Min(1, r))
+					time.Sleep(time.Duration(1e9 * r / sc.sampleRate))
 				case 52: // "4lp"
 					in := r - d[i].alp[(n+alpLen-int(0.0047*sc.sampleRate))%alpLen]/2
 					d[i].alp[n%alpLen] = in

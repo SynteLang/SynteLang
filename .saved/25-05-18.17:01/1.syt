@@ -1,0 +1,5 @@
+in 3h
+osc
+mul -0.5
+noise
+mix

@@ -1,0 +1,35 @@
+in 3m
+once
+- 0.5
+clip 0
+mul 2
+out v
+in 3s
+sq
+range 4hz,8hz
+osc
+lt 0.5
+dec 4hz
+exp 4
+mul 1
+lpf 35hz
+out vca
+in 7s
+sq
+one2 1.5
+out s
+in 4s
+sq
+range 3s,2hz
+sq
+one2 1.5
+mul s
+lpf 15hz
+mul 880/16hz
+pm 0.5
+out fx
+chorII
+sum fx
+mul vca
+mul 8db
+mix

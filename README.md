@@ -584,7 +584,7 @@ You can find more examples in the `.saved` directory.
 |	level	|		yes   	|		changes the output level of the listing at the index given by operand, which must be a number (not a signal). The preceding input sets the level. Capable of modulation up to 1100Hz, but because of this sudden large changes in level may produce clicks. Filter with eg. `lpf 50hz` or `smooth` to avoid this. Operation independent of mute. Indexes out of range are silently ignored
 |	x		|		yes   	|		alias of `mul`
 |	*		|		yes   	|		alias of `x`
-|	from	|		yes   	|		receives mono output of listing given by operand. By design operand must be a number not a named signal. Indexes out of range are silently ignored
+|	from	|		yes   	|		receives mono output of listing given by operand. By design operand must be a number not a named signal. Indexes out of range are silently ignored, the containing listing index will also be ignored
 |	sgn		|		no   	|		outputs is 1 if the input is positive and -1 if negative
 |	/		|		yes   	|		subtracts the operand from the input repeatedly until zero and outputs the number of subtractions as a fraction. AKA divide. output = input / operand
 |	\		|		yes   	|		output = operand / input

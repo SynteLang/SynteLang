@@ -1476,7 +1476,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 
 		// per-listing limiter
 		hpf7241Hz = hpf_coeff(7241, sc.sampleRate)       // high emphasis
-		hpf160Hz  = hpf_coeff(160, sc.sampleRate)        // low emphasis, loudness eq
+		hpf160Hz  = hpf_coeff(160, sc.sampleRate)        // low emphasis
 		lpf2point4Hz  = lpf_coeff(2.4435, sc.sampleRate) // 'VU' averaging ~400ms
 		headroom = math.Pow10(36/20) // decibels
 
@@ -1486,6 +1486,9 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		// main output limiter
 		hiBandCoeff  = hpf_coeff(10240, sc.sampleRate)
 		midBandCoeff = hpf_coeff(320, sc.sampleRate)
+
+		// loudness eq
+		hpf320Hz  = hpf_coeff(320, sc.sampleRate)        // loudness eq
 	)
 
 	const (
@@ -2053,13 +2056,13 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		h *= hold
 		lim *= release + 0.1 / (1/(0.01 + 1e3*h) + 0.1 / (1 - release))
 		display.GR = lim > 0.06
-		eqM = (eqM + mid - eqXM) * hpf160Hz
+		eqM = (eqM + mid - eqXM) * hpf320Hz
 		eqXM = mid
-		eqS = (eqS + sides - eqXS) * hpf160Hz
+		eqS = (eqS + sides - eqXS) * hpf320Hz
 		eqXS = sides
 		if eq { // high shelving boost
-			mid = eqM * 1.3 + mid * 0.9
-			sides = eqS * 1.3 + sides * 0.9
+			mid = eqM * 2 + mid * 0.9
+			sides = eqS * 2 + sides * 0.9
 		}
 		if exit {
 			mid *= env // fade out

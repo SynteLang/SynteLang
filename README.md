@@ -26,7 +26,7 @@ Protect your hearing when listening to *any* audio on a system capable of more t
 **Features:**  
 >Audio synthesis    
 Wav playback  
-Mouse control  
+Mouse control (only available on Linux and BSD) ◊
 Telemetry / code display  
 Anything can be connected to anything else  
 Feedback permitted (see above)  
@@ -69,26 +69,13 @@ If you have `git` installed:
 
 Or click on the green code link above this doc on the main page of the github repository (which you are probably looking at right now) and download as a zip file which will need to be unzipped. As the software is under continuous development it is a good idea to update the code regularly.  
 
-You should end up with a directory (folder) containing the following files and directories:  
-
->	
-	README.md (this file)
-	synte.go  
-	bsd-linux.go 
-	functions.json  
-	info.go  
-	listing.go  
-	a directory named 'wavs' containing wav files (optional, can contain a README.md)
-	an empty directory named '.temp' (can contain a README file) 
-	an empty directory named 'recordings' (can contain a README.md) 
-
-You may need to install portaudio, on Linux type: `sudo apt-get install portaudio` or `sudo apt-get install portaudio19-dev`
+You may need to install portaudio and/or SDL2, on Linux type: `sudo apt-get install portaudio` or `sudo apt-get install portaudio19-dev`
 
 To install Syntə:
-+ make sure you are in the directory `syntelang/` (downloaded/cloned above)
++ make sure you are in the directory `syntelang/` (the one downloaded/cloned above)
 + make sure you have Go installed [(see here)](https://go.dev/doc/install)
 + open a terminal (if not already)
-+ type: `go install` (this will build and install the code in the directory)  
++ type: `go install` (might take a minute or so)  
 
 To run:
 + type: `synte` - you can now start typing and running code!
@@ -429,7 +416,7 @@ Note that the operator `gt` (greater than or equal) shapes the `osc` into a puls
 
 </Test>
 
-The `mousex` register supplies the relative X co-ordinate motion transmitted by the mouse. Not currently available on all systems. ◊ The second example simulates vinyl and the third controls the sample length. `out dac` is used here instead of `mix` assuming the sample is already pre-mixed.
+The `mousex` signal supplies the relative X co-ordinate motion transmitted by the mouse. Not currently available on all systems. ◊ The second example simulates vinyl and the third controls the sample length. `out dac` is used here instead of `mix` assuming the sample is already pre-mixed.
 
 **Simple time-stretch algorithm**
 
@@ -624,9 +611,8 @@ You can find more examples in the `.saved` directory.
 |	ffaze	|		yes		|		rotate phases by operand [-1. 1]
 |	index	|		yes		|		access index of listing
 |	log	    |		no		|		output is base-2 logarithm of input. Negative inputs are treated as if they are positive
-|   4lp     |       no      |       four concatenated all-pass filters with delays of between 4ms and 20ms, useful to create diffuse reverbs within a tape echo loop. This may be re-implemented as a function using `buff` ◊
+|   4lp     |       no      |       four concatenated all-pass filters with delays of between 4ms and 20ms, useful to create diffuse reverbs within a tape echo loop
 |	       	| 		       	|
-|	fma		|		yes  	|		fused multiply add, the result of the input multiplied by the operand is stored in a special register `fma` (not implemented yet) ◊  
 
 **List of commands (won't appear in listing, `rld` and `del` will remove any unlaunched input)**
 
@@ -813,12 +799,13 @@ The function syntax is:
 
 ## Installing Syntə ◊
 
-At present it is not known if portaudio (used to output sound) will work on Windows. ◊ Please try it and share your results by email: synte@proton.me   
-Unfortunately it looks like portaudio is not compatible with MacOS anymore. An alternative backend (SDL) may be available soon. ◊   
+At present it is not known if portaudio/SDL2 (used to output sound) will work on Windows. ◊ Please try it and share your results by email: synte@proton.me   
+On macOS, the alternative backend SDL _should_ work ◊  
 
 To install Go see information here: [Download and install Go](https://go.dev/doc/install)  
 
-Linux: You may need to add the directory that Go installs in to your $PATH environment variable. Or you can type `~/go/bin/synte` instead.  
+Linux: You may need to add the directory that Go installs in to your $PATH environment variable. Try `export PATH=$PATH:/usr/local/go/bin`  
+Or you can type `~/go/bin/synte` instead.  
 
 You can run on Android:
 + install the Termux app (you might need to do this via F-droid)
@@ -1048,9 +1035,13 @@ The design of Syntə has from inception included sufficient control of sound lev
 
 ## A note on the Go code
 
-The code in this suite of programs differs from typical industry standards in a few key respects. Each program is contained in one file to make it easy for a beginner to read through the whole thing. The code isn't very encapsulated, and global variables are used for convenience. `go modules` aren't used, as only dependencies are from standard library and can keep directory structure flat. No tests have been written for any of the functions ◊, however the programs themselves have been rigorously tested with user input. Telemetry from the sound engine is just shoved out without regard to whether it is properly received, sacrificing programmatic correctness for speed, which is a worthwhile tradeoff in this context (as used in telemetry library prometheus).  
-While there may be a few ways the code can be better structured, for now it has been thoroughly determined to perform the desired functions without runtime errors. The possibility of runtime errors in the sound engine generated by user input is handled by panic/recover to gracefully shutdown and restart without the preceding listing. That is not to say any errors won't be uncovered in future, this is software after all :)  
+The code in this suite of programs differs from typical industry standards in a few key respects. Each program is contained in one file to make it easy for a beginner to read through the whole thing. The code isn't very encapsulated, and global variables are used for convenience. No tests have been written for any of the functions yet ◊, however the program itself has been rigorously tested with user input. Telemetry from the sound engine is just shoved out without regard to whether it is properly received, sacrificing programmatic correctness for speed, which is a worthwhile tradeoff in this context (as used in telemetry library prometheus).  
+The possibility of runtime errors in the sound engine generated by user input is handled by panic/recover to gracefully shutdown and restart without interrupting the sound. ◊    
 Please add a github issue for bug reports or feature requests.
+
+## Security / privacy
+
+The Go code in this repository does not access the network. The third-party libraries used for audio backend have not been vetted by the author of Syntə.
 
 ---
 
@@ -1102,7 +1093,6 @@ These are, as the author understands it (opinions may differ):
 feedback and what it means  
 filtering  
 delay and reverb   
-mouse control  
 tempo and pitch  
 euclidian rhythms using `grid`  
 fractal synthesis (not implemented yet)  
@@ -1111,3 +1101,35 @@ mute and solo
 ---
 
 [Back to top](#top)
+
+## SDL library dependency licence
+
+(this does not apply to linux and android builds on arm)
+
+https://github.com/veandco/go-sdl2/blob/master/LICENSE
+
+Copyright (c) 2013, Go-SDL2 Authors
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+	* Redistributions of source code must retain the above copyright notice,
+this list of conditions and the following disclaimer.
+	* Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+	* Neither the name of Go-SDL2 nor the names of its contributors may be
+used to endorse or promote products derived from this software without specific
+prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.

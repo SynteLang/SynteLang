@@ -1,4 +1,5 @@
 /*	listing.go displays active listings while Syntə is running
+	Type `synte --l` to run
 	Data transferred via './displaylisting.json' and 'infodisplay.json'
 	File emptied on exit. Check '/recordings' folder to see played listings by timestamp
 	Press enter to exit

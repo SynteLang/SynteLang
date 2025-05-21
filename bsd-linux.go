@@ -1,5 +1,5 @@
 // Syntə is an audio live coding environment and language
-// This file implements BSD and Linux specific functions for 64bit x86
+// This file implements operating system functions
 
 package main
 
@@ -32,37 +32,6 @@ var (
 	// wavHeader = []byte{82, 73, 70, 70, 36, 228, 87, 0, 87, 65, 86, 69, 102, 109, 116, 32, 16, 0, 0, 0, 1, 0, 2, 0, 128, 187, 0, 0, 0, 238, 2, 0, 4, 0, 16, 0, 100, 97, 116, 97, 0, 208, 221, 6} // 16bit stereo PCM 48kHz, 600s
 	wavFile   *os.File
 )
-
-func checkFlag(sr float64) float64 {
-	if len(os.Args) < 3 {
-		return sr
-	}
-	switch os.Args[1] {
-	case "--sr", "--SR", "-s":
-		// break
-	default:
-		return sr
-	}
-	if os.Args[2] == "44.1" { // for convenience
-		os.Args[2] = "44"
-	}
-	flag, err := strconv.ParseFloat(os.Args[2], 64)
-	if err != nil {
-		return sr
-	}
-	switch flag {
-	case 48:
-		flag = 48000
-	case 44:
-		flag = 44100
-	case 96:
-		flag = 96000
-	}
-	if flag < 12000 || flag > 192000 {
-		return sr
-	}
-    return flag
-}
 
 func recordWav(s systemState) (systemState, int) {
 	if s.sampleRate != 48000 {

@@ -1,4 +1,5 @@
 // info displays information about a running instance of Syntə
+// Type `synte -i` to run
 // Press enter to quit
 
 package main
@@ -117,7 +118,7 @@ func infoTelem() {
 				VU += "|"
 			}
 
-			soundcard := fmt.Sprintf("%2gkhz %s", display.SR/1000, display.Channel)
+			soundcard := sf("%2gkHz %s stereo", display.SR/1000, display.Channel)
 			if display.SR == 0 {
 				soundcard = "\t\t"
 			}

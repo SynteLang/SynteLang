@@ -21,13 +21,11 @@
 	Features:
 		Audio synthesis √
 		Wav playback √
-		Mouse control √
+		Mouse control √ (only available on bsd and linux)
 		Telemetry / code display √
 		Anything can be connected to anything else within a listing √
 		Feedback permitted (see above) √
-		Groups of operators can be defined, named and instantiated √
-		Support for pitch control with useful constants √
-		Frequency scaling √
+		Groups of operators can be defined, named and instantiated as new functions √
 		Predefined functions and operators √
 		Flexible synchronisation of co-running listings √
 
@@ -48,7 +46,7 @@
 // go func(), anonymous restart watchdog, waits on close of stop channel
 // go readInput(), scan stdin from goroutine to allow external concurrent input, blocks on stdin
 // go reloadListing(), poll '.temp/*.syt' modified time and reload if changed, timed slowly at > 84ms
-// go func(), anonymous, handles writing to soundcard within SoundEngine(), blocks on write to soundcard
+// go sc.output(), handles writing to soundcard within SoundEngine(), blocks on write to soundcard if no overload
 
 package main
 
@@ -66,8 +64,6 @@ import (
 	"strings"
 	"time"
 	"unicode"
-
-	pa "github.com/gordonklaus/portaudio"
 )
 
 const (
@@ -80,7 +76,7 @@ const (
 	lenReserved   = 11
 	maxExports    = 12
 	DEFAULT_FREQ  = 0.0625 // 3kHz @ 48kHz Sample rate
-	MIN_FADE      = 175e-3 // 175ms
+	MIN_FADE      = 125e-3 // 125ms
 	MAX_FADE      = 120   // seconds
 	defaultRelease = 0.25  // seconds
 	MIN_RELEASE   = 25e-3 // 25ms
@@ -441,17 +437,45 @@ var (
 	log *os.File
 )
 
-type driver int
-
 const (
-	pau driver = 0
-	sdl driver = 1
+	backendPA  = iota
+	backendSDL 
+	backendOSS 
 )
+
+func checkFlag(sr float64) float64 {
+	if len(os.Args) < 3 {
+		return sr
+	}
+	switch os.Args[1] {
+	case "--sr", "--SR", "-s":
+		// break
+	default:
+		return sr
+	}
+	if os.Args[2] == "44" { // for convenience
+		os.Args[2] = "44.1"
+	}
+	flag, err := strconv.ParseFloat(os.Args[2], 64)
+	if err != nil {
+		return sr
+	}
+	if flag < 200 { // auto-convert kHz
+		flag *= 1e3
+	}
+	if flag < 12000 || flag > 192000 {
+		// alert user here
+		return sr
+	}
+    return flag
+}
+
 
 func main() {
 	if len(os.Args) < 2 {
-		if !run(os.Stdin, pau) {
-			run(os.Stdin, sdl)
+		if !run(os.Stdin, backendPA) {
+			p("trying SDL2 backend...")
+			run(os.Stdin, backendSDL)
 		}
 		return
 	}
@@ -497,9 +521,19 @@ Only one may be used at a time`)
 	case "--listings", "--listing", "-l":
 		listingsDisplay()
 		return
+	case "--sdl", "--SDL", "--sdl2", "--SDL2":
+		run(os.Stdin, backendSDL)
+		return
+	case "--oss", "--OSS", "-o", "--mackie", "-m":
+		run(os.Stdin, backendOSS)
+		return
+	default:
+		p("flag not recognised")
+		return
 	}
-	if !run(os.Stdin, pau) {
-		run(os.Stdin, sdl)
+	if !run(os.Stdin, backendPA) {
+		p("trying SDL2 backend...")
+		run(os.Stdin, backendSDL)
 	}
 	if os.Args[1] == "--mem" {
 		f, rr := os.Create("mem.prof")
@@ -533,10 +567,10 @@ func emptyTokens() {
 	}
 }
 
-func run(from io.Reader, da driver) bool {
+func run(from io.Reader, da int) bool {
 	saveJson(disp{On: false}, infoFile)
 	time.Sleep(30 * time.Millisecond) // infodisplay would be written in this time
-	Json, err := os.ReadFile(infoFile)
+	Json, _ := os.ReadFile(infoFile)
 	json.Unmarshal(Json, &display)
 	if display.On {
 		pf("instance of synte already running in this directory\n")
@@ -544,55 +578,33 @@ func run(from io.Reader, da driver) bool {
 	}
 	saveJson([]listing{{operation{Op: advisory}}}, listingsFile)
 
-	d := new(pa.DeviceInfo)
-	var channels int = CHANNELS
-	s := new(pa.Stream)
-	out := make([][]format, 2)
+	setup := setupSoundcard{}
 	switch da {
-	case pau:
-		err = pa.Initialize()
-		if err != nil {
-			pf("unable to setup portaudio:\n%s\n", err)
+	case backendPA:
+		var ok bool
+		setup, ok = setupPortaudio()
+		if !ok {
 			return false
 		}
-		// wrapped to handle error inside defer
-		defer shutdown()
-		d, err = pa.DefaultOutputDevice()
-		if err != nil {
-			pf("error opening default output via portaudio:\n%s\n", err)
+		defer setup.cln()
+	case backendSDL:
+		var ok bool
+		setup, ok = setupSDL()
+		if !ok {
 			return false
 		}
-		buf := make([]format, writeBufferLen)
-		out[0], out[1] = buf, buf
-		if d.MaxOutputChannels >= 4 {
-			channels = 4
-			out = make([][]format, 4)
-			out[0], out[1], out[2], out[3] = buf, buf, buf, buf
-		}
-		SampleRate = checkFlag(SampleRate)
-		s, err = pa.OpenDefaultStream(
-			0, channels,
-			SampleRate,
-			writeBufferLen, &out,
-		)
-		if err != nil {
-			pf("%sunable to setup portaudio%s\n%s\n", bold, reset, err)
+		defer setup.cln()
+	case backendOSS:
+		var ok bool
+		setup, ok = setupOSS()
+		if !ok {
 			return false
 		}
-		defer s.Close()
-	case sdl:
-		p("trying SDL instead...")
-		return true // remove later
+		defer setup.cln()
 	}
+	sc := setup.soundcard
 
-	sc := soundcard{
-		s,
-		&out,
-		s.Info().SampleRate,
-		32,
-		outputPA,
-	}
-	SampleRate = s.Info().SampleRate
+	SampleRate = sc.sampleRate
 
 	display = disp{
 		On:		 true,
@@ -604,17 +616,7 @@ func run(from io.Reader, da driver) bool {
 	}
 	go infoDisplay()
 
-	api, _ := pa.DefaultHostApi()
-	msg("%s", strings.Split(pa.VersionText(), ",")[0])
-	msg(`Audio output: %s %s
-channels: %d
-default SR: %.f
-`,
-		api.Type,
-		d.Name,
-		channels,
-		d.DefaultSampleRate,
-	)
+	msg(setup.info)
 
 	if writeLog {
 		log.WriteString(sf("soundcard: %dbit %2gkHz\n", sc.format, sc.sampleRate))
@@ -967,13 +969,71 @@ func (m *muteSlice) set(i int, v float64) {
 	(*m)[i] = v
 }
 
+type callback func(sr float64)
+
+type cleanup func()
+
 type soundcard struct {
-	s          *pa.Stream
-	buff	   *[][]format
 	sampleRate float64
 	format     int
-	output     func(sc soundcard)
+	output     callback
 }
+
+type setupSoundcard struct {
+	soundcard
+	cln cleanup
+	info string
+}
+
+func receiveSample(
+	s stereoPair,
+	loadThresh, period time.Duration,
+	started bool,
+	lpf15Hz float64,
+) (stereoPair, bool) {
+	se := stereoPair{}
+	select {
+	case <-stop: // if sound engine has ended
+		return s, not
+	case se = <-samples:
+		// nothing to do
+	default:
+		if len(samples) > 0 { // prefer samples
+			se = <- samples
+			break
+		}
+		time.Sleep(period) // wait for another sample
+		if len(samples) > 0 { // if one has arrived
+			se = <- samples
+			break
+		}
+		if !started || s.pause {
+			return s, yes
+		}
+		s.stereoLpf(stereoPair{}, lpf15Hz) // zero-stuffing
+		// only degrade when load is high, to avoid lazy underruns
+		if display.Load > loadThresh {
+			underRun++
+			return s, yes
+		}
+		se = <- samples // otherwise wait for new sample
+	}
+	return se, yes
+}
+
+type stereoPair struct {
+	left, right float64
+	running, pause bool
+}
+
+func (y *stereoPair) stereoLpf(x stereoPair, coeff float64) {
+	y.left += (x.left - y.left) * coeff
+	y.right += (x.right - y.right) * coeff
+	// running and pause need to be updated by incoming samples
+	y.running = x.running
+	y.pause = x.pause
+}
+
 
 func readTokenPair(t *systemState) (bool, int) {
 	tt := <-tokens
@@ -1368,12 +1428,6 @@ func holdIndicator(d bool, i int) (bool, int) {
 	return d, i
 }
 
-type stereoPair struct {
-	left,
-	right,
-	env float64
-}
-
 func transfer(d []listingStack, tr *data) ([]listingStack, []int) {
 	if tr.reload < len(d) && tr.reload > -1 { // for d reload
 		coreDump(d[tr.reload], "reloaded_listing_old")
@@ -1417,7 +1471,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	)
 
 	var (
-		lpf15Hz = lpf_coeff(15, sc.sampleRate)  // smooth mouse, mutes, gain
+		lpf15Hz = lpf_coeff(10, sc.sampleRate)  // smooth mouse, mutes, gain
 		lpf1kHz = lpf_coeff(1e3, sc.sampleRate) // smooth levels
 
 		// per-listing limiter
@@ -1503,7 +1557,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	}()
 
 	 // if samples channel runs empty insert zeros instead and filter heavily
-	go sc.output(sc)
+	go sc.output(sc.sampleRate)
+	defer closeOutput(sc.sampleRate)
 
 	tr := *<-transmit
 	d = append(d, tr.listingStack)
@@ -1512,6 +1567,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	coreDump(d[0], "first_listing")
 
 	lastTime = time.Now()
+	samples <- stereoPair{running: yes}
 	for {
 		select {
 		case <-pause:
@@ -1526,12 +1582,12 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			// play
 		}
 		if p == 0 && d[0].m < 1e-4 { // -80dB
+			samples <- stereoPair{running: yes, pause: yes}
 			pause <- not // blocks until `: play`, bool is purely semantic
 			if exit {
-				env = 0
-				time.Sleep(150 * time.Millisecond) // wait for 'glitch protection' go routine to complete
-				break
+				return
 			}
+			samples <- stereoPair{running: yes, pause: not}
 			p = 1
 			lastTime = time.Now()
 		}
@@ -2010,8 +2066,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			sides *= env
 			env -= fade // linear fade-out (perceived as logarithmic)
 			if env < 0 {
-				time.Sleep(150 * time.Millisecond) // wait for 'glitch protection' go routine to complete
-				break                             // equivalent to: return
+				return
 			}
 		}
 		dither = no.ise()
@@ -2036,7 +2091,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			writeWav(L, R)
 		}
 		t = time.Since(lastTime)
-		samples <- stereoPair{left: mid + sides, right: mid - sides, env: env}
+		samples <- stereoPair{left: mid + sides, right: mid - sides, running: yes}
 		lastTime = time.Now()
 		rate += t
 		rates[n%RateIntegrationTime] = t // rolling average buffer
@@ -2049,54 +2104,12 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	}
 }
 
-func outputPA(sc soundcard) {
-	s := sc.s
-	chans := len(*sc.buff)
-	err := s.Start()
-	if err != nil {
-		panic(err)
-	}
-	defer s.Stop()
-	var (
-		lpf stereoPair
-		lpf12kHz = lpf_coeff(12000, sc.sampleRate)
-		lpf15Hz = lpf_coeff(15, sc.sampleRate)
-		env float64 = 1
-		loadThresh = 85 * time.Second / (100 * time.Duration(sc.sampleRate)) // 85%
-		period = time.Second / time.Duration(sc.sampleRate-1)
-		buffL = make([]format, writeBufferLen)
-		buffR = make([]format, writeBufferLen)
-	)
-	for env > 0 {
-		for i := 0; i < writeBufferLen; i++ {
-			select {
-			case <-stop: // if panic has occured
-				return
-			case s := <-samples:
-				env = s.env
-				lpf.stereoLpf(s, lpf12kHz)
-				//lpf.stereoLpf(lpf, lpf12kHz)
-			default:
-				// only degrade when load is high, to avoid lazy underruns
-				if display.Load > loadThresh {
-					lpf.stereoLpf(stereoPair{}, lpf15Hz) // zero-stuffing
-				}
-				// sleep to more evenly distribute any inserted zeros
-				time.Sleep(period)
-			}
-			L := clip(lpf.left) // clip will display info
-			R := clip(lpf.right) // clip will display info
-			buffL[i] = format(L)
-			buffR[i] = format(R)
-		}
-		for i := 0; i < chans; i += 2 {
-			(*sc.buff)[i] = buffL
-			(*sc.buff)[i+1] = buffR
-		}
-		if err := s.Write(); err != nil {
-			panic(sf("\nwrite error - %v", err))
-		}
-	}
+func closeOutput(sampleRate float64) {
+	samples <- stereoPair{running: not}
+	for len(samples) > 0 { /* wait for samples to be received */ }
+	// portaudio requires 4x buffer delay
+	t := 4 * writeBufferLen * time.Second / time.Duration(sampleRate)
+	time.Sleep(t) // wait for samples to be written
 }
 
 func releaseFrom(t, SR float64) float64 {
@@ -2126,12 +2139,6 @@ func clip(in float64) float64 { // hard clip
 	}
 	return in
 }
-
-func (y *stereoPair) stereoLpf(x stereoPair, coeff float64) {
-	y.left += (x.left - y.left) * coeff
-	y.right += (x.right - y.right) * coeff
-}
-
 
 const width = 2 << 16 // precision of tanh table
 var tanhTab = make([]float64, width)
@@ -3059,28 +3066,3 @@ func init() {
 	a3 *= norm
 	a5 *= norm
 }
-
-func shutdown() {
-	err := pa.Terminate()
-	if err != nil {
-		pf("termination error: %s", err)
-	}
-}
-
-type format float32
-
-/* alternate
-	p := pa.StreamParameters{
-		pa.StreamDeviceParameters{},
-		pa.StreamDeviceParameters{d, channels, d.DefaultHighOutputLatency},
-		d.DefaultSampleRate,
-		writeBufferLen,
-		0,
-	}
-	err = pa.IsFormatSupported(p, &out)
-	if err != nil {
-		pf("format not supported")
-		return
-	}
-	s, err := pa.OpenStream(p, &out)
-	*/

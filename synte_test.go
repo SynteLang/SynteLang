@@ -70,7 +70,7 @@ func TestChecks(t *testing.T) {
 }
 
 func TestParseType(t *testing.T) {
-	if SampleRate != 48e3 {
+	if SAMPLE_RATE != 48e3 {
 		t.Fatal(`Change sample rate to 48,000`)
 	}
 	tests := []struct {
@@ -81,10 +81,10 @@ func TestParseType(t *testing.T) {
 		{"in", "1/2", 0.5, true},
 		{"in", "500", 0, false},
 		{"in", "500!", 500, true},
-		{"in", "1ms", 1e3 / SampleRate, true},
+		{"in", "1ms", 1e3 / SAMPLE_RATE, true},
 		{"in", "2e-2ms", 0, false},
 		{"in", "4e3bpm", 0, false},
-		{"in", "120bpm", 2 / SampleRate, true},
+		{"in", "120bpm", (120.0/60) / SAMPLE_RATE, true},
 		{"in", "1/48m", 1 / 6e4, true},
 		{"in", "24khz", 0.5, true},
 		{"in", "48e3hz", 1, true},

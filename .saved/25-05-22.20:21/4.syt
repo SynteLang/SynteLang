@@ -1,0 +1,35 @@
+/* rvrb
+in 7hz
+sino
+mul 0.001
++ 1
+mul 150/3bpm
+out t
+from 0
+out m
+from 3
+mul -6db
+out+ m
+from 6
+mul -6db
+out+ m
+from 5
+out+ m
+from 8
+mul -6db
+out+ m
+from 7
++ m
++ c
+hpf 300hz
+hpf 300hz
+tape t
+out fx
+alp2 150*8bpm,0.5
+4lp
++ fx
+mul 0.5
+lpf 4khz
+out c
+mul -12db
+out dac

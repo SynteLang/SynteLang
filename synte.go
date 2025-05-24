@@ -527,6 +527,8 @@ Only one may be used at a time`)
 	case "--oss", "--OSS", "-o", "--mackie", "-m":
 		run(os.Stdin, backendOSS)
 		return
+	case "--sr", "--SR", "-s":
+		// allow for checkFlag()
 	default:
 		p("flag not recognised")
 		return

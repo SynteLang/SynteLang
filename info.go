@@ -118,7 +118,7 @@ func infoTelem() {
 				VU += "|"
 			}
 
-			soundcard := sf("%2gkHz %s stereo", display.SR/1000, display.Channel)
+			soundcard := sf("%2gkHz %s", display.SR/1000, display.Channel)
 			if display.SR == 0 {
 				soundcard = "\t\t"
 			}
@@ -127,7 +127,7 @@ func infoTelem() {
 			fmt.Printf("%s Syntə info%s %spress enter to quit%s", cyan, reset, italic, reset)
 			fmt.Printf(`   %s   %s  %3s
 %s%s
-  %v%%     %s    %smx:%s%5.4g   %smy:%s%5.4g`,
+  %v%%    %s    %smx:%s%5.4g   %smy:%s%5.4g`,
 				sync, paused, timer,
 				msg, VU,
 				L, soundcard,

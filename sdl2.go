@@ -9,7 +9,6 @@ import "C"
 import (
 	"fmt"
 	"math"
-	"time"
 	"unsafe"
 
 	"github.com/veandco/go-sdl2/sdl"
@@ -88,15 +87,14 @@ func outputSDL(sr float64) {
 	var (
 		lpf12kHz = lpf_coeff(OutputFilter, sr)
 		lpf15Hz = lpf_coeff(OutputSmooth, sr)
-		loadThresh = LoadThresh * time.Second / (100 * time.Duration(sr))
-		period = time.Second / time.Duration(sr-1)
+		loadThresh = loadThreshAt(sr)
 	)
 	s := <-samples
 	sdl.PauseAudio(false)
 	started := not
 	for s.running {
 		for i := 0; i < writeBufferLen; i++ {
-			se, ok := receiveSample(s, loadThresh, period, started, lpf15Hz)
+			se, ok := receiveSample(s, loadThresh, started, lpf15Hz)
 			if !ok {
 				return
 			}

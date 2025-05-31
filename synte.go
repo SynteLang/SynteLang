@@ -992,7 +992,7 @@ type setupSoundcard struct {
 
 func receiveSample(
 	s stereoPair,
-	loadThresh, period time.Duration,
+	loadThresh time.Duration,
 	started bool,
 	lpf15Hz float64,
 ) (stereoPair, bool) {
@@ -1004,18 +1004,12 @@ func receiveSample(
 		// nothing to do
 	default:
 		if len(samples) > 0 { // prefer samples
-			se = <- samples
-			break
-		}
-		time.Sleep(period) // wait for another sample
-		if len(samples) > 0 { // if one has arrived
-			se = <- samples
+			se = <-samples
 			break
 		}
 		if !started || s.pause {
 			return s, yes
 		}
-		s.stereoLpf(stereoPair{}, lpf15Hz) // zero-stuffing
 		// only degrade when load is high, to avoid lazy underruns
 		if display.Load > loadThresh {
 			underRun++
@@ -1024,6 +1018,10 @@ func receiveSample(
 		se = <- samples // otherwise wait for new sample
 	}
 	return se, yes
+}
+
+func loadThreshAt(sr float64) time.Duration {
+	return LoadThresh * time.Second / ( 100 * time.Duration(sr))
 }
 
 type stereoPair struct {

@@ -6,7 +6,6 @@ import (
 	"math"
 	"os"
 	"syscall"
-	"time"
 	"unsafe"
 )
 
@@ -101,7 +100,6 @@ func setupOSS() (setupSoundcard, bool) {
 	)
 	if ern != 0 {
 		p("set rate:", ern) // do something else here
-		time.Sleep(time.Second)
 	}
 	setup.sampleRate = float64(data)
 	if data != sr {
@@ -131,8 +129,7 @@ func setupOSS() (setupSoundcard, bool) {
 		var (
 			lpf12kHz = lpf_coeff(OutputFilter, setup.sampleRate)
 			lpf15Hz = lpf_coeff(OutputSmooth, setup.sampleRate)
-			loadThresh = LoadThresh * time.Second / (100 * time.Duration(setup.sampleRate))
-			period = time.Second / time.Duration(setup.sampleRate-1)
+			loadThresh = loadThreshAt(setup.sampleRate)
 			length = writeBufferLen * CHANNELS * (setup.format / 8)
 		)
 		if four {
@@ -143,7 +140,7 @@ func setupOSS() (setupSoundcard, bool) {
 		started := not
 		for s.running {
 			for i := 0; i < writeBufferLen; i++ {
-				se, ok := receiveSample(s, loadThresh, period, started, lpf15Hz)
+				se, ok := receiveSample(s, loadThresh, started, lpf15Hz)
 				if !ok {
 					return
 				}
@@ -166,7 +163,7 @@ func setupOSS() (setupSoundcard, bool) {
 				pf("err: %s\n", err)
 				os.Exit(1) // instead of panic which would result in restart
 			}
-			buf = make([]byte, 0, length)
+			buf = buf[:0] //make([]byte, 0, length)
 			started = yes
 		}
 	}

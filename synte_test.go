@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+	"time"
 )
 
 func init() {
@@ -97,6 +98,20 @@ func TestParseType(t *testing.T) {
 			t.Errorf(`parseType(%q, %q) => %g %v, expected %g %v`, tst.expr, tst.op, n, b, tst.n, tst.b)
 		}
 	}
+}
+
+func TestLoadThreshAt(t *testing.T) {
+	sr := 48000.0
+	ld := loadThreshAt(sr)
+	if ld != time.Duration(17708) {
+		t.Errorf("loadThresh calc error: %v", ld)
+	}
+	l := float64(ld) / 1e9 * sr
+	lr := l * 100 / LoadThresh
+	if lr > 1.001 || lr < 0.999 {
+		t.Errorf("loadThresh reverse calc error: %v", lr)
+	}
+
 }
 
 /*func TestEndFunctionDefine(t *testing.T) {

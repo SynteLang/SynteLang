@@ -4,7 +4,6 @@ package main
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	pa "github.com/gordonklaus/portaudio"
 )
@@ -70,8 +69,7 @@ default SR: %.f
 		var (
 			lpf12kHz = lpf_coeff(OutputFilter, setup.sampleRate)
 			lpf15Hz = lpf_coeff(OutputSmooth, setup.sampleRate)
-			loadThresh = LoadThresh * time.Second / (100 * time.Duration(setup.sampleRate))
-			period = time.Second / time.Duration(setup.sampleRate-1)
+			loadThresh = loadThreshAt(setup.sampleRate)
 			buffL = make([]format, writeBufferLen)
 			buffR = make([]format, writeBufferLen)
 		)
@@ -85,7 +83,7 @@ default SR: %.f
 		started := not
 		for s.running {
 			for i := 0; i < writeBufferLen; i++ {
-				se, ok := receiveSample(s, loadThresh, period, started, lpf15Hz)
+				se, ok := receiveSample(s, loadThresh, started, lpf15Hz)
 				if !ok {
 					return
 				}

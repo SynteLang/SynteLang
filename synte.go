@@ -1565,10 +1565,10 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	go sc.output(sc.sampleRate)
 	defer closeOutput(sc.sampleRate)
 
-	tr := *<-transmit
+	tr := *<-transmit // wait for first listing
 	d = append(d, tr.listingStack)
 	daisyChains = tr.daisyChains
-	accepted <- len(d)
+	accepted <- len(d) // acknowledge
 	coreDump(d[0], "first_listing")
 
 	lastTime = time.Now()

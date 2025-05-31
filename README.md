@@ -55,7 +55,7 @@ The ◊ symbol indicates a sentence or section that may need updating in future.
 
 **Requirements:**  
 >Computer with a soundcard (internal or external)  
->Operating system: FreeBSD / Linux ( MacOs / Windows not tested, may work) ◊  
+>Operating system: FreeBSD / Linux / MacOs / android / rPi ( Windows not tested, may work) ◊  
 >Go programming language installed - requires at minimum version 1.21 ◊  
 >Desire to learn about audio synthesis  
 >Unicode support
@@ -69,7 +69,8 @@ If you have `git` installed:
 
 Or click on the green code link above this doc on the main page of the github repository (which you are probably looking at right now) and download as a zip file which will need to be unzipped. As the software is under continuous development it is a good idea to update the code regularly.  
 
-You may need to install portaudio and/or SDL2, on Linux type: `sudo apt-get install portaudio` or `sudo apt-get install portaudio19-dev`
+You may need to install portaudio and/or SDL2
+On Linux try: `sudo apt-get install portaudio` or `sudo apt-get install portaudio19-dev`
 
 To install Syntə:
 + make sure you are in the directory `syntelang/` (the one downloaded/cloned above)
@@ -800,7 +801,6 @@ The function syntax is:
 ## Installing Syntə ◊
 
 At present it is not known if portaudio/SDL2 (used to output sound) will work on Windows. ◊ Please try it and share your results by email: synte@proton.me   
-On macOS, the alternative backend SDL _should_ work ◊  
 
 To install Go see information here: [Download and install Go](https://go.dev/doc/install)  
 

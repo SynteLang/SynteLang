@@ -85,6 +85,9 @@ const (
 	alpLen        = 2400
 	baseGain      = 0.27
 	writeBufferLen = 2 << 12
+	OutputFilter  = 12000 // Hz
+	OutputSmooth  = 15 // Hz
+	LoadThresh	  = 85 // percent
 )
 
 const (

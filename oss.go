@@ -129,9 +129,9 @@ func setupOSS() (setupSoundcard, bool) {
 
 	setup.output = func(float64) {
 		var (
-			lpf12kHz = lpf_coeff(12000, setup.sampleRate)
-			lpf15Hz = lpf_coeff(15, setup.sampleRate)
-			loadThresh = 85 * time.Second / (100 * time.Duration(setup.sampleRate)) // 85%
+			lpf12kHz = lpf_coeff(OutputFilter, setup.sampleRate)
+			lpf15Hz = lpf_coeff(OutputSmooth, setup.sampleRate)
+			loadThresh = LoadThresh * time.Second / (100 * time.Duration(setup.sampleRate))
 			period = time.Second / time.Duration(setup.sampleRate-1)
 			length = writeBufferLen * CHANNELS * (setup.format / 8)
 		)

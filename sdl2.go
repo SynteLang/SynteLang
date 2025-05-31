@@ -86,9 +86,9 @@ func setupSDL() (setupSoundcard, bool) {
 func outputSDL(sr float64) {
 	defer close(out)
 	var (
-		lpf12kHz = lpf_coeff(12000, sr)
-		lpf15Hz = lpf_coeff(15, sr)
-		loadThresh = 85 * time.Second / (100 * time.Duration(sr)) // 85%
+		lpf12kHz = lpf_coeff(OutputFilter, sr)
+		lpf15Hz = lpf_coeff(OutputSmooth, sr)
+		loadThresh = LoadThresh * time.Second / (100 * time.Duration(sr))
 		period = time.Second / time.Duration(sr-1)
 	)
 	s := <-samples

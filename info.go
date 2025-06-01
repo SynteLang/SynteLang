@@ -55,6 +55,7 @@ func infoTelem() {
 				timer = time.Since(start).Round(time.Second)
 			} else { // timer for continuous play
 				started = false
+				overload = 0
 			}
 
 			sync := " "
@@ -69,10 +70,10 @@ func infoTelem() {
 				loadPK = l
 			}
 			if overload == 0 {
-				load = fmt.Sprintf("%2.f", loadPK*100)
+				load = fmt.Sprintf("%2.f%%", loadPK*100)
 			}
 			if !started {
-				load = "0"
+				load = "0%"
 				display.Vu = 0
 			}
 			if overload > 0 {
@@ -127,7 +128,7 @@ func infoTelem() {
 			fmt.Printf("%s Syntə info%s %spress enter to quit%s", cyan, reset, italic, reset)
 			fmt.Printf(`   %s   %s  %3s
 %s%s
-  %v%%    %s    %smx:%s%5.4g   %smy:%s%5.4g`,
+  %v    %s    %smx:%s%5.4g   %smy:%s%5.4g`,
 				sync, paused, timer,
 				msg, VU,
 				L, soundcard,

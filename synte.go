@@ -97,8 +97,6 @@ const (
 	funcsFile    = "functions.json"
 )
 
-var SampleRate float64 = SAMPLE_RATE // should be 'de-globalised'
-
 const ( // terminal colours, eg. sf("%stest%s test", yellow, reset)
 	reset   = "\x1b[0m"
 	italic  = "\x1b[3m"
@@ -364,8 +362,8 @@ var (
 	mutes   muteSlice
 	levels  []float64
 	rs      bool                                     // root-sync between running instances
-	fade    = 1 / (MIN_FADE * SampleRate)
-	release = releaseFrom(defaultRelease, SampleRate) // should be calculated from sc.sampleRate
+	fade    = 1 / (MIN_FADE * SAMPLE_RATE) // these are both recalculated below
+	release = releaseFrom(defaultRelease, SAMPLE_RATE)
 	gain    = baseGain
 	clipThr = 1.0 // individual listing limiter threshold
 	rst   bool
@@ -609,14 +607,15 @@ func run(from io.Reader, da int) bool {
 	}
 	sc := setup.soundcard
 
-	SampleRate = sc.sampleRate
+	fade    = 1 / (MIN_FADE * sc.sampleRate)
+	release = releaseFrom(defaultRelease, sc.sampleRate)
 
 	display = disp{
 		On:		 true,
 		Mode:    "off",
 		MouseX:  1,
 		MouseY:  1,
-		SR:		 SampleRate,
+		SR:		 sc.sampleRate,
 		Channel: "stereo",
 	}
 	go infoDisplay()
@@ -1085,7 +1084,7 @@ func readTokenPair(t *systemState) (bool, int) {
 	if !strings.ContainsAny(s[:1], "+-.0123456789") || pass || t.isFunction {
 		return tt.ext, nextOperation
 	}
-	if t.num.Ber, t.num.Is = parseType(s, t.operator); !t.num.Is {
+	if t.num.Ber, t.num.Is = parseType(s, t.operator, t.sampleRate); !t.num.Is {
 		r := t.clr("")
 		return tt.ext, r // parseType will report error
 	}
@@ -1112,7 +1111,7 @@ func parseFunction(t systemState) (listing, bool) {
 		if !strings.ContainsAny(opd[:1], "+-.0123456789") {
 			continue
 		}
-		if _, ok := parseType(opd, ""); !ok {
+		if _, ok := parseType(opd, "", t.sampleRate); !ok {
 			return nil, not // parseType will report error
 		}
 	}
@@ -1129,7 +1128,7 @@ func parseFunction(t systemState) (listing, bool) {
 			o.Opd = t.operands[2]
 		}
 		if strings.ContainsAny(o.Opd[:1], "+-.0123456789") {
-			o.ber, o.num = parseType(o.Opd, o.Op)
+			o.ber, o.num = parseType(o.Opd, o.Op, t.sampleRate)
 		}
 		function[i] = o
 	}
@@ -1151,7 +1150,7 @@ func processFunction(fun int, t systemState, f listing) (args, listing) {
 			continue
 		}
 		if strings.ContainsAny(o.Opd[:1], "+-.0123456789") {
-			if _, num := parseType(o.Opd, o.Op); num {
+			if _, num := parseType(o.Opd, o.Op, t.sampleRate); num {
 				continue
 			}
 		}
@@ -1214,7 +1213,7 @@ func argsCorrect(op string, funArgs args, clr clear, l int) bool {
 }
 
 // parseType() evaluates conversion of types
-func parseType(expr, op string) (n float64, b bool) { // TODO pass in s.sampleRate
+func parseType(expr, op string, SR float64) (n float64, b bool) { // TODO pass in s.sampleRate
 	switch {
 	case len(expr) > 1 && expr[len(expr)-1:] == "!":
 		if n, b = evaluateExpr(expr[:len(expr)-1]); !b {
@@ -1225,8 +1224,8 @@ func parseType(expr, op string) (n float64, b bool) { // TODO pass in s.sampleRa
 			msg("erm s?")
 			return 0, false
 		}
-		n = 1 / ((n / 1000) * SampleRate)
-		if !nyquist(n, expr) {
+		n = 1 / ((n / 1000) * SR)
+		if !nyquist(n, SR, expr) {
 			return 0, false
 		}
 	case len(expr) > 3 && expr[len(expr)-3:] == "bpm":
@@ -1238,25 +1237,25 @@ func parseType(expr, op string) (n float64, b bool) { // TODO pass in s.sampleRa
 			return 0, false
 		}
 		n /= 60
-		n /= SampleRate
+		n /= SR
 	case len(expr) > 1 && expr[len(expr)-1:] == "m":
 		if n, b = evaluateExpr(expr[:len(expr)-1]); !b {
 			return 0, false
 		}
 		n *= 60
-		n = 1 / (n * SampleRate)
+		n = 1 / (n * SR)
 	case len(expr) > 4 && expr[len(expr)-4:] == "mins":
 		if n, b = evaluateExpr(expr[:len(expr)-4]); !b {
 			return 0, false
 		}
 		n *= 60
-		n = 1 / (n * SampleRate)
+		n = 1 / (n * SR)
 	case len(expr) > 1 && expr[len(expr)-1:] == "s":
 		if n, b = evaluateExpr(expr[:len(expr)-1]); !b {
 			return 0, false
 		}
-		n = 1 / (n * SampleRate)
-		if !nyquist(n, expr) {
+		n = 1 / (n * SR)
+		if !nyquist(n, SR, expr) {
 			return 0, false
 		}
 	case len(expr) > 3 && expr[len(expr)-3:] == "khz":
@@ -1264,16 +1263,16 @@ func parseType(expr, op string) (n float64, b bool) { // TODO pass in s.sampleRa
 			return 0, false
 		}
 		n *= 1e3
-		n /= SampleRate
-		if !nyquist(n, expr) {
+		n /= SR
+		if !nyquist(n, SR, expr) {
 			return 0, false
 		}
 	case len(expr) > 2 && expr[len(expr)-2:] == "hz":
 		if n, b = evaluateExpr(expr[:len(expr)-2]); !b {
 			return 0, false
 		}
-		n /= SampleRate
-		if !nyquist(n, expr) {
+		n /= SR
+		if !nyquist(n, SR, expr) {
 			return 0, false
 		}
 	case len(expr) > 2 && expr[len(expr)-2:] == "db": // 0dB = 1
@@ -1297,8 +1296,8 @@ func parseType(expr, op string) (n float64, b bool) { // TODO pass in s.sampleRa
 	}
 	return n, true
 }
-func nyquist(n float64, e string) bool {
-	ny := 2e4 / SampleRate
+func nyquist(n, SR float64, e string) bool {
+	ny := 2e4 / SR
 	if bounds(n, ny) {
 		msg("'%s' is an inaudible frequency >20kHz", e)
 		if bounds(n, 1) {
@@ -2148,15 +2147,6 @@ func clip(in float64) float64 { // hard clip
 const width = 2 << 16 // precision of tanh table
 var tanhTab = make([]float64, width)
 
-/*
-var sineTab = make([]float64, int(SampleRate))
-func init() {
-	for i := range sineTab {
-		// using cosine, even function avoids negation for -ve x
-		sineTab[i] = math.Cos(2 * math.Pi * float64(i) / SampleRate)
-	}
-}*/
-
 func init() {
 	for i := range tanhTab {
 		tanhTab[i] = math.Tanh(float64(i) / width)
@@ -2167,18 +2157,6 @@ const Tau = 2 * math.Pi
 
 func sine(x float64) float64 {
 	return math.Cos(Tau * x)
-	/*
-	   	if x < 0 {
-	   		x = -x
-	   	}
-
-	   sr := int(SampleRate)
-	   a := int(x * SampleRate)
-	   sa := sineTab[a%sr]
-	   sb := sineTab[(a+1)%sr]
-	   xx := mod((x*SampleRate)-float64(a), SampleRate-1)
-	   return sa + ((sb - sa) * xx) // linear interpolation
-	*/
 }
 
 func tanh(x float64) float64 {
@@ -2730,12 +2708,12 @@ func parseFloat(num number, lowerBound, upperBound float64) (v float64, ok bool)
 	}
 	return v, yes
 }
-func reportFloatSet(op string, f float64) {
-	if f > 1/SampleRate {
-		msg("%s set to %.3gms", op, 1e3/(f*SampleRate)) //TODO
+func reportFloatSet(op string, f, SR float64) {
+	if f > 1/SR {
+		msg("%s set to %.3gms", op, 1e3/(f*SR)) //TODO
 		return
 	}
-	msg("%s set to %.3gs", op, 1/(f*SampleRate)) //TODO
+	msg("%s set to %.3gs", op, 1/(f*SR)) //TODO
 }
 
 func checkFade(s systemState) (systemState, int) {
@@ -2744,7 +2722,7 @@ func checkFade(s systemState) (systemState, int) {
 		return s, startNewOperation
 	}
 	fade = fd
-	reportFloatSet(s.operator, fd)
+	reportFloatSet(s.operator, fd, s.sampleRate)
 	return s, startNewOperation
 }
 
@@ -2761,7 +2739,7 @@ func checkRelease(s systemState) (systemState, int) {
 	}
 	//release = math.Pow(125e-6, v)
 	release = releaseFrom(1/(v*s.sampleRate), s.sampleRate)
-	reportFloatSet("limiter "+s.operator, v) // report embellished
+	reportFloatSet("limiter "+s.operator, v, s.sampleRate) // report embellished
 	return s, startNewOperation
 }
 
@@ -2775,7 +2753,7 @@ func adjustGain(s systemState) (systemState, int) {
 		msg("gain set to %.2gdb", 20*math.Log10(gain/baseGain))
 		return s, startNewOperation
 	}
-	n, ok := parseType(s.operand, s.operator)
+	n, ok := parseType(s.operand, s.operator, s.sampleRate)
 	if !ok {
 		return s, startNewOperation
 	}
@@ -2791,7 +2769,7 @@ func adjustGain(s systemState) (systemState, int) {
 }
 
 func adjustClip(s systemState) (systemState, int) {
-	if n, ok := parseType(s.operand, s.operator); ok { // permissive, no bounds check
+	if n, ok := parseType(s.operand, s.operator, s.sampleRate); ok { // permissive, no bounds check
 		clipThr = n
 		msg("clip threshold set to %.3g", clipThr)
 	}
@@ -2817,7 +2795,7 @@ func checkAlp(s systemState) (systemState, int) {
 }
 
 func enactWait(s systemState) (systemState, int) {
-	if t, ok := parseType(s.operand, s.operator); ok { // permissive, no bounds check
+	if t, ok := parseType(s.operand, s.operator, s.sampleRate); ok { // permissive, no bounds check
 		pf("waiting...\n\t")
 		time.Sleep(time.Second * 1e3 / time.Duration(t * s.sampleRate * 1e3))
 	}

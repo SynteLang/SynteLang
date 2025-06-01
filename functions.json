@@ -6446,6 +6446,131 @@
 			}
 		]
 	},
+	"pump": {
+		"Comment": "pumpy compressor. Operand sets the input gain. Suggested to follow by `clip 5` and filter",
+		"Body": [
+			{
+				"Op": "mul",
+				"Opd": "@"
+			},
+			{
+				"Op": "out",
+				"Opd": "i"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "-",
+				"Opd": "x.0"
+			},
+			{
+				"Op": "+",
+				"Opd": "y.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "r.0"
+			},
+			{
+				"Op": "in",
+				"Opd": "160hz"
+			},
+			{
+				"Op": "mul",
+				"Opd": "Tau"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "\\",
+				"Opd": "1"
+			},
+			{
+				"Op": "clip",
+				"Opd": "0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "r.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "y.0"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "x.0"
+			},
+			{
+				"Op": "in",
+				"Opd": "y.0"
+			},
+			{
+				"Op": "abs",
+				"Opd": ""
+			},
+			{
+				"Op": "-",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "-45db"
+			},
+			{
+				"Op": "clip",
+				"Opd": "0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "45db"
+			},
+			{
+				"Op": "-",
+				"Opd": "b.1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.1"
+			},
+			{
+				"Op": "in",
+				"Opd": "2.4435hz"
+			},
+			{
+				"Op": "f2c",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.1"
+			},
+			{
+				"Op": "+",
+				"Opd": "b.1"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.1"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "\\",
+				"Opd": "i"
+			}
+		]
+	},
 	"ramp": {
 		"Comment": "like `osc` but with an output suitable for audio, i.e. spans -1 to 1. Contains spurious products ",
 		"Body": [

@@ -68,7 +68,6 @@ default SR: %.f
 	setup.output = func(float64) {
 		var (
 			lpf12kHz = lpf_coeff(OutputFilter, setup.sampleRate)
-			lpf15Hz = lpf_coeff(OutputSmooth, setup.sampleRate)
 			loadThresh = loadThreshAt(setup.sampleRate)
 			buffL = make([]format, writeBufferLen)
 			buffR = make([]format, writeBufferLen)
@@ -83,7 +82,7 @@ default SR: %.f
 		started := not
 		for s.running {
 			for i := 0; i < writeBufferLen; i++ {
-				se, ok := receiveSample(s, loadThresh, started, lpf15Hz)
+				se, ok := receiveSample(s, loadThresh, started)
 				if !ok {
 					return
 				}

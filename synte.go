@@ -994,7 +994,6 @@ func receiveSample(
 	s stereoPair,
 	loadThresh time.Duration,
 	started bool,
-	lpf15Hz float64,
 ) (stereoPair, bool) {
 	se := stereoPair{}
 	select {
@@ -1562,7 +1561,6 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		}
 	}()
 
-	 // if samples channel runs empty insert zeros instead and filter heavily
 	go sc.output(sc.sampleRate)
 	defer closeOutput(sc.sampleRate)
 

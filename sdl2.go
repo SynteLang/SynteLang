@@ -86,7 +86,6 @@ func outputSDL(sr float64) {
 	defer close(out)
 	var (
 		lpf12kHz = lpf_coeff(OutputFilter, sr)
-		lpf15Hz = lpf_coeff(OutputSmooth, sr)
 		loadThresh = loadThreshAt(sr)
 	)
 	s := <-samples
@@ -94,7 +93,7 @@ func outputSDL(sr float64) {
 	started := not
 	for s.running {
 		for i := 0; i < writeBufferLen; i++ {
-			se, ok := receiveSample(s, loadThresh, started, lpf15Hz)
+			se, ok := receiveSample(s, loadThresh, started)
 			if !ok {
 				return
 			}

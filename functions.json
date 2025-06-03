@@ -2049,7 +2049,7 @@
 			},
 			{
 				"Op": "+",
-				"Opd": "a.0"
+				"Opd": "sync"
 			},
 			{
 				"Op": "mod",
@@ -2057,16 +2057,28 @@
 			},
 			{
 				"Op": "out",
-				"Opd": "a.0"
+				"Opd": "sync"
+			},
+			{
+				"Op": "mul",
+				"Opd": "16"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0.5"
 			},
 			{
 				"Op": ".out",
-				"Opd": "sync"
+				"Opd": "grid"
 			}
 		]
 	},
 	"def_": {
-		"Comment": "like `def` but can be followed by other operators (doen't launch)",
+		"Comment": "like `def` but can be followed by other operators (doesn't launch). Also doesn't include grid, which can be added by eg. `mul 16 mod 1 lt 0.5 .out grid`",
 		"Body": [
 			{
 				"Op": "in",
@@ -2082,15 +2094,11 @@
 			},
 			{
 				"Op": "+",
-				"Opd": "a.0"
+				"Opd": "sync"
 			},
 			{
 				"Op": "mod",
 				"Opd": "1"
-			},
-			{
-				"Op": "out",
-				"Opd": "a.0"
 			},
 			{
 				"Op": "out",

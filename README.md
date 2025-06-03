@@ -804,7 +804,9 @@ At present it is not known if portaudio/SDL2 (used to output sound) will work on
 
 To install Go see information here: [Download and install Go](https://go.dev/doc/install)  
 
-Linux: You may need to add the directory that Go installs in to your $PATH environment variable. Try `export PATH=$PATH:/usr/local/go/bin`  
+MacOS: You may need to install `pkg-config` and `sdl2`. You can use `brew` for this, which you will need to install if you don't have it.  
+
+Linux and MacOS: You may need to add the directory that Go installs in to your $PATH environment variable. Try `export PATH=$PATH:/usr/local/go/bin`  
 Or you can type `~/go/bin/synte` instead.  
 
 You can run on Android:
@@ -823,7 +825,7 @@ You can use `git pull` to update the code, however certain files may have change
 <a name="det"></a>
 
 ## Exposition  
-Although theoretically possible, Syntə is not primarily designed for making 'normal' music. A suggested use is the composition of waves, frequencies, shapes and combinations thereof to express a feeling or to dance to.  
+Syntə is not primarily designed for making 'normal' music, but it turn out it can be done. A suggested use is the composition of waves, frequencies, shapes and combinations thereof to express a feeling or to dance to.  
 The ideal aspect of Syntə is using the full power of a modern computer to produce musical structures that would otherwise be difficult to materialise. The simple building blocks help gain insight into the workings and provide almost orthogonal flexibility. (If something is orthogonal it means the smallest number of parts to realise the full possibilities of a concept space.)  
 Syntə enables detailed specification of sounds because it is built from small atomic operations. This gives a lot of freedom, which in turn requires some learning and practice. If you are new to synthesis you will need to learn that too, the program itself won't teach you. However, in the opinion of the author the concepts and maths of audio are a delight to uncover and play with. Most of the time simple arithmetic is all that is required for a deeper understanding. Take small steps and be surprised at what you achieve in time.  
 The language is intended to expand and supplement the existing live-coding space to offer other possibilities and benefit the ecosystem as a whole.  

@@ -1,6 +1,0 @@
-from 0
-+ c
-tape 550/10hz
-/ 3
-out c
-out dac

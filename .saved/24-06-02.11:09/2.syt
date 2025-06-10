@@ -1,9 +1,0 @@
-in 2hz
-osc
-smooth
-out p
-in 160hz
-mul p
-sino
-pad
-mix

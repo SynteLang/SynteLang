@@ -1,7 +1,0 @@
-in 135bpm
-mul 2
-pulse 0.25
-s/h grid
-smooth
-smooth
-.level 6

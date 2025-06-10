@@ -1,7 +1,0 @@
-from 0
-+ c
-tape 250ms
-lpf 1khz
-/ 2
-out c
-out dac

@@ -1,9 +1,0 @@
-/* plate
-from 0
-- c
-hpf 500hz
-4lp
-lpf 4khz
-mul -6db
-out c
-out dac

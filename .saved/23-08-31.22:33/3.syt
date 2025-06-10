@@ -1,8 +1,0 @@
-in 1hz
-osc
-flip
-exp 5
-in 1
-smooth
-level 1
-.level 2

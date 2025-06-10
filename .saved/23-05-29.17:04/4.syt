@@ -1,7 +1,0 @@
->sync 
-in 2hz
-pulse 0.1
-smooth
-mul 2
-in 1
-.level 0

@@ -1,5 +1,0 @@
-in r.local
-/ 4
-osc
-wav local
-mix 

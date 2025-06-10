@@ -1,9 +1,0 @@
-/s 16,0
-out g
-in 3hz
-sq
-s/h g
-smooth
-smooth
-flip
-.lvl 5

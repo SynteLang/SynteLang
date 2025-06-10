@@ -1,9 +1,0 @@
-in pitch
-maj7 
-/ 10
-out m
-/ 10
-T2
-+ m
-* 9
-mix 

@@ -1,7 +1,0 @@
-in 135bpm
-/ 8
-sq 
-smooth 
-mul 0.5
-+ 1
-.out Bar

@@ -1,8 +1,0 @@
-in 13/16s
-pulse 0.05
-smooth
-out vca
-in 660hz
-sino
-mul vca
-mix

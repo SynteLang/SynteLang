@@ -1,9 +1,0 @@
-/b 8,0
-trn 2
-out env
-exp 128!
-mul 1200hz
-sino
-mul env
-lpf 2khz
-mix

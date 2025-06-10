@@ -1,8 +1,0 @@
-in 4s
-posc 0
-lt 0.5
-* 0.5
-+ 1
-lpf 2s
-mul 220hz
-.out pitch

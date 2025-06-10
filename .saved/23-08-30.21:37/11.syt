@@ -1,7 +1,0 @@
-from 8
-+ c
-tape 135*3bpm
-lpf 5khz
-/ 1.1
-out c
-out dac

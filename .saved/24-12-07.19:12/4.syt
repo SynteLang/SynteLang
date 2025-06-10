@@ -1,7 +1,0 @@
-/* sn
-/b 6,0
-lt 0.5
-s/h grid
-sn 30ms
-mul -2db
-mix

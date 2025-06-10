@@ -1,7 +1,0 @@
-in 0.125/2hz
-posc 0
-tri 
-wav 808St8
-mul -12db
-catch
-mix 

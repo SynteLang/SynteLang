@@ -1,5 +1,0 @@
-in 135bpm
-/ 8
-out Bars
-osc 
-.out sync

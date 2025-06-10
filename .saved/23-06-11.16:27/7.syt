@@ -1,6 +1,0 @@
-in Bars
-/bsc 32,0
-trn 3
-noise 
-lpf 3khz
-mix 

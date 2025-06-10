@@ -1,8 +1,0 @@
-from 1
-+ c
-lpf 2khz
-hpf 50hz
-mul 0.99
-tape 116*3bpm
-out c
-out dac

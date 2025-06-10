@@ -1,6 +1,0 @@
-in 1.5hz
-sq
-s/h grid
-bd 0.75
-mul -2db
-mix

@@ -1,9 +1,0 @@
-in 8s
-osc
-out sync
-mul 32
-mod 1
-flip
-exp 5
-lpf 75hz
-.out Vca

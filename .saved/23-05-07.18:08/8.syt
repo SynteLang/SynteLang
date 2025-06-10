@@ -1,7 +1,0 @@
-in 180bpm
-/ 4
-for 1s
-smooth 
-mul 440hz
-sino 
-mix 

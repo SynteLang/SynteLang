@@ -1,9 +1,0 @@
-/b 64,0
-lt 0.5
-out sh
-/b 13,0
-lt 0.5
-s/h sh
-lpf 20hz
-level 1
-.level 0

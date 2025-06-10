@@ -1,5 +1,0 @@
-/b 32,0.5
-trn 8
-mul 0.3
-noise
-mix

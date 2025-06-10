@@ -1,8 +1,0 @@
-in 1.5hz
-sqr
-hpf 10s
-mul 0.0025
-out t
-in 12s
-osc
-.out sync

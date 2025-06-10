@@ -1,8 +1,0 @@
->sync
-in 135bpm
-posc 9/16
-flip
-trn 4
-noise
-hpf 2khz
-mix

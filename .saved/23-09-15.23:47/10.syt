@@ -1,7 +1,0 @@
-in 5hz
-osc
-tri
-mul 8
-base 2
-mul 10hz
-.out Freq

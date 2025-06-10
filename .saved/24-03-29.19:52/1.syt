@@ -1,8 +1,0 @@
-/b 13,0
-tri
-out vca2
-/euc 13,32
-lt 0.5
-sn 180ms
-send 0.3
-mix

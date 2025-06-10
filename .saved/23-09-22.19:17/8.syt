@@ -1,7 +1,0 @@
-in 1hz
-pulse 0.05
-lpf 55hz
-noise
-hpf 1khz
-hpf 2khz
-mix

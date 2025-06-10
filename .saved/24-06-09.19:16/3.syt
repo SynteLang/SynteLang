@@ -1,9 +1,0 @@
-in 110bpm
-osc
-flip
-smooth
-out vca
-in 330hz
-sino
-mul vca
-mix

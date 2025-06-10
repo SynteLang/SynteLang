@@ -1,9 +1,0 @@
-in tempo
-posc 0
-lt 1/16
-down 8hz
-lpf 200hz
-mul 85hz
-sino 
-tanh 
-out dac

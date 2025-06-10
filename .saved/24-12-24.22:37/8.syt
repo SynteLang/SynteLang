@@ -1,9 +1,0 @@
-/b 8,0
-flip
-exb 5
-mul 0.3
-+ 0.7
-lpf 5hz
-level 0
-level 1
-.level 2

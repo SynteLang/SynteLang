@@ -1,8 +1,0 @@
-/b 16,0
-trn 3
-mul 165hz
-sino
-hpf 55hz
-mul 3
-lpf 200hz
-mix

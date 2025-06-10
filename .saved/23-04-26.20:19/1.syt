@@ -1,9 +1,0 @@
-in 7hz
-sino 
-mul 0.06
-+ 1
-mul 12ms
-out t
-from 0
-tape t
-out dac

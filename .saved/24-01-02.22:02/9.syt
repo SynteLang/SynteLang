@@ -1,7 +1,0 @@
-in 2m
-osc
-flip
-pow 10
-halt
-in 0
-out dac

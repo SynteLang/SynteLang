@@ -1,6 +1,0 @@
-in 10s
-osc
-tri
-mul 0.99
-in 0
-mix

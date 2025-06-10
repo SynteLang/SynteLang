@@ -1,9 +1,0 @@
-in 5.01/8hz
-sq 
-out Vca
-smooth 
-out vca
-from 7
-mul 2
-mul vca
-mix 

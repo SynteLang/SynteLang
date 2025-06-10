@@ -1,9 +1,0 @@
-in Vca
-mul 0.5
-flip
-out vca
-in pitch
-mul 3/16
-sino
-mul vca
-mix

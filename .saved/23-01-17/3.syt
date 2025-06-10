@@ -1,9 +1,0 @@
-in 8hz
-sq 
-count 8
-sub 8
-+ 1
-flip 
-clip 0
-noise 
-mix 

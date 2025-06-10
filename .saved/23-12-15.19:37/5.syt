@@ -1,9 +1,0 @@
-in 135bpm
-/b 8,0
-mul 65hz
-sino
-mul 2
-tanh
-lpf 100hz
-lpf 100hz
-mix

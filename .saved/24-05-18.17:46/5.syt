@@ -1,8 +1,0 @@
-/b 16,0
-gt 0.5
-out vca
-/b 16*4!,0.5
-trn 8
-noise
-mul vca
-mix

@@ -1,5 +1,0 @@
-in wavR
-osc
-out sync
-- 0.5
-.>sync

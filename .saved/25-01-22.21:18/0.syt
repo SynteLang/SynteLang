@@ -1,7 +1,0 @@
-in 140/4bpm
-osc
-out sync
-mul 16
-mod 1
-lt 0.5
-.out grid

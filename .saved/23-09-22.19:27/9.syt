@@ -1,6 +1,0 @@
-in 1.7s
-pulse 0.75
-tri
-mul 0.8
-+ 0.1
-.out PW

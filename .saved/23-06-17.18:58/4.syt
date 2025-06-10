@@ -1,6 +1,0 @@
-in 1hz
-posc 0.5
-tri
-mul 2.5hz
-+ 1.5hz
-.out tempo

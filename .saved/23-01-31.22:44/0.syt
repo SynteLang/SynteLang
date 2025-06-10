@@ -1,9 +1,0 @@
-in 1s
-osc
-mul 1/4
-+ 3/4
-out f
-in 330hz
-saw
-ms20 f,1.06
-mix

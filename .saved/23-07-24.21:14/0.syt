@@ -1,7 +1,0 @@
-in 145bpm
-out tempo
-/ 16
-osc
-out sync
-- 0.5
-.>sync

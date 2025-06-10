@@ -1,6 +1,0 @@
-in tempo
-/ 16
-pulse 0.125
-+ 1
-mul 330/2hz
-.out pitch

@@ -1,7 +1,0 @@
-in r.VocalTune
-/ 2
-posc 0
-+ 1.558
-wav VocalTune
-/ 2
-mix 

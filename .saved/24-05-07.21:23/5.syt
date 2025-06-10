@@ -1,7 +1,0 @@
-/b 64,0
-flip
-trn 5
-down 5ms
-noise
-mul -12db
-mix

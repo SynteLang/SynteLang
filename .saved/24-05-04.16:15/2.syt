@@ -1,5 +1,0 @@
-/euc 30,48
-down 200ms
-smooth
-mul Vca
-.out Vca

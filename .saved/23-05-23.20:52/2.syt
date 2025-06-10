@@ -1,7 +1,0 @@
-in 2s
-osc 
-flip 
-mul 2khz
-sino 
-mul 0.025
-out dac

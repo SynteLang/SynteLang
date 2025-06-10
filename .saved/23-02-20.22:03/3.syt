@@ -1,9 +1,0 @@
-in 4s
-osc 
-flip 
-exp 7
-lpf 100hz
-out vca
-all 
-mul vca
-out dac

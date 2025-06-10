@@ -1,8 +1,0 @@
-in Bars
-/bsc 8,0
-trn 3
-mul 200hz
-sino 
-tanh 
-lpf 220hz
-mix 

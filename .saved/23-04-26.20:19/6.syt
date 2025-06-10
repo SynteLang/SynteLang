@@ -1,7 +1,0 @@
-in 0.75hz
-sq 
-smooth 
-out vca
-from 4
-mul vca
-out dac

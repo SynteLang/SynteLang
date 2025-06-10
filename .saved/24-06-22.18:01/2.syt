@@ -1,9 +1,0 @@
-/b 1,0
-pulse 0.25
-mul -7
-+ 10
-out b
-/euc b,16
-lt 0.5
-bd 1.0
-mix

@@ -1,8 +1,0 @@
-all 
-+ c
-tape 123ms
-lpf 2khz
-/ 1.5
-out c
-/ 2
-out dac

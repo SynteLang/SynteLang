@@ -1,9 +1,0 @@
-in 1.5hz
-sq
-s/h grid
-dirac
-down 160ms
-kd 440*0.875hz
-lpf 440hz
-mul -3db
-mix

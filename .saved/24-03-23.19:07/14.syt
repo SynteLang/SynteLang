@@ -1,8 +1,0 @@
-in 1
-noise
-lt Thr
-dirac
-down 100ms
-gt 0.5
-noise
-mix

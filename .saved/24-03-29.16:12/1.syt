@@ -1,8 +1,0 @@
-/b 2,0
-out vca2
-/euc 5,32
-lt 0.5
-sn 180ms
-mul vca2
-send 0.3
-mix

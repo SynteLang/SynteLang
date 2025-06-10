@@ -1,7 +1,0 @@
-/s 6,0
-s/h grid
-dec 100ms
-bdfm 16,320hz
-lpf 440hz
-pad
-out dac

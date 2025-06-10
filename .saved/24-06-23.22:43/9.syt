@@ -1,8 +1,0 @@
-in 135bpm
-mul 5
-pulse 0.75
-in 1
-s/h grid
-smooth
-smooth
-.level 10

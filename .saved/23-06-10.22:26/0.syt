@@ -1,9 +1,0 @@
-in 10s
-once
-flip
-mul 135bpm
-+ 30bpm
-out tempo
-/ 8
-ramp 
-.>sync 

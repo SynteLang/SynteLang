@@ -1,8 +1,0 @@
-/b 1,0
-gt 0.75
-out vca
-/b 12,0
-lt 0.5
-hh 35ms
-mul vca
-mix

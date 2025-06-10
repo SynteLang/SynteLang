@@ -1,9 +1,0 @@
-/b 16,0
-trn 5
-mul 85*2hz
-sino
-hpf 20hz
-mul 3
-clip 1
-lpf 200hz
-mix

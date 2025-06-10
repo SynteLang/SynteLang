@@ -1,8 +1,0 @@
-in 3s
-posc 0.5
-lt 0.1
-smooth
-lpf 5hz
-+ 1
-mul pitch
-.out pitch

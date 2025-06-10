@@ -1,8 +1,0 @@
-/b 12,0.5
-flip
-exb 3.5
-mul 4
-+ 0.0
-clip 0
-smooth
-.level 0

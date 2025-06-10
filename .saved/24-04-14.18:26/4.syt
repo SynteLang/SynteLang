@@ -1,7 +1,0 @@
-in 2s
-sq
-lpf 150hz
-out vca
-all
-mul vca
-out dac

@@ -1,7 +1,0 @@
-in 8hz
-posc 0
-trn 4
-noise 
-mul -6db
-lpf 2khz
-mix 

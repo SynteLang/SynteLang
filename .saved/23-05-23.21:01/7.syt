@@ -1,9 +1,0 @@
-in 2s
-pulse 0.75
-out vca
-in 8hz
-posc 0
-trn 4
-noise 
-mul vca
-mix 

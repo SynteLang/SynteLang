@@ -1,5 +1,0 @@
-from 1
-out m
-from 0
-mul m
-out dac

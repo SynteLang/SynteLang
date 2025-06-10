@@ -1,7 +1,0 @@
-in 4s
-osc
-out sync
-mul 32
-mod 1
-lt 0.5
-.out grid

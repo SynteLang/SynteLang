@@ -1,9 +1,0 @@
-in tempo
-* 4/3
-posc 0
-trn 8
-out vca
-in 440hz
-sino 
-mul vca
-mix 

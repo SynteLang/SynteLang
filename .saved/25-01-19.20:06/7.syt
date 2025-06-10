@@ -1,7 +1,0 @@
-/* hh
-/b 32,0
-trn 8
-noise
-hpf 4khz
-mul 6db
-mix

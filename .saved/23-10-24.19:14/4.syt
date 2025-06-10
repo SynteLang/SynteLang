@@ -1,8 +1,0 @@
-in Vca
-hpf 2hz
-clip 0
-smooth
-mul 165hz
-sino
-hpf 10hz
-mix

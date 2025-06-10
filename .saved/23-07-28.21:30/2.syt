@@ -1,9 +1,0 @@
-in 5hz
-sino
-mul 0.01
-base 2
-mul pitch
-mul third
-sqr 
-lpf 2khz
-mix 

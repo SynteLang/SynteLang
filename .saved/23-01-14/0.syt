@@ -1,9 +1,0 @@
-in 1/2hz
-osc 
-8bit 4.75
-8bit 12
-mod 1
-base E
-mul pitch
-sino 
-mix 

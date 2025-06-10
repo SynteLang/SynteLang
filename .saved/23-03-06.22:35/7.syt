@@ -1,4 +1,0 @@
-in r.VocalTune
-mul 2
-ramp
-.>sync

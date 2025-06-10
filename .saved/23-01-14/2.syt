@@ -1,6 +1,0 @@
-in 1/8hz
-sq 
-/ 2
-+ 1
-mul 330hz
-.out pitch

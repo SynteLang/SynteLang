@@ -1,9 +1,0 @@
-from 0
-+ c
-hpf 100hz
-mul 0.92
-lpf 2khz
-tape 125/2ms
-out c
-mul -12db
-out dac

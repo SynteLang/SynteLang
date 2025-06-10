@@ -1,6 +1,0 @@
-in 3hz
-osc
-tri
-mul 5
-+ 3
-.out Decay

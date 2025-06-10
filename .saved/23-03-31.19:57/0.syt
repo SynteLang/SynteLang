@@ -1,8 +1,0 @@
-in 2s
-osc 
-8bit 7
-8bit 12
-base 2
-mul 440hz
-sino 
-mix 

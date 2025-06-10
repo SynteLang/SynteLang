@@ -1,8 +1,0 @@
-in 2.5hz
-posc 0.5
-mul 8
-clip 0
-flip 
-noise 
-catch 
-mix 

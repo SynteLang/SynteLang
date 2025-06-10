@@ -1,7 +1,0 @@
-in sync
-mul 4
-mod 1
-lt 0.5
-hh 55ms
-mul -6db
-mix

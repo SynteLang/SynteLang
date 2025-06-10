@@ -1,8 +1,0 @@
-all 
-hpf 1khz
-+ c
-tape 135*1.5bpm
-lpf 2khz
-* 0.7
-out c
-out dac

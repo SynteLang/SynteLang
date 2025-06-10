@@ -1,9 +1,0 @@
-in tempo
-mul 4/3
-osc
-out vca
-/b 16,0.5
-+ vca
-trn 2
-noise
-mix

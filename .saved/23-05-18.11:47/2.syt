@@ -1,7 +1,0 @@
-in tempo
-posc 0
-trn 4
-mul 440hz
-sino 
-mul -15db
-mix 

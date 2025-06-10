@@ -1,9 +1,0 @@
-from 0
-+ c
-hpf 10hz
-lpf 3khz
-T2
-tanh
-out c
-hpf 60hz
-out dac

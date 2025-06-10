@@ -1,8 +1,0 @@
-in 14hz
-step 3
-mul 4
-mod 1.5
-8bit 12
-base 2
-mul 330hz
-.out pitch

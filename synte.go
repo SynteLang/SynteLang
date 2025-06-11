@@ -1536,6 +1536,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 
 		daisyChains = make([]int, 0, 16) // made explicitly here to set capacity
 	)
+	samples = make(chan stereoPair, writeBufferLen) // re-establish in case of restart
 	defer close(samples)
 	no *= 77777777777 // force overflow
 
@@ -1551,7 +1552,9 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			infoIfLogging("%s", stack, err) // print stack trace
 			if !writeLog {
 				s := []byte(sf("err:\n%s \n\nstack:\n%s", err, stack))
-				save(s, sf("debug/%s_stack_trace.txt", time.Now()))
+				if !save(s, sf("debug/%s_stack_trace.txt", time.Now())) {
+					save(s, sf(".%s_stack_trace.txt", time.Now()))
+				}
 				coreDump(d[current], "panicked_listing")
 			}
 			env = 0
@@ -1561,7 +1564,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	}()
 
 	go sc.output(sc.sampleRate)
-	defer closeOutput(sc.sampleRate)
+	defer waitForBackend(sc.sampleRate)
 
 	tr := *<-transmit // wait for first listing
 	d = append(d, tr.listingStack)
@@ -2108,7 +2111,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	}
 }
 
-func closeOutput(sampleRate float64) {
+func waitForBackend(sampleRate float64) {
 	samples <- stereoPair{running: not}
 	for len(samples) > 0 { /* wait for samples to be received */ }
 	// portaudio requires 4x buffer delay

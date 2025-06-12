@@ -14,6 +14,8 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 )
 
+// const DisallowChanges = 0
+
 type stereoOut struct {
 	l, r int16
 }
@@ -56,8 +58,9 @@ func setupSDL() (setupSoundcard, bool) {
 		Samples:  writeBufferLen,
 		Callback: sdl.AudioCallback(C.callbackSDL),
 	}
-	obtained := &sdl.AudioSpec{}
-	err = sdl.OpenAudio(spec, obtained)
+	// obtained := &sdl.AudioSpec{}
+	err = sdl.OpenAudio(spec, nil)
+	// this will be replaced with: sdl.OpenAudioDevice(nil, spec, obtained, nil, DisallowChanges)
 	fmt.Printf("\033[2J") // clear terminal
 	fmt.Printf("\033[H") // reset cursor
 	if err != nil {
@@ -72,12 +75,11 @@ func setupSDL() (setupSoundcard, bool) {
 	}
 	setup.info = sf(`SDL audio backend
 	Sample rate: %d
-	Format:      %x
+	Format:      16bit
 	Channels:    %d
 `,
-		obtained.Freq,
-		obtained.Format,
-		obtained.Channels,
+		spec.Freq,
+		spec.Channels,
 	)
 	return setup, true
 }

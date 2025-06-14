@@ -1,0 +1,9 @@
+in 2hz
+osc
+trn 4
+smooth
+out p
+in 80hz
+mul p
+sino
+mix

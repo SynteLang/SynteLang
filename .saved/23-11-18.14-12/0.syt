@@ -1,0 +1,21 @@
+in Vca
+exp 5
+- 1/32
+mul pitch
+lpf 15hz
+mul 2
+out f
+in pitch
+saw
+out m
+in pitch
+mul 1.005
+saw
++ m
+hpf 440hz
+hpf 440hz
+hpf 440hz
+hpf 440hz
+lpf f
+lpf f
+mix

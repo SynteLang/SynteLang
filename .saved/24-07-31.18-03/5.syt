@@ -1,0 +1,22 @@
+/b 3,0
+trn 3
+smooth
+out v
+/b 8,0
+lt 0.5
+mul 0.125
++ 1
+out ph
+/b 16,0
+flip
+lpf 125hz
+lpf 125hz
+out vca
+in 550/1hz
+mul ph
+sino
+lpf 360hz
+mul vca
+mul v
+clip 0.99
+mix

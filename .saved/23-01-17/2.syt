@@ -1,0 +1,9 @@
+: stop
+in 8hz
+sq
+count 8
+sub 1
+flip
+clip 0
+noise 
+mix 

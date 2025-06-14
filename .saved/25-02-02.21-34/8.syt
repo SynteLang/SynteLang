@@ -1,0 +1,7 @@
+/b 16,0
+trn 5
+mul 85hz
+sino
+hpf 20hz
+lpf 1khz
+mix

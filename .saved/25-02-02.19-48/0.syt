@@ -1,0 +1,20 @@
+in 1s
+osc
+out x
+in 140/2bpm
+sq
++ 1/2
+mul 140/3bpm
+sq
++ 10s
+mul x
+out g
+in 140/4bpm
+osc
+mul 1
+clip 0
+out sync
+mul 16
+mod 1
+lt 0.5
+.out grid

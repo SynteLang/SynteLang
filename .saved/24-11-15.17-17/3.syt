@@ -1,0 +1,6 @@
+in 16hz
+sq
+out grid
+in 128s
+ramp
+.>sync

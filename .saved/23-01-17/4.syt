@@ -1,0 +1,7 @@
+in 2hz
+sq 
+out m
+every 4
++ m
+noise 
+mix 

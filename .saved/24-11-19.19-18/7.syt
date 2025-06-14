@@ -1,0 +1,18 @@
+/* kick
+/b 1,0
+gt 0.5
+mul 0.5
+out of
+/b 4,of
+trn 4
+out vca
+exb 4
+mul 220/1.0hz
+sino
+mul vca
+hpf 10hz
+mul 2
+tanh
+mul -4db
+lpf 330hz
+mix

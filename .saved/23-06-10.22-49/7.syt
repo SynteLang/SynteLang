@@ -1,0 +1,11 @@
+in tempo
+* 2
+posc 0
+lt 0.5
+smooth 
+out vca
+in 880hz
+sino 
+mul vca
+catch 
+mix 

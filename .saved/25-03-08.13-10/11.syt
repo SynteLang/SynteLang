@@ -1,0 +1,13 @@
+in r.aloud
+/ 128!
+osc
+out s
+/b 1,0
+mod 1/1
++ s
+in r.aloud
+osc
+wav aloud
+hpf 3khz
+mul 0
+mix

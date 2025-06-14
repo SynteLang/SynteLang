@@ -1,0 +1,23 @@
+in tempo
+* 2
+posc 0
+lt 0.5
+out gt
+dirac
+down 330ms
+exp 5
+smooth
+out vca
+in tempo
+posc 0
+tri
+mul 0.25
+s/h gt
++ 1
+mul pitch
+mul 2
+sino
+mul vca
+mul -1db
+tanh
+mix

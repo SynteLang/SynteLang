@@ -1,0 +1,26 @@
+/* bass
+in 5s
+sq
+one2 1.5
+out s
+in 4s
+sq
+s/h grid
+range 8,1
+mul s
+s/h grid
+out b
+/b b,0
+lt 0.125
+lpf 50hz
+down 200ms
+out vca
+in 130/24bpm
+sq
+one2 1.5
+mul 55/1hz
+sino
+mul vca
+tanh
+mul 2db
+mix

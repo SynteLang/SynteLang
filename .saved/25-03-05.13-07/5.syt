@@ -1,0 +1,10 @@
+/* shh
+in 1.5hz
+sq
+s/h grid
+out gt
+/s 8,0
+mul gt
+hpf 100ms
+noise
+mix

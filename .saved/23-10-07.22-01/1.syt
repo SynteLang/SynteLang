@@ -1,0 +1,13 @@
+in -50db
+noise
+out n
+from 0
++ c
++ n
+hpf 200hz
+lpf 4khz
+mul 0.7
+tape 6hz
+out c
+mul -12db
+out dac

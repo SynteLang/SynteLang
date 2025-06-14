@@ -1,0 +1,56 @@
+/* bass
+/b 2,0
+lt 0.5
+out gt
+in 7hz
+osc
+tri
+mul 0.75
++ 0.1
+out ff
+/b 6,0
+lt 0.5
+mul 0.5
+out ph
+/b 1,2/8
+lt 1/4
+range 1,1.5
+out s
+/b 1,6/8
+lt 1/4
+range 1,1/1.2
+mul s
+smooth
+in 1
+out p
+/b 2,0
+lt 0.25
+mul 2
++ 1
+mul 4
+out b
+/b b,ph
+flip
+exb 3
+mul 1.5
+clip 0
+mul 1
+lpf 55hz
+out vca
+mul 0.01
++ 1
+mul 110/2hz
+mul p
+push
+mul 2.5
+mul ff
+out f
+pop
+saw
+mul 2
+tanh
+lpf f
+lpf f
+mul 18db
+mul vca
+mix

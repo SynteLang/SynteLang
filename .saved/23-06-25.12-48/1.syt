@@ -1,0 +1,13 @@
+in F
+posc 0.5
+mul mousex
+/ F
+\ 1
+out t
+from 0
++ c
+tape t
+mul .5
+out c
+mul 2
+out dac

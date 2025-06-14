@@ -1,0 +1,23 @@
+in 7hz
+osc
+tri
+mul 0.0125
++ 1
+mul tempo
+mul 0.5
+out t
+from 6
+out m
+from 1
+mul -6db
++ m
++ c
+tape t
+tap 53ms
+out fx
+4lp
+mul 0.1
++ fx
+mul 0.25
+out c
+mix

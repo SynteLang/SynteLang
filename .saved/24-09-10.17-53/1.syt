@@ -1,0 +1,48 @@
+in 10s
+osc
+tri
+mul 3
++ 1
+out factor
+/b 1,0
+lt 0.5
+mul 3
++ 1
+mul 2
+out b
+/b 8,0
+trn 1
+exp 3
+- 1/8
+lpf 75hz
+out vca
+/b 8,0.5
+lt 0.5
+out grid
+/b 3,0
+tri
+mul factor
+mod 0.2
+8bit 12
+s/h grid
++ 1
+lpf 10hz
+mul 44hz
+out p
+mul 1.01
+sqr
+out m
+in p
+sino
+out s
+in p
+sqr
+sum m
+mul vca
+lpf 440*4hz
+lpf 440*4hz
+out fx
+chorII
++ fx
+in s
+mix

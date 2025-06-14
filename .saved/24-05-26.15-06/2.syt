@@ -1,0 +1,15 @@
+in 2hz
+pulse 0.1
+smooth
+out vca
+in 1.5s
+step 2
+flip
++ 1
+base 2
+/ 32
+mul 1/1.2khz
+sino
+lpf 1khz
+mul vca
+mix

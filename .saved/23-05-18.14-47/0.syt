@@ -1,0 +1,8 @@
+in r.TouchMe
+posc 0
+mod 0.1
++ 1
+mul 1/2
+wav TouchMe
+mul -15db
+mix 

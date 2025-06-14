@@ -1,0 +1,15 @@
+in .7hz
+sino 
+mul 0.003
++ 1
+mul 135*3bpm
+out t
+all 
+hpf 200hz
+hpf 200hz
++ c
+tape t
+lpf 2khz
+* 0.6
+out c
+out dac

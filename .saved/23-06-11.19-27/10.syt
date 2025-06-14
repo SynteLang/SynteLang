@@ -1,0 +1,17 @@
+in Bars
+/bsc 4,0
+lt 0.5
+hpf 1hz
+lpf 1hz
+out vca
+mul 0.05
++ 1
+mul pitch
+/ 8
+saw 
+lpf 220hz
+lpf 220hz
+mul vca
+mul 6db
+clip 0.2
+mix 

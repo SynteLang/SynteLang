@@ -1,0 +1,11 @@
+in -6db
+level 1
+in 2hz
+osc
+flip
+exp 5
+- 1/32
+mul 2
+smooth
+smooth
+.level 0

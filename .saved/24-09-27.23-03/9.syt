@@ -1,0 +1,11 @@
+in 10s
+osc
+tri
+out t
+/b 8,0
+trn 1.2
+mul 1.2
++ t
+tanh
+smooth
+.level 3

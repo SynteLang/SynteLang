@@ -1,0 +1,13 @@
+in 60s
+sq
+flip
+mul 0.5
+out p
+/b 1,1/16
+lt 0.5
+mul 0.5
++ 1
++ p
+mul 330hz
+mul 0.5
+.out pitch

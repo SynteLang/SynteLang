@@ -1,0 +1,40 @@
+/* hh
+in 4hz
+osc
+tri
+range 3,9
+out t
+/b 16,0.25
+lt 0.25
+range 64,32*4!
+out b
+/b b,0.5
+flip
+exb t
+out vca
+mul 0.3
+noise
+out n
+in 85*2hz
+pulse 0.1
+out+ n
+in 43*2hz
+pulse 0.8
++ n
++ c
+hpf 12khz
+hpf 12khz
+out ph
+tape 13ms
+tap 32ms
++ ph
+/ 2
+out c
+mul 2
+mul vca
+out fx
+4lp
+mul 0.4
++ fx
+mul 3db
+mix

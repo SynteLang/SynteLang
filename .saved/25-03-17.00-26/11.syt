@@ -1,0 +1,46 @@
+/* rvrb
+in 23s
+pulse 1/2.5
+range 0.7,0.9
+in 0.5
+out g
+in 7hz
+sino
+mul 0.08
++ 1
+mul 220/2hz
+out ch
+in 3hz
+sino
+mul 0.01
++ 1
+mul 375/3.236ms
+out t
+from 1
+out m
+from 2
+out+ m
+from 6
+mul -4db
+out+ m
+from 9
+out+ m
+from 10
+out+ m
+from 12
++ m
++ c
+hpf 300hz
+tape ch
+mul 1.3
+tap t
+alp2 75ms,g
+alp1 153ms,0.3
+4lp
+mul 4
+clip 1
+lpf 5khz
+mul 1.2/4
+out c
+mul -10db
+out dac

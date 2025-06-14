@@ -1,0 +1,24 @@
+>sync
+in 1hz
+posc 0
+lt 0.025
+dirac
+down 25ms
+gt 0.5
+smooth
+out vca
+noise
+tanh
+hpf 500hz
+lpf 1khz
+hpf 500hz
+lpf 1khz
+lpf 1khz
++ c
+push
+tape 55ms
+/ 6
+out c
+pop
+mul vca
+out dac

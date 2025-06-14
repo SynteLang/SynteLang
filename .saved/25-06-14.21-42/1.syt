@@ -1,0 +1,12 @@
+in sync
+tri
+mul 5
+base 2
+mul 440/16hz
+out f
+in Pm
+tanh
+lpf f
+lpf f
+mul 12db
+mix

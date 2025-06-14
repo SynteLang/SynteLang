@@ -1,0 +1,40 @@
+in pitch
+mul 4
+mul vca
+out cf
+/b 1,0.25
+gt 0.5
+mul 0.3
++ .2
+out p
+/b 64,0
+flip
+exp 3
+lpf 80hz
+out vca
+mul 6hz
+out pv
+/b 32,0
+lt 1/3
+mul 0.5
+out fifth
+/b 32,0
+lt 0.5
+mul p
++ 1
+mul 704hz
++ pv
+out p2
+mul 0.995
+saw
+out m
+in p2
+mul 1.005
+saw
++ m
+mul 4
+mul vca
+tanh
+lpf cf
+lpf cf
+mix

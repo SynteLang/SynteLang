@@ -1,0 +1,23 @@
+/b 128!,0
+mul 4
+mod 1
+flip
+mul 3
+base 2
+mul 1khz
+mul 1/8
+sino
++ c
+hpf 10hz
+push
+out x
+mul x
+- 0.5
+mul 0.35
+clip 1
+lpf 12khz
+lpf 12khz
+out c
+pop
+mul -10db
+mix

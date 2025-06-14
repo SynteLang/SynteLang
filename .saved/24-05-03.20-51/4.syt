@@ -1,0 +1,4 @@
+in 135bpm
+/ 16
+osc
+.out sync

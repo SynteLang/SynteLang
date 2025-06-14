@@ -1,0 +1,8 @@
+in 1.5hz
+osc
+out vca
+/euc 5*2,8*2
+sn 50ms
+mul -14db
+mul vca
+mix

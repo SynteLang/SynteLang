@@ -1,0 +1,7 @@
+in 8s
+sq
+mul 0.5
++ 1
+mul 330hz
+mul 0.5
+.out pitch

@@ -1,0 +1,28 @@
+in pitch
+saw 
+out m
+in pitch
+mul 1.01
+saw
+out+ m
+in pitch
+mul seventh
+saw 
+out+ m
+in pitch
+mul fifth
+saw 
+out+ m
+in pitch
+mul 1/1.01
+mul fifth
+saw
++ m
+/ 3
+lpf mousex
+lpf mousex
+lpf mousex
+lpf mousex
+chorus 3.7hz,0.2
+mul -6db
+mix 

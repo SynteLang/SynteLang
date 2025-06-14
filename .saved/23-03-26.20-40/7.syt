@@ -1,0 +1,7 @@
+from 4
++ c
+tape 250ms
+mul 2
+mul Vca
+out c
+mix 

@@ -1,0 +1,4 @@
+in 116bpm
+mul 4
+sq
+.out grid

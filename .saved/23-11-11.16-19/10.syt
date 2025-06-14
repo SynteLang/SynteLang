@@ -1,0 +1,12 @@
+/b 16,0
+lt 1/32
+smooth
+flip
+out D
+flip
+mul 110hz
+sino
+mul 12db
+tanh
+lpf 220hz
+out dac

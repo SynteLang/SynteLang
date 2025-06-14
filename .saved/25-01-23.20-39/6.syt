@@ -1,0 +1,14 @@
+in 7s
+osc
+lt 0.5
+smooth
+level 3
+/b 1,0
+exb 8
+smooth
+level 8
+in 12/8s
+osc
+exb 5
+smooth
+.level 5

@@ -1,0 +1,23 @@
+/b 1,0
+lt 0.5
+range 3,4
+out b
+/b b,0
+push
+flip
+exb 4
+smooth
+out vca
+pop
+lt 0.5
+out g
+in pitch
+s/h g
+mul 330/4hz
+sino
+tanh
+mul vca
+mul 3db
+lpf 220hz
+lpf 220hz
+mix

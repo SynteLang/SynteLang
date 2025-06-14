@@ -1,0 +1,29 @@
+in pitch
+saw 
+out m
+in pitch
+mul 1.01
+saw 
+out+ m
+in pitch
+mul seventh
+saw 
+out+ m
+in pitch
+mul fifth
+saw 
+out+ m
+in pitch
+mul 1/1.01
+mul fifth
+saw 
++ m
+/ 3
+res mousex,1.5
+chorus 3.7hz,0.2
+out r
+in 0.05
+/ mousex
++ 0.5
+mul r
+mix 

@@ -1,0 +1,8 @@
+in 135bpm
+* 2
+osc
+flip
+exp 4
+smooth
+lpf 20hz
+.out Sq

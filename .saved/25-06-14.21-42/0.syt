@@ -1,0 +1,27 @@
+in 440/32hz
+mul -2
+mul Pi
+base E
+-- 1
+out f
+in 3hz
+osc
+out sync
+tri
+mul 5
+base 2
+mul f
+out fc
+in 440/2hz
+pm 1.0
+out Pm
+tanh
+mul fc
++ y
+out z
+mul 1/2
+tanh
+mul fc
+-- z
+out y
+mix

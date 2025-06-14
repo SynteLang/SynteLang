@@ -1,0 +1,15 @@
+in 30/1.5s
+pulse 0.75
+s/h grid
+smooth
+level 4
+/b 6,0.5
+lt 0.5
+s/h grid
+smooth
+level 5
+/b 2,0.25
+gt 0.75
+s/h grid
+smooth
+.level 7

@@ -1,0 +1,24 @@
+[ riano
+in 1
+noise
+lt Thr
+dirac
+down 100ms
+gt 0.5
+push
+in @
+/ @1
+8bit 12
+base 2
+mul 220hz
+out p
+pop
+lpf 100hz
+tape p
+lpf 2khz
+out string
+push
+mul -40db
+pop
+mix
+]

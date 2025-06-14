@@ -1,0 +1,17 @@
+from 0
++ A
+[ alp4
+mul 2
+- fb
+mul 1/4
+out ff
+tape 20ms, out fb, out m
+in 0, tap 32.36ms, out+ fb, out+ m
+in 0, tap 42.36ms, out+ fb, out+ m
+in 0, tap 52.36ms, out+ fb, + m
++ ff
+]
+alp4
+hpf 100hz
+lpf 1khz
+out dac

@@ -1,0 +1,36 @@
+in 20s
+osc
+mul 3.75hz
++ 1s
+sq
+s/h grid
+out q
+in 3s
+pulse 0.5
+s/h grid
+mul 6
++ 2
+out b2
+/b 1,0
+gt 0.75
+mul 1
++ 1
+mul b2
+mul 2
+out b
+/b b,0
+lt 0.5
+dirac
+down 350ms
+exp 5
+- 1/32
+mul 1
+smooth
+out Env
+from 1
++ c
+tape 120*6bpm
+lpf 2khz
+mul 0.35
+out c
+out dac

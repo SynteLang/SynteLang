@@ -1,0 +1,28 @@
+in 7s
+sq
+mul 0.5
++ 1
+out p
+/b 4,0
+smooth
+out vca
+in 7hz
+sino
+mul 880/16hz
+mul p
+sqr
+lpf 1khz
+mul vca
++ c
+push
+tape 23ms
+lpf 1khz
+mul 0.9
+out c
+pop
+lpf 220hz
+lpf 220hz
+lpf 220hz
+mul 2
+tanh
+mix

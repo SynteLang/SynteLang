@@ -1,0 +1,53 @@
+in 2.5s
+pulse 0.1
+s/h grid
++ 1
+out p
+in 3s
+osc
+tri
+mul 75ms
++ 800ms
+out e
+in 135bpm
+mul 4
+sq
+out grid
+in 135bpm
+/ 8.2
+osc
+trn 2
+mul 135bpm
+mul 3.5
+mul 4/2.5
++ 135/2bpm
+sq
+s/h grid
+dirac
+down 300ms
+push
+gt 0.7
+smooth
+down e
+out vca
+pop
+lpf 1khz
+exp 15
+out env
+mul 220hz
++ 220hz
+sino
+mul 440hz
+mul env
++ 44*1hz
+mul p
+sino
+out m
+in 44*1.5hz
+mul p
+sino
++ m
+/ 2
+mul vca
+pad
+mix

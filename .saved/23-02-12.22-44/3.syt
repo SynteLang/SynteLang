@@ -1,0 +1,9 @@
+in 0.8hz
+posc 0.75
+flip 
+lpf 100hz
+out vca
+all 
+mul vca
+catch
+mix 

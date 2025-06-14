@@ -1,0 +1,43 @@
+in tempo
+/ 1
+out t
+in 3s
+pulse 0.25
+s/h grid
++ 1
+mul 3
+out b
+/b b,0
+lt 0.5
+s/h grid
+dirac
+down 170ms
+exp 6
+- 1/64
+smooth
+out vca
+in 7hz
+sq
+s/h grid
+mul 0.6875
++ 1
+out p
+/b 16,0
+smooth
+tri
+mul 0.5
++ 0.5
+out tr
+in 88*9hz
+/ p
+sqr
+lpf 2440hz
+lpf 2440hz
+chorII
+out x
+mul x
+mul 0.3
++ x
+mul tr
+mul vca
+mix

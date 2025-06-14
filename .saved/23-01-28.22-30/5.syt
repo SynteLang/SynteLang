@@ -1,0 +1,15 @@
+in 1/2s
+posc 0
+mul 4
+clip 0
+flip 
+exp 7
+lpf 250hz
+out vca
+mul 25hz
++ 65hz
+sino 
+mul vca
+mul 2
+tanh 
+mix 

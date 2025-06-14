@@ -1,0 +1,34 @@
+/euc 6,16
+lt 0.5
+[ bd
+out r
+dirac
+down 110ms
+out vca
+push
+gt 0.99
+mul 0.25
+out p
+flip
+out s
+pop
+mul 0.1
++ r
+down 110ms
+mul 90hz
+mul @
+out ^freq
++ a
+mul s
+mod 1
+out a
+sine
++ p
+mul vca
+mul 12db
+lpf 40hz
+push
+pop
+]
+bd 1.1
+mix

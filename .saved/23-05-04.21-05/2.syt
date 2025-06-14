@@ -1,0 +1,22 @@
+in 1.3hz
+sino
+pan 2
+mul 0.05
++ 1
+mul 90bpm
+* 3
+out t
+from 1
+mul -8db
+out m
+from 0
++ m
++ c
+hpf 100hz
+tanh
+tape t
+lpf 5khz
+/ 1.1
+out c
+mul 18db
+mix 

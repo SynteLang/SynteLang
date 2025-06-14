@@ -1,0 +1,28 @@
+/* rvrb
+in 1.2hz
+sino
+mul 0.03
++ 1
+mul 23ms
+out t
+from 1
+out m
+from 2
+out+ m
+from 3
+out+ m
+from 7
+out+ m
+from 9
++ m
++ c
+tape 26ms
+/ 2
+tap t
+/ 2
+tap 70ms
+4lp
+lpf 8khz
+mul 0.35
+out c
+out dac

@@ -1,0 +1,17 @@
+/b 1,0
+gt 0.25
+mul 8
+out p
+/b 1,0
+gt 0.5
+mul 2
+out+ p
+/b 1,0
+gt 0.75
+mul -5
++ p
+/ 12
+out Pitch
+base 2
+mul 352hz
+.out pitch

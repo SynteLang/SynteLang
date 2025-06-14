@@ -1,0 +1,54 @@
+/* sn
+in 3hz
+osc
+tri
+- 0.1
+out tr
+in 4hz
+sq
++ 1
+out v
+in 140/1.5bpm
+mul Phi
+pulse 1/4
+range 6,9
+mul 3hz
+sq
+dirac
+down 2155ms
+exb 5
+out env
+exb 3
+push
+mul 2
++ 1
+out e
+pop
++ s
+noise
+hpf 3khz
+out n
+in 20
+noise
+lpf 5s
++ 1
+mul e
+mul 330/1hz
+/ v
+osc
+tri
+cv2a
+mul 1.5
+tanh
+push
+- 0.2
+clip 0
+out s
+pop
++ n
+hpf 330*2hz
+hpf 330/2hz
+mul env
+mul tr
+lpf 1khz
+mix

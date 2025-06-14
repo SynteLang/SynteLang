@@ -1,0 +1,18 @@
+in 3.7hz
+sino
+mul 0.01
++ 1
+mul pitch
+out t
+from 2
++ c
+hpf 100hz
+lpf 7khz
+lpf 7khz
+tape t
+hpf 100hz
+lpf 7khz
+lpf 7khz
+out c
+/ 10
+out dac

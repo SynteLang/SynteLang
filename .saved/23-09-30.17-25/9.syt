@@ -1,0 +1,23 @@
+in 1hz
+pulse 0.1
+mul 0.9998
+flip
+out f
+in 4s
+sq
+out gt
+in 1/7hz
+osc
+mul 5000!
+mul mousex
+mod 1
+8bit 7
++ 3/7
+8bit 12
+- 3/7
+s/h gt
+lpf f
+smooth
+base 2
+mul 330hz
+.out pitch

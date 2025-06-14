@@ -1,0 +1,40 @@
+/* bass
+in 1.7hz
+sq
+range 1/1.5,1
+out s
+/b 1,0
+gt 0.5
+range 1,1.5
+mul s
+s/h g
+out p
+in 1s
+osc
+tri
+range 0.7,1.2
+out t
+/b 8,0
+push
+lt 0.5
+out g
+pop
+down 10ms
+trn t
+smooth
+out vca
+in 40hz
+sino
+mul 0.03
++ 1
+mul 83hz
+mul p
+sino
+mul 40hz
++ 44hz
+mul p
+sino
+hpf 100hz
+mul vca
+mul 6db
+mix

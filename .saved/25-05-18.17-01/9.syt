@@ -1,0 +1,6 @@
+in 4hz
+sq
+dec 80ms
+mul 440hz
+bdfm 240hz,2
+mix

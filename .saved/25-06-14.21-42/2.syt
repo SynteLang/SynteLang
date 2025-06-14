@@ -1,0 +1,8 @@
+/* sh
+/b 16,0
+flip
+trn 4
+noise
+hpf 5khz
+mul 6db
+mix

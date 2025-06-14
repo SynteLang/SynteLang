@@ -1,0 +1,9 @@
+in tempo
+posc 0
+trn 3
+lpf 25hz
+out vca
+in 110hz
+sino 
+mul vca
+mix 

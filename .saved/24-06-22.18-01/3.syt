@@ -1,0 +1,10 @@
+/b 16,0
+lt 0.5
+push
+lpf 55hz
+out vca
+pop
+hh 23ms
+mul vca
+hpf 5khz
+mix

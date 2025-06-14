@@ -1,0 +1,13 @@
+in 10.1/2s
+osc 
+tri
+mul 5
++ 1
+out f
+in 10.1/20s
+posc 0 
+flip 
+exp f
+mul 220hz
+sino 
+mix 

@@ -1,0 +1,18 @@
+in 7hz
+sino 
+mul 0.01
++ 1
+mul 12hz
+out t
+from 0
++ c
+tape t
+mul 1.2
+tap 110ms
+lpf 2khz
+/ 1.7
+hpf 300hz
+out c
+/ 3
+lpf 1khz
+out dac

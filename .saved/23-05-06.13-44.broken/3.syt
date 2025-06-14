@@ -1,0 +1,25 @@
+in 89s
+* 2
+sq 
+smooth 
+out Gate
+in 180bpm
+posc 0
+lt 0.15
+hpf 25hz
+lpf 100hz
+mul 10
+push 
+mul 150hz
+out f
+pop 
+noise 
+lpf 100hz
+lpf 100hz
+lpf 100hz
+lpf 100hz
+lpf 100hz
+hpf 80hz
+mul 45db
+mul Gate
+mix 

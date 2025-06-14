@@ -1,0 +1,14 @@
+in 5hz
+sq
+mul 0.2
++ 1
+out p
+in 1.5s
+pulse 0.2
+smooth
+out vca
+in 0.5/1.5khz
+mul p
+sino
+mul vca
+mix

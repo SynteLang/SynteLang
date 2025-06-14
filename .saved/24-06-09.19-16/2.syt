@@ -1,0 +1,14 @@
+from 0
+out m
+from 3
+out+ m
+from 6
++ m
++ f
+push
+tape 123ms
+mul 0.3
+4lp
+out f
+pop
+out dac

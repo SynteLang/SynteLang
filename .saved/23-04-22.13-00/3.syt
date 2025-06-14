@@ -1,0 +1,16 @@
+in tempo
+* 1.5
+posc 0
+lt 0.5
+s/h grid
+dirac 
+down 10ms
+gt 0.25
+noise 
++ c
+tape 440hz
+lpf 4khz
+mul -1
+out c
+catch
+mix 

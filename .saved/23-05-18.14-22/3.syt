@@ -1,0 +1,8 @@
+in tempo
+* 5/4
+syq 0
+s/h grid
+dirac 
+down 125ms
+noise 
+mix 

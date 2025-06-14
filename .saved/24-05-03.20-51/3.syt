@@ -1,0 +1,5 @@
+/euc 12,32
+lt 0.5
+hh 150ms
+mul -12db
+mix

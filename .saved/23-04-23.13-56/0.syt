@@ -1,0 +1,13 @@
+in 2s
+osc 
+8bit 7
+out x
+mul x
++ x
++ 0.605
+mod 1
+8bit 12
+base 2
+mul 330hz
+sino 
+mix 

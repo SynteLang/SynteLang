@@ -1,0 +1,19 @@
+in 3s
+sq
+mul 3
++ 1
+out b
+/b 1,0
+push
+lt 0.25
+lpf 200hz
+out vca
+pop
+trn b
+mul 120hz
+sino
+mul vca
+mul 4
+tanh
+lpf 200hz
+mix

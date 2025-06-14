@@ -1,0 +1,30 @@
+/* rvrb
+in 7hz
+sino
+exb -3
+range 125ms,126ms
+out t
+from 0
+out m
+out+ m
+from 6
+mul -12db
+out+ m
+from 3
+hpf 3khz
+out+ m
+from 4
+out+ m
+from 8
+mul 6db
++ m
++ c
+hpf 200hz
+tape 50ms
+tap t
+lpf 8khz
+4lp
+mul 0.47
+out c
+mul -12db
+out dac

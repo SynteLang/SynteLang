@@ -1,0 +1,15 @@
+/b 16,0
+lt 0.5
+out gt
+/b 2,2/3
+lt 0.5
+rise wavR
+s/h gt
+out st
+/b 1,0
+- st
+mul 0.125
+wav local
+hpf 150hz
+mul 6db
+out dac

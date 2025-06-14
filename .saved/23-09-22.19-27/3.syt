@@ -1,0 +1,15 @@
+in 11s
+pulse PW
+out ^g
+in 2.5hz
+sq
+mul ^g
+s/h grid
+dirac
+down 200ms
+smooth
+out vca
+in 220hz
+sino
+mul vca
+mix

@@ -1,0 +1,9 @@
+in 135bpm
+/ 16
+sq
+smooth
+level 5
+in 135bpm
+/ 4
+osc
+.out sync

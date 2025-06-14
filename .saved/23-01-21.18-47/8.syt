@@ -1,0 +1,7 @@
+in 5s
+osc 
+mul 3
+tanh
+mul 1/2
++ 1/2
+.out Fb

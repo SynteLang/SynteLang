@@ -1,0 +1,24 @@
+in 3.7hz
+sino
+mul 0.01
++ 1
+mul 23ms
+out t0
+all
++ c1
+mul 0.5
+out m
+mul 2
++ c
+hpf 100hz
+tanh
+buff0 t0
+lpf 12khz
+mul -0.5
++ m
+out c
+buff1 153ms
+lpf 12khz
+mul 0.5
+out c1
+out dac

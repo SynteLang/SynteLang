@@ -1,0 +1,51 @@
+/* hvr
+in 7s
+pulse 1/8
+s/h grid
+lpf 7hz
+mul 1
++ 1
+out f2
+in 3s
+sq
+s/h grid
+range 1,1.25
+in 55*1.25hz
+out p
+in 140*2bpm
+osc
+tri
+mul 2
+mul f2
+base 2
+mul p
+out f
+in 9hz
+sino
+mul 0.005
++ 1
+mul 12ms
+out ch
+in p
+osc
+flip
+lpf f
+out m
+in p
+mul 1.03
+osc
+lpf f
++ m
+cv2a
+hpf 220hz
+out fx
+tape ch
+4lp
++ fx
+mul 12db
+hpf 100hz
+lpf f
+lpf f
+lpf f
+lpf f
+mix

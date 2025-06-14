@@ -1,0 +1,10 @@
+/* k
+in 2hz
+posc 0
+trn 4
+bdfm 16,400hz
+hpf 20hz
+mul -3db
+lpf 400hz
+lpf 800hz
+out dac

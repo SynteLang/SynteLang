@@ -1,0 +1,13 @@
+in tempo
+/ 3
+posc 0 
+lt 0.5 
+out vca
+in tempo
+* 4
+posc 0
+flip 
+noise 
+mul vca
+mul -4db
+mix 

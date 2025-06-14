@@ -1,0 +1,23 @@
+/* sn
+in 2.5s
+pulse 0.25
+s/h grid
+range 2,12
+out b
+/b b,0
+trn 4
+exb 5
+out vca
+exb 20
++ 1
+mul 220hz
+sqr
+out m
+in 1
+noise
+hpf 3khz
++ m
+lpf 3khz
+mul vca
+mul 18db
+mix

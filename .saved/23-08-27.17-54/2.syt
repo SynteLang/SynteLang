@@ -1,0 +1,19 @@
+in 10s
+osc
+tri
++ 0.5
+out f
+in 7hz
+sino
+mul 0.0003
++ 1
+mul 7.5/3hz
+out t
+from 0
++ c
+tape t
+lpf 1khz
+/ f
+out c
+mul -4db
+out dac

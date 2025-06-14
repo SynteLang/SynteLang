@@ -1,0 +1,12 @@
+in 124bpm
+mul mousex
+posc 0
+lt 0.5
+count 4
+mul ln5
+/ 2
+mod ln2
+mul 2
+base 2.718281828
+mul 110hz
+.out pitch

@@ -1,0 +1,20 @@
+in 1.2s
+sq
+s/h grid
+out vca
+in 155bpm
+mul 16.75
+sq
+s/h grid
+hh 55ms
+hpf 4khz
+mul vca
++ c
+push
+tape 155/1.5bpm
+hpf 200hz
+pad
+pad
+out c
+pop
+mix

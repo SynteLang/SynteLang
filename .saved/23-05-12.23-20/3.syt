@@ -1,0 +1,10 @@
+from 0
+out m
+from 1
+sum m
++ c
+tape 450ms
+lpf 5khz
+/ 1.5
+out c
+out dac

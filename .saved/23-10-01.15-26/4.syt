@@ -1,0 +1,14 @@
+/b 32,0
+flip
+smooth
+out vc
+in Vca
+flip
+mul vc
+smooth
+out vca
+in pitch
+mul 3/16
+sino
+mul vca
+mix

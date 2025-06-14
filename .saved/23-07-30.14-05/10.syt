@@ -1,0 +1,11 @@
+/b 1,0
+lt 0.5
+smooth 
+out fl
+in Level0
+mul fl
+level 0
+in fl
+flip 
+mul Level1
+.level 1

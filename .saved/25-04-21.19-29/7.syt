@@ -1,0 +1,12 @@
+/b 4,0.5
+trn 1.1
+exb 3
+lpf 50hz
+out vca
+mul 0.001
++ 1
+mul 550/12hz
+pm vca
+mul vca
+mul 4db
+mix

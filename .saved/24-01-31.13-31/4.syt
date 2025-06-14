@@ -1,0 +1,4 @@
+in tempo
+/ 16
+osc
+.out sync

@@ -1,0 +1,6 @@
+from 7
++ c
+tape 5.01/1.5hz
+/ 1.2
+out c
+out dac

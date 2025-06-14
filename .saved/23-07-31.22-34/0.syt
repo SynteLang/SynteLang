@@ -1,0 +1,13 @@
+in 50hz
+noise 
+lpf 1hz
+out n
+in 3.7hz
+sino 
+mul 0.1hz
+in n
++ pitch
+sqr 
+lpf 2khz
+mul -4db
+mix 

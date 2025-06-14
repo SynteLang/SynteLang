@@ -1,0 +1,35 @@
+in 30hz
+osc
+exb -3
+out v
+/b 18,0.75
+flip
+trn 4
+exb 5
+lpf 50hz
+mul v
+out vca
+in 330hz
+/ 5
+noise
+lpf 1hz
++ 330*2hz
+pulse 0.975
+push
+cv2a
+hpf 330hz
+out m
+pop
+dirac
+mul 1/8
+osc
+lt 0.5
+cv2a
+hpf 2khz
+hpf 2khz
++ m
+lpf 10khz
+mul vca
+osc
+mul vca
+mix

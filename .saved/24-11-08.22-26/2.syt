@@ -1,0 +1,24 @@
+in 2.5hz
+sq
+range 2hz,8*1.5hz
+osc
+lt 0.5
+s/h grid
+dirac
+down 300ms
+exp 12
+out vca
+noise
+out m
+in 22hz
+pulse 0.1
+out+ m
+in 22hz
+mul Phi
+pulse 0.7
++ m
+hpf 8khz
+hpf 8khz
+mul vca
+mul -6db
+mix

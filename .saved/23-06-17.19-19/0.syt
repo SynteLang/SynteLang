@@ -1,0 +1,24 @@
+in 1s
+posc 0
+flip 
+exp 2
+smooth 
+out vca
+mul 2hz
++ 440hz
+out p
+gt 441.973hz
+smooth
+noise 
+lpf 440hz
+lpf 440hz
+mul 12db
++ c
+tape p
+lpf 12khz
+out c
+mul vca
+lpf 2khz
+lpf 2khz
+mul -12db
+out dac

@@ -1,0 +1,7 @@
+in 1.5hz
+pulse 1/2
+s/h grid
+flip
+smooth
+smooth
+.lvl 5

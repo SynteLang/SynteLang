@@ -1,0 +1,56 @@
+in 3s
+sino
+mul 9
+out er
+in 3.7hz
+sino
+mul 0.003
++ 1
+mul 100ms
+out t
+in 5s
+osc
+tri
+mul 3
+- 2
+clip 0
++ 1
+out f
+- 1
+mul -6db
+flip
+out duck
+in 12hz
+sq
+push
+lpf 50hz
+out vca
+pop
+count 2
+lt 1
++ 1
+out p
+in 3s
+sino
+pow er
+base 2
+mul p
+mul 330/4hz
+osc
+mul f
+sine
+mul vca
+out m
+hpf 500hz
++ c
+hpf 100hz
+tape t
+4lp
+clip 1
+mul 0.9
+lpf 2khz
+out c
+clip 1
++ m
+mul duck
+mix

@@ -1,0 +1,16 @@
+/* hh
+in 2hz
+sino
+pan 2
+in 4hz
+osc
+tri
+mul 2
++ 1
+mul 33ms
+out t
+/b 16,0
+lt 0.5
+hh t
+hpf 2khz
+mix

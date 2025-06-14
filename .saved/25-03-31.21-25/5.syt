@@ -1,0 +1,46 @@
+/* lead
+in 30s
+osc
+- 0.6
+clip 0
+out o
+in 7hz
+sino
+mul 0.05
++ 1
+mul 5ms
+out t
+/b 8,0
+flip
+exb 4
+smooth
+smooth
+out vca
+in 17s
+osc
+out s
+in 3s
+osc
++ s
+/ 2
+mul o
+phryg
+s/h grid
+flip
+down 200ms
+flip
+lpf 25hz
+mul 440/1.25hz
+osc
++ pm
+sine
+push
+mul 0.13
+mul vca
+out pm
+pop
+mul vca
+out fx
+alp1 t,0.5
++ fx
+mix

@@ -1,0 +1,11 @@
+in 3s
+sq
+mul 2
++ 2
+mul 3
+out b
+/euc b,16
+hpf 7hz
+noise
+hpf 1khz
+mix

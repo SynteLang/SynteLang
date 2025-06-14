@@ -1,0 +1,13 @@
+in 3hz
+osc
+tri
+range 16hz,26hz
+out t
+in 7hz
+pulse 0.45
+s/h grid
+hpf t
+abs
+noise
+hpf 8khz
+mix

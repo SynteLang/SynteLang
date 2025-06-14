@@ -1,0 +1,8 @@
+in 2.5/12s
+pulse 0.05
+smooth
+out vca
+in 660/1.5hz
+sino
+mul vca
+mix

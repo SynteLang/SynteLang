@@ -1,0 +1,43 @@
+in 4hz
+sq
+cv2a
+mul 0.5
+lpf 20hz
+pan 0
+in 32s
+sq
+flip
+smooth
+out gt
+in 2hz
+osc
+out v
+in 2s
+sq
+s/h grid
+range 4/5,1.2
+mul 2
+out p
+in 0.75s
+sq
+range 4hz,8hz
+sq
+mul v
+smooth
+smooth
+out vca
+in grid
+down wavR
+mul 0.75
+mul p
+mod 1/8
++ 3/8
+wav chill
+fft
+gafft 0.01
+ifft
+mul vca
+mul gt
+lpf 6khz
+mul -10db
+mix

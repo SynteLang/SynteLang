@@ -1,0 +1,11 @@
+in sync
++ a
+mod 3
+out a
+flip
+clip 0
+dirac
+down 100ms
+noise
+mul -6db
+mix

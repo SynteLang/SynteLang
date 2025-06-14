@@ -1,0 +1,15 @@
+in tempo
+/ 1.5
+pulse 2/3
+mul 0.5
++ 0.5
+lpf 10hz
+out s2
+out s
+in 135bpm
+out tempo
+/ 16
+osc 
+mul s
+lpf 25hz
+.out sync

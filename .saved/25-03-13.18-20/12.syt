@@ -1,0 +1,7 @@
+in 1hz
+osc
+mul 8
+base 2
+mul 20hz
+sino
+pmix

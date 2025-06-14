@@ -1,0 +1,14 @@
+/b 8,0
+trn 16
+out p
+gt 0.5
+lpf 100hz
+out vca
+out m
+in 165hz
+mul p
+sino
+mul vca
++ m
+lpf 200hz
+out dac

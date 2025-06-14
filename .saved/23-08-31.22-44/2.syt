@@ -1,0 +1,23 @@
+in 3.5hz
+sino
+mul 0.03
++ 1
+mul 23ms
+out t
+in 5hz
+sqr
+mul 0.003
++ 1
+mul pitch
+saw
+out m
+in pitch
+* 1.002
+saw
++ m
+hpf 10hz
+lpf 3khz
+out c
+tape t
++ c
+mix

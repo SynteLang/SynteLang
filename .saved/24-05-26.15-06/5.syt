@@ -1,0 +1,43 @@
+in 7hz
+sino
+mul 0.1
++ 1
+mul 120ms
+out t
+in 7s
+osc
+tri
++ 0.5
+out vca
+in 7s
+sq
+mul .25
++ 1
+out p
+in 4hz
+osc
+exp 7
+- 1/32
+out vcsa
+in 440/4hz
+mul p
+saw
+out m
+in 442/8hz
+mul p
+saw
++ m
+mul 0.5
+mul vcsa
+mul vca
++ c
+push
+tape t
+hpf 50hz
+lpf 830hz
+mul 2.999
+tanh
+out c
+pop
+lpf 420hz
+mix

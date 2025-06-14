@@ -1,0 +1,27 @@
+in 2hz
+sino
+mul 0.05
++ 1
+mul 55ms
+out ch
+from 1
+out m
+from 2
+out+ m
+from 3
++ m
++ c
+hpf 200hz
+tape 116*3bpm
+mul 2
+tap ch
+mul 0.5
+out a
+4lp
+mul 0.4
++ a
+mul 0.6
+lpf 5khz
+out c
+mul -14db
+mix

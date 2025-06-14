@@ -1,0 +1,19 @@
+>sync 
+in 135bpm
+out tempo
+/ 2
+euclid 3,5,0
+dirac 
+down 500ms
+base 2
+- 1
+out vca
+in 200hz
+noise 
++ pitch
+saw 
+mul vca
+lpf 1khz
+lpf 2khz
+mul -6db
+mix 

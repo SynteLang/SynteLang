@@ -1,0 +1,10 @@
+/* bd
+/s 13,0
+s/h grid
+dec 100ms
+exb 4
+bdfm 16,320*6hz
+hpf 100hz
+lpf 600hz
+mul -2db
+out dac

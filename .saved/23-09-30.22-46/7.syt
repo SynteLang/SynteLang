@@ -1,0 +1,13 @@
+/b 16,0
+trn 5
+smooth
+out Vca
+mul 25hz
++ 65hz
+sino
+mul Vca
+mul 2
+tanh
+lpf 220hz
+mul 10db
+mix

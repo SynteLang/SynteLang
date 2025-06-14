@@ -1,0 +1,21 @@
+in 1.5hz
+pulse 0.75
+s/h grid
+out p
+/b 16,0
+lt 0.5
+mul p
+smooth
+out vca
+/b 2,0
+- 0.875
+clip 0
+smooth
++ 1
+mul 880*1.5hz
+saw
+tanh
+lpf 880*2hz
+chorII
+mul -8db
+mix

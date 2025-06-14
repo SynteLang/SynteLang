@@ -1,0 +1,35 @@
+in 135/3bpm
+osc
+flip
+in 1
+mul 220hz
+out f
+/b 8,0.5
+flip
+mul 0.5
++ 1
+out p
+/b 8,0
+flip
+exp 3
+smooth
+out vca
+mul 0.5
++ 1
+mul p
+out s
+in 59.5hz
+osc
+mul s
+sine
+out m
+in 60.5hz
+osc
+mul s
+sine
++ m
+lpf f
+lpf f
+mul vca
+pad
+mix

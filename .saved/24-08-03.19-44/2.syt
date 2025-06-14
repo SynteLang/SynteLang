@@ -1,0 +1,34 @@
+in 7s
+pulse 0.25
+mul .125
++ 1
+out n
+in 3.4hz
+sino
+mul 0.003
++ 1
+mul 73ms
+out t
+in 3.7hz
+sino
+mul 0.01
++ 1
+mul 330*0.75hz
+mul n
+out p
+saw
+out m
+in 2.7hz
+sino
+mul 0.01
++ 1
+mul p
+mul 1.01
+saw
++ m
++ c
+tape t
+lpf 1khz
+mul 0.7
+out c
+mix

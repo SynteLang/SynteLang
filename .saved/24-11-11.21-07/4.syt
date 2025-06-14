@@ -1,0 +1,7 @@
+in grid
+dirac
+down 6ms
+noise
+hpf 2khz
+hpf 2khz
+mix

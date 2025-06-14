@@ -1,0 +1,18 @@
+in 550/3hz
+osc
+tri
+out a
+in 110hz
+osc 
+flip
+out b
+in 110hz
+noise 
+lpf 5hz
++ 110hz
+osc 
++ b
+mul a
++ b
+lpf 1200hz
+mix 

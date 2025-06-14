@@ -1,0 +1,11 @@
+in 2.5hz
+out tempo
+* 2
+sq 
+out grid
+in tempo
+* 3/4
+sq 
+s/h grid
+CB pitch
+mix 

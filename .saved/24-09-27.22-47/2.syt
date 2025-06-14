@@ -1,0 +1,18 @@
+in 0.5hz
+sq
+s/h grid
+mul 4
++ 4
+out b
+in 3hz
+osc
+tri
+mul 2
++ 1
+mul 80ms
+out t
+/b 6,0
+lt 0.5
+s/h grid
+hh t
+mix

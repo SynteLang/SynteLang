@@ -1,0 +1,10 @@
+in 13hz
+sq
+s/h grid
+dirac
+down 50ms
+lpf 55hz
+noise
+hpf 1khz
+hpf 2khz
+mix

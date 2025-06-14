@@ -1,0 +1,5 @@
+in 2s
+osc 
+mul 1500hz
+sino 
+mix 

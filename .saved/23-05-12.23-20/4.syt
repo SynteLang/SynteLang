@@ -1,0 +1,12 @@
+in 135bpm
+* 2
+posc 0
+mul 3
+clip 0
+flip 
+exp 5
+smooth 
+out vca
+all 
+mul vca
+mix 

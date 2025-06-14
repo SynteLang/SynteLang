@@ -1,0 +1,15 @@
+in tempo
+/ 1.5
+pulse 0.5
+mul 0.5
+out p
+in tempo
+/ 1
+posc p
+flip
+lpf 35hz 
+out vca
+all 
+mul vca
+mul -6db
+out dac

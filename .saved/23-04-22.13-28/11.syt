@@ -1,0 +1,19 @@
+in mousex
+smooth
+mul 2khz
+out f
+in tempo
+/ 1.5
+posc 0 
+lt 0.5 
+out vca
+in tempo
+* 4
+posc 0
+flip 
+noise 
+mul vca
+mul -4db
+lpf f
+lpf f
+mix 

@@ -1,0 +1,19 @@
+/b 1.5,0.75
+lt 0.2
+smooth
+out gt
+/b 32,0
+flip
+trn 16
+smooth
+out env
+in 440*4hz
+sino
+out x
+mul x
+- 0.5
++ x
+mul env
+mul gt
+mul 3db
+mix

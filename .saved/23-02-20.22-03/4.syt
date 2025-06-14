@@ -1,0 +1,14 @@
+in 4s
+osc 
+flip 
+exp 7
+lpf 100hz
+out vca
+in 432hz
+sino 
+out m
+in 528hz
+sino 
++ m
+mul vca
+mix 

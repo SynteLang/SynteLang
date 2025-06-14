@@ -1,0 +1,29 @@
+/* bass
+/s 1,0
+range 1,1.2
+out s
+/b 2,0
+lt 1/4
+range 1,1.2
+mul s
+in 1
+out p
+/b 1,0
+gt 1/4
+range 4,1
+out b
+/b b,0
+flip
+smooth
+smooth
+out vca
+mul 0.01
++ 1
+mul 55hz
+mul p
+sino
+mul vca
+mul 2
+tanh
+lpf 220hz
+mix

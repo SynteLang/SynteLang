@@ -1,0 +1,20 @@
+in 1.2hz
+osc
+mul 440hz
+out f
+/b 16,0.5
+lpf 25hz
+out vca
+in 3hz
+osc
+tri
+mul 1
+out ph
+in pitch
+osc
+mul ph
+sine
+mul vca
+tanh
+lpf f
+mix

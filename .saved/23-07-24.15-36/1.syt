@@ -1,0 +1,10 @@
+/b 8,0
+trn 4
+out vca
+mul 25hz
++ 80hz
+sino 
+mul vca
+tanh 
+lpf 250hz
+mix 

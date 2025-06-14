@@ -1,0 +1,22 @@
+/* cl
+in 3s
+osc
+tri
+out t
+/b 2,0
+trn 12
+noise
+gt t
+down 40ms
+out vca
+in 80hz
+osc
+flip
+exp 3
+noise
+hpf 1khz
+mul vca
+tanh
+lpf 6khz
+mul 8db
+mix

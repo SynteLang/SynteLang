@@ -1,0 +1,15 @@
+/b 2,0.5
+lt 0.07
+hpf 16hz
+abs
+gt 0.5
+hpf 18hz
+abs
+noise
+hpf 700hz
+hpf 700hz
+lpf 700hz
+lpf 700hz
+mul 40
+tanh
+mix

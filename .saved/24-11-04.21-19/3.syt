@@ -1,0 +1,12 @@
+in 2s
+sq
+mul 3hz
++ 2hz
+sq
+s/h grid
+dirac
+down 80ms
+exp 5
+- 1/32
+noise
+mix

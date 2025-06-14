@@ -1,0 +1,14 @@
+in 1hz
+sq
+out gt
+in 1.5s
+osc
+mul 5hz
+osc
+mul .5
+s/h gt
+8bit 12
+lpf 2hz
+base 2
+mul 330hz
+.out pitch

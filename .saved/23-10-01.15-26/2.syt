@@ -1,0 +1,23 @@
+in 135bpm
+/ 16
+out t
+osc
+out sync
+gt 0.5
+mul 0.125
+out p
+in sync
+gt 0.74
+mul -0.25
++ p
++ 1
+mul 440hz
+lpf 25hz
+out pitch
+/b 64,0
+trn 4
+exp 5
+- 1/32
+noise
+mul -6db
+mix

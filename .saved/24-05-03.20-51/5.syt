@@ -1,0 +1,15 @@
+/b 2,0
+gt 0.5
+mul .125
++ 0.75
+out h
+/b 4,0
+gt h
+smooth
+out vca
+/b 64,0
+lt 0.5
+hh 44ms
+mul -12db
+mul vca
+mix

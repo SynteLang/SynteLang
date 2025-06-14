@@ -1,0 +1,10 @@
+in 2s
+sino
+pan 9
+in wavR
+mul 2
+posc 0
+wav sick
+lpf 3khz
+hpf 1khz
+mix

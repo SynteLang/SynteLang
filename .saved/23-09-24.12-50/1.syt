@@ -1,0 +1,16 @@
+in 3.7hz
+sino
+mul 0.003
++ 1
+mul 4hz
+mul Phi
+out t
+from 0
++ c
+mul 0.7
+hpf 100hz
+tape t
+lpf 3khz
+out c
+mul -12db
+out dac

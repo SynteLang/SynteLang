@@ -1,0 +1,32 @@
+in 3s
+osc
+tri
+range 13ms,3ms
+out t
+/b 6,0
+lt 0.5
+s/h grid
+dirac
+down t
+out v
+in 15s
+pulse 1/7
+range 1,4
+out b
+/b b,0.75
+trn 20
+exb 5
++ v
+out vca
+in 80hz
+osc
+flip
+exp 3
+noise
+hpf 1khz
+mul vca
+mul 22db
+tanh
+mul 14db
+lpf 2khz
+mix

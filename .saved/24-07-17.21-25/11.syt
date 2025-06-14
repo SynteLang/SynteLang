@@ -1,0 +1,19 @@
+in 150ms
+sq
+s/h grid
+mul 4
++ 8
+out b
+/b b,0
+trn 12
+push
+gt 0.1
+smooth
+smooth
+out vca
+pop
+mul 165hz
++ 25hz
+sino
+mul vca
+mix

@@ -1,0 +1,23 @@
+/* bass
+/b 2,0
+flip
+exb 3
+out vca
+push
+mul 3
+base 2
+mul 55hz
+out f
+pop
+mul 0.01
++ 1
+mul 55hz
+sino
+mul vca
+mul 4
++ 1.5
+tanh
+lpf f
+lpf f
+lpf f
+mix

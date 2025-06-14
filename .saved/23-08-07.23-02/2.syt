@@ -1,0 +1,9 @@
+>sync
+in 321bpm
+posc 3/8
+trn 8
+smooth
+out vca
+mul 145hz
+sino
+mix

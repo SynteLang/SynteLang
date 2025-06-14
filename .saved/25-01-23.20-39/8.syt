@@ -1,0 +1,33 @@
+in 2hz
+sino
+mul 0.02
++ 1
+out v
+in 4hz
+sq
+range 1,1.25
+out s
+in 2.5hz
+sq
+range 1.25,1
+mul s
+lpf 50hz
+mul 440*2hz
+out p
+mul v
+osc
+mul 1.2
+sine
+out m
+in p
+osc
+mul 1.2
+sine
++ m
+out fx
+chorII
++ fx
+hpf 500hz
+mul -16db
+lpf 440hz
+mix

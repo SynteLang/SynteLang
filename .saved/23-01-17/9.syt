@@ -1,0 +1,12 @@
+in 3hz
+osc 
+flip
+sub 1
+mul ln2
+mul 10
+base E
+lpf 200hz
+out vca
+from 6
+mul vca
+out dac

@@ -1,0 +1,30 @@
+in 0.6
+out n
+in 3hz
+sq
+s/h grid
+dirac
+down 330ms
+exp 12
+smooth
+out env
+mul n
+out pm
+in pitch
+sq
+mul pm
+-- 1
+mul n
+mul pitch
+osc
+sine
+mul env
+out x
+mul x
+- 0.5
+mul 0.2
++ x
+tanh
+lpf 500hz
+mul 8db
+mix

@@ -1,0 +1,12 @@
+in 2hz
+posc 0
+mul 3
+clip 0
+flip 
+mul 1.1
+clip 0
+lpf 200hz
+mul 65hz
++ 20hz
+sino 
+mix 

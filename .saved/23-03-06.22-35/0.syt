@@ -1,0 +1,19 @@
+in 2hz
+osc 
+flip 
+exp 5.5
+smooth 
+out vca
+gt 0.07
+out gt
+in 800hz
+sq 
+out m
+in 540hz
+sq 
++ m
+mul vca
+mul gt
+hpf 750hz
+lpf 950hz
+mix 

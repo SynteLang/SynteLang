@@ -1,0 +1,24 @@
+in 1250ms
+pulse 0.95
+out vca
+in 13s
+pulse 0.7
+flip
+mul 8
++ 0.9
+lpf 1s
+out t
+in Vca
+lt 0.25
+hpf 3hz
+noise
++ c
+hpf 500hz
+push
+tape 3hz
+lpf 3khz
+mul t
+out c
+pop
+mul -6db
+mix

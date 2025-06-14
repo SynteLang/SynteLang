@@ -1,0 +1,6 @@
+/b 2,0.5
+flip
+trn 12
+noise
+mul -8db
+mix

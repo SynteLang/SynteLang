@@ -1,0 +1,3 @@
+in mousex
+lpf 2s
+.out 'Thr

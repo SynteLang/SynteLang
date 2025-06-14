@@ -1,0 +1,16 @@
+in 3.7hz
+sino 
+mul 0.01
++ 1
+mul 52ms
+out t
+from 2
++ c
+hpf 300hz
+tape t
+lpf 2khz
+lpf 2khz
+/ 1.2
+out c
+/ 2
+mix 

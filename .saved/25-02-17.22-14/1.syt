@@ -1,0 +1,60 @@
+/* maj7
+in 5s
+sq
+s/h grid
+range 1,1.125
+out s1
+in 7s
+sq
+range 1,1.125
+mul s1
+out s
+in 12hz
+sq
+s/h grid
+range 3,8
+out b
+/b b,0
+lt 0.5
+out g
+s/h grid
+dirac
+down 200ms
+exb 3
+mul 3
+clip 0
+lpf 98hz
+out vca
+mul 2.5
+out f
+/b 3,0.5
+lt 1/8
+s/h grid
+range 1,1.2
+mul s
+s/h g
+mul 220/1.5hz
+out p
+juno f
+out m
+in p
+mul 1.5
+juno f
+out+ m
+in 11/12
+base 2
+mul p
+juno f
+mul -4db
+out+ m
+in p
+mul 1.25
+juno f
++ m
+hpf 120hz
+mul vca
+out fx
+chorII
++ fx
+mul -16db
+mix

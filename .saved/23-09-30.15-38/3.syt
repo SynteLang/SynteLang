@@ -1,0 +1,11 @@
+in 14s
+sq
+mul 0.125
++ 1
+out p
+in 5s
+pulse 1/8
++ 1
+mul 330hz
+mul p
+.out pitch

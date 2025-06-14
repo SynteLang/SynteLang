@@ -1,0 +1,10 @@
+in 2.5/8hz
+sq 
+/ 2
+out ph
+in 2.5hz
+posc ph
+lt 0.5
+flip 
+smooth 
+.level 0

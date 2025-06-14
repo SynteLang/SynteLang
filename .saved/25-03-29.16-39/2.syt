@@ -1,0 +1,12 @@
+/* bd
+/b 2,0.5
+gt 5/8
+range 8,3
+out b
+/s b,0
+s/h grid
+dec 100ms
+bdfm 16,320hz
+lpf 660hz
+mul -3db
+out dac

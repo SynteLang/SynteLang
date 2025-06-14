@@ -1,0 +1,5 @@
+/b 4,0
+lt 0.5
+bd 1.0
+mul -4db
+mix

@@ -1,0 +1,9 @@
+in Vca
+mul 0.5
+flip
+out vca
+in pitch
+mul 1/2
+sino
+mul vca
+mix

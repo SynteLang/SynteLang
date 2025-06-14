@@ -1,0 +1,8 @@
+in 124bpm
+mul mousex
+posc 0
+flip 
+exp 5
+lpf 1000hz
+mul mousey
+.out Env

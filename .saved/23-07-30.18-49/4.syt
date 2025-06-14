@@ -1,0 +1,20 @@
+in 135bpm
+* 4
+sq 
+out grid
+in 0.5hz
+sq 
+mul 0.5
++ 1
+mul 135bpm
+out tempo
+posc 0
+lt 0.5
+s/h grid
+dirac 
+down 300ms
+exp 5
+mul -10db
+out Level0
+out Level1
+.level 2

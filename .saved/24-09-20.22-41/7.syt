@@ -1,0 +1,15 @@
+/b 4,0
+lt 0.5
+bd 6/11
+out x
+mul x
+mul x
++ x
+push
+abs
+lpf 55hz
+flip
+smooth
+out Duck
+pop
+mix

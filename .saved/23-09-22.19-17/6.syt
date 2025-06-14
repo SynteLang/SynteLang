@@ -1,0 +1,19 @@
+in 2s
+pulse PW
+out g
+in 10hz
+sq
+mul g
+s/h grid
+dirac
+down 450ms
+lpf 10hz
+out vca
+mul 25hz
++ 65hz
+sino
+mul vca
+mul 2
+tanh
+lpf 120hz
+mix

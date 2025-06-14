@@ -1,0 +1,6 @@
+in 5s
+sq
++ 1
+lpf 10hz
+mul 330/4hz
+.out pitch

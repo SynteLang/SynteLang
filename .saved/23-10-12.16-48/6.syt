@@ -1,0 +1,18 @@
+in 120bpm
+osc
+trn 3
+out vca
+in 150hz
+sino
+mul vca
+out m
+in 120bpm
+/ 2
+euclid 3,8,0
+dirac
+down 300ms
+smooth
+out Vca
+noise
++ m
+mix

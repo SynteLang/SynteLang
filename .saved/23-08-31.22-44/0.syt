@@ -1,0 +1,15 @@
+in 4hz
+sq
+out gt
+in 1.5s
+osc
+mul 5hz
+osc
+mod mousex
+s/h gt
+8bit 5
+8bit 12
+lpf 50hz
+base 2
+mul 330hz
+.out pitch

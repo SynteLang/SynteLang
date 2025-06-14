@@ -1,0 +1,12 @@
+/* k4
+/b 4,0
+flip
+exb 5
+mul 110hz
+osc
+tri
+hpf 20hz
+mul 3
+tanh
+lpf 110hz
+mix

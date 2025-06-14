@@ -1,0 +1,15 @@
+in 1.5s
+sq
+mul 4
++ 1
+mul 2
+out b
+in 1.5hz
+osc
+lpf 25hz
+out vca
+/euc b,8*2
+sn 30ms
+mul -14db
+mul vca
+mix

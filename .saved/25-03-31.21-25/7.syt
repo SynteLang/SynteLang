@@ -1,0 +1,23 @@
+/* rill
+in 2hz
+sino
+mul 0.01
++ 1
+mul 130*8bpm
+out t
+in 3hz
+sq
+s/h grid
+out g
+flip
+mul c
+out g1
+in F
+mul g
++ g1
+push
+tape t
+out c
+pop
+lpf 880*2hz
+out dac

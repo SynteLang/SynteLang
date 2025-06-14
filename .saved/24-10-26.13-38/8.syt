@@ -1,0 +1,45 @@
+in 7hz
+sino
+mul 0.03
++ 1
+out v
+in 1.5s
+sq
+s/h grid
+smooth
+out gt
+in 1.7s
+sq
+mul 6
++ 2
+mul 2
+out b
+/b b,0
+trn 1.5
+exp 3
+- 1/8
+smooth
+out vca
+/b 6,0
+lt 0.5
+s/h grid
+out grd
+in 3s
+osc
+mul 3
+s/h grd
+8bit 7
++ 0.1
+8bit 12
+base 2
+mul 220hz
+mul v
+sino
+mul gt
+chorII
+mul vca
+out m
+4lp
+mul 0.2
++ m
+mix

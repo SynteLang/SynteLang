@@ -1,0 +1,10 @@
+/b 2,0
+gt 0.5
+smooth
+out vca
+/euc 12,32
+dirac
+down 30ms
+noise
+mul vca
+mix

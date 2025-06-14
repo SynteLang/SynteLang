@@ -1,0 +1,36 @@
+/s 8,0
++ 1
+out o
+in 3s
+pulse 0.875
+s/h grid
+out s
+/s 1,0.75
+range 4,6
+mul s
+out b
+/s b,0
+s/h grid
+dec 100ms
+exb 4
+out env
+flip
+mul 1.5
+base 2
+mul 440/2hz
+mul o
+out p
+mul 2
+sino
+out pm
+in p
+osc
++ pm
+sine
+mul env
+lpf 3khz
+out fx
+buff3 5ms
++ fx
+mul 2db
+mix

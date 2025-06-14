@@ -1,0 +1,14 @@
+in 1.5hz
+mul Phi
+mul Phi
+mul Phi
+mul Phi
+mul Phi
+sq
+out grid
+in 135bpm
+out tempo
+/ 8
+osc
+s/h grid
+.out sync

@@ -1,0 +1,27 @@
+/b 1,0
+lt 0.75
+mul 0.2
++ 1
+out p
+/b 16,0
+push
+lt 0.5
+gt 0.3
+smooth
+smooth
+out vca
+pop
+trn 3
+mul 1.5
+lpf 55hz
+out fm
+in 100hz
+sino
+mul 100hz
+mul fm
++ 50hz
+mul p
+sino
+mul vca
+mul Duck
+mix

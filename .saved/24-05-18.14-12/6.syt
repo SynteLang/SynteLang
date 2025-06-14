@@ -1,0 +1,7 @@
+in 1
+lpf 3s
+level 0
+hpf 1s
+in 1
+smooth
+.level 1

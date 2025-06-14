@@ -1,0 +1,17 @@
+in 3s
+pulse PW
+out g
+in 1hz
+sq
+mul g
+s/h grid
+dirac
+down 300ms
+lpf 25hz
+out vca
+mul 25hz
++ 645hz
+sino
+mul vca
+pad
+mix

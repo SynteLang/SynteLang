@@ -1,0 +1,8 @@
+: stop
+in 1hz
+osc 
+flip 
+sub 1
+exp -10
+noise 
+mix 

@@ -1,0 +1,20 @@
+in 3.7hz
+sino 
+mul 0.01
++ 1
+mul 23ms
+out t
+in -75db
+noise 
+out n
+from 8
++ c
+tape t
++ n
+out ch
+lpf 1khz
+* 0.99
+out c
+in ch
+* -12db
+out dac

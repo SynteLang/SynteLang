@@ -1,0 +1,25 @@
+in 0.75*3hz
+sq
+mul 0.25
++ 1
+mul 220hz
+out f
+in 6hz
+osc
+flip
+exp 8
+smooth
+out g
+in wavR
+osc 
+mod 0.1
+wav local
+mul g
+hpf 1khz
+hpf 1khz
++ c
+tape f
+lpf 5550hz
+/ 1.03
+out c
+mix 

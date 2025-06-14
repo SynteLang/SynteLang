@@ -1,0 +1,23 @@
+in 3.5hz
+sino
+mul 0.01
++ 1
+mul 55*2hz
+out t
+from 0
+out m
+from 1
++ m
++ c
+hpf 100hz
+tanh
+tape t
+tap 13ms
+out fx
+4lp
+mul 0.1
++ fx
+mul 0.4
+lpf 1khz
+out c
+out dac

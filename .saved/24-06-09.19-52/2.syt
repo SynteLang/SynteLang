@@ -1,0 +1,10 @@
+in 300ms
+osc
+tri
+\ 300ms
++ 70ms
+out t
+/b 2,0.5
+lt 0.5
+sn t
+mix

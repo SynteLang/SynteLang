@@ -1,0 +1,15 @@
+in 2hz
+mul 5.01
+osc 
+flip 
+exp 6
+lpf 150hz
+out vca
+in 2hz
+step 5.01
+8bit 12
+base 2
+mul 440hz
+sino 
+mul vca
+mix 

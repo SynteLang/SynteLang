@@ -1,0 +1,10 @@
+/* hh
+in 140bpm
+mul 0.74
+sq
+s/h grid
+dirac
+down 40ms
+noise
+hpf 8khz
+mix

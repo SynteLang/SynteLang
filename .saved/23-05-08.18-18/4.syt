@@ -1,0 +1,7 @@
+from 3
++ c
+tape 15hz
+lpf 2khz
+/ 2
+out c
+out dac

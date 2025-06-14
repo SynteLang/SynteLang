@@ -1,0 +1,56 @@
+in 3.5hz
+sino
+mul 0.1
++ 1
+mul 32ms
+out t
+in 3s
+sq
+mul 0.25
++ 1
+lpf 20hz
+out s
+in 4s
+pulse 0.75
+flip
+mul 0.5
++ 1
+lpf 15hz
+mul s
+mul 2
+out p
+in 3s
+osc
+mul 15
++ 1
+mul 0.75hz
+sq
+s/h grid
+dirac
+push
+down 180ms
+- 0.5
+abs
+mul 2
+flip
+lpf 3hz
+mul 0.06
++ 1
+mul p
+mul 440/1.5hz
+out f
+pop
+down 10ms
+hpf 2khz
+mul 0.5
++ c
+tape f
+out fx
+tap t
+4lp
+mul 0.02
++ fx
+hpf 90hz
+lpf 18.5khz
+out c
+mix

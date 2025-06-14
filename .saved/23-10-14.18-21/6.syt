@@ -1,0 +1,25 @@
+/b 8,0
+flip
+exp 2
+smooth
+smooth
+out vca
+mul 3
+base 2
+mul pitch
+mul 1/4
+out f
+in 7.7hz
+sino
+mul 0.003
++ 1
+mul pitch
+mul 1/2
+out p
+saw
+mul vca
+tanh
+hpf 300hz
+lpf f
+lpf f
+mix

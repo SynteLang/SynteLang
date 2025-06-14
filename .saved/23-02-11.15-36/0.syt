@@ -1,0 +1,24 @@
+in 3.4hz
+osc
+tri
+mul 1/2
+out w
+in 8hz
+osc
+flip
++ w
+exp 6
+mul 600hz
+out f
+in 55hz
+saw 
++ r
+lpf f
+lpf f
+push 
+hpf f
+tanh
+mul 3
+out r
+pop 
+mix 

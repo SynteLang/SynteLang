@@ -1,0 +1,15 @@
+in 1.5s
+sq
+s/h grid
+dirac
+down 400ms
+out gt
+/b 32,0
+flip
+trn 32
+noise
+hpf 800hz
+lpf 7khz
+mul 6db
+mul gt
+mix

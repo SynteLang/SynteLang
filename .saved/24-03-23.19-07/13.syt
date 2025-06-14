@@ -1,0 +1,5 @@
+in mousex
+lpf 2s
+-- 1
++ 1e-9
+.out Thr

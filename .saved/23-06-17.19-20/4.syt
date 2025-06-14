@@ -1,0 +1,15 @@
+in 1hz
+posc 0.5
+out h
+tri
+base 2
+- 1
+mul 2hz
++ 1.5hz
+mul 1.5
+out tempo
+in h
+trn 6
+exp 7
+noise
+mix

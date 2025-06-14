@@ -1,0 +1,26 @@
+in 1/4hz
+sq
+mul 3
++ 1
+out oct
+in 1/12hz
+osc
+- 15/16
+clip 0
+mul 16
++ 1
+out p
+in 3hz
+osc
+out sync
+lt 0.5
+mul 1.5
++ 0.5
+\ 220/2hz
+mul oct
+lpf 25hz
+mul p
+sqr
+hpf 100hz
+mul 0.5
+mix

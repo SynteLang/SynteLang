@@ -1,0 +1,66 @@
+in 17hz
+sino
+mul 0.03
++ 1
+mul 73ms
+out t
+in 5s
+sq
+range 1s,3hz
+pulse 1.5/4
+s/h grid
+smooth
+out g
+/b 16,0
+lt 0.5
+mul g
+lpf 20hz
+out gt
+in 3s
+osc
+flip
+mul 8
+clip 0
+flip
+mul -2
++ 0.5
+base 2
+* 2
+out p
+mul v
+mul 333/2hz
+sqr
+hpf 300hz
+out s
+in 7hz
+sino
+mul 0.01
++ 1
+out v
+in 320hz
+mul 2
+mul p
+sino
+mul 15
++ 1
+mul 340hz
+mul v
+mul p
+sino
++ s
+mul gt
+mul -23db
+out ch
+chorII
++ ch
++ c
+push
+tape t
+out fx
+4lp
+mul 0.3
++ fx
+mul 0.3
+out c
+pop
+mix

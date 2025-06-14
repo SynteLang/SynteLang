@@ -1,0 +1,10 @@
+in 3hz
+osc
+tri
+mul 20ms
++ 100ms
+out t
+/b 16*4,0
+lt 0.5
+hh t
+mix

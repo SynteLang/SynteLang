@@ -1,0 +1,8 @@
+in r.local
+osc
+mod 0.1
++ 0.3
+/ 5
+wav local
+mul 2
+out dac

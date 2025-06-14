@@ -1,0 +1,24 @@
+in 116bpm
+/ 8
+osc
+out sync
+in 116bpm
+mul 2
+osc
+smooth
+out vca
+in 1
+mul 440hz
+mul 1/8
+out p
+saw
+out m
+in p
+mul 1.02
+saw
++ m
+mul vca
+lpf 440hz
+lpf 440hz
+mul 2
+mix

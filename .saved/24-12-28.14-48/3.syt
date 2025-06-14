@@ -1,0 +1,44 @@
+in 8hz
+sino
+push
+abs
++ 0.2
+out vca
+pop
+mul 0.01
++ 1
+mul 35ms
+out t
+from 0
+out m
+from 1
+out+ m
+from 2
++ m
+push
+gt 0
+mul 0.2
+out s
+pop
+out x
+mul x
+- 0.5
+mul x
++ x
++ s
++ c
+tanh
+tape t
+tap 55/6hz
+tap 250ms
+mul vca
+tanh
+out fx
+4lp
++ fx
+push
+mul -14db
+out c
+pop
+mul -20db
+out dac

@@ -1,0 +1,28 @@
+in 3hz
+osc
+tri
+cv2a
+tanh
+mul 0.1
++ 1
+mul 3ms
+out ch0
+in 7hz
+osc
+tri
+cv2a
+tanh
+mul 0.03
++ 1
+mul 13ms
+out ch1
+all
++ c
+push
+tape ch0
+tap ch1
+mul 0.1
+out c
+pop
+mul -1db
+out dac

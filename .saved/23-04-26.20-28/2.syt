@@ -1,0 +1,7 @@
+from 1
++ c
+tape 73ms
+lpf 2200hz
+* 0.7
+out c
+out dac

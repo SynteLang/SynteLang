@@ -1,0 +1,11 @@
+in 3.5*1.564hz
+osc
+lt 0.3
+mul grid
+dirac
+down 220ms
+mul 165hz
+sino
+tanh
+lpf 200hz
+mix

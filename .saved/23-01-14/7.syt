@@ -1,0 +1,10 @@
+in 0.2hz
+osc 
+tri 
+mul 440hz
++ 110hz
+osc 
+sine 
+mul 2
+tanh 
+mix 

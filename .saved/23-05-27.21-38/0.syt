@@ -1,0 +1,39 @@
+in 70hz
+noise 
++ 3.5hz
+osc 
+tri 
+mul 0.03
++ 1
+mul 61.8ms
+out t
+in 2s
+for 0.1s
+smooth 
+out vca
+in 110hz
+sino 
+mul 2
+mul vca
+out p
+in r.808St8
+* 1/0.85
+out tempo
+posc 0
+mul 0.85
+* 0.5
+wav 808St8
++ p
+mul 12
+push 
++ c
+tape t
+tap 100ms
+tap 161.8ms
+lpf 1khz
+hpf 100hz
+/ 2.5
+out c
+pop 
++ c
+mix 

@@ -1,0 +1,26 @@
+in 135bpm
+/ 16
+osc 
+out sync
+exp 2
+mul 3
+mod 1
+s/h grid
+push 
+in 135bpm
+/ 4
+sq 
+out m
+dirac
+down 1330ms
+smooth
+out vca
+pop 
+s/h m
+8bit 12
+base 2
+mul 88hz
+sino 
+mul vca
+mul -4db
+mix 

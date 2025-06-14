@@ -1,0 +1,11 @@
+in 10s
+pulse 0.125
++ 2
+out b
+/b b,0.5
+lt 0.5
+s/h grid
+sn 135ms
+lpf 3khz
+mul 6db
+mix

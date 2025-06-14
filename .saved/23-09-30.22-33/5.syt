@@ -1,0 +1,13 @@
+in semitone
+pow 5
+mul pitch
+out p
+saw
+out m
+in p
+mul 1.001
+saw
++ p
+mul 1/2
+lpf 800hz
+mix

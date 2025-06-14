@@ -1,0 +1,8 @@
+/b 8,0
+trn 6
+smooth
+out vca
+in 5khz
+sino
+mul vca
+mix

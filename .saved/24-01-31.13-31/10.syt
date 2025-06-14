@@ -1,0 +1,8 @@
+in 5hz
+osc
+out vca
+/b 16,0.5
+trn 12
+noise
+mul vca
+mix

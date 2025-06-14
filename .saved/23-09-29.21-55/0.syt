@@ -1,0 +1,18 @@
+in 1hz
+sq
+mul ln5
+out p
+in 2hz
+sq
+mul ln3
+out+ p
+in 4hz
+sq
+mul ln3
+-- 2
++ p
+mod ln2
+base E
+mul 330hz
+sino
+mix

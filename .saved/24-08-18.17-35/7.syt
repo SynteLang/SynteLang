@@ -1,0 +1,31 @@
+in tempo
+mul 3
+out tt
+in grid
+hpf 5hz
+abs
+lt 0.5
+out g
+in 3hz
+osc
+tri
+mul 4
++ 1
+mul 125ms
+out t
+in tempo
+mul 4
+sq
+s/h g
+hh t
+pad
+out m
++ c
+tape tt
+hpf 500hz
+lpf 2khz
+mul 0.5
+out c
+mul 0.2
++ m
+mix

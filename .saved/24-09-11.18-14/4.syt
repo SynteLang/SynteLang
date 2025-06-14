@@ -1,0 +1,17 @@
+in tempo
+* 10/3
+osc
+tri
+mul 50ms
++ 450ms
+out t
+in 2.2/4hz
+pulse 0.25
+mul 8
++ 8
+out b
+/b b,0
+lt 0.5
+hh t
+mul -2db
+mix

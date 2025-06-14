@@ -1,0 +1,10 @@
+in 3.7hz
+sq
+s/h grid
+mul 1.5
++ 1
+out b
+/b b,0.25
+trn 4
+fmp 880*1.2hz
+mix

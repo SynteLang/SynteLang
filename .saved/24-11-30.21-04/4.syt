@@ -1,0 +1,18 @@
+/* hh
+/b 2,0
+lt 0.5
+range 8,12
+s/h grid
+out b
+/b b,0
+trn 1
+out vca
+in 22/2hz
+pulse 0.1
+hpf 8khz
+mul 50
+clip 0
+down 14ms
+noise
+mul vca
+mix

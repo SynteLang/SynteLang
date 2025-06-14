@@ -1,0 +1,13 @@
+in 2hz
+sq
+push
+dirac
+down 120ms
+flip
+smooth
+out Duck
+pop
+s/h grid
+bd 0.75
+pad
+mix

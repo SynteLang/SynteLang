@@ -1,0 +1,14 @@
+>sync 
+in 5hz
+out tempo
+* 2
+syq 0
+out grid
+in tempo
+* 3/4
+posc 0
+lt 0.5
+s/h grid
+out Note
+CB pitch
+mix 

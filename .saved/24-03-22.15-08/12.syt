@@ -1,0 +1,50 @@
+in 3.7hz
+sino
+mul 0.03
++ 1
+out c
+/b 1,0
+lt 0.5
+mul 0.2
++ 1
+out ^p
+/b 16/3,0
+tri
+mul ^p
+out ^p
+/b 4,0
+mul ^p
+8bit 5
+8bit 12
+push
+hpf 13hz
+mul 3
+abs
+clip 0
+lpf 150hz
+out vca
+pop
+base 2
+out pitch
+mul c
+mul 110*2hz
+sqr
+out m
+in pitch
+mul 220hz
+sqr
++ m
+lpf vca
+lpf vca
+out r
++ fb
+hpf 200hz
+tape 37ms
+lpf 2khz
+4lp
+mul .9
+out fb
+mul 0.5
++ r
+mul -10db
+mix

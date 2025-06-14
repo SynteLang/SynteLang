@@ -1,0 +1,19 @@
+>sync
+< 54bpm
+/ 4
+posc 3/16
+trn 8
+smooth
+> vca
+mul 125hz
+out p
+< 45bpm
+/ 4
+posc 3/8
+trn 8
+smooth
+>+ vca
+mul 145hz
++ p
+sino
+mix

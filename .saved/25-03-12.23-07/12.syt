@@ -1,0 +1,19 @@
+in 10
+log
+out lg10
+in 1hz
+pulse 1/2
+mul 8
+base 2
+in 20hz
+sino
+out a
+setmix ^freq
+push
+/ a
+log
+/ lg10
+mul 20
+print
+pop
+;

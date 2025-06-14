@@ -1,0 +1,18 @@
+in 135bpm
+out tempo
+/ 2
+posc 0
+trn 1.5
+exp 5
+excl 1/32
+lpf 25hz
+out vca
+lt 0.5
+lpf 3hz
+mul 0.125
++ 1
+mul 65hz
+sino
+mul vca
+tanh
+mix

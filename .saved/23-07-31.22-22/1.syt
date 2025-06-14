@@ -1,0 +1,5 @@
+in pitch
+mul fifth
+sqr 
+lpf 1khz
+mix 

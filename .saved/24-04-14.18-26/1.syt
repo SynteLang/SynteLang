@@ -1,0 +1,16 @@
+in 2hz
+sq
+mul 0.75
++ 0.5
+mul 4hz
+sq
+bd 0.875
+mul 6db
+push
+in vca.6.1
+lpf 85hz
+flip
+mul Duck
+out Duck
+pop
+mix

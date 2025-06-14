@@ -1,0 +1,21 @@
+in 20hz
+noise
+out n
+in 20hz
+noise
+out+ n
+in 4hz
+osc
+flip
+out Vca
+gt 0.5
+out g
+in 1.5khz
+mul mousex
+osc
+s/h g
+8bit 5
+8bit 12
+base 2
+mul 440hz
+.out pitch

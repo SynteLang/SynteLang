@@ -1,0 +1,16 @@
+in 10s
+step 4
+out r
+/b 4,r
+lt 1/16
+mul -4khz
++ 5khz
+out f
+/b 32,0
+trn 3
+exp 5
+out vca
+in f
+sqr
+mul vca
+mix

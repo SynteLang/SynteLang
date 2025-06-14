@@ -1,0 +1,34 @@
+in 3s
+osc
+tri
+out fl
+in 13s
+osc
+tri
+mul 0.5
+out v
+in 116*4bpm
+osc
+-- fl
+abs
+mul 1.05
+exp 10
+out gt
+gt v
+mul gt
++ v
+out vca
+in 440hz
+sqr
+out m
+in 441hz
+pulse 0.25
++ m
+mul vca
+hpf 500hz
+lpf 5khz
+out fx
+chorII
++ fx
+mul -24db
+mix

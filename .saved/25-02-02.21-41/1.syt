@@ -1,0 +1,32 @@
+in 3hz
+osc
+tri
+mul 3
+out f
+/b 1,0
+lt 0.5
+down 1s
+flip
+lpf 20hz
+range 1,1.25
+mul 220hz
+out p
+juno f
+out m
+in p
+mul 1.5/2
+juno f
+out+ m
+in 11/12
+base 2
+mul p
+juno f
+mul -4db
+out+ m
+in p
+mul 1.25
+juno f
++ m
+hpf 100hz
+mul -3db
+mix

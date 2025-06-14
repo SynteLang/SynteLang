@@ -1,0 +1,9 @@
+in 128bpm
+out tempo
+/ 32
+osc
+out sync
+mul 4*32!
+mod 1
+lt 0.5
+.out grid

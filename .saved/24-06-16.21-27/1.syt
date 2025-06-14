@@ -1,0 +1,31 @@
+in 3s
+pulse 0.25
+s/h grid
+mul 0.5
++ 1
+out ph
+/euc 6.3,16
+dirac
+down 150ms
+exp 7
+- 1/32
+mul 2
++ 1
+mul 55hz
+/ ph
+out p
+in 55hz
+sino
+mul 0.2
++ 1
+mul p
+sino
+out m
+out x
+mul x
+out+ m
+in p
+sino
++ m
+/ 3
+mix

@@ -1,0 +1,15 @@
+in r.local
+\ 4
+out b2
+/b b2,0
+mul 0.5
++ .25
+mul SR
+mul r.local
+out b
+/b b,0
+mod 1/32
++ 0.39524
+wav local
+mul 12db
+out dac

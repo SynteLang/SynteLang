@@ -1,0 +1,5 @@
+from 5
+alp 43ms,0.5
+mul 0.5
+out C
+out dac

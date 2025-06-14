@@ -1,0 +1,31 @@
+/* bss
+in 3hz
+posc 0
+lt 1/4
+range 2hz,8hz
+posc 0.5
+lt 0.5
+out g
+dec 225ms
+exp 3.5
+mul 1.4
+clip 0
+lpf 50hz
+out vca
+mul 0.9
+out env
+in 3s
+mul Phi
+step 5
+s/h g
+phryg
+mul 110/3hz
+pm env
+mul vca
+mul Duck
+push
+in 1
+out Duck
+pop
+mul 2db
+mix

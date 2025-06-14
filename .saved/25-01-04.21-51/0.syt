@@ -1,0 +1,60 @@
+in 1.75s
+mul 1/2
+osc
+exb 4
+out qv
+/b 32,0
+trn 1.5
++ qv
+mul 1.5
+tanh
+smooth
+out vca
+in 8s
+osc
+out sync
+- 0.5
+>sync
++ 0.5
+push
++ 5/8
+mod 1
+lt 1/8
+range 1/1.2,1
+out s
+pop
+gt 0.5
+range 1,1.25
+mul s
+mul 330hz
+out p
+mul 4*48e3!
+hpf 1s
+abs
+clip 0
+smooth
+in p
+juno 0.5
+out m
+in p
+mul 1.25
+juno 0.5
+out+ m
+in p
+mul 1.5
+juno 0.5
+out+ m
+in p
+mul 1.875
+juno 0.5
++ m
+lpf 440hz
+out fx
+mul 0.5
+chorII
++ fx
+hpf 20hz
+mul vca
+lpf 440hz
+mul -8db
+mix

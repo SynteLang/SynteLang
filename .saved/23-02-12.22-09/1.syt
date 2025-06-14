@@ -1,0 +1,14 @@
+in 3hz
+sino 
+mul 0.02
++ 1
+mul 88hz
+out t
+from 0
++ c
+tape t
+lpf 600hz
+/ 1.001
+out c
+mul 0.5
+out dac

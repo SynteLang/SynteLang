@@ -1,0 +1,20 @@
+>sync
+in tempo
+mul 0.5
+posc 0.25
+flip
+exp 5
+smooth
+out vca
+in tempo
+/ 4
+posc 0.25
+lt 0.3
+mul 0.25
++ 1
+smooth
+mul pitch
+mul 0.5
+sino
+mul vca
+mix

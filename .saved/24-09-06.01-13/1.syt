@@ -1,0 +1,36 @@
+in 5s
+sq
+mul 0.05
++ 1.2
+lpf 20hz
+out k
+in 10s
+osc
+mul 3hz
++ 3s
+sq
+s/h grid
+mul 0.25
++ 1
+log
+out p
+in 7/4hz
+sq
+s/h grid
+mul 0.5
++ 1
+log
++ p
+mod 1
+base 2
+smooth
+smooth
+/ k
+mul 220hz
+sqr
+mul Env
+out m
+chorII
+sum m
+mul -6db
+mix

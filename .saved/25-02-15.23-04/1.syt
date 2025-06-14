@@ -1,0 +1,56 @@
+/* maj7
+in 60s
+once
+lt 0.99
+out b
+in 37s
+sq
+flip
+out v
+in 16s
+sq
+mul 0.5
+mul v
++ 1
+out s
+in 120s
+osc
+- b
+clip 0
+mul 5.5
++ 1
+lpf 20hz
+out f
+mul 1/2
+-- 4.7/2
+abs
++ 0.3
+out adj
+in 10
+noise
+lpf 30s
++ 1
+mul 220hz
+mul s
+out p
+juno f
+out m
+in p
+mul 1.5/2
+juno f
+out+ m
+in 11/12
+base 2
+mul p
+juno f
+mul -4db
+out+ m
+in p
+mul 1.25
+juno f
++ m
+mul adj
+hpf 120hz
+chorII
+mul -8db
+mix

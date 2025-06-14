@@ -1,0 +1,25 @@
+/b 6,0
+tri
+mul 5
+base 2
+mul 20hz
+out f
+in 140/4bpm
+osc
+mul 1/8
++ 2/4
+wav aloud
+fft
+gafft 0.1
+ifft
++ r
+clip 1
+lpf f
+lpf f
+lpf f
+push
+hpf f
+mul 6
+out r
+pop
+mix

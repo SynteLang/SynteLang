@@ -1,0 +1,27 @@
+/* pop
+/b 21,0
+lt 0.5
+s/h grid
+hpf 12ms
+out vca
+in 0.5
+noise
+hpf 8khz
+out n
+in 3hz
+osc
+tri
++ 1
+out w
+s/h grid
+mul w
+mul 440*1.5hz
+sino
++ n
+hpf 3khz
+mul vca
+out x
+mul x
+- 0.5
++ x
+mix

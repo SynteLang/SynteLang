@@ -1,0 +1,23 @@
+in 3hz
+sino
+mul 0.01
++ 1
+out p
+in 3s
+step 5.22
+mul 30
+mul 0.52528
+mod 1
+8bit 12
+lpf 5hz
+base 2
+mul 330hz
+out p1
+mul p
+sino
+out m
+in p1
+sino
++ m
+mul -4db
+mix

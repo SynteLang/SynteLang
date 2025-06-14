@@ -1,0 +1,15 @@
+/* k
+in 5s
+pulse 0.25
+flip
+range 4,6
+out s
+/s 1,0
+range 300ms,140ms
+out d
+/s s,0
+s/h grid
+dec d
+bdfm 18,220hz
+tanh
+out dac

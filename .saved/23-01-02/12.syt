@@ -1,0 +1,12 @@
+in pitch
+sino 
+out m
+in pitch
+* 4/3
+sino 
+out+ m
+in pitch
+* 3/2
+sino 
++ m
+mix 

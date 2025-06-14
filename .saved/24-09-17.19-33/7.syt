@@ -1,0 +1,24 @@
+/b 32*2,0
+lpf 10hz
+out vca
+/b 1,0
+push
+gt 0.75
+mul 0.5
++ 1
+\ 1
+out s
+pop
+lt 0.5
+mul 0.125
++ 1
+\ 1
+mul s
+mul 880/4hz
+saw
+out fx
+chorII
++ fx
+lpf 500hz
+mul vca
+mix

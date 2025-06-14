@@ -1,0 +1,31 @@
+in 15s
+osc
+tri
+mul 2
+clip 0
++ 1
+mul 700ms
+out t
+/b 3.5,0
+lt 0.5
+s/h grid
+dirac
+down t
+smooth
+smooth
+out vca
+in 3.5s
+osc
+gt 0.25
+s/h grid
+mul 0.125
++ 1
+mul 330/8hz
+sino
++ 0.7
+mul 2.5
+tanh
+mul 1.2
+mul vca
+mul -1db
+mix

@@ -1,0 +1,15 @@
+in 135bpm
+out tempo
+/ 3
+posc 0
+tri
+mul 14db
+out ^vca
+in tempo
+* 4
+posc 0
+flip
+smooth
+lpf 50hz
+mul ^vca
+.level 0

@@ -1,0 +1,17 @@
+/b 7,0.5
+lt 0.5
+out g
+/b 12,0
+push
+lt 0.5
+mul g
+lpf 50hz
+smooth
+out v
+pop
+trn 4
+exp 4
+mul 170hz
+sino
+mul v
+mix

@@ -1,0 +1,10 @@
+in 4.5s
+* 12
+posc 0 
+mul 3
+clip 0
+flip
+lpf 150hz
+mul 85hz
+sino 
+mix 

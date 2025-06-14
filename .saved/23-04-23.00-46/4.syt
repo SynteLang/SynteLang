@@ -1,0 +1,10 @@
+in 2hz
+posc 0
+mul 3
+clip 0
+flip 
+mul 85hz
+sino 
+mul 3
+tanh 
+mix 

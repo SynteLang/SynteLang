@@ -1,0 +1,15 @@
+/* bd
+in 2.0s
+mul Phi
+sq
+s/h grid
++ 1
+mul 6
+out b
+/s 6,0
+s/h grid
+dec 100ms
+bdfm 16,320hz
+lpf 440hz
+mul -2db
+out dac

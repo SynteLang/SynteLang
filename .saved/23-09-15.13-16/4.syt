@@ -1,0 +1,20 @@
+in 135bpm
+posc 0
+flip
+exp Dec
+- 1/8
+smooth
+out vca
+mul 0.2
++ 1
+mul 65hz
+sino
+mul Dec
+/ 4.5
+mod 1
+mul vca
+mul 2
+tanh
+lpf 220hz
+lpf 2khz
+mix

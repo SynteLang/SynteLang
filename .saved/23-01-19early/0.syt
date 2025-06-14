@@ -1,0 +1,7 @@
+in 1hz
+step 8
+8bit 12
+base 2
+mul pitch
+sino 
+mix 

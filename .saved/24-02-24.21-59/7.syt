@@ -1,0 +1,19 @@
+/b 1,0
+gt 0.875
+mul 32
++ 1
+out b
+/b b,0
+flip
+mul 2
+base 2
+mul 440hz
+out p
+saw
+out m
+in p
+mul 1.01
+saw
++ m
+lpf 550hz
+mix

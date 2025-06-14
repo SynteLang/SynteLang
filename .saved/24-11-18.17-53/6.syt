@@ -1,0 +1,41 @@
+in 3s
+pulse 0.125
+s/h grid
+out f
+/* sn
+/b 1,0
+lt 0.25
+range 1,1.25
+out s
+/b 1,0
+lt 0.5
+range 1,1.2
+mul s
+out p
+in 0.025
+noise
+out n
+in tempo
+mul 1.45
+sq
+s/h grid
+dirac
+down 80ms
+-- f
+exb 5
+out vca
+exb 20
+mul 2
+base 2
+mul 220hz
+mul p
+sino
+out m
+clip 0
+mul n
++ n
++ m
+mul vca
+lpf 1khz
+mul -2db
+mix

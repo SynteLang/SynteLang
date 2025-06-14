@@ -1,0 +1,8 @@
+from 7
++ c
+tanh
+tape 135*1.5bpm
+lpf 5khz
+mul 0.8
+out c
+out dac

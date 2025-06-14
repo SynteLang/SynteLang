@@ -1,0 +1,4 @@
+in wavR
+osc 
+wav local
+out dac

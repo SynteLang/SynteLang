@@ -1,0 +1,17 @@
+/b 5,0
+flip
+exp 5
+- 1/32
+smooth
+out vca
+in pitch
+mul 29/19
+sino
+out s
+in pitch
+mul 19/29
+sino
+mul s
+mul vca
+mix
+

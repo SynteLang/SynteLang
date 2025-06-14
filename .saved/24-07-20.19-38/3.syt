@@ -1,0 +1,11 @@
+/euc 3,8
+dirac
+down 250ms
+exp 5
+- 1/32
+out vca
+in 440hz
+sqr
+mul vca
+mul -8db
+mix

@@ -1,0 +1,7 @@
+/b 2.5,0
+trn 1.5
+exb 3
+mul 3
+clip 0
+lpf 50hz
+.level 1

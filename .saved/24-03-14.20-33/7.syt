@@ -1,0 +1,10 @@
+in wavR
+* 16
+out t
+from 3
++ c
+hpf 400hz
+tape t
+out c
+mul Duck
+out dac

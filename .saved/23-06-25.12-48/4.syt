@@ -1,0 +1,16 @@
+>sync
+in F
+posc 0.5
+sine
++ 1
+mul 0.5
+out d
+flip 
+out q
+from 1
+mul q
+out m
+from 2
+mul d
++ m
+out dac

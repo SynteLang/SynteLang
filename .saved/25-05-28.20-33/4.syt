@@ -1,0 +1,10 @@
+in 1s
+sq
+range 2,6
+out b
+/b b,0
+lt 0.5
+s/h grid
+dec 100ms
+bdfm 12,320hz
+out dac

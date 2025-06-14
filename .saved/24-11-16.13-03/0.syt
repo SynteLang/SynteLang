@@ -1,0 +1,40 @@
+in 140bpm
+/ 4
+osc
+out sync
+push
+mul 16
+mod 1
+lt 0.5
+out grid
+pop
+mul 4
++ 0.5
+mod 1
+trn 4
+exp 8
+out vca
+in 12khz
+sq
+out ds
+in 12khz
+osc
+tri
+cv2a
+out s
+in 55hz
+pulse 0.25
+out m
+in 0.3
+noise
++ m
+hpf 8khz
+hpf 1khz
+s/h ds
+mul s
+out fx
+tape 1ms
++ fx
+mul vca
+mul 9db
+mix

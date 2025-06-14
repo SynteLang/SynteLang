@@ -1,0 +1,15 @@
+in 6s
+sq
++ 2
+/ 4
+out s
+in 120bpm
+/ 3
+pulse s
+in 120/8bpm
+osc
+out sync
+mul 16
+mod 1
+lt 0.5
+.out grid

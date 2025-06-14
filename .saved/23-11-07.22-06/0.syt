@@ -1,0 +1,39 @@
+in 8s
+sq
+mul 0.5
++ 1
+out p2
+in semitone
+mul semitone
+- 1
+out st
+in 3s
+sq
+mul st
++ 1
+/ p2
+smooth
+smooth
+out p
+in 3hz
+sino
+mul 0.01
++ 1
+mul p
+mul 4s
+osc
+mod mousex
+push
+sine
+mul 0.5
++ 0.5
+out w
+pop
++ 0.367
+wav 808St8
+mul w
+hpf 450hz
+mul 28db
+mul Sq
+lpf 400hz
+out dac

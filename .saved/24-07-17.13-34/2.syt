@@ -1,0 +1,28 @@
+/b 8,0
+smooth
+out vca
+in 7s
+sq
+mul 0.125
++ 1
+lpf 1s
+mul 1.5
+out p
+in 550/1.25hz
+mul p
+sino
+out m
+in 550/1.5hz
+mul p
+out+ m
+in 3hz
+sino
+mul 0.003
++ 1
+mul 225*1.25hz
+* p
+sino
++ m
+/ 3
+mul vca
+mix

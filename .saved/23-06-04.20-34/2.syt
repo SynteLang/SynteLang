@@ -1,0 +1,9 @@
+in 1hz
+posc 0.5
+trn 4
+exp 7
+noise 
+hpf 500hz
+lpf 800hz
+mul 12db
+mix 

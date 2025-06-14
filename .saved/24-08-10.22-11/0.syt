@@ -1,0 +1,18 @@
+in 1
+noise
+gt 0.995
+out gt
+in 0.2
+noise
+lpf 5khz
+out n
+gt 0.13
+mul 5
+mul n
++ n
+mul gt
+clip 0
+hpf 20hz
+pink
+mul 22db
+mix

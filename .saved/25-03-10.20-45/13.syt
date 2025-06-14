@@ -1,0 +1,23 @@
+/* rvrb
+in 7hz
+sino
+mul 0.01
++ 1
+mul 50ms
+out t
+from 9
+out m
+from 11
++ m
++ c
+hpf 200hz
+push
+tape t
+4lp
+mul 1.2
+clip 1
+lpf 4khz
+out c
+pop
+mul -2db
+;

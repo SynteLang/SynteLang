@@ -1,0 +1,26 @@
+in 16hz
+osc
++ 1
+out ph
+/b 3,0
+gt 0.75
+mul 8
+out b2
+/b 7,0.5
+lt 0.5
++ 1
+mul 4
++ b2
+out b
+/b b,0
+trn 4
+lpf 50hz
+out vca
+mul 85hz
+osc
++ ph
+sine
+mul vca
+tanh
+mul 10db
+mix

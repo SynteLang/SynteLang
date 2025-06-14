@@ -1,0 +1,11 @@
+/b 1,0
+gt 0.75
+mul 8
++ 8
+out b
+/b b,0
+trn 5
+noise
+hpf 2khz
+pad
+mix

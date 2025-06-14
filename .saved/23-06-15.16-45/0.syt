@@ -1,0 +1,25 @@
+in 3hz
+osc 
+lpf 10hz
+mul 0.05
++ 1
+mul 50ms
+out t
+in 0.1
+noise
+out nn
+in 4hz
+pulse 0.1
+lpf 2khz
+out n
+in 7hz
+pulse 0.3
++ n
++ nn
++ c
+lpf 1khz
+tape t
+out c
+lpf 1khz
+mul -12db
+out dac

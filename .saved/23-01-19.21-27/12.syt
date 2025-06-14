@@ -1,0 +1,7 @@
+from 9
++ c
+/ 2
+tanh 
+tape 333/2ms
+out c
+out dac

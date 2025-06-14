@@ -1,0 +1,47 @@
+in 7s
+pulse 0.25
+mul 0.25
+lpf 1s
++ 1
+out oct
+/b 3,0.5
+lt 0.25
+mul 0.5
++ 0.5
+smooth
+out gt2
+/b 10,0
+lt 0.5
+s/h grid
+smooth
+mul gt2
+out gt
+/b 16,0
+smooth
+mul gt
+out vca
+in 327/4hz
+/ oct
+osc
+out m
+in 333/4hz
+/ oct
+osc
++ m
+out x
+mul x
+mul x
+mul 0.5
+mul vca
+hpf 300hz
+lpf 330hz
+lpf 330*3hz
++ c
+push
+tape tempo
+hpf 200hz
+lpf 3khz
+mul -0.9
+out c
+pop
+mix

@@ -1,0 +1,8 @@
+in 3s
+sq
++ 2
+mul 120bpm
+osc
+lt 0.5
+hh 22ms
+mix

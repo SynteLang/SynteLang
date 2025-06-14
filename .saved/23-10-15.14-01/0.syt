@@ -1,0 +1,25 @@
+in 7/2s
+step 3
+mul 3
+mul ln3
+out p
+in 3/2s
+step 3
+mul 3
+mul ln5
++ p
+push
+hpf 1.5s
+mul 2
+abs
+clip 0
+out Vca
+pop
+base E
+/ ln2
+mod 2
+mul 330hz
+sino
+mul Vca
+mul -10db
+mix

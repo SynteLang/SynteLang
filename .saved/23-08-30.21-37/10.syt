@@ -1,0 +1,8 @@
+from 9
++ c
+tape 135*1.5bpm
+lpf 3khz
+/ 2
+out c
+/ 3
+out dac

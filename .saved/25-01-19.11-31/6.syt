@@ -1,0 +1,16 @@
+/* plate
+from 9
+mul -12db
+out m
+from 0
++ m
+tape 53ms
+- c
+tap 43ms
+hpf 500hz
+4lp
+lpf 4khz
+mul -8db
+out c
+mul -2db
+out dac

@@ -1,0 +1,63 @@
+in 150/4bpm
+out tempo
+osc
+out sync
+mul 16
+mod 1
+lt 0.5
+out grid
+/b 1,0
+gt 2/3
+range 3,5
+out s
+/s s,0
+s/h grid
+out g
+dec 200ms
+exb 3
+mul 1.2
+clip 0
+smooth
+smooth
+out vca
+in 3hz
+osc
+flip
+out s1
+in 5s
+osc
++ s1
+mod 1
+s/h g
+phryg
+mul 330/1hz
+out p
+sino
+out m
+in p
+mul 1.25
+sino
+out+ m
+in p
+mul 1.5
+sino
+out+ m
+in p
+mul 1.875
+sino
++ m
+out x
+mul x
+- 0.5
+mul -24db
++ x
+out fx
+chorII
++ fx
+mul vca
+lpf 600hz
+lpf 600hz
+lpf 600hz
+mul -12db
+out F
+mix

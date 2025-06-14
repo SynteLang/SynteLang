@@ -1,0 +1,14 @@
+in 3.7hz
+osc
+tri
+mul 0.01
++ 1
+mul 123ms
+out t
+from 0
++ c
+tape t
+/ 3
+lpf 1200hz
+out c
+mix 

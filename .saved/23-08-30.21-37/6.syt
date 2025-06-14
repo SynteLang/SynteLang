@@ -1,0 +1,12 @@
+in tempo
+/ 2
+posc 0
+lt 0.125
+hpf 3hz
+abs
+lpf 50hz
+out vca
+mul 165hz
+sino
+mul vca
+mix

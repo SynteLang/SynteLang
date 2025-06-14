@@ -1,0 +1,12 @@
+in 2.7hz
+sino 
+/ 100!
++ 1
+mul 1/300s
+out t
+from 1
++ c
+mul Fb
+tape t
+out c
+out dac

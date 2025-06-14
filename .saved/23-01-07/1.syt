@@ -1,0 +1,9 @@
+in 1/2hz
+pulse 0.1
+down 1/4hz
+exp 4
+lpf 50hz
+out vca
+from 0
+mul vca
+out dac

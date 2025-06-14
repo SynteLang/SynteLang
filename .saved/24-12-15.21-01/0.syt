@@ -1,0 +1,78 @@
+/* pad
+in 30s
+sq
+range 1.8,2.25
+out r
+in 23s
+osc
+tri
+range 1.5,3.5
+out fs
+/b 4,0
+mul 2
+clip 0
+range 8,12
+out b
+/b b,0.5
+tri
+mul fs
+push
+clip 0
++ 0.5
+out adj
+pop
+- 0.5
+out f
+in 3hz
+osc
+tri
+mul 0.05
++ 1
+mul 7ms
+out ch0
+in 7hz
+osc
+tri
+mul 0.03
++ 1
+mul 13ms
+out ch1
+/b 1,0
+lt 0.25
+range 1/1.5,1
+out s
+/b 1,0
+lt 0.25
+range 2,1.5
+mul s
+/ 2
+mul 220hz
+out p
+juno f
+out m
+in p
+mul 1.5
+juno f
+out+ m
+in p
+mul r
+juno f
+out+ m
+in p
+mul 1.2
+juno f
++ m
+out fx
++ c
+push
+tape ch0
+tap 135ms
+tap ch1
+mul 0.3
+out c
+pop
++ fx
+hpf 220hz
+/ adj
+mul -9db
+mix

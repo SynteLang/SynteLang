@@ -55,10 +55,9 @@ The ◊ symbol indicates a sentence or section that may need updating in future.
 
 **Requirements:**  
 >Computer with a soundcard (internal or external)  
->Operating system: FreeBSD / Linux / MacOs / android / rPi ( Windows not tested, may work) ◊  
+>Operating system: FreeBSD / Linux / MacOs / Android / Linux on SBCs / Windows   
 >Go programming language installed - requires at minimum version 1.21 ◊  
 >Desire to learn about audio synthesis  
->Unicode support
 
 The terminal emulator that has been used for development and testing is Alacritty. It works well on cool-retro-term too.  
 
@@ -800,18 +799,16 @@ The function syntax is:
 
 ## Installing Syntə ◊
 
-At present it is not known if portaudio/SDL2 (used to output sound) will work on Windows. ◊ Please try it and share your results by email: synte@proton.me   
-
 To install Go see information here: [Download and install Go](https://go.dev/doc/install)  
 
-MacOS: You may need to install `pkg-config` and `sdl2`. You can use `brew` for this, which you will need to install if you don't have it.  
+MacOS: You may also need to install `pkg-config` and `sdl2`. You can use `brew` for this, which you will need to install if you don't have it.  
 
 Linux and MacOS: You may need to add the directory that Go installs in to your $PATH environment variable. Try `export PATH=$PATH:/usr/local/go/bin`  
-Or you can type `~/go/bin/synte` instead.  
+Or you can type `~/go/bin/synte` to run Syntə directly.  
 
 You can run on Android:
 + install the Termux app (you might need to do this via F-droid)
-+ in termux: `apt-get install pkg-config portaudio golang git`
++ in Termux: `apt-get install pkg-config portaudio golang git`
 + `git clone https://github.com/syntelang/syntelang`
 + `cd syntelang`
 + `go install`

@@ -20,7 +20,7 @@ type stereoOut struct {
 	l, r int16
 }
 
-var out = make(chan stereoOut)
+var out = make(chan stereoOut, writeBufferLen)
 
 /*
 	example code:

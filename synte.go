@@ -392,7 +392,6 @@ type disp struct { // indicates:
 	Vu      float64       // output sound level
 	Clip    bool          // sound engine has clipped on output
 	Load    time.Duration // sound engine loop time used
-	Info    string        // messages sent from msg()
 	MouseX  float64       // mouse X coordinate
 	MouseY  float64       // mouse Y coordinate
 	Paused  bool          // sound engine is paused
@@ -1371,19 +1370,20 @@ func infoDisplay() {
 	var (
 		c, s, g, gl int
 	)
-	infoF, err := os.OpenFile(logFile, os.O_TRUNC|os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	TxtLog, err := os.OpenFile(logFile, os.O_TRUNC|os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		pf("unable to write messages to %q: %s\n", logFile, err)
 	}
-	defer infoF.Close()
+	defer TxtLog.Close()
 	h := sf("\n-- Syntə -- \t\t%s\n\n", time.Now().Format("02/01/06 15:04"))
-	_, err = infoF.WriteString(h)
+	_, err = TxtLog.WriteString(h)
 	if err != nil {
 		pf("unable to log: %s\n", err)
 	}
+	prevMessage := ""
 	for {
 		if writeLog {
-			display.Info = "Logging..."
+			TxtLog.WriteString("Logging...\n")
 		}
 		if !saveJson(display, infoFile) {
 			pf("info display not updated, check file %s exists\n", infoFile)
@@ -1392,13 +1392,17 @@ func infoDisplay() {
 		}
 		select {
 		case i := <-info:
-			infoF.WriteString(i + "\n")
+			if i == prevMessage {
+				break
+			}
+			prevMessage = i
+			TxtLog.WriteString(i + "\n")
 		case carryOn <- yes: // semaphore: received, continue
 		case <-stop:
 			if !exit {
 				break
 			}
-			display.Info = sf("Syntə closed")
+			TxtLog.WriteString("Syntə closed\n")
 			display.On = not // stops timer in info display
 			display.SR = 0 // so previous soundcard info not displayed, in case different
 			display.Load = 0

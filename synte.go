@@ -1476,7 +1476,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	)
 
 	var (
-		lpf15Hz = lpf_coeff(10, sc.sampleRate)  // smooth mouse, mutes, gain
+		lpf15Hz = lpf_coeff(15, sc.sampleRate)  // smooth mouse, mutes, gain
 		lpf1kHz = lpf_coeff(1e3, sc.sampleRate) // smooth levels
 
 		// per-listing limiter

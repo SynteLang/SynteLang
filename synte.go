@@ -1483,7 +1483,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		hpf7241Hz = hpf_coeff(7241, sc.sampleRate)       // high emphasis
 		hpf160Hz  = hpf_coeff(160, sc.sampleRate)        // low emphasis
 		lpf2point4Hz  = lpf_coeff(2.4435, sc.sampleRate) // 'VU' averaging ~400ms
-		headroom = math.Pow10(36/20) // decibels
+		headroom = math.Pow10(36/20) // +36 decibels
 
 		// main out DC blocking
 		hpf20Hz = hpf_coeff(20, sc.sampleRate)
@@ -1532,7 +1532,6 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		hiBand, hiBandPrev,
 		midBand, midBandPrev float64                      // limiter pre-emphasis
 		α       = 1 / (sc.sampleRate/(2*math.Pi*194) + 1) // co-efficient for setmix
-		//hroom   = (sc.convFactor - 1.0) / sc.convFactor   // headroom for positive dither
 		pd      int                                       // slated for removal
 		sides   float64                                   // for stereo
 		current int                                       // tracks index of active listing for recover()
@@ -2019,10 +2018,9 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				d[i].sigs[0] = 0
 				panic(sf("listing: %d, %d - NaN", i, current))
 			}
-			d[i].sigs[0] *= d[i].m * d[i].lv
-			out := d[i].sigs[0]
 
-			// +36dB artificial headroom, to block unbounded DC
+			out := d[i].sigs[0]
+			// artificial headroom, to block unbounded DC
 			out = math.Max(-headroom, math.Min(headroom, out))
 
 			d[i].limPreH = ( d[i].limPreH + out - d[i].limPreHX ) * hpf7241Hz
@@ -2036,6 +2034,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			if d[i].lim > 0.06 { // indicate meaningful limiting only
 				display.GRl = i+1
 			}
+			out *= d[i].m * d[i].lv // here to avoid clicks under limiting
 			sides += out * d[i].pan * 0.5
 			mid += out * (1 - math.Abs(d[i].pan*0.5))
 			sum += out

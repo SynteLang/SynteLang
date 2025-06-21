@@ -2035,6 +2035,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 				display.GRl = i+1
 			}
 			out *= d[i].m * d[i].lv // here to avoid clicks under limiting
+			d[i].sigs[0] = out // `from` and `all` are post mute/level
 			sides += out * d[i].pan * 0.5
 			mid += out * (1 - math.Abs(d[i].pan*0.5))
 			sum += out

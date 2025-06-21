@@ -5025,6 +5025,67 @@
 			}
 		]
 	},
+	"mixF": {
+		"Comment": "zero-crossing distortion. Can be used to dirty a mix using `all mixF out dac`",
+		"Body": [
+			{
+				"Op": "out",
+				"Opd": "x"
+			},
+			{
+				"Op": "gt",
+				"Opd": "-0.02"
+			},
+			{
+				"Op": "out",
+				"Opd": "z"
+			},
+			{
+				"Op": "in",
+				"Opd": "x"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0.02"
+			},
+			{
+				"Op": "mul",
+				"Opd": "z"
+			},
+			{
+				"Op": "-",
+				"Opd": "b.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "in",
+				"Opd": "50hz"
+			},
+			{
+				"Op": "f2c",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "+",
+				"Opd": "b.0"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "x"
+			}
+		]
+	},
 	"noise": {
 		"Comment": "output 'white' noise, input controls volume",
 		"Body": [

@@ -2061,7 +2061,11 @@
 			},
 			{
 				"Op": "mul",
-				"Opd": "16"
+				"Opd": "@1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "4"
 			},
 			{
 				"Op": "mod",
@@ -7364,6 +7368,35 @@
 		]
 	},
 	"saw": {
+		"Comment": "saw wave, ascending ramp. Output in range ±1. `pm 1.0` is nicer",
+		"Body": [
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a"
+			},
+			{
+				"Op": "mul",
+				"Opd": "^'z"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a"
+			},
+			{
+				"Op": "+",
+				"Opd": "-0.5"
+			}
+		]
+	},
+	"saw-": {
 		"Comment": "saw wave, ascending ramp. Output in range ±1. Not pitch accurate, but without spurious products ",
 		"Body": [
 			{
@@ -8103,16 +8136,8 @@
 		"Comment": "square wave at audio levels, output is in range [-0.5,0.5] ",
 		"Body": [
 			{
-				"Op": "mul",
-				"Opd": "4"
-			},
-			{
 				"Op": "out",
 				"Opd": "^freq"
-			},
-			{
-				"Op": "mul",
-				"Opd": "0.25"
 			},
 			{
 				"Op": "+",
@@ -8136,7 +8161,7 @@
 			},
 			{
 				"Op": "mul",
-				"Opd": "-8db"
+				"Opd": "-4.5db"
 			}
 		]
 	},

@@ -2075,8 +2075,6 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		dither *= 0.5
 		mid += dither / math.MaxInt16 // set to fixed amount
 		sides += dither / math.MaxInt16
-		if !exit {
-		}
 		mid *= env
 		sides *= env
 		if exit {

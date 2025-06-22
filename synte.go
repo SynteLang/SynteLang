@@ -76,7 +76,7 @@ const (
 	lenReserved   = 11
 	maxExports    = 12
 	DEFAULT_FREQ  = 0.0625 // 3kHz @ 48kHz Sample rate
-	MIN_FADE      = 125e-3 // 125ms
+	MIN_FADE      = 75e-3 // 75ms
 	MAX_FADE      = 120   // seconds
 	defaultRelease = 0.25  // seconds
 	MIN_RELEASE   = 25e-3 // 25ms
@@ -1590,7 +1590,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		default:
 			// play
 		}
-		if p == 0 && d[0].m < 1e-4 { // -80dB
+		if p == 0 && env < 1e-4 { // -80dB
 			samples <- stereoPair{running: yes, pause: yes}
 			pause <- not // blocks until `: play`, bool is purely semantic
 			if exit {
@@ -2070,20 +2070,23 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			mid = eqM * 2 + mid * 0.9
 			sides = eqS * 2 + sides * 0.9
 		}
+		dither = no.ise()
+		dither += no.ise()
+		dither *= 0.5
+		mid += dither / math.MaxInt16 // set to fixed amount
+		sides += dither / math.MaxInt16
+		if !exit {
+		}
+		mid *= env
+		sides *= env
 		if exit {
-			mid *= env // fade out
-			sides *= env
 			env -= fade // linear fade-out (perceived as logarithmic)
 			if env < 0 {
 				return
 			}
+		} else {
+			env += (p - env)*lpf15Hz
 		}
-		dither = no.ise()
-		dither += no.ise()
-		dither *= 0.5
-		//mid *= hroom
-		mid += dither / math.MaxInt16 // set to fixed amount
-		sides += dither / math.MaxInt16
 		peak += (math.Abs(mid) - peak) * lpf2point4Hz // 'VU' style metering
 		//if abs := math.Abs(mid); abs > peak { // peak detect metering
 		//	peak = abs

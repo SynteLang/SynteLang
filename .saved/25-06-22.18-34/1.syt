@@ -1,0 +1,6 @@
+/s 12,0
+s/h grid
+dec 200ms
+bdfm 16,320hz
+mul -14db
+out dac

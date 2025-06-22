@@ -1,0 +1,7 @@
+/* sh
+/b 32,0
+trn 8
+noise
+hpf 5khz
+mul 5db
+mix

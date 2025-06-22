@@ -1,0 +1,34 @@
+in 3s
+pulse 1/8
+s/h grid
+one2 1.25
+out s
+in 7s
+pulse 1/16
+s/h grid
+flip
+range 3s,80ms
+out t
+/s 7*2,0
+s/h grid
+dec t
+smooth
+out vca
+mul 1
+base 2
+mul 220*2hz
+mul s
+out p
+pm 1.0
+out m
+in p
+mul 1.01
+pm 1
++ m
+mul vca
+out fx
+chorII
+mul -4db
++ fx
+mul -14db
+mix

@@ -1,0 +1,10 @@
+/s 8,0
+s/h grid
+dec 95ms
+lpf 800hz
+mul 120hz
+sino
+hpf 10hz
+lpf 800hz
+lpf 800hz
+mix

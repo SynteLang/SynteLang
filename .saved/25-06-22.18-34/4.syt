@@ -1,0 +1,19 @@
+in 10s
+osc
+tri
+range 1s,200ms
+out t
+/s 3,0
+s/h grid
+dec t
+lpf 70hz
+out vca
+in 55hz
+pm 0.0
+out x
+abs
+mul x
+hpf 50hz
+mul vca
+mul -2db
+mix

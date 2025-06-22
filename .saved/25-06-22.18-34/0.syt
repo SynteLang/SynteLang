@@ -1,0 +1,5 @@
+def_ 120bpm,4*2
+mul 17*2
+mod 1
+lt 0.5
+.out grid

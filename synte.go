@@ -2117,8 +2117,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 func waitForBackend(sampleRate float64) {
 	samples <- stereoPair{running: not}
 	for len(samples) > 0 { /* wait for samples to be received */ }
-	// portaudio requires 4x buffer delay
-	t := 4 * writeBufferLen * time.Second / time.Duration(sampleRate)
+	t := 1 * writeBufferLen * time.Second / time.Duration(sampleRate)
 	time.Sleep(t) // wait for samples to be written
 }
 

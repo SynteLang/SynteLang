@@ -78,12 +78,12 @@ const (
 	DEFAULT_FREQ  = 0.0625 // 3kHz @ 48kHz Sample rate
 	MIN_FADE      = 75e-3 // 75ms
 	MAX_FADE      = 120   // seconds
-	defaultRelease = 0.25  // seconds
+	defaultRelease = 0.35  // seconds
 	MIN_RELEASE   = 25e-3 // 25ms
 	MAX_RELEASE   = 1     // seconds
 	twoInvMaxUint = 2.0 / math.MaxUint64
 	alpLen        = 2400
-	baseGain      = 0.27
+	baseGain      = 0.4
 	writeBufferLen = 2 << 12
 	OutputFilter  = 12000 // Hz
 	OutputSmooth  = 15 // Hz

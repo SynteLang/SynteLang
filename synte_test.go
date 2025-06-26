@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"testing"
 	"time"
 )
@@ -71,9 +72,6 @@ func TestChecks(t *testing.T) {
 }
 
 func TestParseType(t *testing.T) {
-	if SAMPLE_RATE != 48e3 {
-		t.Fatal(`Change sample rate to 48,000`)
-	}
 	tests := []struct {
 		op, expr string
 		n        float64
@@ -94,7 +92,7 @@ func TestParseType(t *testing.T) {
 		{"in", "1*+-3x", 0, false},
 	}
 	for _, tst := range tests {
-		if n, b := parseType(tst.expr, tst.op); n != tst.n || b != tst.b {
+		if n, b := parseType(tst.expr, tst.op, 48000); n != tst.n || b != tst.b {
 			t.Errorf(`parseType(%q, %q) => %g %v, expected %g %v`, tst.expr, tst.op, n, b, tst.n, tst.b)
 		}
 	}
@@ -112,6 +110,19 @@ func TestLoadThreshAt(t *testing.T) {
 		t.Errorf("loadThresh reverse calc error: %v", lr)
 	}
 
+}
+
+func TestInterpolation(t *testing.T) {
+	buff := make([]float64, 48000)
+	for i := range buff {
+		buff[i] = 1
+	}
+	for i := 0; i < 9; i++ {
+		r := interpolation(buff, 12000+float64(i)/10)
+		if r != 1 {
+			t.Errorf("interp res: %v ~ %.3gdB", r, 20*math.Log10(r))
+		}
+	}
 }
 
 /*func TestEndFunctionDefine(t *testing.T) {

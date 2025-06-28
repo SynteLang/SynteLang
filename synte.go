@@ -1212,7 +1212,7 @@ func argsCorrect(op string, funArgs args, clr clear, l int) bool {
 }
 
 // parseType() evaluates conversion of types
-func parseType(expr, op string, SR float64) (n float64, b bool) { // TODO pass in s.sampleRate
+func parseType(expr, op string, SR float64) (n float64, b bool) {
 	switch {
 	case len(expr) > 1 && expr[len(expr)-1:] == "!":
 		if n, b = evaluateExpr(expr[:len(expr)-1]); !b {
@@ -1295,6 +1295,7 @@ func parseType(expr, op string, SR float64) (n float64, b bool) { // TODO pass i
 	}
 	return n, true
 }
+
 func nyquist(n, SR float64, e string) bool {
 	ny := 2e4 / SR
 	if bounds(n, ny) {

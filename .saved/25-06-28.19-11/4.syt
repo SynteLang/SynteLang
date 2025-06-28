@@ -1,0 +1,9 @@
+/* hh
+in 8hz
+posc 0
+trn 1.35
+exb 7
+noise
+hpf 3khz
+mul 4db
+mix

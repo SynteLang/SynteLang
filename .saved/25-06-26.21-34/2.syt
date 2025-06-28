@@ -1,0 +1,25 @@
+in 3s
+osc
+mul 1.2
+out f
+/s 1,0
+one2 1.5
+out s
+/s 2,0
+dec 300ms
+exb 5
+lpf 25hz
+out vca
+in 2.5s
+sino
+mul 0.06
++ 1
+mul 440/8hz
+mul 1.2
+mul s
+pm f
+mul vca
+mul 2
+tanh
+lpf 50hz
+mix

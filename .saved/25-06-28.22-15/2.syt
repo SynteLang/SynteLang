@@ -1,0 +1,21 @@
+/* k
+in 2hz
+posc 0
+lt 0.5
+range 2hz,4hz
+posc 0
+lt 0.5
+dec 110ms
+push
+mul 1.2
+clip 0
+flip
+smooth
+smooth
+out Duck
+pop
+bdfm 16,400hz
+hpf 20hz
+lpf 400hz
+lpf 800hz
+out dac

@@ -1,0 +1,7 @@
+in 4hz
+sq
+s/h grid
+dec 80ms
+bdfm 12,240hz
+mul -6db
+mix

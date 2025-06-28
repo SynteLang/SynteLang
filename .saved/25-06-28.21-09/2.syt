@@ -1,0 +1,14 @@
+in 4s
+osc
+tri
+one2 2
+\ 110/8hz
+out t
+from 0
++ c
+tape t
+lpf 12khz
+mul 0.99
+out c
+mul -6db
+out dac

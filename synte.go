@@ -327,7 +327,7 @@ type listingStack struct {
 	alp1    [alpLen]float64
 	alp2    [alpLen]float64
 	alp3    [alpLen]float64
-	lv, pan,
+	lv, pan, slow,
 	peakfreq float64
 	fftArr,
 	ifftArr,
@@ -1479,6 +1479,9 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		lpf15Hz = lpf_coeff(15, sc.sampleRate)  // smooth mouse, mutes, gain
 		lpf1kHz = lpf_coeff(1e3, sc.sampleRate) // smooth levels
 
+		// slow setmix comp feedback
+		lpf2s = lpf_coeff(0.5, sc.sampleRate)
+
 		// per-listing limiter
 		hpf7241Hz = hpf_coeff(7241, sc.sampleRate)       // high emphasis
 		hpf160Hz  = hpf_coeff(160, sc.sampleRate)        // low emphasis
@@ -1802,6 +1805,9 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					d[i].peakfreq += δ * α * s
 					//r *= math.Min(1, math.Sqrt(40/(d[i].peakfreq*sc.sampleRate+20)))
 					r *= math.Sqrt(twentyHz/d[i].peakfreq)
+					// slow feedback compression
+					d[i].slow += (d[i].lim - d[i].slow) * lpf2s
+					r /= math.Max(1.0, d[i].slow*125)
 				case 35: // "print"
 					pd++ // unnecessary?
 					if (pd)%32768 == 0 && !exit {

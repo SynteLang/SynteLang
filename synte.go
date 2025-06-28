@@ -2028,7 +2028,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			d[i].limPreHX = out
 			d[i].limPreL = ( d[i].limPreL + out - d[i].limPreLX ) * hpf160Hz
 			d[i].limPreLX = out
-			pre := 28 * d[i].limPreH + 2 * d[i].limPreL + 0.48 * out
+			pre := 14 * d[i].limPreH + d[i].limPreL + 0.24 * out
 			d[i].lim = d[i].lim + (pre*math.Min(1.5, pre) - d[i].lim)*lpf2point4Hz
 			out *= clipThr / math.Max(clipThr, d[i].lim)
 			if d[i].lim > 0.06 { // indicate meaningful limiting only

@@ -83,7 +83,7 @@ const (
 	MAX_RELEASE   = 1     // seconds
 	twoInvMaxUint = 2.0 / math.MaxUint64
 	alpLen        = 2400
-	baseGain      = 1.0
+	baseGain      = 0.4
 	writeBufferLen = 2 << 12
 	OutputFilter  = 12000 // Hz
 	OutputSmooth  = 15 // Hz

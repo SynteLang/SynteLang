@@ -3021,11 +3021,29 @@ func interpolation(buff []float64, x float64) float64 {
 	l := len(buff)
 	x = math.Max(0, math.Min(float64(l), math.Abs(x))) // bounds enforcing
 	i := int(x) // effective floor()
-	y0 := buff[(i+l-1)%l] // wraps around
-	y1 := buff[i%l]
-	y2 := buff[(i+1)%l]
-	y3 := buff[(i+2)%l]
-	z := x - math.Floor(x) - 0.5
+	x0 := buff[(i+l-2)%l] // these two wrap around
+	x1 := buff[(i+l-1)%l]
+	x2 := buff[i%l]
+	x3 := buff[(i+1)%l]
+	x4 := buff[(i+2)%l]
+	x5 := buff[(i+3)%l]
+	x6 := buff[(i+4)%l]
+	// half-band sinc, 13-tap
+	y0 := x2
+	y1 := a5*(x0+x5) + a3*(x1+x4) + a1*(x2+x3)
+	y2 := x3
+	y3 := a5*(x1+x6) + a3*(x2+x5) + a1*(x3+x4)
+
+	fract := x - math.Floor(x)
+	// this is to distribute the fractional part of x over two upsampled intervals
+	if fract > 0.5 {
+		y0 = y1
+		y1 = y2
+		y2 = y3
+		y3 = x5
+		fract -= 0.5
+	}
+	z := fract*2 - 0.5
 	// 4-point 4th order "optimal" interpolation filter by Olli Niemitalo
 	ev1, od1 := y2+y1, y2-y1
 	ev2, od2 := y3+y0, y3-y0
@@ -3035,4 +3053,23 @@ func interpolation(buff []float64, x float64) float64 {
 	c3 := od1*-0.37917091811631082 + od2*0.11952965967158
 	c4 := ev1*0.04252164479749607 + ev2*-0.04289144034653719
 	return (((c4*z+c3)*z+c2)*z+c1)*z + c0
+}
+
+var ( // these could be hard-coded as constants
+	a1 = sincCoeff(1.0)
+	a3 = sincCoeff(3.0)
+	a5 = sincCoeff(5.0)
+)
+// this has been found empirically
+const window = 6.86007
+
+func sincCoeff(x float64) float64 {
+	return math.Sin(0.5*x*math.Pi)/(math.Pi*x)  * (math.Cos(x*math.Pi/window)+1)
+}
+
+func init() {
+	norm := 1.0 / (2*(a1+a3+a5))
+	a1 *= norm
+	a3 *= norm
+	a5 *= norm
 }

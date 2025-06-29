@@ -507,6 +507,10 @@ func loadReloadAppend(t systemState) (systemState, int) {
 			return t, startNewOperation
 		}
 		t.reload = n
+		if len(mutes) > t.reload && !display.Paused {
+			//mutes[t.reload] = 0
+			//time.Sleep(50 * time.Millisecond)
+		}
 		t.operand = tempDir + "/" + t.operand
 	case "apd":
 		t.reload = -1

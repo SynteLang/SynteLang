@@ -1982,7 +1982,6 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					in4 := a3 - d[i].alp3[(n+alpLen-int(0.0198*sc.sampleRate))%alpLen]/2
 					d[i].alp3[n%alpLen] = in4
 					r = d[i].alp3[(n+alpLen-int(0.0198*sc.sampleRate))%alpLen] + in4/2 // 19.8ms
-					r = math.Max(-5, math.Min(5, r)) // to mitigate possible instability
 					// 4.7, 5.4, 9.1, 1.27 // alternative delays
 				case 53: // "panic"
 					panic("test")
@@ -3036,7 +3035,7 @@ func interpolation(buff []float64, x float64) float64 {
 
 	fract := x - math.Floor(x)
 	// this is to distribute the fractional part of x over two upsampled intervals
-	if fract > 0.5 {
+	if fract >= 0.5 {
 		y0 = y1
 		y1 = y2
 		y2 = y3
@@ -3061,7 +3060,7 @@ var ( // these could be hard-coded as constants
 	a5 = sincCoeff(5.0)
 )
 // this has been found empirically
-const window = 6.86007
+const window = 6.86
 
 func sincCoeff(x float64) float64 {
 	return math.Sin(0.5*x*math.Pi)/(math.Pi*x)  * (math.Cos(x*math.Pi/window)+1)

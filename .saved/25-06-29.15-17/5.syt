@@ -1,0 +1,31 @@
+in 2.5hz
+sq
+s/h grid
+dec 200ms
+exb 3
+push
+mul 0.5
+out f
+pop
+mul 2
+clip 0
+lpf 50hz
+out vca
+in 440/4hz
+out p
+pm f
+out m
+in p
+mul 1.5
+pm f
+out+ m
+in p
+mul 1.875
+pm f
++ m
+mul vca
+out fx
+chorII
++ fx
+mul 6db
+mix

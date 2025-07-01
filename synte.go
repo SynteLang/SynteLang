@@ -3020,18 +3020,20 @@ func interpolation(buff []float64, x float64) float64 {
 	l := len(buff)
 	x = math.Max(0, math.Min(float64(l), math.Abs(x))) // bounds enforcing
 	i := int(x) // effective floor()
-	x0 := buff[(i+l-2)%l] // these two wrap around
+	xn1 := buff[(i+l-3)%l] // these wrap around
+	x0 := buff[(i+l-2)%l]
 	x1 := buff[(i+l-1)%l]
 	x2 := buff[i%l]
 	x3 := buff[(i+1)%l]
 	x4 := buff[(i+2)%l]
 	x5 := buff[(i+3)%l]
 	x6 := buff[(i+4)%l]
-	// half-band sinc, 13-tap
+	x7 := buff[(i+5)%l]
+	// half-band sinc, 19-tap
 	y0 := x2
-	y1 := a5*(x0+x5) + a3*(x1+x4) + a1*(x2+x3)
+	y1 := a7*(xn1+x6) + a5*(x0+x5) + a3*(x1+x4) + a1*(x2+x3)
 	y2 := x3
-	y3 := a5*(x1+x6) + a3*(x2+x5) + a1*(x3+x4)
+	y3 := a7*(x0+x7) + a5*(x1+x6) + a3*(x2+x5) + a1*(x3+x4)
 
 	fract := x - math.Floor(x)
 	// this is to distribute the fractional part of x over two upsampled intervals
@@ -3058,17 +3060,19 @@ var ( // these could be hard-coded as constants
 	a1 = sincCoeff(1.0)
 	a3 = sincCoeff(3.0)
 	a5 = sincCoeff(5.0)
+	a7 = sincCoeff(7.0)
 )
-// this has been found empirically
-const window = 6.86
+
+const window = 9
 
 func sincCoeff(x float64) float64 {
 	return math.Sin(0.5*x*math.Pi)/(math.Pi*x)  * (math.Cos(x*math.Pi/window)+1)
 }
 
 func init() {
-	norm := 1.0 / (2*(a1+a3+a5))
+	norm := 1.0 / (2*(a1+a3+a5+a7))
 	a1 *= norm
 	a3 *= norm
 	a5 *= norm
+	a7 *= norm
 }

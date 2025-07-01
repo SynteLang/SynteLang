@@ -1,0 +1,13 @@
+in 2.5/4hz
+osc
+out s
+mod 1/16
+- 1/32
+abs
+mul 0.25
++ s
+mul 1/1.25
+wav oohah
+hpf 1khz
+lpf 3khz
+mix

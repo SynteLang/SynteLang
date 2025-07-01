@@ -1,0 +1,9 @@
+/* sh
+in 140*6bpm
+pulse 0.55
+s/h grid
+hpf 140*4bpm
+abs
+noise
+hpf 4khz
+mix

@@ -1,0 +1,35 @@
+in 2.5*2hz
++ a
+mod 1
+out a
+lt 0.5
+s/h grid
+dec 300ms
+exb 3
+mul 2
+clip 0
+push
+exb 3
+mul 0.6
+out f
+pop
+lpf 50hz
+lpf 50hz
+out vca
+in 440/3hz
+out p
+pm f
+out m
+in p
+mul 1.5
+pm f
+out+ m
+in p
+mul 1.875
+pm f
++ m
+mul vca
+out fx
+chorII
++ fx
+mix

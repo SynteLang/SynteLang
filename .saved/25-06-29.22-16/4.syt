@@ -1,0 +1,9 @@
+in 2.5*2hz
+pulse 1/4
+s/h grid
+in 1
+smooth
+lvl 0
+in 3s
+sino
+.pan 0

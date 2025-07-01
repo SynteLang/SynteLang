@@ -1,0 +1,21 @@
+/* bass
+/s 3,0
+s/h grid
++ 1
+mul 16
+out b
+/b b,0
+trn 1.5
+lpf 75hz
+out vca
+in 3s
+osc
+tri
+- 0.5
+mul 1.5
+clip 0
+out f
+in 55/2hz
+pm f
+mul vca
+out dac

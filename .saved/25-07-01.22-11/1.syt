@@ -1,0 +1,34 @@
+in 3hz
+pulse 1/4
+one2 4
+mul 8
+out t
+/s 2,0
+one2 4
+mul 8
+out b
+/b b,0
+flip
+trn t
+push
++ 1
+mul 330hz
+out p
+pop
+mul 4
+clip 0
+smooth
+out vca
+in p
+pm .5
+out m
+in p
+mul 1.02
+pm .5
++ m
+mul vca
+out fx
+mul -4db
+chorII
++ fx
+mix

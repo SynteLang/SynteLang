@@ -1,0 +1,6 @@
+in 2hz
+sq
+s/h grid
+dec 110ms
+bdfm 12,240hz
+out dac

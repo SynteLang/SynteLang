@@ -1,0 +1,16 @@
+/* hh
+/b 3,0
+out vca
+/b 3,0
+tri
+- 0.5
+clip 0
+range 125ms,5ms
+out t
+in 4hz
+sq
+s/h grid
+hh t
+mul vca
+mul 6db
+mix

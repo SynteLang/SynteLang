@@ -1,0 +1,25 @@
+in 10s
+pulse 1/4
+smooth
+out gate
+in 7s
+osc
+tri
+one2 25/24
+\ 110/8hz
+out t
+from 0
+out m
+from 1
+out+ m
+from 5
++ m
+mul gate
++ c
+hpf 20hz
+4lp
+buff0 t
+mul 0.99
+out c
+mul 6db
+mix

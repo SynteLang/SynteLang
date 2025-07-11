@@ -1,0 +1,19 @@
+in 7s
+osc
+tri
+one2 25/24
+\ 110/8hz
+out t
+from 0
+out m
+from 1
+out+ m
+from 5
++ m
++ c
+hpf 20hz
+4lp
+buff0 t
+mul 0.7
+out c
+mix

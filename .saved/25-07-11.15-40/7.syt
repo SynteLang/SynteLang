@@ -1,0 +1,22 @@
+in 8s
+pulse 3/4
+flip
+s/h grid
+one2 1.5
+out p
+in 2hz
+sq
+s/h grid
+dec 350ms
+lpf 40hz
+out vca
+mul 0.3
+out env
+in 1hz
+sq
+one2 1.5
+mul p
+mul 55hz
+pm env
+mul vca
+mix

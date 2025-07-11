@@ -1,0 +1,19 @@
+/b 3,0
+gt 0.75
+one2 1.5
+out s
+/s 7,0
+one2 1.5
+s/h grid
+mul s
+out p
+/b 12,0
+lt 0.125
+s/h grid
+smooth
+out vca
+in 440hz
+mul p
+pm -1
+mul vca
+mix

@@ -1,0 +1,10 @@
+in 140bpm
+out tempo
+/ 16
+osc
+mod 1/4
+out sync
+mul 16*4!
+mod 1
+lt 0.5
+.out grid

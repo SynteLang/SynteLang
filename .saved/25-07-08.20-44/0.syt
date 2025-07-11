@@ -1,0 +1,41 @@
+/* kps
+in 6s
+sq
+one2 1.5
+out s
+in 2s
+mul Phi
+sq
+one2 1.25
+mul s
+s/h g
+in 1
+out p
+in 7hz
+sino
+mul 0.01
++ 1
+push
+in 880/1hz
+out ^freq
+pop
+mul ^freq
+mul p
+out f
+in 2hz
++ a
+mod 1
+out a
+lt 0.53
+hpf 2hz
+abs
+gt 0.5
+out grid
+out g
+dirac
++ c
+hpf 20hz
+buff0 f
+mul 1.001
+out c
+mix

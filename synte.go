@@ -1046,7 +1046,8 @@ func readTokenPair(t *systemState) (bool, int) {
 		<-tokens
 		return tt.ext, startNewOperation
 	}
-	if t.operator[:1] == ":" { // hacky shorthand
+	// hacky shorthand, allows ":q" etc, i.e. without the space between operator/operand
+	if len(t.operator) > 1 && t.operator[:1] == ":" {
 		t.operand = t.operator[1:]
 		t.operator = ":"
 		return tt.ext, nextOperation

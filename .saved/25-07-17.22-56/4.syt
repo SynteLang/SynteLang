@@ -1,0 +1,13 @@
+/s 3,0
+s/h grid
+range 4,6
+out b
+/b b,0
+trn 2.2
+lpf 24hz
+out vca
+in 55hz
+pm -0.3
+mul 11db
+mul vca
+mix

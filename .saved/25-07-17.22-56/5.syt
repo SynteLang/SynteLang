@@ -1,0 +1,9 @@
+/s 1,0
+flip
+range 1,6
+out b
+/s b,0
+s/h grid
+dec 100ms
+bdfm 18,250hz
+out dac

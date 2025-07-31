@@ -1,0 +1,38 @@
+/* lead
+/b 1.5,0
+tri
+mul 0.7
+out fc
+in 2hz
+sq
+s/h grid
+out gt
+in 3hz
+step 3
+s/h gt
+mul 8*1.5
+out b
+/s b,0
+s/h grid
+dec 300ms
+exb 2
+smooth
+smooth
+out vca
+in 3s
+sino
+mul 0.01
++ 1
+out v
+/s 8,0
+out g
+in 1
+noise
+lt 0
+s/h g
+one2 1.5
+mul 330hz
+mul v
+pm fc
+mul vca
+mix

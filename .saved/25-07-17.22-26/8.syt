@@ -1,0 +1,8 @@
+in 4hz
+sq
+s/h grid
+dec 110ms
+bdfm 12,240hz
+mul 9
+tanh
+out dac

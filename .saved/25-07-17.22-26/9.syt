@@ -1,0 +1,11 @@
+in r.aloud
+/ 4
+osc
+out s
+in r.aloud
+osc
+mod 1/32
++ s
+/ 2
+wav aloud
+out dac

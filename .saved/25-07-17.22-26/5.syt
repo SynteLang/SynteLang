@@ -1,0 +1,50 @@
+in 2s
+sq
+s/h grid
+one2 4
+out d
+in 2.5*1hz
+sq
+s/h grid
+dec 200ms
+exb 12
+push
+exb 4
+mul -1.0
+out f
+pop
+mul 2
+clip 0
+lpf 50hz
+out vca
+in 440/2hz
+out p
+pm f
+out m
+in 3hz
+sino
+mul 0.01
++ 1
+mul p
+mul 1.2
+pm f
+out+ m
+in 4hz
+sino
+mul 0.01
++ 1
+mul p
+mul 1.5
+pm f
+out+ m
+in p
+mul 1.125
+pm f
++ m
+mul vca
+out fx
+chorII
++ fx
+mul -12db
+lpf 400hz
+out dac

@@ -1,0 +1,41 @@
+/* sqr
+in 13s
+osc
+tri
+range -0.125,0.5
+out s
+/s 16*4,0
+out g
+in 3hz
+pulse 3/4
+s/h grid
+range 30ms,300ms
+out t
+in 17s
+sq
+in 1
+out gt
+in 1
+noise
+lt s
+mul gt
+s/h g
+mul g
+dirac
+down t
+exb 6
+smooth
+smooth
+out vca
+/s 3.5*4,0
+one2 4/3
+s/h grid
+mul 440*3hz
+lpf 25hz
+sino
+clip 0.3
+hpf 500hz
+mul vca
+mul -4db
+lpf 4khz
+mix

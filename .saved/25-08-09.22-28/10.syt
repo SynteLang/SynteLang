@@ -1,0 +1,39 @@
+/* lgd
+in 3hz
+sq
+range 12,24
+out b
+/s b,0
+s/h grid
+dec 500ms
+exb 8
+out env
+mul 2
+clip 0
+smooth
+smooth
+out vca
+in 110/2hz
+out p
+push
+/ 2
+sino
+out m
+pop
+mul 6
+sino
+mul env
+mul p
+mul 1.5
++ p
+sino
++ m
+mul vca
+out fx
+buff0 220*1.618hz
++ fx
+out eq
+hpf 110hz
++ eq
+mul -8db
+mix

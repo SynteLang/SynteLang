@@ -1,0 +1,24 @@
+/* cp
+in 3hz
+osc
+tri
+push
++ -10db
+out vca
+pop
+gt 0.5
+range 6*2,12*2
+out b
+/s b,0.0
+s/h grid
+dec 150ms
+exb 14
+mul 3
+tanh
+noise
+hpf 1khz
+mul 16db
+mul vca
+lpf 2khz
+lpf 4khz
+mix

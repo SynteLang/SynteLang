@@ -1,0 +1,35 @@
+/* lgd
+in 1.5hz
+pulse 1/4
+range 3*4,6*4
+out b
+/s b,0
+s/h grid
+dec 800ms
+exb 14
+out env
+mul 4
+clip 0
+smooth
+smooth
+out vca
+/b 1,0
+gt 7/8
+one2 4/3
+mul 110/3hz
+out p
+mul 6
+sino
+mul env
+mul p
+mul 2.5
++ p
+sino
+mul vca
+out fx
+buff0 220*1.618hz
++ fx
+out eq
+hpf 55hz
++ eq
+mix

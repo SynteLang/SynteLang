@@ -1,0 +1,10 @@
+/* sh
+/b 16*4,0
+flip
+trn 10
+lpf 50hz
+noise
+hpf 2khz
+hpf 5khz
+lpf 8khz
+mix

@@ -1,0 +1,52 @@
+/* chrd
+in 0.5
+mul vca
+out fq
+/s 3*4,0
+s/h grid
+dec 300ms
+exb 4
+mul 2
+clip 0
+lpf 50hz
+out vca
+in 1
+noise
+lt 0
+s/h grid
+mul 2
++ 13
+/ 16
+out b
+/b 1,0
+gt b
+one2 1.5
+mul 110*1.5hz
+push
+mul 3.5
+out f
+pop
+out p
+pm fq
+out m
+in p
+mul 1.25
+pm fq
+out+ m
+in p
+mul 1.5
+pm fq
+out+ m
+in p
+mul 1.875
+pm fq
++ m
+lpf f
+lpf f
+lpf f
+out fx
+chorII
++ fx
+mul 4db
+mul vca
+mix

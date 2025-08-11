@@ -1,0 +1,25 @@
+/* bass
+/s 1.5,0
+s/h grid
+range 2,3
+mul 4
+out b
+/b b,0
+trn 2.2
+push
+mul 0.5
+out fc
+pop
+mul 2
+clip 0
+lpf 24hz
+lpf 24hz
+out vca
+in 7s
+sq
+s/h grid
+range 1/1.5,1
+in 55*1.4hz
+pm fc
+mul vca
+mix

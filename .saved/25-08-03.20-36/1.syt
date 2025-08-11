@@ -1,0 +1,18 @@
+/* hh
+in 13s
+osc
+flip
+trn 2
++ 1
+out s
+/b 1,0
++ 1.5
+mul s
+mul 1.5
+out b
+/s b,0
+mul grid
+hh 132ms
+hpf 8khz
+mul 12db
+mix

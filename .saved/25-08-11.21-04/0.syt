@@ -1,0 +1,16 @@
+in 123bpm
+out tempo
+/ 16
+osc
+out sync
+mul 16*2
+mod 1
+lt 0.53
+push
+flip
+dirac
+out d
+pop
+dirac
++ d
+.out grid

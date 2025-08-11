@@ -1,0 +1,27 @@
+/* bass
+in 3hz
+sq
+s/h grid
+range 6*4,8*4
+out b
+/s b,0
+s/h grid
+out g
+dec 350ms
+exb 5
+mul 2
+clip 0
+lpf 50hz
+smooth
+out vca
+in 55/1.5hz
+sino
+mul vca
+out x
+mul x
+mul x
++ x
+mul 2
+tanh
+mul 1db
+mix

@@ -1,0 +1,32 @@
+in 1.5hz
+sq
+range 3,8
+out b
+/s b,0
+s/h grid
+out g
+dec 600ms
+exb 4
+smooth
+smooth
+out vca
+in 3s
+osc
+out s
+in 2.5hz
+osc
++ s
+mod 1
+s/h g
+phryg
+mul 660hz
+out p
+pm 0.2
+out m
+in p
+mul 1.007
+pm 0.2
++ m
+chorII
+mul vca
+mix

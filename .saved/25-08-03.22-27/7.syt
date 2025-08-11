@@ -1,0 +1,12 @@
+/* cp
+/s 4*2,0.5
+dec 100ms
+exb 10
+mul 3
+tanh
+noise
+hpf 1khz
+mul 8db
+lpf 2khz
+lpf 4khz
+mix

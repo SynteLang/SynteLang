@@ -1,0 +1,10 @@
+in 1.8hz
+osc
+tri
++ 0.2
+out w
+/shd 6*4,100ms
+exb 6
+sd
+mul w
+mix

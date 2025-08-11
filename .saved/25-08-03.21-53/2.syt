@@ -1,0 +1,12 @@
+/* kick
+/s 7,0
+s/h grid
+range 4,6
+mul 4
+out b
+/s b,0
+s/h grid
+dec 100ms
+bdfm 12,320hz
+mul -6db
+out dac

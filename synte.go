@@ -1239,6 +1239,15 @@ func parseType(expr, op string, SR float64) (n float64, b bool) {
 		}
 		n /= 60
 		n /= SR
+	case len(expr) > 2 && expr[len(expr)-2:] == "sm":
+		if n, b = evaluateExpr(expr[:len(expr)-2]); !b {
+			return 0, false
+		}
+		n = 1/n
+		if n > 2 {
+			msg("exceeds minimum number of samples")
+			return 0, false
+		}
 	case len(expr) > 1 && expr[len(expr)-1:] == "m":
 		if n, b = evaluateExpr(expr[:len(expr)-1]); !b {
 			return 0, false

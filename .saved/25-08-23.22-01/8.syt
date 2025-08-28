@@ -1,0 +1,21 @@
+/* rvrb
+from 6
+mul -2db
+out m
+from 7
+out+ m
+from 0
+mul -6db
++ m
++ c
+hpf 200hz
+tape tempo
+lpf 5khz
+out fx
+4lp
+mul -12db
++ fx
+mul 0.6
+out c
+mul -2db
+out dac

@@ -1,0 +1,17 @@
+/* kick
+/b 1.5,0
+lt 0.28
+s/h grid
+range 3,6
+out b
+/s b,0
+s/h grid
+dec 100ms
+smooth
+smooth
+exb 4
+mul 160hz
+sino
+hpf 10hz
+lpf 800hz
+out dac

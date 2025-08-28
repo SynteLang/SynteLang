@@ -1,0 +1,21 @@
+/* sd
+in 3s
+osc
+tri
+range 0.5,1
+out vca
+/s 14,0
+flip
+one2 1.36
+out ps
+in 13s
+pulse 1/16
+s/h grid
+range 4,8.25
+out b
+/s b,0.5
+s/h grid
+dec 40ms
+js ps
+mul vca
+mix

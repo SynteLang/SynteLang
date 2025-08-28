@@ -1,0 +1,42 @@
+/* sub
+/s 1,0
+flip
+out s1
+push
+noise
+s/h grid
+lt 0.65
+out g
+pop
+range 6,16
+out b
+/s b,0
+s/h grid
+mul g
+dec 450ms
+exb 3
+push
+mul 2
+clip 0
+lpf 50hz
+out vca
+pop
+exb 3
+smooth
+mul 0.07
+out f
+/b 1,0.25
+lt 0.125
+one2 1.25
+out p
+in s1
+range 1/1.5,1
+mul p
+mul 165/4hz
+mul 1.495
+pm 0.4
+lpf 2.5*165hz
+mul vca
+dbl -12db
+mul 12db
+mix

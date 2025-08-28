@@ -1,0 +1,61 @@
+/* chrd
+/s 8,0
+- 0.5
+smooth
+smooth
+pan 6
+/b 16,0
+lt 0.25
+down 50ms
+lpf 50hz
++ -12db
+lvl 6
+in 0.7
+out fq
+/s 3*2,0
+s/h grid
+dec 1850ms
+exb 4
+out env
+mul 2
+clip 0
+lpf 50hz
+out vca
+in tempo
+/ 32
+sq
+one2 1.25
+mul 110*1.5hz
+lpf 10hz
+push
+mul 2.5
+out f
+pop
+out p
+pm fq
+out m
+in p
+mul 1.25
+pm fq
+out+ m
+in p
+mul 1.5
+pm fq
+out+ m
+in p
+mul 1.875
+pm fq
++ m
+lpf f
+out fx
+chorII
+mul 6db
++ fx
+hpf 330hz
+mul 4db
+mul vca
+out crunch
+tb303 550*3hz,0.9
+mul -8db
++ crunch
+mix

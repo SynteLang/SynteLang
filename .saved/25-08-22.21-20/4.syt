@@ -1,0 +1,17 @@
+/* sd
+in 3s
+osc
+tri
+range 0.75,1
+out vca
+in 13s
+pulse 1/8
+s/h grid
+range 4,8.25
+out b
+/s b,0.5
+s/h grid
+dec 75ms
+sd
+mul vca
+mix

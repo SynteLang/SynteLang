@@ -1,0 +1,28 @@
+/* rvrb
+in 2s
+osc
+mul 0.1
++ 1
+out s
+/b 16,0
+mul 0.01
++ 1
+mul tempo
+mul 3
+out t
+from 4
+out m
+from 6
+out+ m
+from 7
+mul -12db
++ m
++ c
+tape t
+hpf 100hz
+4lp
+lpf 8khz
+mul 0.5
+out c
+mul -12db
+out dac

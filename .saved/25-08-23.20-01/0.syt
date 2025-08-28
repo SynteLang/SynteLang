@@ -1,0 +1,48 @@
+/* res?
+in 180bpm
+out tempo
+/ 8
++ sync
+mod 1
+out sync
+mul 8*2
+mod 1
+lt 0.55
+push
+dirac
+out d
+pop
+flip
+dirac
++ d
+out grid
+in 13s
+sq
+s/h grid
+one2 1.5
+out s
+/b 16,0
+flip
+exb 3
+smooth
+smooth
+out vca
+mul 3
+clip 0
+out env
+/b 3*4,0
+tri
+mul 4
+mul env
+base 2
+mul 110hz
+clip 0.25
+out fc
+in 330*1.25hz
+mul s
+mul 0.25
+pm 1.5
+hpf 10hz
+mul vca
+tb303 fc,0.9
+mix

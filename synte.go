@@ -260,6 +260,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"halt":   {not, 51, noCheck},        // halt sound engine for time specified by input (experimental)
 	"4lp":    {not, 52, checkAlp},        // prototype all-pass filter
 	"panic":  {not, 53, noCheck},        // artificially induce a SE panic, for testing
+	"tan":    {not, 57, noCheck},        // tan(x)
 
 	// specials. Not intended for sound engine, except 'deleted'
 	"]":       {not, 0, endFunctionDefine},   // end function input
@@ -2010,6 +2011,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 						n,
 						tapeLen,
 					)
+				case 57: // "tan"
+					r = math.Tan(math.Pi * r)
 				default:
 					continue listings
 				}

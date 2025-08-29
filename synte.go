@@ -227,8 +227,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"<sync":  {yes, 25, noCheck},      // receive sync pulse
 	">sync":  {not, 26, noCheck},      // send sync pulse
 	".>sync": {not, 26, noCheck},      // alias, launches listing
-	//	"jl0":    {yes, 27, noCheck},    // jump if less than zero
-	"/*":      {yes, 27, noCheck},		 // comments and/or name
+	"jl0":    {yes, 27, noCheck},    // jump if less than zero
 	"level":  {yes, 28, noCheck}, // vary level of a listing
 	".level": {yes, 28, noCheck}, // alias, launches listing
 	"lvl":    {yes, 28, noCheck}, // vary level of a listing
@@ -261,6 +260,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"4lp":    {not, 52, checkAlp},        // prototype all-pass filter
 	"panic":  {not, 53, noCheck},        // artificially induce a SE panic, for testing
 	"tan":    {not, 57, noCheck},        // tan(x)
+	"/*":     {yes, 58, noCheck},		 // comments and/or name
 
 	// specials. Not intended for sound engine, except 'deleted'
 	"]":       {not, 0, endFunctionDefine},   // end function input
@@ -1485,6 +1485,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		run syncState = iota
 		on
 		off
+
+		jumpThreshold = 0.0001
 	)
 
 	var (
@@ -1644,6 +1646,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 			r := 0.0
 			//op := 0
 			ll := len(d[i].listing)
+			d[i].stack = d[i].stack[:0] // delete stack first
 			for ii := 0; ii < ll; ii++ {
 				//o := d[i].listing[ii]
 				switch d[i].listing[ii].Opn {
@@ -1763,15 +1766,15 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					case r > 0: // reset
 						d[i].syncSt8 = run
 					}
-				case 27:
-					// nop
-				/*case 27: // "jl0"
-				if r <= 0 {
-					op += int(d[i].sigs[d[i].listing[ii].N])
-				}
-				if op > len(list)-2 {
-					op = len(list) - 2
-				}*/
+				case 27: // "jl0"
+					if r > jumpThreshold {
+						continue
+					}
+					sg := int(d[i].sigs[d[i].listing[ii].N])
+					if sg > len(d[i].listing)-1 || sg < 1 {
+						continue listings
+					}
+					ii += sg
 				case 28: // "level", ".level"
 					l := int(d[i].sigs[d[i].listing[ii].N])
 					if l > len(d)-1 || l < 0 {
@@ -2022,12 +2025,13 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					)
 				case 57: // "tan"
 					r = math.Tan(math.Pi * r)
+				case 58:
+					// nop
 				default:
 					continue listings
 				}
 				//op++
 			}
-			d[i].stack = d[i].stack[:0] // delete stack
 
 			if math.IsInf(d[i].sigs[0], 0) { // infinity to '93
 				d[i].sigs[0] = 0

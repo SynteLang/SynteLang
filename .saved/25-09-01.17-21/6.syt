@@ -23,7 +23,7 @@ lpf 50hz
 out vca
 in tempo
 / 32
-sq
+pulse 1/4
 one2 1.25
 mul 110*1.5hz
 lpf 10hz
@@ -51,11 +51,7 @@ out fx
 chorII
 mul 6db
 + fx
-hpf 330hz
+hpf 420hz
 mul 4db
 mul vca
-out crunch
-X0X 550*1.3hz,0.9
-mul -12db
-+ crunch
 mix

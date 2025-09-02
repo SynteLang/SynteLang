@@ -45,6 +45,6 @@ mul 0.25
 pm 1.5
 hpf 10hz
 mul vca
-tb303 fc,0.9
+X0X fc,0.9
 pad
 mix

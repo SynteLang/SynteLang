@@ -55,7 +55,7 @@ hpf 330hz
 mul 4db
 mul vca
 out crunch
-tb303 550*3hz,0.9
+X0X 550*3hz,0.9
 mul -8db
 + crunch
 mix

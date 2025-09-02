@@ -1,0 +1,47 @@
+/* sub
+/b 1,0
+lt 0.75
+range 5,16
+out b
+in sync
+mul 2
+mod 1
+mul 2-0.25
+mod 1
+lt 0.5
+/s b,0
+s/h grid
+dec 370ms
+exb 4
+push
+mul 2
+clip 0
+smooth
+lpf 50hz
+out vca
+pop
+exb 2
+smooth
+smooth
+mul 0.2
+out f
+/b 1,0.25
+lt 1/16
+one2 1.25
+smooth
+mul 165/4hz
+osc
++ pm
+sine
+push
+out x
+mul x
+- 0.5
+mul f
+out pm
+pop
+dbl 1
+lpf 800hz
+mul vca
+mul 8db
+mix

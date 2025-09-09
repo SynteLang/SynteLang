@@ -75,7 +75,7 @@ const (
 	MAX_WAVS      = 12
 	lenReserved   = 11
 	maxExports    = 12
-	DEFAULT_FREQ  = 0.0625 // 3kHz @ 48kHz Sample rate
+	DEFAULT_FREQ  = 3000.0/SAMPLE_RATE
 	MIN_FADE      = 75e-3 // 75ms
 	MAX_FADE      = 120   // seconds
 	defaultRelease = 0.35  // seconds
@@ -261,6 +261,8 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"panic":  {not, 53, noCheck},        // artificially induce a SE panic, for testing
 	"tan":    {not, 57, noCheck},        // tan(x)
 	"/*":     {yes, 58, noCheck},		 // comments and/or name
+	"ADAAtanh": {yes, 59, noCheck},		 // Anti-derivative anti-aliased tanh
+	"ADAAclip": {yes, 60, noCheck},		 // Anti-derivative anti-aliased hard-clip
 
 	// specials. Not intended for sound engine, except 'deleted'
 	"]":       {not, 0, endFunctionDefine},   // end function input
@@ -2025,8 +2027,16 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 					)
 				case 57: // "tan"
 					r = math.Tan(math.Pi * r)
-				case 58:
+				case 58: // "/*"
 					// nop
+				case 59: // "ADAAtanh
+					x := r
+					r = tanhADAA(r, d[i].sigs[d[i].listing[ii].N])
+					d[i].sigs[d[i].listing[ii].N] = x
+				case 60: // "ADAAclip"
+					x := r
+					r = ADAAclip(r, d[i].sigs[d[i].listing[ii].N])
+					d[i].sigs[d[i].listing[ii].N] = x
 				default:
 					continue listings
 				}
@@ -2172,6 +2182,21 @@ func clip(in float64) float64 { // hard clip
 	return in
 }
 
+func ADAAclip(x, y float64) float64 {
+	abs := math.Abs(x)
+	dx := x - y
+	if dx < ADAAthreshold {
+		if abs < 1 {
+			return x
+		}
+		return math.Copysign(1,x)
+	}
+	if abs < 1 {
+		return (x*x - y*y)/ (2*dx)
+	}
+	return (math.Copysign(1,x)*x - math.Copysign(1,y)*y) / dx
+}
+
 const width = 2 << 16 // precision of tanh table
 var tanhTab = make([]float64, width)
 
@@ -2181,13 +2206,17 @@ func init() {
 	}
 }
 
-const Tau = 2 * math.Pi
+const (
+	Tau = 2 * math.Pi
+	ADAAthreshold = 1e-3
+)
 
 func sine(x float64) float64 {
-	return math.Cos(Tau * x)
+	return math.Sin(Tau * x)
 }
 
 func tanh(x float64) float64 {
+	return math.Tanh(x)
 	if x < -1 || x > 1 {
 		return math.Tanh(x)
 	}
@@ -2206,6 +2235,15 @@ func tanh(x float64) float64 {
 		return -(ta + ((tb - ta) * xx))
 	}
 	return ta + ((tb - ta) * xx)
+}
+
+func tanhADAA(x, y float64) float64 {
+	dx := x - y
+	if math.Abs(dx) < ADAAthreshold {
+	// x is slow moving so use tanh directly and avoid division by zero
+		return math.Tanh((x+y)*0.5)
+	}
+	return (math.Log(math.Cosh(x)) - math.Log(math.Cosh(y))) / dx
 }
 
 func (n *noise) ise() float64 {

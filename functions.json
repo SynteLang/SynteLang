@@ -203,7 +203,7 @@
 		]
 	},
 	"/shd": {
-		"Comment": "",
+		"Comment": "equivalent to `/b` followed by `lt 0.5` and `dec`",
 		"Body": [
 			{
 				"Op": "in",
@@ -1989,6 +1989,23 @@
 			}
 		]
 	},
+	"clp": {
+		"Comment": "alternative to `clip` with anti-aliasing",
+		"Body": [
+			{
+				"Op": "/",
+				"Opd": "@"
+			},
+			{
+				"Op": "ADAAclip",
+				"Opd": "y"
+			},
+			{
+				"Op": "mul",
+				"Opd": "@"
+			}
+		]
+	},
 	"count": {
 		"Comment": "generates a rising staircase of values from 1 up to and including operand. Use a pulse or square wave [0,1] as input. Uses `dirac` to detect edge transitions internally. Can be used with `in \u003ctempo\u003e, osc, lt 0.5, count n` as a more precise equivalent to `step` ",
 		"Body": [
@@ -2056,6 +2073,31 @@
 			{
 				"Op": "clip",
 				"Opd": "1"
+			}
+		]
+	},
+	"dbl": {
+		"Comment": "doubles frequencies and mixes in with input. Operand is amount of doubled signal",
+		"Body": [
+			{
+				"Op": "out",
+				"Opd": "x"
+			},
+			{
+				"Op": "mul",
+				"Opd": "x"
+			},
+			{
+				"Op": "-",
+				"Opd": "0.5"
+			},
+			{
+				"Op": "mul",
+				"Opd": "@"
+			},
+			{
+				"Op": "+",
+				"Opd": "x"
 			}
 		]
 	},
@@ -4103,7 +4145,7 @@
 		]
 	},
 	"inj": {
-		"Comment": "",
+		"Comment": "inject a [0,1] signal via the operand",
 		"Body": [
 			{
 				"Op": "out",
@@ -4414,6 +4456,411 @@
 			{
 				"Op": "out",
 				"Opd": "y"
+			}
+		]
+	},
+	"js": {
+		"Comment": " jungle-ish snare. Use an envelope as input, operand is pitch eg. 1.1 higher pitch, 0.9 lower pitch",
+		"Body": [
+			{
+				"Op": "out",
+				"Opd": "env"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "--",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "500hz"
+			},
+			{
+				"Op": "out",
+				"Opd": "h"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "2khz"
+			},
+			{
+				"Op": "out",
+				"Opd": "f"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "e.13"
+			},
+			{
+				"Op": "in",
+				"Opd": "45"
+			},
+			{
+				"Op": "base",
+				"Opd": "2"
+			},
+			{
+				"Op": "-",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "x.13"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "pow",
+				"Opd": "e.13"
+			},
+			{
+				"Op": "-",
+				"Opd": "1"
+			},
+			{
+				"Op": "/",
+				"Opd": "x.13"
+			},
+			{
+				"Op": "mul",
+				"Opd": "8"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "1.5"
+			},
+			{
+				"Op": "mul",
+				"Opd": "@"
+			},
+			{
+				"Op": "out",
+				"Opd": "p"
+			},
+			{
+				"Op": "mul",
+				"Opd": "180*1.36hz"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.14"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.14"
+			},
+			{
+				"Op": "mul",
+				"Opd": "2"
+			},
+			{
+				"Op": "+",
+				"Opd": "-1"
+			},
+			{
+				"Op": "abs",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "m"
+			},
+			{
+				"Op": "in",
+				"Opd": "235*1.36hz"
+			},
+			{
+				"Op": "mul",
+				"Opd": "p"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "+",
+				"Opd": "a.16"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.16"
+			},
+			{
+				"Op": "mul",
+				"Opd": "2"
+			},
+			{
+				"Op": "+",
+				"Opd": "-1"
+			},
+			{
+				"Op": "abs",
+				"Opd": ""
+			},
+			{
+				"Op": "+",
+				"Opd": "m"
+			},
+			{
+				"Op": "mul",
+				"Opd": "2"
+			},
+			{
+				"Op": "+",
+				"Opd": "-1"
+			},
+			{
+				"Op": "clip",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "env"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "-",
+				"Opd": "x.19"
+			},
+			{
+				"Op": "+",
+				"Opd": "y.19"
+			},
+			{
+				"Op": "out",
+				"Opd": "r.19"
+			},
+			{
+				"Op": "in",
+				"Opd": "h"
+			},
+			{
+				"Op": "mul",
+				"Opd": "Tau"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "\\",
+				"Opd": "1"
+			},
+			{
+				"Op": "clip",
+				"Opd": "0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "r.19"
+			},
+			{
+				"Op": "out",
+				"Opd": "y.19"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "x.19"
+			},
+			{
+				"Op": "in",
+				"Opd": "y.19"
+			},
+			{
+				"Op": "-",
+				"Opd": "b.20"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.20"
+			},
+			{
+				"Op": "in",
+				"Opd": "f"
+			},
+			{
+				"Op": "f2c",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.20"
+			},
+			{
+				"Op": "+",
+				"Opd": "b.20"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.20"
+			},
+			{
+				"Op": "out",
+				"Opd": "sn"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "0.25"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "nois",
+				"Opd": ""
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "-",
+				"Opd": "x.22"
+			},
+			{
+				"Op": "+",
+				"Opd": "y.22"
+			},
+			{
+				"Op": "out",
+				"Opd": "r.22"
+			},
+			{
+				"Op": "in",
+				"Opd": "200hz"
+			},
+			{
+				"Op": "mul",
+				"Opd": "Tau"
+			},
+			{
+				"Op": "+",
+				"Opd": "1"
+			},
+			{
+				"Op": "\\",
+				"Opd": "1"
+			},
+			{
+				"Op": "clip",
+				"Opd": "0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "r.22"
+			},
+			{
+				"Op": "out",
+				"Opd": "y.22"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "x.22"
+			},
+			{
+				"Op": "in",
+				"Opd": "y.22"
+			},
+			{
+				"Op": "mul",
+				"Opd": "0.5"
+			},
+			{
+				"Op": "-",
+				"Opd": "b.23"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.23"
+			},
+			{
+				"Op": "in",
+				"Opd": "5khz"
+			},
+			{
+				"Op": "f2c",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.23"
+			},
+			{
+				"Op": "+",
+				"Opd": "b.23"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.23"
+			},
+			{
+				"Op": "+",
+				"Opd": "sn"
+			},
+			{
+				"Op": "mul",
+				"Opd": "12db"
 			}
 		]
 	},
@@ -7726,7 +8173,7 @@
 		]
 	},
 	"sd": {
-		"Comment": "",
+		"Comment": "snare drum. Operand is decay time in milliseconds",
 		"Body": [
 			{
 				"Op": "out",
@@ -9093,6 +9540,268 @@
 			}
 		]
 	},
+	"svf": {
+		"Comment": "state variable filter. First operand is cutoff frequency, second is resonance (0.5 low to 3 high resonance. Bandpass and highpass can be accessed via the `^bp` and `^hp` signals",
+		"Body": [
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "@"
+			},
+			{
+				"Op": "mul",
+				"Opd": "20"
+			},
+			{
+				"Op": "clip",
+				"Opd": "0"
+			},
+			{
+				"Op": "/",
+				"Opd": "20"
+			},
+			{
+				"Op": "mul",
+				"Opd": "0.5"
+			},
+			{
+				"Op": "sine",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "2"
+			},
+			{
+				"Op": "clip",
+				"Opd": "0"
+			},
+			{
+				"Op": "out",
+				"Opd": "f"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "-",
+				"Opd": "l"
+			},
+			{
+				"Op": "ADAAtanh",
+				"Opd": "y.6"
+			},
+			{
+				"Op": "-",
+				"Opd": "q"
+			},
+			{
+				"Op": "out",
+				"Opd": "^hp"
+			},
+			{
+				"Op": "mul",
+				"Opd": "f"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "z0"
+			},
+			{
+				"Op": "out",
+				"Opd": "^bp"
+			},
+			{
+				"Op": "/",
+				"Opd": "@1"
+			},
+			{
+				"Op": "clip",
+				"Opd": "0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "2"
+			},
+			{
+				"Op": "out",
+				"Opd": "q"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "+",
+				"Opd": "z0"
+			},
+			{
+				"Op": "out",
+				"Opd": "z0"
+			},
+			{
+				"Op": "in",
+				"Opd": "^bp"
+			},
+			{
+				"Op": "mul",
+				"Opd": "f"
+			},
+			{
+				"Op": "+",
+				"Opd": "^lp"
+			},
+			{
+				"Op": "out",
+				"Opd": "^lp"
+			},
+			{
+				"Op": "out",
+				"Opd": "l"
+			}
+		]
+	},
+	"swng": {
+		"Comment": "like `def` but with swing added by the third operand. 0.5 is no swing, 0.53 is a lot of swing",
+		"Body": [
+			{
+				"Op": "in",
+				"Opd": "@"
+			},
+			{
+				"Op": "out",
+				"Opd": "tempo"
+			},
+			{
+				"Op": "/",
+				"Opd": "@1"
+			},
+			{
+				"Op": "+",
+				"Opd": "sync"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "sync"
+			},
+			{
+				"Op": "mul",
+				"Opd": "@1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "2"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "lt",
+				"Opd": "@2"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "--",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.1"
+			},
+			{
+				"Op": "gt",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "'b.1"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "a.1"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0"
+			},
+			{
+				"Op": "out",
+				"Opd": "'b.1"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "d"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "a.2"
+			},
+			{
+				"Op": "gt",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "'b.2"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "a.2"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0"
+			},
+			{
+				"Op": "out",
+				"Opd": "'b.2"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "+",
+				"Opd": "d"
+			},
+			{
+				"Op": ".out",
+				"Opd": "grid"
+			}
+		]
+	},
 	"sync": {
 		"Comment": "",
 		"Body": [
@@ -9275,23 +9984,11 @@
 		]
 	},
 	"tnh": {
-		"Comment": "simple tanh approximation",
+		"Comment": "alternative to `tanh` with anti-aliasing",
 		"Body": [
 			{
-				"Op": "out",
-				"Opd": "x"
-			},
-			{
-				"Op": "abs",
-				"Opd": ""
-			},
-			{
-				"Op": "+",
-				"Opd": "1"
-			},
-			{
-				"Op": "\\",
-				"Opd": "x"
+				"Op": "ADAAtanh",
+				"Opd": "y"
 			}
 		]
 	},

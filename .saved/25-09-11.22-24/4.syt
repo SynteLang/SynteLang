@@ -1,0 +1,12 @@
+in 3s
+osc
+tri
+range 900ms,200ms
+out t
+in 4.2/2hz
+sq
+s/h grid
+dec t
+kd 80hz
+lpf 400hz
+out dac

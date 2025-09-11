@@ -1,0 +1,37 @@
+in 4hz
+sq
+out grid
+in 2.5hz
+osc
+tri
+mul 0.3
+out s0
+in 8s
+osc
+tri
+mul 2.5
++ s0
+out d
+mod 1
+out p
+-- d
+base 2
+out s
+in 3hz
+osc
+tri
++ 1
+mul 600hz
+out f
+in p
+s/h grid
+phryg
+down 100ms
+flip
+down 50ms
+mul s
+mul 440*2hz
+pm 0.7
+svf f,1
+in ^bp
+mix

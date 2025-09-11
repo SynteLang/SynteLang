@@ -1,0 +1,13 @@
+from 0
+out m
+from 3
++ m
++ c
+hpf 100hz
+tape 73ms
+4lp
+lpf 12khz
+mul 0.5
+out c
+vol -8db
+out dac

@@ -1,0 +1,29 @@
+/* js
+in 2.25hz
+osc
+tri
++ 0.5
+phryg
+- 0.75
+s/h grid
+out p
+/b 1,0
+lt 0.51
+push
+dirac
+out d
+pop
+flip
+dirac
++ d
+out g
+in 1.5s
+pulse 1/4
+s/h grid
+range 2hz,3.5hz
+sq
+s/h g
+dec 40ms
+lpf 50hz
+js p
+mix

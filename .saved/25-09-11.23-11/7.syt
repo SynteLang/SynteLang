@@ -1,0 +1,29 @@
+/* lg
+in 12s
+sq
+range 25/24,1.25
+out s
+in 1.15hz
+sq
+s/h grid
+dec 1200ms
+exb 3
+lpf 30hz
+out env
+in 4.5hz
+sq
+s/h grid
+one2 s
+out p
+mul 44*2hz
+sino
+mul env
+mul env
+mul 2
++ 1
+mul 44hz
+mul p
+sino
+mul env
+vol 4db
+out dac

@@ -1,0 +1,14 @@
+/* gh
+in 3hz
+osc
+tri
+range 0.1,0.7
+out vca
+/s 28/3.1,0
+s/h grid
+dec 35ms
+sd
+hpf 300hz
+mul vca
+lpf 1khz
+mix

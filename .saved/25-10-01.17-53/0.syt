@@ -1,0 +1,58 @@
+in 1.2*6s
+pulse 0.95
+out i
+in 24s
+sq
+one2 1.25
+out o
+in 16s
+sq
+flip
++ 1
+mul o
+out s
+in 6s
+sq
+flip
+one2 1.2
+mul s
+mul i
+out p
+in 3hz
+sino
+mul 0.2
+out v
+in 4s
+osc
+range 2s,6hz
+osc
+push
++ v
+clip 0
+mul 0.095
+base 2
+mul p
+mul 440/2hz
+out t
+pop
+lt 0.5
+dirac
+lpf 800hz
+lpf 4khz
++ c
+hpf 100hz
+buff0 t
+out fx
+buff1 13ms
+4lp
+mul -34db
++ fx
+lpf 6khz
+lpf 14khz
+out c
+hpf 800hz
+hpf 800hz
+lpf 1khz
+lpf 5khz
+vol 24db
+mix

@@ -1,0 +1,29 @@
+/* rvrb
+in 2.5hz
+sino
+mul 0.008
++ 1
+mul 135*6bpm
+out t
+from 0
+out m
+from 8
+out+ m
+from 9
++ m
+/* nested_alp_reverb
++ c
+hpf 200hz
+tape t
++ fb
+mul 0.5
+out ff
+alp1 125ms,0.5
+4lp
+mul 0.5
+out fb
++ ff
+mul 0.95
+out c
+vol -8db
+out dac

@@ -1,0 +1,4 @@
+/s 16,0
+s/h grid
+lpf 75hz
+.lvl 0

@@ -1,0 +1,31 @@
+in 1.5hz
+sq
+mul 1.125
+out s1
+in 7s
+sq
+range 1.25,4/3
+out i
+in 3s
+pulse 1/4
+mul i
+out s
+in 4s
+sq
+one2 1.5
+inj s
+inj s1
+s/h grid
+push
+hpf 8hz
+mul 6
+abs
+clip 0
+smooth
+out vca
+pop
+mul 440hz
+pm 0.7
+vol vca
+vol 6db
+mix

@@ -1,0 +1,15 @@
+/* sh
+in 3s
+pulse 1/8
+s/h grid
++ 1
+mul 16
+out b
+/b b,0
+flip
+trn 10
+lpf 50hz
+noise
+hpf 2khz
+hpf 5khz
+mix

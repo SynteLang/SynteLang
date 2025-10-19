@@ -1,0 +1,32 @@
+/* twnk
+in 3hz
+sino
+pan 7
+in 7hz
+sq
+s/h grid
+one2 1.125
+out s
+in 5hz
+sq
+one2 1.25
+mul s
+s/h grid
+push
+hpf 8hz
+abs
+mul 3
+clip 0
+lpf 50hz
+out vca
+pop
+mul 440*4.24hz
+lpf 38hz
+pm 0.3
+mul vca
+mul 4db
+out fx
+4lp
+mul -8db
++ fx
+mix

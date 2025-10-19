@@ -1,0 +1,20 @@
+/s 16,0
+smooth
+lvl 9
+in 1.4s
+pulse 1/4
+mul 1.25
+out s
+in 2.4s
+pulse 1/4
+one2 1.125
+inj s
+s/h grid
+mul 440/1.5hz
+mul 8
+pm 0.3
+out fx
+chorII
++ fx
+vol -12db
+mix

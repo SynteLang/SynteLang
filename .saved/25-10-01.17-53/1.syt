@@ -1,0 +1,27 @@
+in 2.5hz
+sino
+mul 0.01
++ 1
+mul 73*1.618ms
+out t
+from 2
+out m
+from 0
++ m
++ c
+hpf 200hz
+tape t
+mul 4
+tap 73ms
+mul 0.25
+out fx
+buff1 21ms
+mul -6db
++ fx
+4lp
+alp2 250ms,0.5
+lpf 7khz
+mul 0.6
+out c
+vol -16db
+out dac

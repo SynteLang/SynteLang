@@ -1,0 +1,5 @@
+all
+msg
+lpf 300hz
+mul -6db
+out dac

@@ -1,0 +1,18 @@
+in 135/8bpm
+pulse 1/2
+out s
+in 135bpm
+/ 4
+osc
+out sync
+mul 8
+mod 1
+lt 0.53
+push
+dirac
+out d
+pop
+flip
+dirac
++ d
+.out grid

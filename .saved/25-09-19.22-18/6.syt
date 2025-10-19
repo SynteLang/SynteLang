@@ -1,0 +1,17 @@
+/* sh
+in grid
+push
+dirac
+out d
+pop
+flip
+dirac
++ d
+dec 10ms
+flip
+down 10ms
+flip
+mul 2
+noise
+hpf 1khz
+mix

@@ -1,0 +1,9 @@
+in 0.75s
+sq
++ 1
+mul 2hz
+osc
+trn 4
+bdfm 12,320hz
+msg
+out dac

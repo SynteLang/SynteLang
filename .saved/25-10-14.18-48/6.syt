@@ -1,0 +1,10 @@
+in 10s
+sino
++ 1
+mul 3.1252hz
+osc
+flip
+exb 14
+smooth
+lvl 3
+.lvl 2

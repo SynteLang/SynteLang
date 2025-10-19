@@ -1,0 +1,12 @@
+/s 6,0
+s/h grid
+dec 70ms
+exb 5
+smooth
+out vca
+/b 6,0
+phryg
+mul 880/2hz
+sino
+vol vca
+mix

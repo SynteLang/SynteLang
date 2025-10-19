@@ -1,0 +1,25 @@
+/s 5.5,0
+s/h grid
+dec 100ms
+exb 5
+mul 2
+clip 0
+smooth
+smooth
+out vca
+in 6hz
+osc
+tri
+range 0.3,0.7
+out f
+in 3s
+pulse 1/4
+flip
+range 1/1.5,1
+mul 110*4hz
+lpf 15hz
+pm f
+tnh
+mul vca
+vol 4db
+mix

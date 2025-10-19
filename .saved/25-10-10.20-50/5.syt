@@ -1,0 +1,33 @@
+in 3s
+osc
+tri
+range 370ms,170ms
+out t
+in 6
+out b
+/s b,0
+s/h grid
+dec t
+exb 5
+mul 2
+clip 0
+smooth
+out vca
+in b
+/ 6
+out b1
+/b b1,0
+s/h grid
+8bit 7
++ 0.4
+mod 1
+8bit 12
+base 2
+in 1
+mul 110/4hz
+sino
+clip 0.8
+vol vca
+vol 8db
+tnh
+mix

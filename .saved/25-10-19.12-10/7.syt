@@ -1,0 +1,14 @@
+in 13s
+osc
+flip
+exb 10
+in -8db
+smooth
+lvl 1
+in 8s
+osc
+flip
+exb 15
+in -8db
+smooth
+.lvl 0

@@ -1,0 +1,21 @@
+/s 5.5,0
+s/h grid
+out g
+dec 100ms
+exb 5
+out f
+mul 2
+clip 0
+smooth
+smooth
+out vca
+in 3s
+pulse 1/4
+flip
+s/h g
+range 3/4,1
+mul 110*4hz
+pm f
+mul vca
+vol 4db
+mix

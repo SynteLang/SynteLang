@@ -1,0 +1,17 @@
+/* hh
+in 3hz
+osc
+tri
++ 1
+mul 6
+out t
+in 2.5s
+sq
++ 1
+mul 8
+out b
+/b b,0
+trn t
+lpf 55hz
+noise
+mix

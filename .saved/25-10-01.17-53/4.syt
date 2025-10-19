@@ -1,0 +1,10 @@
+in 4hz
+sq
+flip
+lpf 15hz
+out vca
+in 80/2hz
+sino
+tnh
+mul vca
+out dac

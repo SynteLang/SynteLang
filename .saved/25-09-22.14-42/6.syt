@@ -1,0 +1,6 @@
+in 3.125/2s
+/b 18,0
+lt 0.5
+s/h grid
+smooth
+.lvl 2

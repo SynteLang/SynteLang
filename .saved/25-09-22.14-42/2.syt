@@ -1,0 +1,69 @@
+in 3hz
+sq
+range 8,16
+out b
+in 4s
+osc
+out sync
+push
+mul 32
+mod 1
+lt 0.53
+push
+dirac
+out d
+pop
+flip
+dirac
++ d
+out grid
+pop
+mul b
+mod 1
+flip
+smooth
+out vca
+exb 2
+mul 0.5
+out f
+/s 1,0
+s/h grid
+one2 1.25
+lpf 15hz
+in 1
+noise
+lpf 3hz
++ 1
+mul 220hz
+out p
+in 20s
+sq
+one2 1.125
+mul p
+pm f
+out m
+in 12s
+sq
+one2 1.125
+mul p
+mul 1.5
+pm f
+out+ m
+in 16s
+sq
+one2 1.125
+mul p
+mul 1.25
+pm f
+out+ m
+in 14s
+sq
+one2 1.125
+mul p
+mul 5/3
+pm f
++ m
+hpf 400hz
+mul vca
+vol -4db
+mix

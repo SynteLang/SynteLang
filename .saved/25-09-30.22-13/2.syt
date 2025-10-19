@@ -1,0 +1,44 @@
+in 2s
+osc
+tri
+mul 4
++ 1
+mul 25hz
+out fc
+in 9s
+osc
+tri
+flip
+lpf 20hz
+out vca
+in 3s
+sino
+mul 0.5
++ 1
+out d
+in 18s
+sq
+one2 1.095
+out s
+in 8s
+sq
+one2 1.095
+mul s
+mul 110/1.5hz
+out p
+osc
+mul 1.5
+push
+mod d
+out m
+pop
+mod 0.88
++ m
+mul 0.5
+/ Pi
+sine
+hpf 100hz
+mul vca
+svf fc,1
+mul 24db
+mix

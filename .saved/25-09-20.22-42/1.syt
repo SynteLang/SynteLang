@@ -1,0 +1,26 @@
+/* rvrb
+in 1
+noise
+lpf 7hz
+lpf 7hz
+mul 0.2
++ 1
+mul 73ms
+out t
+from 2
+out m
+from 4
+mul 4db
+out+ m
+from 5
+mul -18db
++ m
++ c
+hpf 100hz
+tape t
+4lp
+lpf 12khz
+mul 0.7
+out c
+vol -12db
+out dac

@@ -1,0 +1,24 @@
+in 6s
+osc
+tri
+exb 5
+mul 5.4
+mul m
+base 2
+mul 110/4hz
+out fc
+in 220hz
+pm 1
+mul 1.5
+tnh
+svf fc,1
+out f
+svf fc,1
+in ^bp
+mul 5
++ 1
+out m
+in ^lp
++ f
+mul 0.5
+mix

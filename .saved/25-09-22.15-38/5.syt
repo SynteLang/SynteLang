@@ -1,0 +1,22 @@
+/* js
+in 16s
+pulse 1/32
+push
+-- 1
+mul 0.5
+out ph
+pop
+range 4,18
+out b
+in 2.25/3hz
+osc
+tri
++ 0.75
+/ 2
+s/h grid
+out p
+/s b,ph
+s/h grid
+dec 70ms
+js p
+mix

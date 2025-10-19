@@ -1,0 +1,47 @@
+/* rvrb
+in 2.5hz
+sino
+mul 0.005
++ 1
+mul 135*6bpm
+out t
+in 3.5hz
+sino
+mul 0.005
++ 1
+mul 73ms
+out t2
+in 4.5hz
+sino
+mul 0.005
++ 1
+mul 87ms
+out t3
+from 0
+out m
+from 8
+out+ m
+from 9
+out+ m
+in m
+lpf 2khz
++ m
+mul 0.75
++ c
+hpf 200hz
+buff0 t
+push
+4lp
+alp1 123ms,0.5
+tap t2
+mul 0.5
+alp2 53ms,0.5
+alp3 73ms,0.5
+tap t3
+mul 0.5
+mul 1.3
+lpf 12khz
+out c
+pop
+vol -12db
+out dac

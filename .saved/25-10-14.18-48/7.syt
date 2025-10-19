@@ -1,0 +1,12 @@
+in 13s
+osc
+flip
+exb 10
+smooth
+lvl 1
+in 8s
+osc
+flip
+exb 15
+smooth
+.lvl 0

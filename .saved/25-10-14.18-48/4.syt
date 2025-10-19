@@ -1,0 +1,23 @@
+in 3.2hz
+sino
+mul 0.003
++ 1
+mul 123ms
+out t
+all
++ c
+hpf 100hz
+tape t
++ fb
+out ff
+mul 0.5
+4lp
+alp1 73ms,0.5
+mul 0.5
+out fb
++ ff
+mul 0.65
+lpf 4khz
+out c
+vol -0db
+out dac

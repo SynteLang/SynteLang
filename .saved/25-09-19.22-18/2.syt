@@ -1,0 +1,27 @@
+/* bd
+in 1.5hz
+sq
+s/h grid
+dec 100ms
+clip 0
+smooth
+out env
+gt 0.5
+dec 15ms
+noise
+lpf 200hz
+mul 0.2
+out n
+in 44hz
+osc
+tri
+cv2a
+mul 2.35
+tnh
++ n
+mul env
+lpf 400hz
+vol 3
+tnh
+vol 4db
+mix

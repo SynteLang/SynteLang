@@ -1,0 +1,19 @@
+/* js
+in 2.25hz
+osc
+tri
++ 0.75
+/ 2
+s/h grid
+out p
+/b 1,0
+in 1.5s
+pulse 1/2
+s/h grid
+range 4,6
+out b
+/s 4,0.5
+s/h grid
+dec 70ms
+js p
+mix

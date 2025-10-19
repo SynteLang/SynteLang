@@ -1,0 +1,17 @@
+/* rvrb
+from 0
+out m
+from 8
+out+ m
+from 9
++ m
++ c
+hpf 200hz
+tape 135*6bpm
+out fx
+4lp
++ fx
+lpf 7khz
+mul 0.4
+out c
+mix

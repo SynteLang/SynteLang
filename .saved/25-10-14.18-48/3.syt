@@ -1,0 +1,27 @@
+in 1hz
+sino
++ 1
+mul 0.5
+exb 7
+out fc
+in 5hz
+osc
+tri
+mul 0.5
++ 1
+out pwm
+in 220*1.333hz
+/ 2
+osc
+mul pwm
+-- 1
+abs
+-- 1
++ pm
+sine
+push
+mul fc
+mul 0.2
+out pm
+pop
+mix

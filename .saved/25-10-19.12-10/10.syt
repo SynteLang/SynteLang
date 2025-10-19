@@ -1,0 +1,9 @@
+in 2hz
+osc
+out sync
+trn 6
+mul 100hz
+sino
+hpf 10hz
+lpf 800hz
+out dac

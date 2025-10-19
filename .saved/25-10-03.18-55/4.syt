@@ -1,0 +1,25 @@
+/* sn
+in 14s
+osc
+range 0.5,1
+out pw
+in 3hz
+pulse pw
+smooth
+lvl 4
+in 2.5hz
+osc
+tri
+mul 0.05
++ 1
+out p
+in 13s
+osc
+range 5,7
+out b
+/s b,0.5
+s/h grid
+dec 70ms
+js p
+vol -2db
+mix

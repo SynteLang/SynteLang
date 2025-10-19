@@ -1,0 +1,20 @@
+in 32hz
+sino
++ 1
+out s
+in 1s
+sino
++ 1
+mul s
+out vca
+in 20s
+once
+mul 0.5
++ 1
+mul 55hz
+* 0.25
+sino
+mul 1.5
+tnh
+mul vca
+mix

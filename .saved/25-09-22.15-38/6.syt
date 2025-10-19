@@ -1,0 +1,9 @@
+in 1.5s
+sino
+pan 2
+/b 18,0
+lt 0.5
+s/h grid
+down 300ms
+smooth
+.lvl 2

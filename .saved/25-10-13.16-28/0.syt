@@ -1,0 +1,34 @@
+in 185bpm
+out tempo
+/ 8
++ sync
+mod 1
+out sync
+mul 4*4
+mod 1
+lt 0.53
+push
+dirac
+out d
+pop
+flip
+dirac
++ d
+out grid
+/b 12,0
+tri
+mul 6.5
+base 2
+mul 330/8hz
+out fc
+in 1.3hz
+sq
+s/h grid
+one2 1.5
+lpf 50hz
+mul 330*2hz
+pm 0.95
+svf fc,1.8
+tnh
+mul -8db
+mix

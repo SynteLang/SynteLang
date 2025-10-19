@@ -1,0 +1,10 @@
+/* bd
+in 3.7s
+pulse 1/32
+range 8,32
+out b
+/s b,0
+s/h grid
+dec 1/8s
+bdfm 8,420hz
+out dac

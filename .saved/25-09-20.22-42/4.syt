@@ -1,0 +1,21 @@
+in 1.5/2.5s
+pulse 2/3
+range 16,32
+out b
+/s b,0
+s/h grid
+dec 450ms
+exp 8
+out vca
+noise
+hpf 4khz
+out n
+in 1.97khz
+sq
+mul 5.1khz
+sqr
+hpf 7khz
+mul vca
++ n
+hpf 7khz
+mix

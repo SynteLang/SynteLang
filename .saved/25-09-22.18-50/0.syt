@@ -1,0 +1,62 @@
+/* bass
+/s 10.7,0
+s/h grid
+dec 500ms
+push
+mul 3
+clip 0
+lpf 25hz
+out vca
+pop
+exb 4
+mul 5
+base 2
+mul 10hz
+out f
+in 7.5hz
+sino
+mul 0.25
++ 1
+out d
+in 16s
+osc
++ 0.25
+mod 1
+lt 1/4
+one2 1.2
+out s
+in 16s
+sq
+one2 1.25
+mul s
+mul 220/4hz
+out p
+osc
+mul 1.5
+push
+mod d
+out m
+in p
+mul 1.02
+osc
+out+ m
+in p
+mul 0.98
+osc
+out+ m
+pop
+mod 0.88
++ m
+mul 0.25
+/ Pi
+sine
+hpf 40hz
+mul vca
+out x
+mul x
+mul x
++ x
+lpf f
+lpf f
+vol 17db
+mix

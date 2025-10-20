@@ -145,7 +145,7 @@ func readAndDisplay(file string, info muteVerb) {
 				continue
 			}
 			switch list[i+1].Op {
-			case "in", "pop", ")", "index", "ifft", "/b", "/s", "all":
+			case "in", "pop", ")", "index", "ifft", "/b", "/s":
 				//fmt.Printf(" %s|%s  ", y, reset)
 				fmt.Printf("\n\t")
 			default:

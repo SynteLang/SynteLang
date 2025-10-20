@@ -1,0 +1,42 @@
+/* sqr
+/s 2*8,0
+mul 1.5
+out v
+in tempo
+/ 8
+pulse 2/4
+out g
+in 7s
+pulse 1/4
+one2 1.2
+out s
+in 3s
+sq
+range 4,10
+mul 2
+out b
+/b b,0
+lt 0.3
+mul g
+s/h grid
+smooth
+smooth
+out vca
+in 3hz
+pulse 1/4
+one2 1.2
+inj v
+s/h grid
+mul 440*1.2hz
+osc
++ pm
+sine
+push
+out x
+mul x
+- 0.5
+mul 0.15
+out pm
+pop
+mul vca
+mix

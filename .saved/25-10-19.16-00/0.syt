@@ -1,0 +1,11 @@
+in 138*4bpm
+sq
+out g
+in 138/1.5bpm
+pulse 3/4
+s/h g
+cv2a
++ 0.25
+mul 138bpm
+out tempo
+>def 2*4,0.53

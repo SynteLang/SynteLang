@@ -1,0 +1,15 @@
+/* str
+in 11s
+pulse 1/8
+out s
+/s 7,0
+mul s
+s/h grid
+one2 1.2
+lpf 25hz
+mul 880hz
+mul 2
+pm 0.1
+chorII
+lpf 1khz
+mix

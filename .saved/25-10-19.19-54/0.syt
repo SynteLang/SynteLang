@@ -1,0 +1,12 @@
+in 126*16bpm
+sq
+out g
+in 126/1.5bpm
+mul 3
+pulse 3/4
+s/h g
+cv2a
++ 0.5
+mul 126bpm
+out tempo
+>def 2*4,0.53

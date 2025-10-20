@@ -1,0 +1,22 @@
+/* click
+in 5s
+step 3
+mul 12
++ 4
+clip 6
+out b
+/s b,0.5
+s/h grid
+dec 100ms
+exb 7
+out v
+flip
+mul 3
+clip 0
+flip
++ v
+noise
+svf 2khz,2
+in ^bp
+vol 14db
+mix

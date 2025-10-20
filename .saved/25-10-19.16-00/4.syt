@@ -1,0 +1,30 @@
+/* base
+/b 1,0
+lt 0.5
+range 2.5,8
+out b
+/b b,0
+trn 1.5
+exb 2
+push
+push
+mul 220hz
+out f
+pop
+mul 1.5
+clip 0
+lpf 175hz
+out vca
+pop
+mul 0.01
++ 1
+in 55hz
+osc
+tri
+cv2a
+mul 2
+tnh
+svf f,0.75
+vol -4db
+lpf 400hz
+out dac

@@ -953,7 +953,9 @@ func collate(t *systemState) *data {
 	mutes = append(mutes, m)
 	levels = append(levels, 1)
 	t.unsolo = append(t.unsolo, m)
-	saveTempFile(*t, len(mutes)-1) // second argument sets name of file
+	if t.reload < 0 {
+		saveTempFile(*t, len(mutes)-1) // second argument sets name of file
+	}
 	return d
 }
 

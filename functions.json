@@ -380,6 +380,131 @@
 			}
 		]
 	},
+	"\u003edef": {
+		"Comment": "like `def` but accepts a tempo input. First operand is number of beats, second is swing amount. 0.5 is no swing, 0.53 a lot. ",
+		"Body": [
+			{
+				"Op": "/",
+				"Opd": "@"
+			},
+			{
+				"Op": "+",
+				"Opd": "sync"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "sync"
+			},
+			{
+				"Op": "mul",
+				"Opd": "@"
+			},
+			{
+				"Op": "mul",
+				"Opd": "2"
+			},
+			{
+				"Op": "mod",
+				"Opd": "1"
+			},
+			{
+				"Op": "lt",
+				"Opd": "@1"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "gt",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "'b.0"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0"
+			},
+			{
+				"Op": "out",
+				"Opd": "'b.0"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "out",
+				"Opd": "d"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "--",
+				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.2"
+			},
+			{
+				"Op": "gt",
+				"Opd": "1"
+			},
+			{
+				"Op": "mul",
+				"Opd": "'b.2"
+			},
+			{
+				"Op": "push",
+				"Opd": ""
+			},
+			{
+				"Op": "in",
+				"Opd": "a.2"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0"
+			},
+			{
+				"Op": "out",
+				"Opd": "'b.2"
+			},
+			{
+				"Op": "pop",
+				"Opd": ""
+			},
+			{
+				"Op": "+",
+				"Opd": "d"
+			},
+			{
+				"Op": ".out",
+				"Opd": "grid"
+			}
+		]
+	},
 	"CB": {
 		"Comment": "an 808-like cowbell, triggered like `dirac`. Operand multiplies pitch ",
 		"Body": [
@@ -670,7 +795,7 @@
 		]
 	},
 	"T2": {
-		"Comment": "implements Chebyshev polynomial of the first kind. In plain english this means it will double the frequency of anything passed through it ",
+		"Comment": "implements second Chebyshev polynomial of the first kind. In plain english this means it will double the frequency of anything passed through it ",
 		"Body": [
 			{
 				"Op": "out",
@@ -707,6 +832,31 @@
 			{
 				"Op": "+",
 				"Opd": "-1"
+			}
+		]
+	},
+	"T3": {
+		"Comment": "implements third Chebyshev polynomial of the first kind. In plain english this means it will triple the frequency of anything passed through it ",
+		"Body": [
+			{
+				"Op": "out",
+				"Opd": "x"
+			},
+			{
+				"Op": "mul",
+				"Opd": "x"
+			},
+			{
+				"Op": "mul",
+				"Opd": "4"
+			},
+			{
+				"Op": "sub",
+				"Opd": "3"
+			},
+			{
+				"Op": "mul",
+				"Opd": "x"
 			}
 		]
 	},
@@ -1316,16 +1466,16 @@
 				"Opd": "80hz"
 			},
 			{
-				"Op": "/",
-				"Opd": "tempo"
-			},
-			{
-				"Op": "mul",
-				"Opd": "sync"
+				"Op": "+",
+				"Opd": "a.0"
 			},
 			{
 				"Op": "mod",
 				"Opd": "1"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.0"
 			},
 			{
 				"Op": "sine",
@@ -1341,7 +1491,11 @@
 			},
 			{
 				"Op": "in",
-				"Opd": "80hz"
+				"Opd": "55hz"
+			},
+			{
+				"Op": "out",
+				"Opd": "^freq"
 			},
 			{
 				"Op": "+",
@@ -2979,8 +3133,12 @@
 		]
 	},
 	"exb": {
-		"Comment": "scaled exponential converter. Increasing positive values change linear sweeps into steeper sharper peaks, negative ones create the inverse. Operand of zero produces zero",
+		"Comment": "scaled exponential converter. Increasing positive operand values change linear sweeps into steeper sharper peaks, negative ones create the inverse. Operand of zero produces zero",
 		"Body": [
+			{
+				"Op": "abs",
+				"Opd": ""
+			},
 			{
 				"Op": "out",
 				"Opd": "e"
@@ -5649,6 +5807,56 @@
 			}
 		]
 	},
+	"max": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "-",
+				"Opd": "@"
+			},
+			{
+				"Op": "out",
+				"Opd": "a"
+			},
+			{
+				"Op": "gt",
+				"Opd": "0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "a"
+			},
+			{
+				"Op": "+",
+				"Opd": "@"
+			}
+		]
+	},
+	"min": {
+		"Comment": "",
+		"Body": [
+			{
+				"Op": "-",
+				"Opd": "@"
+			},
+			{
+				"Op": "out",
+				"Opd": "a"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "a"
+			},
+			{
+				"Op": "+",
+				"Opd": "@"
+			}
+		]
+	},
 	"mix": {
 		"Comment": "output adjusted level to soundcard and end listing ",
 		"Body": [
@@ -5716,6 +5924,103 @@
 			{
 				"Op": "out",
 				"Opd": "b.0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "x"
+			}
+		]
+	},
+	"msg": {
+		"Comment": "an adaptation of the MSG compressor",
+		"Body": [
+			{
+				"Op": "out",
+				"Opd": "x"
+			},
+			{
+				"Op": "abs",
+				"Opd": ""
+			},
+			{
+				"Op": "\\",
+				"Opd": "1"
+			},
+			{
+				"Op": "-",
+				"Opd": "'c"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.0"
+			},
+			{
+				"Op": "+",
+				"Opd": "'c"
+			},
+			{
+				"Op": "+",
+				"Opd": "0.002"
+			},
+			{
+				"Op": "-",
+				"Opd": "2"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.1"
+			},
+			{
+				"Op": "lt",
+				"Opd": "0"
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.1"
+			},
+			{
+				"Op": "+",
+				"Opd": "2"
+			},
+			{
+				"Op": "out",
+				"Opd": "'c"
+			},
+			{
+				"Op": "-",
+				"Opd": "b.2"
+			},
+			{
+				"Op": "out",
+				"Opd": "a.2"
+			},
+			{
+				"Op": "in",
+				"Opd": "100hz"
+			},
+			{
+				"Op": "f2c",
+				"Opd": ""
+			},
+			{
+				"Op": "mul",
+				"Opd": "a.2"
+			},
+			{
+				"Op": "+",
+				"Opd": "b.2"
+			},
+			{
+				"Op": "out",
+				"Opd": "b.2"
 			},
 			{
 				"Op": "mul",
@@ -9469,7 +9774,7 @@
 		]
 	},
 	"svf": {
-		"Comment": "state variable filter. First operand is cutoff frequency, second is resonance (0.5 low to 3 high resonance. Bandpass and highpass can be accessed via the `^bp` and `^hp` signals",
+		"Comment": "state variable filter. First operand is cutoff frequency, second is resonance (0.5 low to 3 high resonance.) Bandpass and highpass can be accessed via the `^bp` and `^hp` signals",
 		"Body": [
 			{
 				"Op": "push",
@@ -9955,7 +10260,7 @@
 		]
 	},
 	"vol": {
-		"Comment": "",
+		"Comment": "like mul, with a smoother change for no clicks. Not suitable for audio rate modulation",
 		"Body": [
 			{
 				"Op": "out",

@@ -1,0 +1,34 @@
+/* rvrb
+in 3hz
+sino
+mul 0.003
++ 1
+mul tempo
+mul 3
+out t
+from 8
+out m
+from 7
++ m
+- c
+hpf 100hz
+out crush
+8bit 255!
+sum crush
+tape t
+out fx
+- fb
+mul 0.5
+out ff
+mul 2
+4lp
+lpf 12khz
+mul 0.5
+out fb
+mul 2
++ ff
+sum fx
+mul 0.9
+out c
+vol -18db
+out dac

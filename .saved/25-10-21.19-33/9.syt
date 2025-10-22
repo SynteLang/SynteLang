@@ -1,0 +1,7 @@
+all
+msg
+vol -24db
+out fx
+lpf 200hz
++ fx
+out dac

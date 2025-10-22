@@ -1,0 +1,35 @@
+/* str
+in 5s
+sq
+s/h grid
+out g
+in 1
+noise
+gt 0.25
+s/h g
+one2 1.5
+in 1
+out p
+in 1.5hz
+sino
+pan 8
+/b 32,0
+lt 0.25
+smooth
+out vca
+in 11s
+pulse 1/8
+out s
+/s 7,0
+mul s
+s/h grid
+one2 1.2
+lpf 25hz
+mul 880hz
+mul p
+pm 0.1
+chorII
+vol vca
+vol 12db
+lpf 1khz
+mix

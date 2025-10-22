@@ -1,0 +1,33 @@
+/s 2*4,0
+one2 1.5
+out s
+/b 1,0
+gt 1/16
+one2 8
+mul s
+out v
+/s 2*5.5,0
+s/h grid
+dec 230ms
+clip 0
+exb 12
+lpf 20hz
+out env
++ 1
+mul 220/2hz
+mul v
+out p
+mul 1.2
+sino
+mul env
+mul 8
++ 1
+mul p
+sino
+mul env
+vol 18db
+tnh
+hpf 350hz
+lpf 4khz
+lpf 2khz
+mix

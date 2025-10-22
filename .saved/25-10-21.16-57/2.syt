@@ -1,0 +1,17 @@
+/* hh
+/b 1,0
+gt 7/8
+mul 0.5
+out s
+/b 6,0
+tri
+exb 2
+range 3,16
+out t
+/b 16*2,0
+trn 3
+exb t
+noise
+hpf 5khz
+vol 10db
+mix

@@ -1,0 +1,26 @@
+/* kick
+in sync
++ 1
+mod 1
+out sync
+in 13s
+pulse 1/18
+s/h grid
+range 8,16
+out b
+/b 2,0
+gt 0.5
+mul 0.5
+out s
+/b b,s
+trn 2.2
+exb 4
+smooth
+bdfm 12,720hz
+out fx
+msg
+mul -18db
+svf 160hz,0.75
++ fx
+lpf 400hz
+out dac

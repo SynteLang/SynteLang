@@ -3073,7 +3073,7 @@ func interpolatedTap(buff []float64, sig float64, n, tapeLen int) float64 {
 	if sig != 0 {
 		t = 1 / sig
 	}
-	x := mod(float64(n+tapeLen)-t, float64(tapeLen)) // could also be len(buff)
+	x := mod(math.Abs(float64(n+tapeLen*2)-t), float64(tapeLen)) // could also be len(buff)
 	return interpolation(buff, x)
 }
 

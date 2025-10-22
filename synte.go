@@ -3022,7 +3022,13 @@ func coreDump(d listingStack, name string) {
 	for i, f := range d.sigs {
 		sg += sf("%d: %f   ", i, f)
 	}
-	b := sf(debugFormat,
+	b := `*debug info*
+	signal names are stripped before soundengine
+	refer to original listing in .temp/ to infer names
+	indexes of signals are in brackets ()
+	p indicates a persisted signal
+`
+	b += sf(debugFormat,
 		d.reload,
 		d.listing,
 		d.stack,
@@ -3046,17 +3052,18 @@ func coreDump(d listingStack, name string) {
 	}
 }
 
+// this string method can't access operands
 func (o opSE) String() string {
 	for operator, op := range operators {
 		if int(o.Opn) == op.N {
-			p := "."
+			p := ""
 			if o.P {
-				p = "P"
+				p = "p"
 			}
 			if o.Opn == 0 {
 				operator = "// or deleted"
 			}
-			return sf("%s ?_%d %s, ", operator, /*o.Opd,*/ o.N, p)
+			return sf("%s (%d)%s, ", operator, o.N, p)
 		}
 	}
 	return sf("%d %d, ", o.Opn, o.N)

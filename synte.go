@@ -614,7 +614,6 @@ func run(from io.Reader, da int) bool {
 	release = releaseFrom(defaultRelease, sc.sampleRate)
 
 	display = disp{
-		On:		 true,
 		Mode:    "off",
 		MouseX:  1,
 		MouseY:  1,
@@ -1595,6 +1594,7 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 	accepted <- len(d) // acknowledge
 	coreDump(d[0], "first_listing")
 
+	display.On = true
 	lastTime = time.Now()
 	samples <- stereoPair{running: yes}
 	for {

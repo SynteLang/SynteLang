@@ -296,6 +296,7 @@ var operators = map[string]operatorCheck{ // would be nice if switch indexes cou
 	"m+":      {yes, 0, enactMute},           // add to mute group
 	"n":       {yes, 0, enactMute},           // add to mute group
 	"gain":    {yes, 0, adjustGain},          // set overall mono gain before limiter
+	"dim":     {not, 0, adjustGain},          // set overall mono gain before limiter
 	"record":  {yes, 0, recordWav},           // commence recording of wav file
 	"wait":    {yes, 0, enactWait},           // for testing scripts, rounded to Milliseconds
 }
@@ -2810,6 +2811,11 @@ func checkRelease(s systemState) (systemState, int) {
 }
 
 func adjustGain(s systemState) (systemState, int) {
+	if s.operator == "dim" {
+		gain = 0.05 * baseGain
+		msg("gain set to %.2gdb", 20*math.Log10(gain/baseGain))
+		return s, startNewOperation
+	}
 	if s.operand == "zero" {
 		gain = baseGain
 		msg("gain set to %.2gdb", 20*math.Log10(gain/baseGain))

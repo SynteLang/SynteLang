@@ -2103,8 +2103,8 @@ func SoundEngine(sc soundcard, wavs [][]float64) {
 		eqS = (eqS + sides - eqXS) * hpf320Hz
 		eqXS = sides
 		if eq { // high shelving boost
-			mid = eqM * 2 + mid * 0.9
-			sides = eqS * 2 + sides * 0.9
+			mid = eqM * 1.5 + mid * 0.9
+			sides = eqS * 1.5 + sides * 0.9
 		}
 		dither = no.ise()
 		dither += no.ise()

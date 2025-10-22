@@ -311,7 +311,7 @@ type data struct {
 type opSE struct {
 	N   int // signal number
 	Opn int // operation switch index
-	P   bool
+	P   bool // persist signal
 	i   int // index of persisted signal
 	//Opd string
 }
@@ -515,8 +515,11 @@ func main() {
 		--prof
 		--mem
 		--sr <hz>
-		--info
-		--listings.
+		--info, -i
+		--listings, -l
+		alternate backends:
+		--sdl
+		--oss
 Only one may be used at a time`)
 		return
 	case "--info", "-i":
@@ -2451,13 +2454,13 @@ func popPushParity(s systemState) bool {
 func multipleBuff(s systemState) bool {
 	var bf bool
 	var b [3]bool
-	for l, o := range s.newListing {
+	for _, o := range s.newListing {
 		if o.Op == "buff" || o.Op == "buff0" {
 			if !bf {
 				bf = true
 				continue
 			}
-			msg("%d: more than one buff", l)
+			msg("more than one buff")
 			return true
 		}
 		for i := range b {
@@ -2466,7 +2469,7 @@ func multipleBuff(s systemState) bool {
 					b[i] = true
 					continue
 				}
-				msg("%d: more than one buff%d", l, i+1)
+				msg("more than one buff%d", i+1)
 				return true
 			}
 		}
@@ -2477,7 +2480,7 @@ func multipleBuff(s systemState) bool {
 func buffUnique(s systemState) (systemState, int) {
 	for _, o := range s.newListing {
 		if o.Op == "buff" || o.Op == "buff0" {
-			msg("only one buff per listing")
+			msg("only one buff or buff0 per listing")
 			return s, startNewOperation
 		}
 	}
@@ -2861,7 +2864,7 @@ func checkComment(s systemState) (systemState, int) {
 func checkAlp(s systemState) (systemState, int) {
 	for _, o := range s.newListing {
 		if o.Op == "4lp" {
-			msg("using more than one %s4lp%s in a listing may cause instability")
+			msg("using more than one 4lp in a listing may cause instability")
 			break
 		}
 	}
